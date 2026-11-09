@@ -12,6 +12,19 @@ export const getCategoryRank = (
   return rank === -1 ? order.length : rank;
 };
 
+export const sortStatusesByCategory = (
+  statuses: ITaskStatus[],
+  order: StatusCategoryOrder
+): ITaskStatus[] => {
+  const statusPosition = new Map(statuses.map((status, index) => [status.id, index]));
+
+  return [...statuses].sort((a, b) => {
+    const categoryDifference = getCategoryRank(a, order) - getCategoryRank(b, order);
+    if (categoryDifference !== 0) return categoryDifference;
+    return (statusPosition.get(a.id) ?? 0) - (statusPosition.get(b.id) ?? 0);
+  });
+};
+
 export const sortStatusGroupsByCategory = (
   groups: TaskGroup[],
   statuses: ITaskStatus[],

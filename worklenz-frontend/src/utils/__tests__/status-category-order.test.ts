@@ -4,6 +4,7 @@ import {
   getCategoryRank,
   getCollapsedGroupIds,
   getDoneStatusGroupIds,
+  sortStatusesByCategory,
   sortStatusGroupsByCategory,
   sortTasksByStatusCategory,
 } from '../status-category-order';
@@ -38,6 +39,22 @@ describe('status category order', () => {
       sortStatusGroupsByCategory(groups, statuses, ['todo', 'doing', 'done']).map(g => g.id)
     ).toEqual(['todo-2', 'todo-1', 'doing-1']);
     expect(groups.map(g => g.id)).toEqual(['doing-1', 'todo-2', 'todo-1']);
+  });
+
+  it('sorts dropdown statuses by category order and preserves order within each category', () => {
+    const statusOptions = [
+      { id: 'todo-1', name: 'To Do', category_id: 'todo', order_index: 1 },
+      { id: 'doing-1', name: 'Doing', category_id: 'doing', order_index: 2 },
+      { id: 'doing-2', name: 'QA Blocked', category_id: 'doing', order_index: 3 },
+      { id: 'done-1', name: 'Done', category_id: 'done', order_index: 4 },
+    ];
+
+    expect(sortStatusesByCategory(statusOptions, ['doing', 'todo', 'done']).map(s => s.id)).toEqual([
+      'doing-1',
+      'doing-2',
+      'todo-1',
+      'done-1',
+    ]);
   });
 
   it('omits empty status groups without synthesizing placeholders', () => {
