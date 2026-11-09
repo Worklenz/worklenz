@@ -2321,8 +2321,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const result = await db.query(q, params);
     const tasks = [...result.rows];
 
-    // Apply category ordering only for task-list requests; Board and other V3 consumers
-    // retain the configured status order.
+    // Apply category ordering only when a consumer explicitly requests it.
     let categoryOrderForGroups: string[] | undefined;
     if (groupBy === GroupBy.STATUS && req.query.category_order === "true") {
       try {

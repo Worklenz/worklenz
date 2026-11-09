@@ -195,6 +195,7 @@ export const fetchBoardTaskGroups = createAsyncThunk(
         isSubtasksInclude: boardReducer.isSubtasksInclude,
         labels: selectedLabels,
         priorities: boardReducer.priorities.join(' '),
+        category_order: boardReducer.groupBy === IGroupBy.STATUS,
       };
 
       const response = await tasksApiService.getTaskListV3(config);
