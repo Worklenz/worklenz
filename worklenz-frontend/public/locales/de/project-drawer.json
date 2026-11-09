@@ -103,6 +103,7 @@
   "phaseAssigneesSettingsDescription": "Wenn aktiviert, kann jede Pipeline-Phase einen dedizierten Beauftragten haben. Aufgaben können nur vom Phasenbeauftragten vorangebracht werden (Admins können immer überschreiben).",
   "phaseAssigneesEnabled": "Phasen-Beauftragte aktivieren",
   "phaseAssigneesEnabledTooltip": "Wenn aktiviert, kann jede Phase in der Pipeline einen Standard-Beauftragten haben, der automatisch zugewiesen wird und für die Erledigung der Aufgaben in dieser Phase verantwortlich ist.",
+  "saveToAssignPhases": "Speichern Sie die Projekteinstellungen, um mit der Zuweisung von Standardverantwortlichen zu Phasen zu beginnen.",
   "basicDetailsCardTitle": "Grunddetails",
   "clientAndManagerCardTitle": "Kunde & Manager",
   "timelineAndEstimatesCardTitle": "Zeitplan & Schätzungen",

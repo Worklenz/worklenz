@@ -103,6 +103,7 @@
   "phaseAssigneesSettingsDescription": "Lorsqu'elle est activée, chaque phase du pipeline peut avoir un responsable dédié. Les tâches ne peuvent être avancées que par leur responsable de phase (les administrateurs peuvent toujours les remplacer).",
   "phaseAssigneesEnabled": "Activer les responsables de phase",
   "phaseAssigneesEnabledTooltip": "Lorsqu'elle est activée, chaque phase du pipeline peut avoir un responsable par défaut qui est automatiquement affecté et responsable de l'exécution des tâches de cette phase.",
+  "saveToAssignPhases": "Enregistrez les paramètres du projet pour commencer à attribuer des responsables par défaut aux phases.",
   "basicDetailsCardTitle": "Détails de base",
   "clientAndManagerCardTitle": "Client & Gestionnaire",
   "timelineAndEstimatesCardTitle": "Chronologie et estimations",

@@ -103,6 +103,7 @@
   "phaseAssigneesSettingsDescription": "Po poszczególnych faza potoku może mieć dedykowanego przypisanego. Zadania mogą być zlecane wyłącznie przez osobę przy użyciu do pierwotnego (administratorzy zawsze mogą je znaleźć).",
   "phaseAssigneesEnabled": "Włącz przypisanych faz",
   "phaseAssigneesEnabledTooltip": "Gdy ta opcja jest dołączona, każda faza potoku może mieć przypisanego przypisanego, który jest automatycznie przypisany i odpowiedzialny za wykonanie zadań w tej wysokości.",
+  "saveToAssignPhases": "Zapisz ustawienia projektu, aby rozpocząć przypisywanie domyślnych osób do etapów.",
   "basicDetailsCardTitle": "Podstawowe szczegóły",
   "clientAndManagerCardTitle": "Klient i Menedżer",
   "timelineAndEstimatesCardTitle": "Oś czasu i szacunki",

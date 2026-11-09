@@ -103,6 +103,7 @@
   "phaseAssigneesSettingsDescription": "Cuando está habilitado, cada fase del pipeline puede tener un asignado dedicado. Las tareas solo pueden avanzarlas su asignado de fase (los administradores siempre pueden anular).",
   "phaseAssigneesEnabled": "Habilitar Asignados por Fase",
   "phaseAssigneesEnabledTooltip": "Cuando está habilitado, cada fase del pipeline puede tener un asignado predeterminado que se asigna automáticamente y es responsable de completar las tareas en esa fase.",
+  "saveToAssignPhases": "Guarda la configuración del proyecto para empezar a asignar responsables predeterminados a las fases.",
   "basicDetailsCardTitle": "Detalles básicos",
   "clientAndManagerCardTitle": "Cliente y Gerente",
   "timelineAndEstimatesCardTitle": "Cronograma y Estimaciones",

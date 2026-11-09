@@ -103,6 +103,7 @@
   "phaseAssigneesSettingsDescription": "Quando habilitado, cada fase do pipeline pode ter um responsável dedicado. As tarefas só podem ser avançadas pelo responsável da fase (admins sempre podem substituir).",
   "phaseAssigneesEnabled": "Habilitar Responsáveis por Fase",
   "phaseAssigneesEnabledTooltip": "Quando habilitado, cada fase no pipeline pode ter um responsável padrão que é automaticamente atribuído e responsável por concluir as tarefas naquela fase.",
+  "saveToAssignPhases": "Salve as configurações do projeto para começar a atribuir responsáveis padrão às fases.",
   "basicDetailsCardTitle": "Detalhes Básicos",
   "clientAndManagerCardTitle": "Cliente e Gerente",
   "timelineAndEstimatesCardTitle": "Cronograma e Estimativas",
