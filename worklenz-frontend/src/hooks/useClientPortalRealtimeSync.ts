@@ -21,7 +21,8 @@ type PortalTag =
   | 'AuditLog'
   | 'Notifications'
   | 'Milestones'
-  | 'PortalTasks';
+  | 'PortalTasks'
+  | 'PortalClientUsers';
 
 const ALL_PORTAL_TAGS: PortalTag[] = [
   'Approvals',
@@ -35,6 +36,7 @@ const ALL_PORTAL_TAGS: PortalTag[] = [
   'Notifications',
   'Milestones',
   'PortalTasks',
+  'PortalClientUsers',
 ];
 
 const tagsForType = (type: string): PortalTag[] => {
@@ -49,8 +51,9 @@ const tagsForType = (type: string): PortalTag[] => {
       return ['PortalFiles', 'PortalCounts', 'PortalProjects'];
     case 'milestone':
       return ['Milestones', 'PortalProjects', 'PortalOverview', 'PortalCounts'];
-    case 'project_update':
     case 'access':
+      return ['PortalProjects', 'PortalOverview', 'PortalCounts', 'AuditLog', 'PortalClientUsers'];
+    case 'project_update':
       return ['PortalProjects', 'PortalOverview', 'PortalCounts', 'AuditLog'];
     default:
       return ALL_PORTAL_TAGS;
@@ -70,6 +73,7 @@ const tagsForNotificationKey = (key?: string): PortalTag[] | null => {
     case 'CLIENT_PORTAL_FILE':
       return tagsForType('file');
     case 'CLIENT_PORTAL_ACCESS':
+      return tagsForType('access');
     case 'CLIENT_PORTAL_PROJECT':
       return tagsForType('project_update');
     default:

@@ -41,7 +41,7 @@ describe("on_join_client_portal_room", () => {
       join: jest.fn().mockResolvedValue(undefined),
       leave: jest.fn().mockResolvedValue(undefined),
       emit: jest.fn(),
-      request: { session: { passport: { user: { id: "user-1", team_id: "team-1" } } } },
+      request: { session: { passport: { user: { id: "user-1" } } } },
       handshake: { auth: {} },
     };
     mockIo = {};
@@ -49,24 +49,44 @@ describe("on_join_client_portal_room", () => {
 
   it("joins the team room for an owner/admin staff member", async () => {
     (db.query as jest.Mock).mockResolvedValue({
-      rows: [{ owner_id: "user-1", role_name: "Owner", admin_role: false }],
+      rows: [{ team_id: "team-1", owner_id: "user-1", role_name: "Owner", admin_role: false }],
     });
 
     await on_join_client_portal_room(mockIo as Server, mockSocket as Socket, { type: "join" });
 
     expect(mockSocket.join).toHaveBeenCalledWith(clientPortalTeamRoomName("team-1"));
+    expect(db.query).toHaveBeenCalledWith(expect.stringContaining("u.active_team"), ["user-1"]);
     expect(logUnauthorizedSocketAccess).not.toHaveBeenCalled();
   });
 
   it("rejects staff who are not owner/admin", async () => {
     (db.query as jest.Mock).mockResolvedValue({
-      rows: [{ owner_id: "other-owner", role_name: "Member", admin_role: false }],
+      rows: [{ team_id: "team-1", owner_id: "other-owner", role_name: "Member", admin_role: false }],
     });
 
     await on_join_client_portal_room(mockIo as Server, mockSocket as Socket, { type: "join" });
 
     expect(mockSocket.join).not.toHaveBeenCalled();
     expect(logUnauthorizedSocketAccess).toHaveBeenCalled();
+  });
+
+  it("leaves the old team room when the active team changes", async () => {
+    mockSocket.rooms = new Set(["socket-1", clientPortalTeamRoomName("old-team")]);
+    (db.query as jest.Mock).mockResolvedValue({
+      rows: [{ team_id: "team-2", owner_id: "user-1", role_name: "Owner", admin_role: false }],
+    });
+
+    await on_join_client_portal_room(mockIo as Server, mockSocket as Socket, { type: "join" });
+
+    expect(mockSocket.leave).toHaveBeenCalledWith(clientPortalTeamRoomName("old-team"));
+    expect(mockSocket.join).toHaveBeenCalledWith(clientPortalTeamRoomName("team-2"));
+  });
+
+  it("leaves staff portal rooms without looking up the active team", async () => {
+    mockSocket.rooms = new Set(["socket-1", clientPortalTeamRoomName("team-1")]);
+    await on_join_client_portal_room(mockIo as Server, mockSocket as Socket, { type: "leave" });
+    expect(mockSocket.leave).toHaveBeenCalledWith(clientPortalTeamRoomName("team-1"));
+    expect(db.query).not.toHaveBeenCalled();
   });
 
   const activeSubjectRow = {

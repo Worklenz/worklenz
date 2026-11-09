@@ -1,6 +1,5 @@
 import { Server, Socket } from "socket.io";
 import db from "../../../config/db";
-import { IPassportSession } from "../../../interfaces/passport-session";
 import { ISocketSession } from "../../../interfaces/socket-session";
 import { loadClientSubject } from "../../../services/client-portal-v2/subject";
 import TokenService from "../../../services/token-service";
@@ -69,52 +68,55 @@ export async function on_join_client_portal_room(
 }
 
 async function handleStaffRoom(socket: Socket, action: "join" | "leave") {
-  const user = (socket.request as ISocketSession).session?.passport?.user as
-    | IPassportSession
-    | undefined;
-  const teamId = user?.team_id;
-  if (!user?.id || !teamId) return;
-
-  const room = clientPortalTeamRoomName(teamId);
+  const userId = (socket.request as ISocketSession).session?.passport?.user?.id;
+  if (!userId) return;
 
   if (action === "leave") {
-    await socket.leave(room);
+    await leaveStaffPortalRooms(socket);
     return;
   }
 
+  await leaveStaffPortalRooms(socket);
   const result = await db.query(
-    `SELECT t.user_id AS owner_id,
+    `SELECT t.id AS team_id, t.user_id AS owner_id,
             m.role_name,
             COALESCE(m.admin_role, FALSE) AS admin_role
-       FROM teams t
+       FROM users u
+       JOIN teams t ON t.id = COALESCE(u.active_team, (SELECT id FROM teams WHERE user_id = u.id LIMIT 1))
        LEFT JOIN LATERAL (SELECT r.name AS role_name, r.admin_role
                             FROM team_members tm
                             JOIN roles r ON r.id = tm.role_id
                            WHERE tm.team_id = t.id
-                             AND tm.user_id = $2
+                             AND tm.user_id = u.id
                              AND tm.active IS TRUE
                            LIMIT 1) m ON TRUE
-      WHERE t.id = $1;`,
-    [teamId, user.id]
+      WHERE u.id = $1;`,
+    [userId]
   );
   const row = result.rows[0];
+  const teamId = row?.team_id as string | undefined;
   const orgOwnerId = row?.owner_id;
-  if (!orgOwnerId) return;
+  if (!orgOwnerId || !teamId) return;
 
   const roleName = row.role_name ? normalizeTeamRoleName(row.role_name) : null;
   const isOwnerOrAdmin =
-    orgOwnerId === user.id ||
+    orgOwnerId === userId ||
     row.admin_role === true ||
     roleName === TEAM_ROLE_NAMES.OWNER ||
     roleName === TEAM_ROLE_NAMES.ADMIN;
 
   if (!isOwnerOrAdmin) {
-    await socket.leave(room);
     logUnauthorizedSocketAccess(socket, CLIENT_PORTAL_SOCKET.JOIN_ROOM, "client_portal", teamId);
     return;
   }
 
-  await socket.join(room);
+  await socket.join(clientPortalTeamRoomName(teamId));
+}
+
+async function leaveStaffPortalRooms(socket: Socket) {
+  for (const room of socket.rooms ?? []) {
+    if (room.startsWith("client_portal_team:")) await socket.leave(room);
+  }
 }
 
 async function handleClientRoom(socket: Socket, token: string, action: "join" | "leave") {
