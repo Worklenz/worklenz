@@ -84,7 +84,9 @@ export const parseExportDay = (value: string): number | null => {
 
 const cleanText = (value: unknown, max = MAX_TEXT): string => {
   if (typeof value !== "string") return "";
-  return value.replace(/[\u0000-\u001F\u007F]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+  const cleaned = value.replace(/[\u0000-\u001F\u007F]/g, " ").replace(/\s+/g, " ").trim();
+  // Slice by Unicode code points so we never split a surrogate pair.
+  return Array.from(cleaned).slice(0, max).join("");
 };
 
 /** Stop a cell that starts with a formula trigger from executing in Excel. */
@@ -434,7 +436,9 @@ export const roadmapExportFileName = (
   format: RoadmapExportFormat,
   exportedOn: string
 ): string => {
-  const safe = projectName.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 80) || "project";
+  const safe = Array.from(
+    projectName.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim()
+  ).slice(0, 80).join("") || "project";
   return `Roadmap - ${safe} - ${exportedOn}.${format}`;
 };
 

@@ -34,6 +34,7 @@ export const exportRoadmapFile = async (
   try {
     const response = await apiClient.post(`${API_BASE_URL}/roadmap/export`, payload, {
       responseType: 'blob',
+      headers: { 'X-Silent-Request': '1' },
     });
     const blob = response.data as Blob;
     const type = (blob.type || '').toLowerCase();
