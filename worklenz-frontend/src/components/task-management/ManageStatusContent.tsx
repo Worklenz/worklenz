@@ -7,6 +7,9 @@ import {
   Tooltip,
   ColorPicker,
   theme,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+  message,
 } from '@/shared/antd-imports';
 import { PlusOutlined, HolderOutlined, EditOutlined, DeleteOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
@@ -43,6 +46,12 @@ import { IKanbanTaskStatus } from '@/types/tasks/taskStatus.types';
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
 import { updateGroupColor } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import {
+  resetStatusCategoryOrder,
+  saveStatusCategoryOrder,
+  selectEffectiveStatusCategoryOrder,
+} from '@/features/project/project.slice';
+import { useProjectPermissions } from '@/hooks/useProjectPermissions';
 
 const { Text } = Typography;
 
@@ -538,6 +547,7 @@ const ManageStatusContent: React.FC<ManageStatusContentProps> = ({ projectId, di
   // Redux state
   const currentProjectId = useAppSelector(state => state.projectReducer.projectId);
   const { status: statuses } = useAppSelector(state => state.taskStatusReducer);
+  const effectiveCategoryOrder = useAppSelector(selectEffectiveStatusCategoryOrder);
 
   const [localStatuses, setLocalStatuses] = useState<IKanbanTaskStatus[]>(statuses);
   const [statusCategories, setStatusCategories] = useState<any[]>([]);
@@ -548,8 +558,13 @@ const ManageStatusContent: React.FC<ManageStatusContentProps> = ({ projectId, di
   // Single source of truth: tracks which category's "Add Status" form is open.
   // Only one can be open at a time — setting a new category ID closes the previous one.
   const [activeAddCategoryId, setActiveAddCategoryId] = useState<string | null>(null);
+  const [categoryOrderDraft, setCategoryOrderDraft] = useState<string[]>([]);
+  const [isSavingCategoryOrder, setIsSavingCategoryOrder] = useState(false);
+  const [isResettingCategoryOrder, setIsResettingCategoryOrder] = useState(false);
 
   const finalProjectId = projectId || currentProjectId;
+  const { permissions } = useProjectPermissions(finalProjectId);
+  const canManageCategoryOrder = permissions.statuses;
 
   // DnD sensors
   const sensors = useSensors(
@@ -563,6 +578,10 @@ const ManageStatusContent: React.FC<ManageStatusContentProps> = ({ projectId, di
   useEffect(() => {
     setLocalStatuses(statuses);
   }, [statuses]);
+
+  useEffect(() => {
+    setCategoryOrderDraft(effectiveCategoryOrder);
+  }, [effectiveCategoryOrder, finalProjectId]);
 
   useEffect(() => {
     if (finalProjectId) {
@@ -586,6 +605,91 @@ const ManageStatusContent: React.FC<ManageStatusContentProps> = ({ projectId, di
       status => (status as IKanbanTaskStatus).category_id === category.id
     ),
   }));
+
+  const orderedStatusCategories = (() => {
+    const categoriesById = new Map(
+      statusCategories.filter(category => category.id).map(category => [category.id, category])
+    );
+    const orderedIds = [
+      ...categoryOrderDraft.filter(id => categoriesById.has(id)),
+      ...statusCategories
+        .map(category => category.id)
+        .filter((id: string | undefined): id is string => !!id && !categoryOrderDraft.includes(id)),
+    ];
+    return orderedIds
+      .map(id => categoriesById.get(id))
+      .filter((category): category is (typeof statusCategories)[number] => !!category);
+  })();
+
+  const handleMoveCategory = useCallback(
+    (categoryId: string, offset: -1 | 1) => {
+      setCategoryOrderDraft(currentOrder => {
+        const order =
+          currentOrder.length > 0
+            ? currentOrder
+            : orderedStatusCategories
+                .map(category => category.id)
+                .filter((id: string | undefined): id is string => !!id);
+        const currentIndex = order.indexOf(categoryId);
+        const nextIndex = currentIndex + offset;
+        if (currentIndex < 0 || nextIndex < 0 || nextIndex >= order.length) return currentOrder;
+        const nextOrder = [...order];
+        [nextOrder[currentIndex], nextOrder[nextIndex]] = [
+          nextOrder[nextIndex],
+          nextOrder[currentIndex],
+        ];
+        return nextOrder;
+      });
+    },
+    [orderedStatusCategories]
+  );
+
+  const handleSaveCategoryOrder = useCallback(async () => {
+    if (!finalProjectId || !canManageCategoryOrder || disabled || isSavingCategoryOrder) return;
+    setIsSavingCategoryOrder(true);
+    try {
+      const categoryOrder = orderedStatusCategories
+        .map(category => category.id)
+        .filter((id: string | undefined): id is string => !!id);
+      const savedOrder = await dispatch(
+        saveStatusCategoryOrder({ projectId: finalProjectId, categoryOrder })
+      ).unwrap();
+      setCategoryOrderDraft(savedOrder.categoryOrder);
+      message.success(t('categoryOrderSaved', { defaultValue: 'Category order saved' }));
+    } catch (error) {
+      console.error('Failed to save status category order:', error);
+      message.error(t('categoryOrderSaveFailed', { defaultValue: 'Could not save category order' }));
+    } finally {
+      setIsSavingCategoryOrder(false);
+    }
+  }, [
+    finalProjectId,
+    canManageCategoryOrder,
+    disabled,
+    isSavingCategoryOrder,
+    orderedStatusCategories,
+    dispatch,
+    t,
+  ]);
+
+  const handleResetCategoryOrder = useCallback(async () => {
+    if (!finalProjectId || !canManageCategoryOrder || disabled || isResettingCategoryOrder) return;
+    setIsResettingCategoryOrder(true);
+    try {
+      const defaultOrder = await dispatch(resetStatusCategoryOrder(finalProjectId)).unwrap();
+      setCategoryOrderDraft(defaultOrder.categoryOrder);
+      message.success(t('categoryOrderReset', { defaultValue: 'Category order reset to default' }));
+    } catch (error) {
+      console.error('Failed to reset status category order:', error);
+      message.error(t('categoryOrderResetFailed', { defaultValue: 'Could not reset category order' }));
+    } finally {
+      setIsResettingCategoryOrder(false);
+    }
+  }, [finalProjectId, canManageCategoryOrder, disabled, isResettingCategoryOrder, dispatch, t]);
+
+  const hasCategoryOrderChanged =
+    JSON.stringify(orderedStatusCategories.map(category => category.id)) !==
+    JSON.stringify(effectiveCategoryOrder);
 
   const handleCategoryChange = useCallback(
     async (id: string, categoryId: string, insertIndex?: number) => {
@@ -985,6 +1089,107 @@ const ManageStatusContent: React.FC<ManageStatusContentProps> = ({ projectId, di
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }} aria-disabled={disabled}>
+      {canManageCategoryOrder && (
+        <section
+          aria-labelledby="status-category-order-heading"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+            padding: 12,
+            border: `1px solid ${token.colorBorderSecondary}`,
+            borderRadius: 8,
+            background: token.colorBgContainer,
+          }}
+        >
+          <div>
+            <Text strong id="status-category-order-heading">
+              {t('categoryOrder', { defaultValue: 'Category order' })}
+            </Text>
+            <div>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {t('categoryOrderDescription', {
+                  defaultValue: 'Set the order of status categories in the task list.',
+                })}
+              </Text>
+            </div>
+          </div>
+
+          <div role="list" aria-label={t('categoryOrder', { defaultValue: 'Category order' })}>
+            {orderedStatusCategories.map((category, index) => (
+              <div
+                key={category.id}
+                role="listitem"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                  padding: '6px 8px',
+                  border: `1px solid ${token.colorBorderSecondary}`,
+                  borderRadius: 6,
+                  marginBottom: 6,
+                }}
+              >
+                <Text>{category.name}</Text>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<ArrowUpOutlined />}
+                    aria-label={t('moveCategoryUp', {
+                      defaultValue: 'Move {{name}} up',
+                      name: category.name,
+                    })}
+                    disabled={disabled || index === 0 || isSavingCategoryOrder || isResettingCategoryOrder}
+                    onClick={() => handleMoveCategory(category.id, -1)}
+                  />
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<ArrowDownOutlined />}
+                    aria-label={t('moveCategoryDown', {
+                      defaultValue: 'Move {{name}} down',
+                      name: category.name,
+                    })}
+                    disabled={
+                      disabled ||
+                      index === orderedStatusCategories.length - 1 ||
+                      isSavingCategoryOrder ||
+                      isResettingCategoryOrder
+                    }
+                    onClick={() => handleMoveCategory(category.id, 1)}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            <Button
+              onClick={handleResetCategoryOrder}
+              loading={isResettingCategoryOrder}
+              disabled={disabled || isSavingCategoryOrder || orderedStatusCategories.length === 0}
+            >
+              {t('resetCategoryOrder', { defaultValue: 'Reset to default' })}
+            </Button>
+            <Button
+              type="primary"
+              onClick={handleSaveCategoryOrder}
+              loading={isSavingCategoryOrder}
+              disabled={
+                disabled ||
+                isResettingCategoryOrder ||
+                !hasCategoryOrderChanged ||
+                orderedStatusCategories.length === 0
+              }
+            >
+              {t('saveCategoryOrder', { defaultValue: 'Save category order' })}
+            </Button>
+          </div>
+        </section>
+      )}
+
       {/* Info Banner */}
       <div
         style={{
