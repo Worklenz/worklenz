@@ -85,10 +85,11 @@ const tagsForNotificationKey = (key?: string): PortalTag[] | null => {
  * direct-socket path that shows the toast, so the list refreshes even if room join failed.
  */
 export const useClientPortalRealtimeSync = () => {
-  const { socket, connected } = useSocket();
+  const { socket } = useSocket();
   const dispatch = useAppDispatch();
   const pendingTags = useRef<Set<PortalTag>>(new Set());
   const flush = useRef<ReturnType<typeof debounce> | null>(null);
+  const hasConnected = useRef(false);
 
   useEffect(() => {
     if (!flush.current) {
@@ -111,6 +112,12 @@ export const useClientPortalRealtimeSync = () => {
       socket.emit(CLIENT_PORTAL_SOCKET.JOIN_ROOM, { type: 'join' });
     };
 
+    const handleConnect = () => {
+      join();
+      if (hasConnected.current) queueInvalidate(ALL_PORTAL_TAGS);
+      hasConnected.current = true;
+    };
+
     const handleDataUpdated = (payload: ClientPortalDataUpdatedPayload) => {
       queueInvalidate(payload?.type ? tagsForType(payload.type) : ALL_PORTAL_TAGS);
     };
@@ -120,16 +127,14 @@ export const useClientPortalRealtimeSync = () => {
       if (tags) queueInvalidate(tags);
     };
 
-    // Join once connected; also re-join after reconnect.
-    if (connected || socket.connected) {
-      join();
-    }
-    socket.on('connect', join);
+    if (socket.connected) hasConnected.current = true;
+    join();
+    socket.on('connect', handleConnect);
     socket.on(CLIENT_PORTAL_SOCKET.DATA_UPDATED, handleDataUpdated);
     socket.on(SocketEvents.NOTIFICATIONS_UPDATE.toString(), handleNotification);
 
     return () => {
-      socket.off('connect', join);
+      socket.off('connect', handleConnect);
       socket.off(CLIENT_PORTAL_SOCKET.DATA_UPDATED, handleDataUpdated);
       socket.off(SocketEvents.NOTIFICATIONS_UPDATE.toString(), handleNotification);
       if (socket.connected) {
@@ -138,5 +143,5 @@ export const useClientPortalRealtimeSync = () => {
       flush.current?.cancel();
       pendingTags.current.clear();
     };
-  }, [socket, connected, dispatch]);
+  }, [socket, dispatch]);
 };

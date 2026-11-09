@@ -56,11 +56,12 @@ const tagsForType = (type: string): V2Tag[] => {
  * client user) mutates portal data.
  */
 export const useClientPortalRealtimeSync = () => {
-  const { socket, connected } = useSocket();
+  const { socket } = useSocket();
   const dispatch = useDispatch();
   const token = useAppSelector(state => state.auth.token);
   const pending = useRef<Set<V2Tag>>(new Set());
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasConnected = useRef(false);
 
   useEffect(() => {
     if (!socket || !token) return;
@@ -82,6 +83,13 @@ export const useClientPortalRealtimeSync = () => {
       socket.emit(CLIENT_PORTAL_SOCKET.JOIN_ROOM, { type: 'join', token });
     };
 
+    const handleConnect = () => {
+      join();
+      // Events emitted while disconnected are lost. Refetch active queries after a reconnect.
+      if (hasConnected.current) queue(ALL_TAGS);
+      hasConnected.current = true;
+    };
+
     const handleDataUpdated = (payload: ClientPortalDataUpdatedPayload) => {
       queue(payload?.type ? tagsForType(payload.type) : ALL_TAGS);
       // Open detail drawers provide `{ type: 'V2ChangeRequests'|'V2Approvals', id }`.
@@ -93,18 +101,19 @@ export const useClientPortalRealtimeSync = () => {
       }
     };
 
+    if (socket.connected) hasConnected.current = true;
     join();
-    socket.on('connect', join);
+    socket.on('connect', handleConnect);
     socket.on(CLIENT_PORTAL_SOCKET.DATA_UPDATED, handleDataUpdated);
 
     return () => {
-      socket.off('connect', join);
+      socket.off('connect', handleConnect);
       socket.off(CLIENT_PORTAL_SOCKET.DATA_UPDATED, handleDataUpdated);
-      if (connected) {
+      if (socket.connected) {
         socket.emit(CLIENT_PORTAL_SOCKET.JOIN_ROOM, { type: 'leave', token });
       }
       if (timer.current) clearTimeout(timer.current);
       pending.current.clear();
     };
-  }, [socket, connected, token, dispatch]);
+  }, [socket, token, dispatch]);
 };
