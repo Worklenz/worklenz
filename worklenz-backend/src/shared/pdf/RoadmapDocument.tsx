@@ -95,12 +95,6 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: 700,
   },
-  progress: {
-    width: 28,
-    textAlign: "right",
-    fontSize: 7,
-    color: "#8c8c8c",
-  },
   barTrack: {
     width: TIMELINE_WIDTH,
     height: 14,
@@ -209,7 +203,6 @@ export const RoadmapDocument = ({ model }: RoadmapDocumentProps) => (
               <Text style={row.kind === "group" ? styles.groupName : styles.name}>
                 {clipName(row.name, row.kind)}
               </Text>
-              {row.progress != null ? <Text style={styles.progress}>{`${row.progress}%`}</Text> : null}
             </View>
             <View style={styles.barTrack}>
               {model.todayLeft != null ? (
