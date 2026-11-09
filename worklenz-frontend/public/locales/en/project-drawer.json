@@ -103,6 +103,7 @@
   "phaseAssigneesSettingsDescription": "When enabled, each pipeline phase can have a dedicated assignee. Tasks can only be advanced by their phase assignee (admins can always override).",
   "phaseAssigneesEnabled": "Enable Phase Assignees",
   "phaseAssigneesEnabledTooltip": "When enabled, each phase in the pipeline can have a default assignee who is automatically assigned and responsible for completing tasks in that phase.",
+  "saveToAssignPhases": "Save project settings to start assigning default members to phases.",
   "basicDetailsCardTitle": "Basic Details",
   "clientAndManagerCardTitle": "Client & Manager",
   "timelineAndEstimatesCardTitle": "Timeline & Estimates",

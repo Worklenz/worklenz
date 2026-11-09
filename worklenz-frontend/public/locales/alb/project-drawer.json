@@ -103,6 +103,7 @@
   "phaseAssigneesSettingsDescription": "Kur aktivizohet, çdo fazë e pipeline-it mund të ketë një të caktuar të dedikuar. Detyrat mund të avancohen vetëm nga i caktuari i fazës (administratorët mund të anashkalojnë gjithmonë).",
   "phaseAssigneesEnabled": "Aktivizo Të Caktuarit për Fazë",
   "phaseAssigneesEnabledTooltip": "Kur aktivizohet, çdo fazë në pipeline mund të ketë një të caktuar të paracaktuar i cili caktohet automatikisht dhe është përgjegjës për plotësimin e detyrave në atë fazë.",
+  "saveToAssignPhases": "Ruani cilësimet e projektit për të filluar caktimin e anëtarëve të parazgjedhur në faza.",
   "basicDetailsCardTitle": "Detajet Bazë",
   "clientAndManagerCardTitle": "Klienti dhe Menaxheri",
   "timelineAndEstimatesCardTitle": "Afatet kohore dhe Vlerësimet",

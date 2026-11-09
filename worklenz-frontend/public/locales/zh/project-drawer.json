@@ -103,6 +103,7 @@
   "phaseAssigneesSettingsDescription": "启用后，管道中的每个阶段可以有一个专门的负责人。任务只能由其阶段负责人推进（管理员始终可以覆盖）。",
   "phaseAssigneesEnabled": "启用阶段负责人",
   "phaseAssigneesEnabledTooltip": "启用后，管道中的每个阶段可以有一个默认负责人，该负责人会被自动分配并负责完成该阶段的任务。",
+  "saveToAssignPhases": "保存项目设置以开始为各阶段分配默认负责人。",
   "basicDetailsCardTitle": "基本信息",
   "clientAndManagerCardTitle": "客户与经理",
   "timelineAndEstimatesCardTitle": "时间线与提示",
