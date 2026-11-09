@@ -1,3 +1,7 @@
+import { useScopedAnalyticsSeriesData } from '@/hooks/useScopedAnalyticsSeriesData';
+import { useLatestAnalyticsSeriesRequest } from '@/hooks/useLatestAnalyticsSeriesRequest';
+import { useScopedAnalyticsProjectSeed } from '@/hooks/useScopedAnalyticsProjectSeed';
+import { areAnalyticsProjectResponsesComplete, useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
 import { MetricCalcHint } from '@/components/reporting/analytics/MetricCalcHint';
@@ -21,7 +25,6 @@ import {
   ReportErrorState,
   ReportLoadingSkeleton,
   ReportPageShell,
-  type AnalyticsDatePreset,
   type AnalyticsExportFormat,
 } from '@/components/reporting/analytics';
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
@@ -33,6 +36,9 @@ import { ProjectHealthDonutChart } from '@/components/reporting/analytics/projec
 import { ProjectHealthKpiTiles } from '@/components/reporting/analytics/project-health/ProjectHealthKpiTiles';
 import { ProjectHealthTable } from '@/components/reporting/analytics/project-health/ProjectHealthTable';
 import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
+import {
+  usePersistedAnalyticsFilters,
+} from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import {
@@ -78,23 +84,37 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
   const { projectHealths } = useAppSelector(state => state.projectHealthReducer);
 
-  const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
-  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
-  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
-  const [selectedHealthIds, setSelectedHealthIds] = useState<string[]>([]);
-  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const {
+    datePreset,
+    setDatePreset,
+    selectedProjectIds,
+    setSelectedProjectIds,
+    setAutomaticProjectIds,
+    setAutomaticTeamIds,
+    selectedTeamIds,
+    setSelectedTeamIds,
+    selectedHealthIds,
+    setSelectedHealthIds,
+    selectedMemberIds,
+    setSelectedMemberIds,
+    hasRestoredFilters,
+  } = usePersistedAnalyticsFilters({
+    reportKind: 'project-health',
+    customTemplateId,
+  });
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
   const [teamOptions, setTeamOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<ProjectHealthSeriesResponse | null>(null);
 
   const chartRef = useRef<ProjectHealthChartHandle>(null);
   /** Tracks team keys we already seeded with the latest-20 project default. */
-  const seededProjectsForTeamsRef = useRef<string>('');
+  const projectOptionsScope = JSON.stringify([session?.team_id, session?.id, customTemplateId]);
+  const seededProjectsForTeamsRef = useScopedAnalyticsProjectSeed(projectOptionsScope);
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
+  const skipDefaultTemplate = hasRestoredFilters;
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {
@@ -104,7 +124,13 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       setSelectedHealthIds,
       setDatePreset,
     });
-  }, []);
+  }, [
+    setSelectedProjectIds,
+    setSelectedMemberIds,
+    setSelectedTeamIds,
+    setSelectedHealthIds,
+    setDatePreset,
+  ]);
 
   const {
     templates,
@@ -119,6 +145,8 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     reportKind: 'project-health',
     customTemplateId,
     onApply: applyTemplateFilters,
+    skipDefaultTemplate,
+    wasRestored: hasRestoredFilters,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       member_ids: selectedMemberIds,
@@ -149,6 +177,12 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       })),
     [projectHealths]
   );
+
+  /** Session/default team — Clear restores this so project options stay available. */
+  const defaultTeamIds = useMemo(() => {
+    const id = session?.team_id ? String(session.team_id) : teamOptions[0]?.value;
+    return id ? [id] : [];
+  }, [session?.team_id, teamOptions]);
 
   // Load the full team set for KPIs / health donut / table.
   // Projects selection only scopes the Progress & budget bar chart (latest 20 by default).
@@ -191,7 +225,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
           : [];
       setTeamOptions(teams);
       const sessionTeamId = session?.team_id ? String(session.team_id) : teams[0]?.value;
-      setSelectedTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
+      setAutomaticTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
     } catch {
       message.error(
         t('errorDescription', {
@@ -203,7 +237,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     }
   }, [dispatch, projectHealths.length, session?.team_id, t]);
 
-  const loadProjectsForTeams = useCallback(async (teamIds: string[]) => {
+  const loadProjectsForTeams = useCallback(async (teamIds: string[], isCurrent: () => boolean) => {
     if (teamIds.length === 0) {
       setProjectOptions([]);
       return;
@@ -212,6 +246,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       const projectResponses = await Promise.all(
         teamIds.map(teamId => reportingApiService.getOverviewProjectsByTeam(teamId))
       );
+      if (!isCurrent() || !areAnalyticsProjectResponsesComplete(projectResponses)) return;
       const projects: FilterOption[] = [];
       const projectsWithUpdatedAt: Array<{ id: string; updated_at?: string | null }> = [];
       const seen = new Set<string>();
@@ -234,7 +269,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       setProjectOptions(projects);
 
       const teamKey = [...teamIds].sort().join(',');
-      setSelectedProjectIds(prev => {
+      setAutomaticProjectIds(prev => {
         const allowed = new Set(projects.map(p => p.value));
         const kept = prev.filter(id => allowed.has(id));
         if (kept.length > 0) {
@@ -249,12 +284,18 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
         return topIds;
       });
     } catch {
-      setProjectOptions([]);
+      // Preserve existing selections and options when a team request fails.
     }
-  }, []);
+  }, [seededProjectsForTeamsRef]);
+
+  const seriesRequestKey = JSON.stringify([projectOptionsScope, filters]);
+  const { data, matchingData, setData } = useScopedAnalyticsSeriesData<ProjectHealthSeriesResponse>(projectOptionsScope, seriesRequestKey);
+  const beginSeriesRequest = useLatestAnalyticsSeriesRequest(seriesRequestKey);
 
   const loadSeries = useCallback(async () => {
+    const isCurrent = beginSeriesRequest();
     if (!hasSelection) {
+      setLoading(false);
       setData(null);
       return;
     }
@@ -262,6 +303,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     setError(null);
     try {
       const res = await analyticsProjectHealthApiService.getSeries(filters);
+      if (!isCurrent()) return;
       if (res.done && res.body) {
         setData(res.body);
       } else {
@@ -274,6 +316,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
         setData(null);
       }
     } catch {
+      if (!isCurrent()) return;
       setError(
         t('errorDescription', {
           defaultValue: 'We could not load this report. Please try again.',
@@ -281,17 +324,19 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       );
       setData(null);
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
-  }, [filters, hasSelection, t]);
+  }, [filters, hasSelection, t, beginSeriesRequest, setData]);
 
   useEffect(() => {
     void loadTeams();
   }, [loadTeams]);
 
-  useEffect(() => {
-    void loadProjectsForTeams(selectedTeamIds);
-  }, [selectedTeamIds, loadProjectsForTeams]);
+  useAnalyticsProjectOptionsLoader(
+    selectedTeamIds,
+    projectOptionsScope,
+    loadProjectsForTeams
+  );
 
   useEffect(() => {
     void loadSeries();
@@ -304,14 +349,14 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       seededProjectsForTeamsRef.current = teamKey;
       return;
     }
-    if (!data?.projects?.length) return;
+    if (!matchingData?.projects?.length) return;
     if (seededProjectsForTeamsRef.current === teamKey) return;
 
-    const topIds = latestUpdatedProjectIds(data.projects);
+    const topIds = latestUpdatedProjectIds(matchingData.projects);
     if (topIds.length === 0) return;
     seededProjectsForTeamsRef.current = teamKey;
-    setSelectedProjectIds(topIds);
-  }, [data, selectedProjectIds.length, selectedTeamIds]);
+    setAutomaticProjectIds(topIds);
+  }, [matchingData, selectedProjectIds.length, selectedTeamIds, seededProjectsForTeamsRef, setAutomaticProjectIds]);
 
   const handleExport = async (format: AnalyticsExportFormat) => {
     if (!data) return;
@@ -399,6 +444,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
         teamOptions={teamOptions}
         selectedTeamIds={selectedTeamIds}
         onTeamsChange={setSelectedTeamIds}
+        defaultTeamIds={defaultTeamIds}
         statusOptions={healthOptions}
         selectedStatusIds={selectedHealthIds}
         onStatusesChange={setSelectedHealthIds}

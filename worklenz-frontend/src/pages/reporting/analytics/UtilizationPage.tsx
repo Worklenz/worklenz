@@ -1,3 +1,6 @@
+import { useLatestAnalyticsSeriesRequest } from '@/hooks/useLatestAnalyticsSeriesRequest';
+import { useScopedAnalyticsSeriesData } from '@/hooks/useScopedAnalyticsSeriesData';
+import { areAnalyticsProjectResponsesComplete, useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
@@ -22,7 +25,6 @@ import {
   ReportErrorState,
   ReportLoadingSkeleton,
   ReportPageShell,
-  type AnalyticsDatePreset,
   type AnalyticsExportFormat,
 } from '@/components/reporting/analytics';
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
@@ -33,6 +35,9 @@ import {
 import { UtilizationKpiTiles } from '@/components/reporting/analytics/utilization/UtilizationKpiTiles';
 import { UtilizationTable } from '@/components/reporting/analytics/utilization/UtilizationTable';
 import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
+import {
+  usePersistedAnalyticsFilters,
+} from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import {
@@ -71,20 +76,32 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
   });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
 
-  const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
-  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
-  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
-  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const {
+    datePreset,
+    setDatePreset,
+    selectedProjectIds,
+    setSelectedProjectIds,
+    setAutomaticProjectIds,
+    setAutomaticTeamIds,
+    selectedTeamIds,
+    setSelectedTeamIds,
+    selectedMemberIds,
+    setSelectedMemberIds,
+    hasRestoredFilters,
+  } = usePersistedAnalyticsFilters({
+    reportKind: 'utilization',
+    customTemplateId,
+  });
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
   const [teamOptions, setTeamOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<UtilizationSeriesResponse | null>(null);
 
   const chartRef = useRef<UtilizationChartHandle>(null);
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
+  const skipDefaultTemplate = hasRestoredFilters;
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {
@@ -93,7 +110,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
       setSelectedTeamIds,
       setDatePreset,
     });
-  }, []);
+  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds, setDatePreset]);
 
   const {
     templates,
@@ -108,6 +125,8 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
     reportKind: 'utilization',
     customTemplateId,
     onApply: applyTemplateFilters,
+    skipDefaultTemplate,
+    wasRestored: hasRestoredFilters,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       member_ids: selectedMemberIds,
@@ -128,6 +147,11 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
         label: m.name || m.email || String(m.id),
       }));
   }, [teamMembersState]);
+
+  const defaultTeamIds = useMemo(() => {
+    const id = session?.team_id ? String(session.team_id) : teamOptions[0]?.value;
+    return id ? [id] : [];
+  }, [session?.team_id, teamOptions]);
 
   const dateBounds = useMemo(() => {
     const end = dayjs();
@@ -180,7 +204,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
           : [];
       setTeamOptions(teams);
       const sessionTeamId = session?.team_id ? String(session.team_id) : teams[0]?.value;
-      setSelectedTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
+      setAutomaticTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
     } catch {
       message.error(
         t('errorDescription', {
@@ -192,7 +216,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
     }
   }, [dispatch, session?.team_id, t]);
 
-  const loadProjectsForTeams = useCallback(async (teamIds: string[]) => {
+  const loadProjectsForTeams = useCallback(async (teamIds: string[], isCurrent: () => boolean) => {
     if (teamIds.length === 0) {
       setProjectOptions([]);
       return;
@@ -201,6 +225,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
       const projectResponses = await Promise.all(
         teamIds.map(teamId => reportingApiService.getOverviewProjectsByTeam(teamId))
       );
+      if (!isCurrent() || !areAnalyticsProjectResponsesComplete(projectResponses)) return;
       const projects: FilterOption[] = [];
       const seen = new Set<string>();
       projectResponses.forEach(res => {
@@ -214,17 +239,24 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
         }
       });
       setProjectOptions(projects);
-      setSelectedProjectIds(prev => {
+      setAutomaticProjectIds(prev => {
         const allowed = new Set(projects.map(p => p.value));
         return prev.filter(id => allowed.has(id));
       });
     } catch {
-      setProjectOptions([]);
+      // Preserve existing selections and options when a team request fails.
     }
   }, []);
 
+  const seriesScope = JSON.stringify([session?.team_id, session?.id, customTemplateId]);
+  const seriesRequestKey = JSON.stringify([seriesScope, filters]);
+  const { data, setData } = useScopedAnalyticsSeriesData<UtilizationSeriesResponse>(seriesScope, seriesRequestKey);
+  const beginSeriesRequest = useLatestAnalyticsSeriesRequest(seriesRequestKey);
+
   const loadSeries = useCallback(async () => {
+    const isCurrent = beginSeriesRequest();
     if (!hasSelection) {
+      setLoading(false);
       setData(null);
       return;
     }
@@ -232,6 +264,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
     setError(null);
     try {
       const res = await analyticsUtilizationApiService.getSeries(filters);
+      if (!isCurrent()) return;
       if (res.done && res.body) {
         setData(res.body);
       } else {
@@ -244,6 +277,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
         setData(null);
       }
     } catch {
+      if (!isCurrent()) return;
       setError(
         t('errorDescription', {
           defaultValue: 'We could not load this report. Please try again.',
@@ -251,17 +285,19 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
       );
       setData(null);
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
-  }, [filters, hasSelection, t]);
+  }, [filters, hasSelection, t, beginSeriesRequest, setData]);
 
   useEffect(() => {
     void loadTeams();
   }, [loadTeams]);
 
-  useEffect(() => {
-    void loadProjectsForTeams(selectedTeamIds);
-  }, [selectedTeamIds, loadProjectsForTeams]);
+  useAnalyticsProjectOptionsLoader(
+    selectedTeamIds,
+    JSON.stringify([session?.team_id, session?.id, customTemplateId]),
+    loadProjectsForTeams
+  );
 
   useEffect(() => {
     void loadSeries();
@@ -334,6 +370,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
         teamOptions={teamOptions}
         selectedTeamIds={selectedTeamIds}
         onTeamsChange={setSelectedTeamIds}
+        defaultTeamIds={defaultTeamIds}
         datePreset={datePreset}
         onDatePresetChange={setDatePreset}
         availableDatePresets={[

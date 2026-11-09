@@ -116,7 +116,8 @@
     "deleteConfirmMessage": "Jeni i sigurt që doni të fshini këtë detyrë? Kjo veprim nuk mund të zhbëhet.",
     "deleteSubtaskConfirmMessage": "Jeni i sigurt që dëshironi ta fshini këtë nëndetyrë? Ky veprim nuk mund të zhbëhet.",
     "deleteConfirmOk": "Fshi",
-    "deleteConfirmCancel": "Anulo"
+    "deleteConfirmCancel": "Anulo",
+    "moveToProject": "Zhvendos në projekt"
   },
   "setDueDate": "Cakto datën e afatit",
   "setStartDate": "Cakto datën e fillimit",
@@ -337,5 +338,42 @@
   "save": "Ruaj",
   "cancel": "Anulo",
   "changeStatus": "Ndrysho statusin: {{status}}",
-  "ellipsis": "..."
+  "ellipsis": "...",
+  "moveTaskProject": {
+    "title": "Zhvendos detyrat në një projekt tjetër",
+    "selectedTasksTitle": "Detyrat e zgjedhura",
+    "destinationLabel": "Projekti i destinacionit",
+    "destinationPlaceholder": "Zgjidh projektin e destinacionit",
+    "releaseWarning": "Caktimet e versioneve do të hiqen dhe nuk do të rikthehen nëse detyrat zhvendosen përsëri.",
+    "mappingInfo": "Harto fushat e projektit burim me fushat e projektit të destinacionit para zhvendosjes së detyrave.",
+    "statusMappingTitle": "Hartimi i statusit",
+    "phaseMappingTitle": "Hartimi i fazës",
+    "customFieldMappingTitle": "Hartimi i fushave të personalizuara",
+    "selectStatus": "Zgjidh statusin e destinacionit",
+    "selectPhase": "Zgjidh fazën e destinacionit",
+    "selectCustomField": "Zgjidh fushën e personalizuar të destinacionit",
+    "actions": {
+      "cancel": "Anulo",
+      "move": "Zhvendos detyrat"
+    },
+    "options": {
+      "moveSubtasks": "Zhvendos nëndetyrat bashkë me detyrat e zgjedhura",
+      "keepAssignees": "Mbaj përgjegjësit nëse janë anëtarë të projektit të destinacionit",
+      "keepLabels": "Mbaj etiketat"
+    },
+    "messages": {
+      "movedSuccess": "Detyrat u zhvendosën me sukses",
+      "movedWithWarnings": "Detyrat u zhvendosën me paralajmërime"
+    },
+    "errors": {
+      "loadData": "Dështoi ngarkimi i të dhënave për zhvendosjen e detyrave",
+      "loadDestinationData": "Dështoi ngarkimi i fushave të projektit të destinacionit",
+      "moveFailed": "Dështoi zhvendosja e detyrave"
+    },
+    "partialMappingWarning": "Mungojnë disa lidhje të fazave ose fushave të personalizuara. Vlerat e palidhura do të anashkalohen.",
+    "loadFailed": "Nuk u ngarkuan projektet dhe lidhjet. Provo përsëri.",
+    "completedWithWarnings": "Detyrat u zhvendosën me {{count}} paralajmërime. Kontrollo projektin e destinacionit.",
+    "completed": "Detyrat u zhvendosën me sukses.",
+    "moveFailed": "Detyrat nuk u zhvendosën. Provo përsëri."
+  }
 }

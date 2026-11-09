@@ -47,5 +47,6 @@
   "archiveSuccessMessage": "{{parentCount}} detyra dhe {{subtaskCount}} nën-detyra u {{action}}uan.",
   "SET_START_DATE": "Vendos Datën e Fillimit",
   "Unarchive": "Ç'arkivo",
-  "Archive": "Arkivo"
+  "Archive": "Arkivo",
+  "moveToProject": "Zhvendos në projekt"
 }

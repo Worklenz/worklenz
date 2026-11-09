@@ -116,7 +116,8 @@
     "deleteConfirmMessage": "您确定要删除此任务吗？此操作无法撤销。",
     "deleteSubtaskConfirmMessage": "您确定要删除该子任务吗？此操作无法撤消。",
     "deleteConfirmOk": "删除",
-    "deleteConfirmCancel": "取消"
+    "deleteConfirmCancel": "取消",
+    "moveToProject": "移动到项目"
   },
   "setDueDate": "设置截止日期",
   "setStartDate": "设置开始日期",
@@ -337,5 +338,42 @@
   "save": "保存",
   "cancel": "取消",
   "changeStatus": "更改状态: {{status}}",
-  "ellipsis": "..."
+  "ellipsis": "...",
+  "moveTaskProject": {
+    "title": "将任务移动到其他项目",
+    "selectedTasksTitle": "已选任务",
+    "destinationLabel": "目标项目",
+    "destinationPlaceholder": "选择目标项目",
+    "releaseWarning": "版本分配将被清除，即使将任务移回原项目也不会恢复。",
+    "mappingInfo": "移动任务前，请将源项目字段映射到目标项目字段。",
+    "statusMappingTitle": "状态映射",
+    "phaseMappingTitle": "阶段映射",
+    "customFieldMappingTitle": "自定义字段映射",
+    "selectStatus": "选择目标状态",
+    "selectPhase": "选择目标阶段",
+    "selectCustomField": "选择目标自定义字段",
+    "actions": {
+      "cancel": "取消",
+      "move": "移动任务"
+    },
+    "options": {
+      "moveSubtasks": "将子任务与所选任务一起移动",
+      "keepAssignees": "如果负责人是目标项目成员，则保留负责人",
+      "keepLabels": "保留标签"
+    },
+    "messages": {
+      "movedSuccess": "任务移动成功",
+      "movedWithWarnings": "任务已移动，但有警告"
+    },
+    "errors": {
+      "loadData": "加载任务移动数据失败",
+      "loadDestinationData": "加载目标项目字段失败",
+      "moveFailed": "移动任务失败"
+    },
+    "partialMappingWarning": "部分阶段或自定义字段尚未映射，未映射的值将被跳过。",
+    "loadFailed": "无法加载项目和映射，请重试。",
+    "completedWithWarnings": "任务已移动，存在 {{count}} 条映射警告。请检查目标项目。",
+    "completed": "任务已成功移动。",
+    "moveFailed": "无法移动任务，请重试。"
+  }
 }
