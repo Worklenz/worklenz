@@ -598,14 +598,6 @@ const ManageStatusContent: React.FC<ManageStatusContentProps> = ({ projectId, di
     }
   }, [finalProjectId, dispatch]);
 
-  // Group statuses by category
-  const statusesByCategory = statusCategories.map(category => ({
-    ...category,
-    statuses: localStatuses.filter(
-      status => (status as IKanbanTaskStatus).category_id === category.id
-    ),
-  }));
-
   const orderedStatusCategories = (() => {
     const categoriesById = new Map(
       statusCategories.filter(category => category.id).map(category => [category.id, category])
@@ -620,6 +612,13 @@ const ManageStatusContent: React.FC<ManageStatusContentProps> = ({ projectId, di
       .map(id => categoriesById.get(id))
       .filter((category): category is (typeof statusCategories)[number] => !!category);
   })();
+
+  const statusesByCategory = orderedStatusCategories.map(category => ({
+    ...category,
+    statuses: localStatuses.filter(
+      status => (status as IKanbanTaskStatus).category_id === category.id
+    ),
+  }));
 
   const handleMoveCategory = useCallback(
     (categoryId: string, offset: -1 | 1) => {
