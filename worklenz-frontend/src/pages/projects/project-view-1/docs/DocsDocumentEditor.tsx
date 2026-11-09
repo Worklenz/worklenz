@@ -54,6 +54,12 @@ export const DocsDocumentEditor = ({
   onReady,
 }: DocsDocumentEditorProps) => {
   const { t } = useTranslation('project-view-docs');
+  const translationRef = useRef(t);
+  translationRef.current = t;
+  const resolvePlaceholder = () =>
+    translationRef.current('writingPlaceholder', {
+      defaultValue: "Write, '/' for blocks, '@' for members, '#' for tasks",
+    });
   const commands = useDocsBlockCommands();
   const commandsRef = useRef(commands);
   commandsRef.current = commands;
@@ -63,13 +69,6 @@ export const DocsDocumentEditor = ({
   const contentVersion = useRef(content.version);
   const callbacks = useRef({ onChange, onActivity, onReady });
   callbacks.current = { onChange, onActivity, onReady };
-  const resolvePlaceholder = useCallback(
-    () =>
-      t('writingPlaceholder', {
-        defaultValue: "Write, '/' for blocks, '@' for members, '#' for tasks",
-      }),
-    [t]
-  );
   // The page owns the document lifetime (keyed by page ID/reload token). Local echoes
   // must never call setContent: that would reset selection and document history.
   const editor = useEditor({
@@ -172,14 +171,8 @@ export const DocsDocumentEditor = ({
 
   useEffect(() => {
     if (!editor || editor.isDestroyed) return;
-    const placeholderExtension = editor.extensionManager.extensions.find(
-      extension => extension.name === 'placeholder'
-    );
-    if (placeholderExtension) {
-      placeholderExtension.options.placeholder = resolvePlaceholder;
-      editor.view.dispatch(editor.state.tr);
-    }
-  }, [editor, resolvePlaceholder]);
+    editor.view.dispatch(editor.state.tr);
+  }, [editor, t]);
 
   useEffect(() => registerDocsEditorRelease(() => setReleased(true)), []);
 
