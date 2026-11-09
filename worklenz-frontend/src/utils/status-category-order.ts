@@ -1,5 +1,5 @@
 import type { StatusCategoryOrder } from '@/types/project/status-category-order.types';
-import type { ITaskStatus } from '@/types/status.types';
+import type { ITaskStatus } from '@/types/tasks/taskStatus.types';
 import type { Task, TaskGroup } from '@/types/task-management.types';
 
 type CategoryStatus = Pick<ITaskStatus, 'category_id'> | Pick<TaskGroup, 'category_id'>;
@@ -37,6 +37,44 @@ export const filterEmptyStatusGroups = (
   groups: TaskGroup[],
   visibleTaskIds: ReadonlySet<string>
 ): TaskGroup[] => groups.filter(group => group.taskIds.some(taskId => visibleTaskIds.has(taskId)));
+
+export const getDoneStatusGroupIds = (
+  groups: TaskGroup[],
+  statuses: ITaskStatus[]
+): Set<string> => {
+  const statusesById = new Map(
+    statuses.filter(status => status.id).map(status => [status.id as string, status])
+  );
+  const doneCategoryIds = new Set(
+    statuses.filter(status => status.is_done && status.category_id).map(status => status.category_id)
+  );
+
+  return new Set(
+    groups
+      .filter(group => {
+        const statusId = group.id.replace(/^status-/, '');
+        const status = statusesById.get(group.id) ?? statusesById.get(statusId);
+        const categoryId = status?.category_id ?? group.category_id;
+        return categoryId !== undefined && doneCategoryIds.has(categoryId);
+      })
+      .map(group => group.id)
+  );
+};
+
+export const getCollapsedGroupIds = (
+  groups: TaskGroup[],
+  doneStatusGroupIds: ReadonlySet<string>,
+  persistedCollapsedGroups: ReadonlySet<string>,
+  groupCollapseOverrides: Readonly<Record<string, { collapsed: boolean }>>
+): Set<string> =>
+  new Set(
+    groups
+      .filter(group => {
+        const override = groupCollapseOverrides[group.id]?.collapsed;
+        return override ?? (persistedCollapsedGroups.has(group.id) || doneStatusGroupIds.has(group.id));
+      })
+      .map(group => group.id)
+  );
 
 const normalizeStatusName = (name: string): string =>
   name

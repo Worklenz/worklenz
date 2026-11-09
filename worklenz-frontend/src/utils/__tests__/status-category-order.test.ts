@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   filterEmptyStatusGroups,
   getCategoryRank,
+  getCollapsedGroupIds,
+  getDoneStatusGroupIds,
   sortStatusGroupsByCategory,
   sortTasksByStatusCategory,
 } from '../status-category-order';
 import type { Task, TaskGroup } from '@/types/task-management.types';
-import type { ITaskStatus } from '@/types/status.types';
+import type { ITaskStatus } from '@/types/tasks/taskStatus.types';
 
 const statuses: ITaskStatus[] = [
   { id: 'todo-2', name: 'Ready', category_id: 'todo', order_index: 2 },
@@ -43,6 +45,43 @@ describe('status category order', () => {
       'doing-1',
       'todo-1',
     ]);
+  });
+
+  it('identifies all status groups in Done by category membership, independent of order', () => {
+    const doneStatuses = [
+      ...statuses,
+      { id: 'done-1', category_id: 'done', is_done: true },
+      { id: 'done-2', category_id: 'done' },
+    ];
+    const statusGroups: TaskGroup[] = [
+      { id: 'todo-1', title: 'To Do', taskIds: [], type: 'status' },
+      { id: 'done-1', title: 'Done', taskIds: [], type: 'status' },
+      { id: 'done-2', title: 'Verified', taskIds: [], type: 'status' },
+    ];
+
+    expect([...getDoneStatusGroupIds(statusGroups, doneStatuses)]).toEqual(['done-1', 'done-2']);
+    expect([...getDoneStatusGroupIds([...statusGroups].reverse(), doneStatuses)]).toEqual([
+      'done-2',
+      'done-1',
+    ]);
+  });
+
+  it('collapses Done groups by default but honors explicit expand and collapse overrides', () => {
+    const statusGroups: TaskGroup[] = [
+      { id: 'todo-1', title: 'To Do', taskIds: [], type: 'status' },
+      { id: 'done-1', title: 'Done', taskIds: [], type: 'status' },
+    ];
+    const doneGroupIds = new Set(['done-1']);
+
+    expect(
+      [...getCollapsedGroupIds(statusGroups, doneGroupIds, new Set(), {})]
+    ).toEqual(['done-1']);
+    expect(
+      [...getCollapsedGroupIds(statusGroups, doneGroupIds, new Set(), { 'done-1': { collapsed: false } })]
+    ).toEqual([]);
+    expect(
+      [...getCollapsedGroupIds(statusGroups, new Set(), new Set(), { 'done-1': { collapsed: true } })]
+    ).toEqual(['done-1']);
   });
 
   it('uses the same category rank for flat status sorting', () => {

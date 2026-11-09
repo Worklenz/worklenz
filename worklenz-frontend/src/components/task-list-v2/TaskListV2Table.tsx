@@ -53,7 +53,8 @@ import { setProjectContext } from '@/features/task-management/taskListFields.sli
 import {
   selectCurrentGrouping,
   selectCollapsedGroups,
-  toggleGroupCollapsed,
+  selectGroupStates,
+  setGroupCollapsed,
 } from '@/features/task-management/grouping.slice';
 import {
   selectSelectedTaskIds,
@@ -836,6 +837,8 @@ import { evt_project_task_list_visit } from '@/shared/worklenz-analytics-events'
 import DuplicateTaskModal from './components/DuplicateTaskModal';
 import {
   filterEmptyStatusGroups,
+  getCollapsedGroupIds,
+  getDoneStatusGroupIds,
   sortStatusGroupsByCategory,
   sortTasksByStatusCategory,
 } from '@/utils/status-category-order';
@@ -872,7 +875,16 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const sortOrder = useAppSelector(state => state.taskManagement.sortOrder);
   const selectedTaskIds = useAppSelector(selectSelectedTaskIds);
   const lastSelectedTaskId = useAppSelector(selectLastSelectedTaskId);
-  const collapsedGroups = useAppSelector(selectCollapsedGroups);
+  const persistedCollapsedGroups = useAppSelector(selectCollapsedGroups);
+  const groupStates = useAppSelector(selectGroupStates);
+  const doneStatusGroupIds = useMemo(
+    () => getDoneStatusGroupIds(groups, statuses),
+    [groups, statuses]
+  );
+  const collapsedGroups = useMemo(
+    () => getCollapsedGroupIds(groups, doneStatusGroupIds, persistedCollapsedGroups, groupStates),
+    [groups, groupStates, persistedCollapsedGroups, doneStatusGroupIds]
+  );
   const isOpenDuplicateTaskModal = useAppSelector(
     state => state.taskManagement.isOpenDuplicateTaskModal
   );
@@ -1457,9 +1469,9 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
 
   const handleGroupCollapse = useCallback(
     (groupId: string) => {
-      dispatch(toggleGroupCollapsed(groupId));
+      dispatch(setGroupCollapsed({ groupId, collapsed: !collapsedGroups.has(groupId) }));
     },
-    [dispatch]
+    [dispatch, collapsedGroups]
   );
 
   const navigationTaskIds = useMemo(() => {
