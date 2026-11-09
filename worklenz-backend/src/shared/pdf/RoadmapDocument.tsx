@@ -47,44 +47,56 @@ const styles = StyleSheet.create({
   },
   axisRow: {
     flexDirection: "row",
-    alignItems: "flex-end",
-    borderBottomWidth: 1,
-    borderBottomColor: "#d9d9d9",
-    paddingBottom: 4,
-    marginBottom: 2,
+    alignItems: "center",
+    minHeight: 18,
+    backgroundColor: "#f0f5ff",
+    borderWidth: 1,
+    borderColor: "#b0bec5",
+    borderBottomWidth: 0,          // bottom drawn by first data row
   },
   nameHeader: {
     width: NAME_WIDTH,
     fontSize: 8,
-    color: "#8c8c8c",
+    color: "#1d3557",
     fontWeight: 700,
+    paddingLeft: 6,
+    paddingVertical: 3,
+    borderRightWidth: 1,
+    borderRightColor: "#b0bec5",
   },
   timeline: {
-    width: TIMELINE_WIDTH,
+    flex: 1,
     height: 14,
     position: "relative",
+    paddingLeft: 4,
   },
   tick: {
     position: "absolute",
     top: 0,
     fontSize: 7,
-    color: "#8c8c8c",
+    color: "#546e7a",
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 16,
-    borderBottomWidth: 0.4,
-    borderBottomColor: "#f0f0f0",
+    minHeight: 18,
+    borderWidth: 1,
+    borderColor: "#b0bec5",
+    borderTopWidth: 0,             // collapse with row above
   },
   groupRow: {
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#e8eaf6",
   },
   nameCell: {
     width: NAME_WIDTH,
     flexDirection: "row",
     alignItems: "center",
-    paddingRight: 8,
+    paddingLeft: 6,
+    paddingRight: 6,
+    paddingVertical: 2,
+    borderRightWidth: 1,
+    borderRightColor: "#b0bec5",
+    minHeight: 18,
   },
   name: {
     flex: 1,
@@ -96,13 +108,13 @@ const styles = StyleSheet.create({
     fontWeight: 700,
   },
   barTrack: {
-    width: TIMELINE_WIDTH,
-    height: 14,
+    flex: 1,
+    height: 18,
     position: "relative",
   },
   bar: {
     position: "absolute",
-    top: 3,
+    top: 5,
     height: 8,
     borderRadius: 2,
   },
@@ -188,7 +200,11 @@ export const RoadmapDocument = ({ model }: RoadmapDocumentProps) => (
             ) : null}
           </View>
         </View>
-      ) : null}
+      ) : (
+        <View style={styles.axisRow}>
+          <Text style={styles.nameHeader}>Name</Text>
+        </View>
+      )}
 
       {model.rows.length === 0 ? (
         <Text style={styles.empty}>This roadmap has no phases or tasks to export.</Text>
