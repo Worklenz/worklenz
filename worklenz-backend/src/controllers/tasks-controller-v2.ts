@@ -1096,29 +1096,53 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
   public static async getGroups(
     groupBy: string,
-    projectId: string
+    projectId: string,
+    categoryOrder?: string[]
   ): Promise<ITaskGroup[]> {
     let q = "";
     let params: any[] = [];
     switch (groupBy) {
       case GroupBy.STATUS:
-        q = `
-          SELECT id,
-                 name,
-                COALESCE(task_statuses.color_code,
-                   (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id)
-                 ) AS color_code,
-                 COALESCE(task_statuses.color_code,
-                   (SELECT color_code_dark FROM sys_task_status_categories WHERE id = task_statuses.category_id),
-                   (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id)
-                 ) AS color_code_dark,
-                 category_id
-                 category_id
-          FROM task_statuses
-          WHERE project_id = $1
-          ORDER BY sort_order;
-        `;
-        params = [projectId];
+        if (categoryOrder && categoryOrder.length === 3) {
+          // NFR-1: category_rank derived from status metadata, not task scan
+          q = `
+            SELECT id,
+                   name,
+                  COALESCE(task_statuses.color_code,
+                     (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id)
+                   ) AS color_code,
+                   COALESCE(task_statuses.color_code,
+                     (SELECT color_code_dark FROM sys_task_status_categories WHERE id = task_statuses.category_id),
+                     (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id)
+                   ) AS color_code_dark,
+                   category_id
+                   category_id
+            FROM task_statuses
+            WHERE project_id = $1
+            -- NFR-1: category_rank derived from status metadata, not task scan
+            ORDER BY array_position($2::uuid[], category_id),
+                     sort_order;
+          `;
+          params = [projectId, categoryOrder];
+        } else {
+          q = `
+            SELECT id,
+                   name,
+                  COALESCE(task_statuses.color_code,
+                     (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id)
+                   ) AS color_code,
+                   COALESCE(task_statuses.color_code,
+                     (SELECT color_code_dark FROM sys_task_status_categories WHERE id = task_statuses.category_id),
+                     (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id)
+                   ) AS color_code_dark,
+                   category_id
+                   category_id
+            FROM task_statuses
+            WHERE project_id = $1
+            ORDER BY sort_order;
+          `;
+          params = [projectId];
+        }
         break;
       case GroupBy.PRIORITY:
         q = `SELECT id, name, color_code, color_code_dark
@@ -2298,7 +2322,17 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const tasks = [...result.rows];
 
     // Get groups metadata dynamically from database
-    const groups = await this.getGroups(groupBy, req.params.id);
+    // T1.7: for STATUS grouping, resolve the project's category order and pass it for array_position ordering
+    let categoryOrderForGroups: string[] | undefined;
+    if (groupBy === GroupBy.STATUS) {
+      try {
+        const { resolveProjectCategoryOrder } = await import('../shared/status-category-order');
+        categoryOrderForGroups = await resolveProjectCategoryOrder(req.params.id);
+      } catch (_err) {
+        categoryOrderForGroups = undefined;
+      }
+    }
+    const groups = await this.getGroups(groupBy, req.params.id, categoryOrderForGroups);
 
     // Create priority value to name mapping
     const priorityMap: Record<string, string> = {
