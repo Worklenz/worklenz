@@ -24,7 +24,9 @@ const PhasesSettingsSection = ({
   const { phaseList } = useAppSelector(state => state.phaseReducer);
   const projectHasPhases = phaseList && phaseList.length > 0;
   const phaseAssigneesEnabled = Form.useWatch('phase_assignees_enabled') ?? false;
-  const isSavedPhaseAssigneesEnabled = Boolean(project?.phase_assignees_enabled);
+  const isSavedPhaseAssigneesEnabled = Boolean(
+    projectId && project?.id === projectId && project.phase_assignees_enabled
+  );
 
   return (
     <Flex vertical gap={16}>
