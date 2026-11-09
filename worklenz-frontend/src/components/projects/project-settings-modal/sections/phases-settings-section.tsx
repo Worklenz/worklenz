@@ -1,3 +1,4 @@
+import { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Flex, Typography, Switch, Space, Tooltip, theme, Alert, Form } from '@/shared/antd-imports';
 import { InfoCircleOutlined } from '@ant-design/icons';
@@ -8,15 +9,22 @@ import SettingsCard from '../components/settings-card';
 interface PhasesSettingsSectionProps {
   projectId?: string | null;
   disabled?: boolean;
+  createPlaceholder?: ReactNode;
 }
 
-const PhasesSettingsSection = ({ projectId, disabled = false }: PhasesSettingsSectionProps) => {
+const PhasesSettingsSection = ({
+  projectId,
+  disabled = false,
+  createPlaceholder,
+}: PhasesSettingsSectionProps) => {
   const { t } = useTranslation('project-drawer');
   const { token } = theme.useToken();
 
+  const { project } = useAppSelector(state => state.projectDrawerReducer);
   const { phaseList } = useAppSelector(state => state.phaseReducer);
   const projectHasPhases = phaseList && phaseList.length > 0;
   const phaseAssigneesEnabled = Form.useWatch('phase_assignees_enabled') ?? false;
+  const isSavedPhaseAssigneesEnabled = Boolean(project?.phase_assignees_enabled);
 
   return (
     <Flex vertical gap={16}>
@@ -65,12 +73,24 @@ const PhasesSettingsSection = ({ projectId, disabled = false }: PhasesSettingsSe
         </Form.Item>
       </SettingsCard>
 
-      {projectId && (
+      {phaseAssigneesEnabled && !isSavedPhaseAssigneesEnabled && projectId && (
+        <Alert
+          type="info"
+          showIcon
+          message={t('saveToAssignPhases', {
+            defaultValue: 'Save project settings to start assigning default members to phases.',
+          })}
+        />
+      )}
+
+      {projectId ? (
         <ManagePhaseContent
           projectId={projectId}
           disabled={disabled}
-          phaseAssigneesEnabled={Boolean(phaseAssigneesEnabled)}
+          phaseAssigneesEnabled={isSavedPhaseAssigneesEnabled}
         />
+      ) : (
+        createPlaceholder
       )}
 
       <div>

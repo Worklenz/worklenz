@@ -456,8 +456,12 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
         key: 'phases',
         icon: <FlagOutlined />,
         label: t('phasesTab', { defaultValue: 'Phases' }),
-        children: guardedSection(
-          <PhasesSettingsSection projectId={projectId} disabled={disabledForNonManagers} />
+        children: (
+          <PhasesSettingsSection
+            projectId={projectId}
+            disabled={disabledForNonManagers}
+            createPlaceholder={createFirstPlaceholder}
+          />
         ),
       },
       {
