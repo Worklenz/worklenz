@@ -1281,7 +1281,7 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
   }, [expandedTasks, tasks, expandedSectionPositions]);
 
   const handleExport = async (format: RoadmapExportFormat) => {
-    if (!projectId || exporting) return;
+    if (!projectId || exporting || loading || tasksError || (groupingMode === 'phase' && phasesError)) return;
     const rows = buildRoadmapExportRows(tasks);
 
     const groupingKey =
@@ -1379,7 +1379,7 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
             onToggleFullscreen={handleToggleFullscreen}
             onExport={handleExport}
             exporting={exporting}
-            exportDisabled={loading}
+            exportDisabled={loading || Boolean(tasksError) || (groupingMode === 'phase' && Boolean(phasesError))}
           />
           <div
             className="flex flex-1 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"

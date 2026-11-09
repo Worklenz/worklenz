@@ -38,6 +38,22 @@ describe("roadmap export", () => {
     expect(dated.ok).toBe(false);
   });
 
+  it("limits exports to 500 rows and truncates text by code point", () => {
+    const rows = Array.from({ length: 500 }, (_, index) => row({ name: `Task ${index}` }));
+    expect(prepareRoadmapExport({ format: "pdf", group_by: "phase", rows }).ok).toBe(true);
+    expect(prepareRoadmapExport({ format: "pdf", group_by: "phase", rows: [...rows, row()] }).ok).toBe(false);
+
+    const name = `${"a".repeat(499)}😀z`;
+    const prepared = prepareRoadmapExport({
+      format: "pdf",
+      group_by: "phase",
+      rows: [row({ name })],
+    });
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.value.rows[0].name).toBe(`${"a".repeat(499)}😀`);
+  });
+
   it("keeps the current grouping and swaps a reversed date range", () => {
     const prepared = prepareRoadmapExport({
       format: "xlsx",

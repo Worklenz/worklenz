@@ -170,7 +170,8 @@ const indentFor = (kind: RoadmapPdfRow["kind"]): number => {
 
 const clipName = (value: string, kind: RoadmapPdfRow["kind"]): string => {
   const max = kind === "group" ? 34 : kind === "task" ? 30 : 26;
-  return value.length > max ? `${value.slice(0, max - 3)}...` : value;
+  const chars = Array.from(value);
+  return chars.length > max ? `${chars.slice(0, max - 3).join("")}...` : value;
 };
 
 interface RoadmapDocumentProps {
