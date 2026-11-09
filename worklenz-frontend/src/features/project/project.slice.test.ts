@@ -45,4 +45,25 @@ describe('project status category order', () => {
       'done',
     ]);
   });
+
+  it('does not carry a project-specific order when switching projects', () => {
+    const firstProjectState = projectReducer(
+      projectReducer(undefined, setProjectId('project-1')),
+      setProject({
+        id: 'project-1',
+        status_category_order: ['todo', 'doing', 'done'],
+      })
+    );
+    const secondProjectState = projectReducer(firstProjectState, setProjectId('project-2'));
+
+    expect(secondProjectState.statusCategoryOrder).toBeNull();
+    expect(
+      selectEffectiveStatusCategoryOrder({
+        projectReducer: {
+          ...secondProjectState,
+          project: { id: 'project-1', status_category_order: ['todo', 'doing', 'done'] },
+        },
+      })
+    ).toEqual([]);
+  });
 });

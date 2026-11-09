@@ -66,6 +66,61 @@ describe('status category order', () => {
     ]);
   });
 
+  it('covers the task-list acceptance scenarios for default and custom statuses', () => {
+    const scenarioStatuses: ITaskStatus[] = [
+      { id: 'todo-1', name: 'To Do', category_id: 'todo', order_index: 0 },
+      { id: 'doing-1', name: 'Doing', category_id: 'doing', order_index: 1 },
+      { id: 'done-1', name: 'Done', category_id: 'done', order_index: 2, is_done: true },
+      { id: 'qa-blocked', name: 'QA Blocked', category_id: 'doing', order_index: 3 },
+    ];
+    const scenarioGroups: TaskGroup[] = [
+      { id: 'todo-1', title: 'To Do', taskIds: ['todo-task'], type: 'status' },
+      { id: 'doing-1', title: 'Doing', taskIds: ['doing-task'], type: 'status' },
+      { id: 'done-1', title: 'Done', taskIds: ['done-task'], type: 'status' },
+      { id: 'qa-blocked', title: 'QA Blocked', taskIds: ['qa-task'], type: 'status' },
+    ];
+    const visibleGroupsFor = (taskIds: string[]) =>
+      filterEmptyStatusGroups(
+        sortStatusGroupsByCategory(scenarioGroups, scenarioStatuses, ['doing', 'todo', 'done']),
+        new Set(taskIds)
+      ).map(group => group.id);
+
+    expect(visibleGroupsFor(['todo-task'])).toEqual(['todo-1']);
+    expect(visibleGroupsFor(['doing-task', 'todo-task'])).toEqual(['doing-1', 'todo-1']);
+    expect(visibleGroupsFor(['done-task', 'todo-task'])).toEqual(['todo-1', 'done-1']);
+    expect(visibleGroupsFor(['done-task'])).toEqual(['done-1']);
+    expect(visibleGroupsFor(['qa-task', 'todo-task'])).toEqual(['qa-blocked', 'todo-1']);
+  });
+
+  it('sorts more than 1,000 tasks by category and status', () => {
+    const largeTaskList: Task[] = Array.from({ length: 1500 }, (_, index) => ({
+      id: `task-${index}`,
+      status: index % 3 === 0 ? 'done-1' : index % 3 === 1 ? 'todo-1' : 'doing-1',
+      priority: '',
+      created_at: '',
+      updated_at: '',
+      order: index,
+    }));
+
+    const start = performance.now();
+    const sorted = sortTasksByStatusCategory(
+      largeTaskList,
+      [
+        { id: 'todo-1', category_id: 'todo' },
+        { id: 'doing-1', category_id: 'doing' },
+        { id: 'done-1', category_id: 'done' },
+      ],
+      ['doing', 'todo', 'done']
+    );
+    const elapsedMs = performance.now() - start;
+
+    expect(sorted).toHaveLength(1500);
+    expect(sorted.slice(0, 500).every(task => task.status === 'doing-1')).toBe(true);
+    expect(sorted.slice(500, 1000).every(task => task.status === 'todo-1')).toBe(true);
+    expect(sorted.slice(1000).every(task => task.status === 'done-1')).toBe(true);
+    expect(elapsedMs).toBeLessThan(1000);
+  });
+
   it('collapses Done groups by default but honors explicit expand and collapse overrides', () => {
     const statusGroups: TaskGroup[] = [
       { id: 'todo-1', title: 'To Do', taskIds: [], type: 'status' },

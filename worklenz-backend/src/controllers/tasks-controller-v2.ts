@@ -2321,10 +2321,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const result = await db.query(q, params);
     const tasks = [...result.rows];
 
-    // Get groups metadata dynamically from database
-    // T1.7: for STATUS grouping, resolve the project's category order and pass it for array_position ordering
+    // Apply category ordering only for task-list requests; Board and other V3 consumers
+    // retain the configured status order.
     let categoryOrderForGroups: string[] | undefined;
-    if (groupBy === GroupBy.STATUS) {
+    if (groupBy === GroupBy.STATUS && req.query.category_order === "true") {
       try {
         const { resolveProjectCategoryOrder } = await import('../shared/status-category-order');
         categoryOrderForGroups = await resolveProjectCategoryOrder(req.params.id);

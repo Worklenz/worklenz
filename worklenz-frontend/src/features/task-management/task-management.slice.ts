@@ -306,6 +306,7 @@ export const fetchTasksV3 = createAsyncThunk(
         id: projectId,
         archived: archivedState,
         group: currentGrouping || '',
+        category_order: currentGrouping === 'status',
         field: sortField,
         order: sortOrder,
         search: searchValue,
