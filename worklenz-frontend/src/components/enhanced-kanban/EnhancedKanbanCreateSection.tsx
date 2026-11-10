@@ -94,20 +94,30 @@ const EnhancedKanbanCreateSection: React.FC = () => {
 
   const getUniqueSectionName = (baseName: string): string => {
     // Check if the base name already exists
-    const existingNames = existingStatuses.map(status => status.name?.toLowerCase());
+    const existingNames = existingStatuses
+      .map(status => status.name?.toLowerCase())
+      .filter(Boolean);
 
     if (!existingNames.includes(baseName.toLowerCase())) {
       return baseName;
     }
 
-    // If the base name exists, add a number suffix
+    // If the base name exists, add a number suffix while respecting the 50-char limit
     let counter = 1;
-    let newName = `${baseName.trim()} (${counter})`;
+    let newName = '';
 
-    while (existingNames.includes(newName.toLowerCase())) {
+    do {
+      const suffix = ` (${counter})`;
+      const trimmedBaseName = baseName.trim();
+      let namePrefix = trimmedBaseName;
+      if (groupBy === IGroupBy.STATUS) {
+        namePrefix = Array.from(trimmedBaseName)
+          .slice(0, Math.max(1, 50 - Array.from(suffix).length))
+          .join('');
+      }
+      newName = `${namePrefix}${suffix}`;
       counter++;
-      newName = `${baseName.trim()} (${counter})`;
-    }
+    } while (existingNames.includes(newName.toLowerCase()));
 
     return newName;
   };
