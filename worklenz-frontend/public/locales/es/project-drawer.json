@@ -1,4 +1,6 @@
 {
+  "projectReference": "Referencia del proyecto",
+  "duplicateProjectReference": "Otro proyecto de este equipo ya usa esta referencia.",
   "createProject": "Crear Proyecto",
   "editProject": "Editar Proyecto",
   "projectSettings": "Configuración del proyecto",

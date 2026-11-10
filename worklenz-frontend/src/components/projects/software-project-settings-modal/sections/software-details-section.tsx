@@ -103,6 +103,10 @@ export const SoftwareDetailsSection = ({
           </Col>
         </Row>
 
+        <Form.Item name="project_reference" label={t('projectReference', { defaultValue: 'Project reference' })}>
+          <Input maxLength={200} disabled={disabled} />
+        </Form.Item>
+
         <Form.Item
           name="notes"
           label={t('softwareSettings.description', { defaultValue: 'Description' })}

@@ -83,10 +83,11 @@ export const ProjectListFieldsDropdown: React.FC = () => {
         CATEGORY: 'category',
         UPDATED_AT: 'updated_at',
         END_DATE: 'endDate',
+        REFERENCE: 'projectReference',
       };
 
       const translationKey = keyMappings[fieldKey];
-      return translationKey ? t(translationKey, { defaultValue: fieldKey }) : fieldKey;
+      return translationKey ? t(translationKey, { defaultValue: fieldKey === 'REFERENCE' ? 'Project reference' : fieldKey }) : fieldKey;
     },
     [t]
   );

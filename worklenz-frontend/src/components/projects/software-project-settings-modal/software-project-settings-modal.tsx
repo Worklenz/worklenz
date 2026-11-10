@@ -176,9 +176,13 @@ export const SoftwareProjectSettingsModal = ({ onClose }: SoftwareProjectSetting
       });
 
       if (!response?.data?.done) {
+        const body = response?.data?.body;
+        const errorCode = body && 'error_code' in body ? body.error_code : null;
         notification.error({
           message:
-            response?.data?.message ||
+            (errorCode === 'DUPLICATE_PROJECT_REFERENCE'
+              ? t('duplicateProjectReference', { defaultValue: 'This project reference is already used by another project in this team.' })
+              : response?.data?.message) ||
             t('softwareSettings.saveError', { defaultValue: 'Could not save project settings' }),
         });
         return;
@@ -565,6 +569,7 @@ export const SoftwareProjectSettingsModal = ({ onClose }: SoftwareProjectSetting
 
 const buildFormValues = (project: IProjectViewModel): SoftwareSettingsFormValues => ({
   name: decodeHtmlEntities(project.name ?? ''),
+  project_reference: project.project_reference ?? '',
   key: project.key ?? '',
   notes: project.notes ? decodeHtmlEntities(project.notes.slice(0, 500)) : '',
   color_code: project.color_code,
@@ -598,6 +603,7 @@ const buildProjectModel = ({
   canManageVisibility,
 }: BuildProjectModelArgs): IProjectViewModel => ({
   name: values.name,
+  project_reference: values.project_reference?.trim() || null,
   key: values.key?.toUpperCase(),
   notes: values.notes,
   color_code: values.color_code,
@@ -657,6 +663,7 @@ interface SoftwareProjectSettingsModalProps {
 
 interface SoftwareSettingsFormValues {
   name: string;
+  project_reference?: string;
   key?: string;
   notes?: string;
   color_code?: string;

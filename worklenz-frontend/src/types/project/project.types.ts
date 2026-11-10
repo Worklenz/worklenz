@@ -9,6 +9,7 @@ import { FilterValue, SorterResult } from 'antd/es/table/interface';
 export interface IProject {
   id?: string;
   name?: string;
+  project_reference?: string | null;
   color_code?: string;
   notes?: string;
   team_id?: string;

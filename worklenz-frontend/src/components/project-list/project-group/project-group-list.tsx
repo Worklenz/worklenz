@@ -445,6 +445,13 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
         showSorterTooltip: false,
         render: (_: any, record: IProjectViewModel) => <ProjectListUpdatedAt record={record} />,
       },
+      {
+        title: t('projectReference', { defaultValue: 'Project reference' }),
+        dataIndex: 'project_reference',
+        key: 'REFERENCE',
+        width: 220,
+        render: (value: string | null) => value || '–',
+      },
       // 9. End Date (hidden by default)
       {
         title: t('endDate', { defaultValue: 'Project End Date' }),

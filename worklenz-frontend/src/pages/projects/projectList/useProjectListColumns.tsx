@@ -73,6 +73,13 @@ export const useProjectListColumns = ({
         ),
       },
       {
+        title: t('projectReference', { defaultValue: 'Project reference' }),
+        dataIndex: 'project_reference',
+        key: ProjectListFieldKey.REFERENCE,
+        width: 220,
+        render: (value: string | null) => value || '–',
+      },
+      {
         title: t('client'),
         dataIndex: 'client_name',
         key: ProjectListFieldKey.CLIENT,

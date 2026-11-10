@@ -1,4 +1,6 @@
 {
+  "projectReference": "Project reference",
+  "duplicateProjectReference": "This project reference is already used by another project in this team.",
   "createProject": "Create Project",
   "editProject": "Edit Project",
   "projectSettings": "Project Settings",

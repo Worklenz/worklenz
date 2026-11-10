@@ -19,6 +19,7 @@ import {
 const PROJECT_SETTINGS_SNAPSHOT_SQL = `
   SELECT p.name,
          p.key,
+         p.project_reference,
          p.color_code,
          p.notes,
          ps.name AS status,
@@ -73,6 +74,7 @@ const PROJECT_SETTINGS_SNAPSHOT_SQL = `
 const PROJECT_SETTING_FIELDS: AuditTrackedField[] = [
   { key: "name", label: "Name" },
   { key: "key", label: "Key" },
+  { key: "project_reference", label: "Project reference" },
   { key: "color_code", label: "Color" },
   { key: "notes", label: "Notes" },
   { key: "status", label: "Status" },

@@ -27,6 +27,7 @@ export default class ReportingProjectsExportController extends ReportingProjects
     // define columns in table
     sheet.columns = [
       { header: "Project", key: "name", width: 30 },
+      { header: "Project reference", key: "project_reference", width: 30 },
       { header: "Client", key: "client", width: 20 },
       { header: "Category", key: "category", width: 20 },
       { header: "Status", key: "status", width: 20 },
@@ -45,14 +46,14 @@ export default class ReportingProjectsExportController extends ReportingProjects
 
     // set title
     sheet.getCell("A1").value = `Projects from ${teamName}`;
-    sheet.mergeCells("A1:O1");
+    sheet.mergeCells("A1:P1");
     sheet.getCell("A1").alignment = { horizontal: "center" };
     sheet.getCell("A1").style.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "D9D9D9" } };
     sheet.getCell("A1").font = { size: 16 };
 
     // set export date
     sheet.getCell("A2").value = `Exported on : ${exportDate}`;
-    sheet.mergeCells("A2:O2");
+    sheet.mergeCells("A2:P2");
     sheet.getCell("A2").alignment = { horizontal: "center" };
     sheet.getCell("A2").style.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "F2F2F2" } };
     sheet.getCell("A2").font = { size: 12 };
@@ -64,7 +65,7 @@ export default class ReportingProjectsExportController extends ReportingProjects
     // sheet.mergeCells("A3:D3");
 
     // set table headers
-    sheet.getRow(4).values = ["Project", "Client", "Category", "Status", "Start Date", "End Date", "Days Left/Overdue", "Estimated Hours", "Actual Hours", "Done Tasks(%)", "Doing Tasks(%)", "Todo Tasks(%)", "Last Activity", "Project Health", "Project Update"];
+    sheet.getRow(4).values = ["Project", "Project reference", "Client", "Category", "Status", "Start Date", "End Date", "Days Left/Overdue", "Estimated Hours", "Actual Hours", "Done Tasks(%)", "Doing Tasks(%)", "Todo Tasks(%)", "Last Activity", "Project Health", "Project Update"];
     sheet.getRow(4).font = { bold: true };
 
     // set table data
@@ -80,6 +81,7 @@ export default class ReportingProjectsExportController extends ReportingProjects
 
       sheet.addRow({
         name: item.name,
+        project_reference: item.project_reference || "-",
         client: item.client ? item.client : "-",
         category: item.category_name ? item.category_name : "-",
         status: item.status_name ? item.status_name : "-",

@@ -904,6 +904,7 @@ TO_CHAR(p.end_date::DATE, 'YYYY-MM-DD') AS end_date,
          (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
           FROM (SELECT p.id,
                        p.name,
+                       p.project_reference,
                        (SELECT name
                         FROM sys_project_healths
                         WHERE sys_project_healths.id = p.health_id) AS project_health,

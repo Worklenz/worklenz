@@ -31,6 +31,10 @@ const ProjectBasicInfo = ({ editMode, project, form, disabled }: ProjectBasicInf
         </Form.Item>
       )}
 
+      <Form.Item name="project_reference" label={t('projectReference', { defaultValue: 'Project reference' })}>
+        <Input maxLength={200} disabled={disabled} />
+      </Form.Item>
+
       <Form.Item name="color_code" label={t('projectColor')} layout="horizontal" required>
         <ColorPicker
           value={project?.color_code || defaultColorCode}

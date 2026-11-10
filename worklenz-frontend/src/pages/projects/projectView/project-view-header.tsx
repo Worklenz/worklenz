@@ -756,10 +756,19 @@ const ProjectViewHeader = memo(() => {
             {decodeHtmlEntities(selectedProject?.name)}
           </Typography.Title>
         </Tooltip>
+        {selectedProject?.project_reference && (
+          <Typography.Text
+            type="secondary"
+            aria-label={t('projectReference', { defaultValue: 'Project reference' })}
+            ellipsis={{ tooltip: selectedProject.project_reference }}
+          >
+            {selectedProject.project_reference}
+          </Typography.Text>
+        )}
         <div className={styles.projectAttributes}>{projectAttributes}</div>
       </Flex>
     ),
-    [handleNavigateToProjects, selectedProject?.name, projectAttributes, t, isBackButtonHovered]
+    [handleNavigateToProjects, selectedProject?.name, selectedProject?.project_reference, projectAttributes, t, isBackButtonHovered]
   );
 
   useEffect(() => {

@@ -838,6 +838,7 @@ CREATE TABLE IF NOT EXISTS projects (
     id                     UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     name                   TEXT                                                NOT NULL,
     key                    TEXT                                                NOT NULL,
+    project_reference      TEXT,
     color_code             WL_HEX_COLOR             DEFAULT '#70a6f3'::TEXT    NOT NULL,
     notes                  TEXT,
     tasks_counter          BIGINT                   DEFAULT 0                  NOT NULL,

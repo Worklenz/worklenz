@@ -79,6 +79,7 @@ export const useProjectSettingsSubmit = ({
 
       const projectModel: IProjectViewModel = {
         name: values.name,
+        project_reference: typeof values.project_reference === 'string' ? values.project_reference.trim() : null,
         color_code: values.color_code,
         status_id: values.status_id,
         category_id: values.category_id || null,
@@ -205,7 +206,11 @@ export const useProjectSettingsSubmit = ({
 
         window.location.reload();
       } else {
-        notification.error({ message: response?.data?.message });
+        const body = response?.data?.body;
+        const errorCode = body && 'error_code' in body ? body.error_code : null;
+        notification.error({ message: errorCode === 'DUPLICATE_PROJECT_REFERENCE'
+          ? t('duplicateProjectReference', { defaultValue: 'This project reference is already used by another project in this team.' })
+          : response?.data?.message });
         logger.error(
           editMode ? 'Error updating project' : 'Error creating project',
           response?.data?.message
