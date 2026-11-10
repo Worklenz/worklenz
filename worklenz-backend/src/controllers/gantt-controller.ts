@@ -12,12 +12,11 @@ import {
   resolveAssigneeTaskScope,
 } from "../shared/assignee-task-scope";
 import {
-  buildRoadmapExcel,
-  buildRoadmapPdf,
   prepareRoadmapExport,
   roadmapContentDisposition,
   roadmapExportFileName,
 } from "../services/roadmap/roadmap-export";
+import { RoadmapExportBusyError, runRoadmapExport } from "../services/roadmap/roadmap-export-runner";
 
 export default class GanttController extends WorklenzControllerBase {
   @HandleExceptions()
@@ -584,33 +583,36 @@ export default class GanttController extends WorklenzControllerBase {
       return;
     }
 
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).send(new ServerResponse(false, null, "Authentication required"));
+      return;
+    }
     const exportedOn = moment().format("YYYY-MM-DD");
-    const file = prepared.value.format === "pdf"
-      ? {
-          buffer: await buildRoadmapPdf({
-            projectName,
-            exportedOn,
-            groupingLabel: prepared.value.groupingLabel,
-            rows: prepared.value.rows,
-            timelineStart: prepared.value.timelineStart,
-            timelineEnd: prepared.value.timelineEnd,
-          }),
-          contentType: "application/pdf",
-        }
-      : {
-          buffer: await buildRoadmapExcel({
-            projectName,
-            exportedOn,
-            groupingLabel: prepared.value.groupingLabel,
-            groupBy: prepared.value.groupBy,
-            rows: prepared.value.rows,
-          }),
-          contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        };
+    const cancellation = new AbortController();
+    const onClose = () => { if (!res.writableEnded) cancellation.abort(); };
+    res.once("close", onClose);
+    if (res.destroyed) cancellation.abort();
+    let buffer: Buffer;
+    try {
+      buffer = await runRoadmapExport(userId, projectId, { projectName, exportedOn, export: prepared.value }, cancellation.signal);
+    } catch (error) {
+      if (cancellation.signal.aborted) return;
+      if (error instanceof RoadmapExportBusyError) {
+        res.setHeader("Retry-After", "5");
+        res.status(429).send(new ServerResponse(false, null, "Roadmap export is busy. Please try again shortly."));
+        return;
+      }
+      throw error;
+    } finally {
+      res.off("close", onClose);
+    }
 
     const fileName = roadmapExportFileName(projectName, prepared.value.format, exportedOn);
-    res.setHeader("Content-Type", file.contentType);
+    res.setHeader("Content-Type", prepared.value.format === "pdf"
+      ? "application/pdf"
+      : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader("Content-Disposition", roadmapContentDisposition(fileName));
-    res.end(file.buffer);
+    res.end(buffer);
   }
 }
