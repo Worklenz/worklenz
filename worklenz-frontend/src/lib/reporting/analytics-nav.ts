@@ -209,15 +209,13 @@ export const CUSTOM_REPORTS_GROUP_KEY = 'custom-reports';
 export const customReportPath = (id: string): string => `custom/${id}`;
 
 /**
- * Built-in groups plus an optional Custom reports group when the user has saved any.
+ * Built-in groups plus the Custom reports group, even when it has no saved reports.
  * Inserted before Share so personal reports sit above shared views.
  */
 export const buildAnalyticsNavGroups = (
   customReports: Array<{ id: string; name: string }>
 ): AnalyticsNavGroup[] => {
   const builtin = ANALYTICS_NAV.groups;
-  if (customReports.length === 0) return builtin;
-
   const customGroup: AnalyticsNavGroup = {
     key: CUSTOM_REPORTS_GROUP_KEY,
     labelKey: 'navGroupCustomReports',
