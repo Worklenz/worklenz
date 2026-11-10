@@ -3,7 +3,7 @@ import { ContactServiceError, createContact, findContactByEmail, inviteContact, 
 import { recordAuditEvent } from "./audit.service";
 import { clientRoleCan } from "../../shared/client-portal-permissions";
 import { requireCapability } from "./client-read.service";
-import { assertSubjectProject } from "./scope";
+import { assertSubjectProject, projectOpenForPortalSql } from "./scope";
 import { PortalError, badRequest, conflict, forbidden, notFound } from "./errors";
 import { assignContactToProject, removeContactFromProject } from "./project-core";
 import { getPortalSettingsV2 } from "./settings.service";
@@ -274,6 +274,7 @@ async function listAssignableProjects(q: Queryable, subject: ClientSubject): Pro
        FROM projects p
        JOIN project_client_settings pcs ON pcs.project_id = p.id AND pcs.portal_enabled IS TRUE
       WHERE p.client_id = $1 AND p.team_id = $2
+        AND ${projectOpenForPortalSql("p")}
       ORDER BY LOWER(p.name)`,
     [subject.clientId, subject.teamId]
   );

@@ -71,7 +71,7 @@
   "selectText": "Sélectionnez",
   "labelsSelectorInputTip": "Appuyez sur Entrée pour créer !",
   "addTaskText": "Ajouter une tâche",
-  "createIssueText": "Créer un problème",
+  "createIssueText": "Créer un élément de travail",
   "createWorkItemText": "Créer un élément de travail",
   "insertIssueText": "Insérer un problème",
   "addSubTaskText": "Ajouter une sous-tâche",
@@ -116,7 +116,8 @@
     "deleteConfirmMessage": "Êtes-vous sûr de vouloir supprimer cette tâche ? Cette action ne peut pas être annulée.",
     "deleteSubtaskConfirmMessage": "Êtes-vous sûr de vouloir supprimer cette sous-tâche ? Cette action ne peut pas être annulée.",
     "deleteConfirmOk": "Supprimer",
-    "deleteConfirmCancel": "Annuler"
+    "deleteConfirmCancel": "Annuler",
+    "moveToProject": "Déplacer vers un projet"
   },
   "setDueDate": "Fixer la date d'échéance",
   "setStartDate": "Définir la date de début",
@@ -337,5 +338,42 @@
   "save": "Enregistrer",
   "cancel": "Annuler",
   "changeStatus": "Changer de statut : {{status}}",
-  "ellipsis": "..."
+  "ellipsis": "...",
+  "moveTaskProject": {
+    "title": "Déplacer les tâches vers un autre projet",
+    "selectedTasksTitle": "Tâches sélectionnées",
+    "destinationLabel": "Projet de destination",
+    "destinationPlaceholder": "Sélectionner le projet de destination",
+    "releaseWarning": "Les affectations aux versions seront supprimées et ne seront pas rétablies si les tâches sont déplacées à nouveau vers le projet d’origine.",
+    "mappingInfo": "Associez les champs source aux champs du projet de destination avant le déplacement.",
+    "statusMappingTitle": "Correspondance des statuts",
+    "phaseMappingTitle": "Correspondance des phases",
+    "customFieldMappingTitle": "Correspondance des champs personnalisés",
+    "selectStatus": "Sélectionner le statut de destination",
+    "selectPhase": "Sélectionner la phase de destination",
+    "selectCustomField": "Sélectionner le champ de destination",
+    "actions": {
+      "cancel": "Annuler",
+      "move": "Déplacer les tâches"
+    },
+    "options": {
+      "moveSubtasks": "Déplacer aussi les sous-tâches",
+      "keepAssignees": "Conserver les personnes affectées si elles appartiennent au projet cible",
+      "keepLabels": "Conserver les étiquettes"
+    },
+    "messages": {
+      "movedSuccess": "Tâches déplacées avec succès.",
+      "movedWithWarnings": "Tâches déplacées avec {{count}} avertissements de correspondance. Vérifiez le projet cible."
+    },
+    "errors": {
+      "loadData": "Impossible de charger les projets et les correspondances. Réessayez.",
+      "loadDestinationData": "Impossible de charger les projets et les correspondances. Réessayez.",
+      "moveFailed": "Impossible de déplacer les tâches. Réessayez."
+    },
+    "partialMappingWarning": "Certaines correspondances sont manquantes. Les valeurs non associées seront ignorées.",
+    "loadFailed": "Impossible de charger les projets et les correspondances. Réessayez.",
+    "completedWithWarnings": "Tâches déplacées avec {{count}} avertissements de correspondance. Vérifiez le projet cible.",
+    "completed": "Tâches déplacées avec succès.",
+    "moveFailed": "Impossible de déplacer les tâches. Réessayez."
+  }
 }

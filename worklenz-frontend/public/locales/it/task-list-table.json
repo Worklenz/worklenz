@@ -71,7 +71,7 @@
   "selectText": "Seleziona",
   "labelsSelectorInputTip": "Premi Invio per creare!",
   "addTaskText": "Aggiungi attività",
-  "createIssueText": "Crea problema",
+  "createIssueText": "Crea elemento di lavoro",
   "createWorkItemText": "Crea elemento di lavoro",
   "insertIssueText": "Inserisci problema",
   "addSubTaskText": "Aggiungi attività secondaria",
@@ -116,7 +116,8 @@
     "deleteConfirmMessage": "Sei sicuro di voler eliminare questa attività? Questa azione non può essere annullata.",
     "deleteSubtaskConfirmMessage": "Sei sicuro di voler eliminare questa attività secondaria? Questa azione non può essere annullata.",
     "deleteConfirmOk": "Elimina",
-    "deleteConfirmCancel": "Annulla"
+    "deleteConfirmCancel": "Annulla",
+    "moveToProject": "Sposta nel progetto"
   },
   "setDueDate": "Imposta la data di scadenza",
   "setStartDate": "Imposta la data di inizio",
@@ -337,5 +338,42 @@
   "save": "Salva",
   "cancel": "Annulla",
   "changeStatus": "Modifica stato: {{status}}",
-  "ellipsis": "..."
+  "ellipsis": "...",
+  "moveTaskProject": {
+    "title": "Sposta le attività in un altro progetto",
+    "selectedTasksTitle": "Attività selezionate",
+    "destinationLabel": "Progetto di destinazione",
+    "destinationPlaceholder": "Seleziona il progetto di destinazione",
+    "releaseWarning": "Le assegnazioni alle versioni verranno rimosse e non saranno ripristinate se le attività vengono riportate nel progetto originale.",
+    "mappingInfo": "Associa i campi di origine ai campi del progetto di destinazione prima di spostare le attività.",
+    "statusMappingTitle": "Associazione degli stati",
+    "phaseMappingTitle": "Associazione delle fasi",
+    "customFieldMappingTitle": "Associazione dei campi personalizzati",
+    "selectStatus": "Seleziona lo stato di destinazione",
+    "selectPhase": "Seleziona la fase di destinazione",
+    "selectCustomField": "Seleziona il campo di destinazione",
+    "actions": {
+      "cancel": "Annulla",
+      "move": "Sposta attività"
+    },
+    "options": {
+      "moveSubtasks": "Sposta anche le sottoattività",
+      "keepAssignees": "Mantieni gli assegnatari se appartengono al progetto di destinazione",
+      "keepLabels": "Mantieni le etichette"
+    },
+    "messages": {
+      "movedSuccess": "Attività spostate correttamente.",
+      "movedWithWarnings": "Attività spostate con {{count}} avvisi di associazione. Controlla il progetto di destinazione."
+    },
+    "errors": {
+      "loadData": "Impossibile caricare progetti e associazioni. Riprova.",
+      "loadDestinationData": "Impossibile caricare progetti e associazioni. Riprova.",
+      "moveFailed": "Impossibile spostare le attività. Riprova."
+    },
+    "partialMappingWarning": "Alcune associazioni sono mancanti. I valori non associati verranno ignorati.",
+    "loadFailed": "Impossibile caricare progetti e associazioni. Riprova.",
+    "completedWithWarnings": "Attività spostate con {{count}} avvisi di associazione. Controlla il progetto di destinazione.",
+    "completed": "Attività spostate correttamente.",
+    "moveFailed": "Impossibile spostare le attività. Riprova."
+  }
 }

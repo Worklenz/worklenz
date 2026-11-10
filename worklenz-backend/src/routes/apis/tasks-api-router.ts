@@ -1,3 +1,5 @@
+import verifyMoveProjectWorkspace from "../../middlewares/verify-move-project-workspace";
+import moveTaskProjectValidator from "../../middlewares/validators/move-task-project-validator";
 import express, {Request, Response} from "express";
 
 import TasksController from "../../controllers/tasks-controller";
@@ -93,6 +95,14 @@ tasksApiRouter.get("/search", verifyProjectAccess('query', 'projectId'), safeCon
 tasksApiRouter.get("/dependency-status", verifyTaskAccess('query', 'taskId'), safeControllerFunction(TasksControllerV2.getTaskDependencyStatus));
 
 tasksApiRouter.put("/labels/:id", idParamValidator, verifyNonGuestTaskAccess('params', 'id'), safeControllerFunction(TasksControllerV2.assignLabelsToTask));
+
+tasksApiRouter.post("/move-project", moveTaskProjectValidator, verifyMoveProjectWorkspace,
+  verifyProjectAccess("body", "source_project_id"),
+  verifyNonGuestProjectAccess("body", "source_project_id"),
+  verifyProjectAccess("body", "destination_project_id"),
+  verifyNonGuestProjectAccess("body", "destination_project_id"),
+  verifyBulkTaskAccessMiddleware("body", "task_ids"),
+  safeControllerFunction(TasksControllerV2.moveTasksToProject));
 
 // Add custom column value update route
 tasksApiRouter.put("/:taskId/custom-column", verifyNonGuestTaskAccess('params', 'taskId'), TasksControllerV2.updateCustomColumnValue);

@@ -148,6 +148,11 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
       }));
   }, [teamMembersState]);
 
+  const defaultTeamIds = useMemo(() => {
+    const id = session?.team_id ? String(session.team_id) : teamOptions[0]?.value;
+    return id ? [id] : [];
+  }, [session?.team_id, teamOptions]);
+
   const dateBounds = useMemo(() => {
     const end = dayjs();
     let start = end.subtract(30, 'day');
@@ -365,6 +370,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
         teamOptions={teamOptions}
         selectedTeamIds={selectedTeamIds}
         onTeamsChange={setSelectedTeamIds}
+        defaultTeamIds={defaultTeamIds}
         datePreset={datePreset}
         onDatePresetChange={setDatePreset}
         availableDatePresets={[

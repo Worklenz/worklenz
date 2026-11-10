@@ -5,6 +5,7 @@ import { htmlToPlainText } from "../../shared/utils";
 import { cleanPortalRichText } from "./rich-text";
 import { containsPattern, splitList } from "./list-params";
 import { EFFECTIVE_MILESTONES_SQL, MilestoneSource, isMilestoneSource } from "./milestone-source";
+import { projectOpenForPortalSql } from "./scope";
 import { AuditActor } from "./audit.service";
 import { notifyClientUsers, notifyStaff } from "./notify.service";
 import {
@@ -98,6 +99,7 @@ const PROJECT_LIST_SQL = `
          AND cc.disabled_at IS NULL AND cc.activated_at IS NOT NULL AND cu.status = 'active'
     ) au ON TRUE
    WHERE p.team_id = $1
+     AND ${projectOpenForPortalSql("p")}
 `;
 
 /** `organization_id=none` lists the projects that have no client yet. */
@@ -208,15 +210,23 @@ export interface PortalProjectStats {
 export async function getPortalProjectStats(q: Queryable, teamId: string): Promise<PortalProjectStats> {
   const result = await q.query(
     `SELECT
-       (SELECT COUNT(*)::int FROM projects p WHERE p.team_id = $1) AS total,
-       (SELECT COUNT(*)::int FROM project_client_settings s WHERE s.team_id = $1 AND s.portal_enabled IS TRUE) AS portal_enabled,
+       (SELECT COUNT(*)::int FROM projects p
+         WHERE p.team_id = $1 AND ${projectOpenForPortalSql("p")}) AS total,
+       (SELECT COUNT(*)::int FROM project_client_settings s
+          JOIN projects p ON p.id = s.project_id
+         WHERE s.team_id = $1 AND s.portal_enabled IS TRUE AND ${projectOpenForPortalSql("p")}) AS portal_enabled,
        (SELECT COUNT(*)::int FROM client_portal_approvals a
-         WHERE a.organization_team_id = $1 AND a.status = 'awaiting') AS awaiting_client_approval,
+          JOIN projects p ON p.id = a.project_id
+         WHERE a.organization_team_id = $1 AND a.status = 'awaiting' AND ${projectOpenForPortalSql("p")}) AS awaiting_client_approval,
        (SELECT COUNT(*)::int FROM client_portal_change_requests r
-         WHERE r.organization_team_id = $1 AND r.status NOT IN ('completed', 'rejected', 'cancelled')) AS open_change_requests,
+          JOIN projects p ON p.id = r.project_id
+         WHERE r.organization_team_id = $1 AND r.status NOT IN ('completed', 'rejected', 'cancelled')
+           AND ${projectOpenForPortalSql("p")}) AS open_change_requests,
        (SELECT COUNT(*)::int FROM client_portal_milestones m
           JOIN project_client_settings s ON s.project_id = m.project_id AND s.milestone_source = 'manual'
-         WHERE s.team_id = $1 AND s.portal_enabled IS TRUE AND m.status = 'delayed') AS delayed_milestones`,
+          JOIN projects p ON p.id = m.project_id
+         WHERE s.team_id = $1 AND s.portal_enabled IS TRUE AND m.status = 'delayed'
+           AND ${projectOpenForPortalSql("p")}) AS delayed_milestones`,
     [teamId]
   );
   const row = result.rows[0] ?? {};

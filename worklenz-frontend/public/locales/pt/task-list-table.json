@@ -71,7 +71,7 @@
   "selectText": "Selecionar",
   "labelsSelectorInputTip": "Pressione enter para criar!",
   "addTaskText": "Adicionar Tarefa",
-  "createIssueText": "Criar problema",
+  "createIssueText": "Criar item de trabalho",
   "createWorkItemText": "Criar item de trabalho",
   "insertIssueText": "Inserir problema",
   "addSubTaskText": "+ Adicionar Subtarefa",
@@ -116,7 +116,8 @@
     "deleteConfirmMessage": "Tem certeza de que deseja excluir esta tarefa? Esta ação não pode ser desfeita.",
     "deleteSubtaskConfirmMessage": "Tem certeza de que deseja excluir esta subtarefa? Esta ação não pode ser desfeita.",
     "deleteConfirmOk": "Excluir",
-    "deleteConfirmCancel": "Cancelar"
+    "deleteConfirmCancel": "Cancelar",
+    "moveToProject": "Mover para projeto"
   },
   "setDueDate": "Definir data de vencimento",
   "setStartDate": "Definir data de início",
@@ -337,5 +338,42 @@
   "save": "Salvar",
   "cancel": "Cancelar",
   "changeStatus": "Alterar status: {{status}}",
-  "ellipsis": "..."
+  "ellipsis": "...",
+  "moveTaskProject": {
+    "title": "Mover tarefas para outro projeto",
+    "selectedTasksTitle": "Tarefas selecionadas",
+    "destinationLabel": "Projeto de destino",
+    "destinationPlaceholder": "Selecione o projeto de destino",
+    "releaseWarning": "As atribuições a versões serão removidas e não serão restauradas se as tarefas forem movidas de volta.",
+    "mappingInfo": "Mapeie os campos do projeto de origem para os do projeto de destino antes de mover as tarefas.",
+    "statusMappingTitle": "Mapeamento de status",
+    "phaseMappingTitle": "Mapeamento de fases",
+    "customFieldMappingTitle": "Mapeamento de campos personalizados",
+    "selectStatus": "Selecione o status de destino",
+    "selectPhase": "Selecione a fase de destino",
+    "selectCustomField": "Selecione o campo personalizado de destino",
+    "actions": {
+      "cancel": "Cancelar",
+      "move": "Mover tarefas"
+    },
+    "options": {
+      "moveSubtasks": "Mover subtarefas junto com as tarefas selecionadas",
+      "keepAssignees": "Manter responsáveis se eles forem membros no projeto de destino",
+      "keepLabels": "Manter etiquetas"
+    },
+    "messages": {
+      "movedSuccess": "Tarefas movidas com sucesso",
+      "movedWithWarnings": "Tarefas movidas com avisos"
+    },
+    "errors": {
+      "loadData": "Falha ao carregar os dados de movimentação de tarefas",
+      "loadDestinationData": "Falha ao carregar os campos do projeto de destino",
+      "moveFailed": "Falha ao mover tarefas"
+    },
+    "partialMappingWarning": "Faltam alguns mapeamentos de fases ou campos personalizados. Os valores não mapeados serão ignorados.",
+    "loadFailed": "Não foi possível carregar projetos e mapeamentos. Tente novamente.",
+    "completedWithWarnings": "Tarefas movidas com {{count}} avisos de mapeamento. Verifique o projeto de destino.",
+    "completed": "Tarefas movidas com sucesso.",
+    "moveFailed": "Não foi possível mover as tarefas. Tente novamente."
+  }
 }

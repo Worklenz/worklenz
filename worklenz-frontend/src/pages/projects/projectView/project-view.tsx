@@ -807,7 +807,8 @@ const ProjectView = React.memo(() => {
               {item.disabled && (
                 <CrownOutlined style={{ fontSize: '14px', color: '#faad14', marginLeft: '4px' }} />
               )}
-              {((item.key === 'tasks-list' && !isSoftwareProject) || item.key === 'board') &&
+              {!isSoftwareProject &&
+                (item.key === 'tasks-list' || item.key === 'board') &&
                 !item.disabled && (
                 <ConfigProvider wave={{ disabled: true }}>
                   <Button

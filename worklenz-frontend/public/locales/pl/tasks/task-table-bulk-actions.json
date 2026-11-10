@@ -47,5 +47,6 @@
   "archiveSuccessMessage": "{{parentCount}} zadania i {{subtaskCount}} podzadania {{action}}d.",
   "SET_START_DATE": "Ustaw datę rozpoczęcia",
   "Unarchive": "Cofnij archiwizację",
-  "Archive": "Archiwum"
+  "Archive": "Archiwum",
+  "moveToProject": "Przenieś do projektu"
 }

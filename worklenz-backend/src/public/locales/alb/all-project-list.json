@@ -60,5 +60,10 @@
   "endDate": "Data e përfundimit të projektit",
   "settingsTooltip": "Hapehu cilësimet e projektit",
   "required": "I kërkuar",
-  "priority": "Prioriteti"
+  "priority": "Prioriteti",
+  "expandAll": "Zgjero të gjitha",
+  "collapseAll": "Mblidh të gjitha",
+  "unnamedGroup": "Grup pa emër",
+  "projectCount_one": "{{count}} projekt",
+  "projectCount_other": "{{count}} projekte"
 }

@@ -302,7 +302,7 @@ export default class CustomReportsController extends WorklenzControllerBase {
         };
       case "release":
         return {
-          join: "LEFT JOIN project_releases rl ON rl.id = t.release_id",
+          join: "LEFT JOIN project_releases rl ON rl.id = t.release_id AND rl.project_id = t.project_id",
           key: "rl.id::TEXT", label: "rl.name", color: "NULL::TEXT",
           sort: "COALESCE(EXTRACT(EPOCH FROM COALESCE(rl.target_date::TIMESTAMPTZ, rl.created_at)), 9999999999)",
         };
@@ -355,7 +355,7 @@ export default class CustomReportsController extends WorklenzControllerBase {
     const result = await db.query(
       `SELECT r.id::TEXT AS key, r.name AS label, NULL::TEXT AS color, (${metricSql})::FLOAT AS value
        FROM project_releases r
-       LEFT JOIN tasks t ON t.release_id = r.id AND t.archived IS FALSE
+       LEFT JOIN tasks t ON t.release_id = r.id AND t.project_id = r.project_id AND t.archived IS FALSE
        LEFT JOIN task_statuses ts ON ts.id = t.status_id
        LEFT JOIN sys_task_status_categories cat ON cat.id = ts.category_id
        WHERE r.project_id = $1

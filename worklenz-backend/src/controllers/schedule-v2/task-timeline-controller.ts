@@ -7,6 +7,7 @@ import WorklenzControllerBase from "../worklenz-controller-base";
 import { getColor } from "../../shared/utils";
 import { SocketEvents } from "../../socket.io/events";
 import { IO } from "../../shared/io";
+import { buildPrivilegedWorkspaceRoleExemptSql } from "../../shared/assignee-task-scope";
 
 // Subtasks (no longer excluded — see getTasksForTimeline) roughly double the row
 // count a given filter window returns compared to top-level tasks alone, so this is
@@ -32,30 +33,24 @@ export default class TaskTimelineController extends WorklenzControllerBase {
     public static async getTasksForTimeline(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
         const { startDate, endDate, memberId, projectId, statusId, priorityId, clientName } = req.query as ITaskTimelineFilters;
 
-        const params: any[] = [req.user?.team_id, req.user?.id];
+        // verifyNonGuestPlannerAccess only rejects guests. A direct GET must not
+        // return every team task on that basis. Owner, Admin, and Team Lead (by
+        // role name — Team Lead no longer has admin_role) may see the team.
+        // Every other role stays inside projects they belong to.
+        const userId = req.user?.id;
+        const teamId = req.user?.team_id;
+        if (!userId || !teamId) {
+            return res.status(401).send(new ServerResponse(false, null, "Authentication required"));
+        }
+
+        const params: any[] = [teamId, userId];
         let paramIndex = 3;
 
-        // Build dynamic WHERE clause. The access predicate mirrors verifyProjectAccess's
-        // role model (owner/admin/team-lead see every project in the team; everyone else
-        // only projects they're an explicit project_members row on) — team_id alone isn't
-        // enough, since a regular member could otherwise pass any other team project's id
-        // via the projectId filter below and read its full task/assignee detail.
-        let whereClause = `
-            WHERE p.team_id = $1
-              AND t.archived = false
-              AND (
-                EXISTS (
-                    SELECT 1 FROM team_members tm
-                    INNER JOIN roles r ON r.id = tm.role_id
-                    WHERE tm.user_id = $2 AND tm.team_id = $1 AND tm.active = TRUE
-                      AND (r.owner = TRUE OR r.admin_role = TRUE)
-                )
-                OR EXISTS (
-                    SELECT 1 FROM project_members pm
-                    INNER JOIN team_members tm2 ON pm.team_member_id = tm2.id
-                    WHERE pm.project_id = p.id AND tm2.user_id = $2 AND tm2.team_id = $1 AND tm2.active = TRUE
-                )
-              )`;
+        let whereClause = `WHERE p.team_id = $1 AND t.archived = false
+            AND (
+                ${buildPrivilegedWorkspaceRoleExemptSql("$2::UUID")}
+                OR is_member_of_project(p.id, $2::UUID, $1::UUID)
+            )`;
 
         if (startDate) {
             whereClause += ` AND (t.end_date >= $${paramIndex} OR t.end_date IS NULL)`;

@@ -71,7 +71,7 @@
   "selectText": "Select",
   "labelsSelectorInputTip": "Hit enter to create!",
   "addTaskText": "Add Task",
-  "createIssueText": "Create Issue",
+  "createIssueText": "Create work item",
   "createWorkItemText": "Create work item",
   "insertIssueText": "Insert Issue",
   "addSubTaskText": "Add Sub Task",
@@ -116,7 +116,8 @@
     "deleteConfirmMessage": "Are you sure you want to delete this task? This action cannot be undone.",
     "deleteSubtaskConfirmMessage": "Are you sure you want to delete this subtask? This action cannot be undone.",
     "deleteConfirmOk": "Delete",
-    "deleteConfirmCancel": "Cancel"
+    "deleteConfirmCancel": "Cancel",
+    "moveToProject": "Move to project"
   },
   "setDueDate": "Set due date",
   "setStartDate": "Set start date",
@@ -337,5 +338,42 @@
   "save": "Save",
   "cancel": "Cancel",
   "changeStatus": "Change status: {{status}}",
-  "ellipsis": "..."
+  "ellipsis": "...",
+  "moveTaskProject": {
+    "title": "Move tasks to another project",
+    "selectedTasksTitle": "Selected tasks",
+    "destinationLabel": "Destination project",
+    "destinationPlaceholder": "Select destination project",
+    "releaseWarning": "Release assignments will be cleared and will not be restored if tasks are moved back.",
+    "mappingInfo": "Map source fields to destination project fields before moving tasks.",
+    "statusMappingTitle": "Status mapping",
+    "phaseMappingTitle": "Phase mapping",
+    "customFieldMappingTitle": "Custom field mapping",
+    "selectStatus": "Select destination status",
+    "selectPhase": "Select destination phase",
+    "selectCustomField": "Select destination custom field",
+    "actions": {
+      "cancel": "Cancel",
+      "move": "Move tasks"
+    },
+    "options": {
+      "moveSubtasks": "Move subtasks together with selected tasks",
+      "keepAssignees": "Keep assignees if they are members in destination project",
+      "keepLabels": "Keep labels"
+    },
+    "messages": {
+      "movedSuccess": "Tasks moved successfully",
+      "movedWithWarnings": "Tasks moved with warnings"
+    },
+    "errors": {
+      "loadData": "Failed to load move task data",
+      "loadDestinationData": "Failed to load destination project fields",
+      "moveFailed": "Failed to move tasks"
+    },
+    "partialMappingWarning": "Some phase or custom field mappings are missing. Tasks will still be moved and unmapped values will be skipped.",
+    "loadFailed": "Could not load projects and mappings. Please try again.",
+    "completedWithWarnings": "Tasks moved with {{count}} mapping warnings. Review the destination project.",
+    "completed": "Tasks moved successfully.",
+    "moveFailed": "Could not move tasks. Please try again."
+  }
 }
