@@ -18,13 +18,15 @@ function response() {
 describe('schedule allocation ownership', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('rejects a project or member outside the active team before inserting', async () => {
+  it('rejects a member outside the project before inserting', async () => {
     query.mockResolvedValueOnce({ rows: [] });
     const res = response();
     await ScheduleControllerV2.createSchedule(request, res as unknown as IWorkLenzResponse);
     expect(res.status).toHaveBeenCalledWith(403);
     expect(query).toHaveBeenCalledTimes(1);
     expect(query.mock.calls[0][1]).toEqual(['project-1', 'member-1', 'team-1']);
+    expect(query.mock.calls[0][0]).toContain('JOIN project_members pm ON pm.project_id = p.id AND pm.team_member_id = tm.id');
+    expect(query.mock.calls[0][0]).toContain('tm.active = TRUE');
   });
 
   it('creates an allocation for a project and member in the active team', async () => {

@@ -596,7 +596,8 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
         }
         const ownership = await db.query(
             `SELECT 1 FROM projects p JOIN team_members tm ON tm.team_id = p.team_id
-             WHERE p.id = $1 AND tm.id = $2 AND p.team_id = $3`,
+             JOIN project_members pm ON pm.project_id = p.id AND pm.team_member_id = tm.id
+             WHERE p.id = $1 AND tm.id = $2 AND p.team_id = $3 AND tm.active = TRUE`,
             [project_id, team_member_id, teamId]
         );
         if (!ownership.rows.length) {
