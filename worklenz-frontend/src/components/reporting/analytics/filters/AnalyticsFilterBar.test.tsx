@@ -1,12 +1,14 @@
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { ConfigProvider } from 'antd';
 import { AnalyticsFilterBar } from './AnalyticsFilterBar';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (_key: string, opts?: { defaultValue?: string }) => opts?.defaultValue ?? _key,
+    t: (_key: string, opts?: Record<string, string>) =>
+      opts?.defaultValue?.replace(/\{\{(\w+)\}\}/g, (_match, key: string) => opts[key] ?? '') ??
+      _key,
   }),
 }));
 
@@ -52,36 +54,52 @@ const renderBar = (props: Partial<React.ComponentProps<typeof AnalyticsFilterBar
 };
 
 describe('AnalyticsFilterBar', () => {
-  it('restores defaultTeamIds on Clear instead of emptying teams', async () => {
+  it('restores defaultTeamIds on Clear instead of emptying teams', () => {
     const { onProjectsChange, onTeamsChange } = renderBar();
 
-    fireEvent.click(screen.getByRole('button', { name: /Filter/ }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Clear' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
 
     expect(onProjectsChange).toHaveBeenCalledWith([]);
     expect(onTeamsChange).toHaveBeenCalledWith(['t-default']);
     expect(onTeamsChange).not.toHaveBeenCalledWith([]);
   });
 
-  it('does not treat the default team alone as an active filter', () => {
+  it('shows the available filters in a separate card without opening a popover', () => {
     renderBar({
       selectedProjectIds: [],
       selectedTeamIds: ['t-default'],
+      memberOptions: [{ value: 'm1', label: 'Alex' }],
+      selectedMemberIds: [],
+      onMembersChange: vi.fn(),
+      datePreset: 'last_30_days',
+      onDatePresetChange: vi.fn(),
+      statusOptions: [{ value: 'open', label: 'Open' }],
+      selectedStatusIds: [],
+      onStatusesChange: vi.fn(),
+      includeDone: false,
+      onIncludeDoneChange: vi.fn(),
     });
 
-    expect(screen.getByRole('button', { name: 'Filter' })).toBeInTheDocument();
-    expect(screen.queryByText('1')).not.toBeInTheDocument();
+    const filterCard = screen.getByRole('group', { name: 'Filters' });
+    expect(filterCard).toBeInTheDocument();
+    expect(within(filterCard).getByRole('button', { name: /Projects/ })).toBeInTheDocument();
+    expect(within(filterCard).getByRole('button', { name: /Members/ })).toBeInTheDocument();
+    expect(within(filterCard).getByRole('button', { name: /Teams/ })).toBeInTheDocument();
+    expect(within(filterCard).getByRole('button', { name: 'Date range' })).toBeInTheDocument();
+    expect(within(filterCard).getByRole('button', { name: /Statuses/ })).toBeInTheDocument();
+    expect(within(filterCard).getByText('Hide done')).toBeInTheDocument();
+    expect(within(filterCard).getByText('Show done')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Filter/ })).not.toBeInTheDocument();
   });
 
-  it('enables Clear when every team is removed and the default set is nonempty', async () => {
+  it('enables Clear when every team is removed and the default set is nonempty', () => {
     const { onProjectsChange, onTeamsChange } = renderBar({
       selectedProjectIds: [],
       selectedTeamIds: [],
       defaultTeamIds: ['t-default'],
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /Filter/ }));
-    const clearButton = await screen.findByRole('button', { name: 'Clear' });
+    const clearButton = screen.getByRole('button', { name: 'Clear' });
     expect(clearButton).toBeEnabled();
 
     fireEvent.click(clearButton);

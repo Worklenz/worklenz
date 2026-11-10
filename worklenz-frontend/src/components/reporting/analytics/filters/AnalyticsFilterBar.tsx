@@ -1,15 +1,5 @@
 import React from 'react';
-import {
-  Badge,
-  Button,
-  Divider,
-  Flex,
-  Popover,
-  Segmented,
-  Typography,
-  theme,
-} from '@/shared/antd-imports';
-import { FilterOutlined } from '@ant-design/icons';
+import { Button, Card, Divider, Flex, Segmented, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import {
   FILTER_PILL_BUTTON_STYLE,
@@ -18,8 +8,6 @@ import {
   SingleSelectFilterPill,
   type FilterOption,
 } from '@/components/common/filters/MultiSelectFilterPill';
-
-const { Text } = Typography;
 
 export type AnalyticsDatePreset =
   | 'last_7_days'
@@ -39,6 +27,9 @@ const ALL_DATE_PRESETS: AnalyticsDatePreset[] = [
   'this_quarter',
   'custom',
 ];
+
+const EMPTY_IDS: string[] = [];
+const EMPTY_OPTIONS: FilterOption[] = [];
 
 const areSameIdSets = (a: string[], b: string[]): boolean => {
   if (a.length !== b.length) return false;
@@ -60,7 +51,7 @@ export interface AnalyticsFilterBarProps {
   selectedTeamIds?: string[];
   onTeamsChange?: (ids: string[]) => void;
   /**
-   * Team IDs restored on Clear (and treated as non-active for the badge).
+   * Team IDs restored on Clear.
    * Analytics pages that scope projects by team should pass the session/default team
    * so Clear does not empty the Projects dropdown.
    */
@@ -69,7 +60,7 @@ export interface AnalyticsFilterBarProps {
   onDatePresetChange?: (preset: AnalyticsDatePreset) => void;
   /** Limit which date presets appear (defaults to all). */
   availableDatePresets?: AnalyticsDatePreset[];
-  /** Used for badge count + Clear; defaults to last_30_days. */
+  /** Used for Clear; defaults to last_30_days. */
   defaultDatePreset?: AnalyticsDatePreset;
   statusOptions?: FilterOption[];
   selectedStatusIds?: string[];
@@ -79,32 +70,31 @@ export interface AnalyticsFilterBarProps {
   includeDone?: boolean;
   onIncludeDoneChange?: (include: boolean) => void;
   loading?: boolean;
-  /** @deprecated Unused — filters live inside a single Filter popover. */
+  /** @deprecated Unused. */
   inline?: boolean;
 }
 
 /**
- * Reporting filter control matching Time Entries: one Filter button that opens
- * a popover with all attribute filters. Selections are staged until Apply.
+ * Always-visible reporting filter card. Selections are staged until Apply.
  */
 export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
   projectOptions,
   selectedProjectIds,
   onProjectsChange,
   indicatedProjectIds = [],
-  memberOptions = [],
-  selectedMemberIds = [],
+  memberOptions = EMPTY_OPTIONS,
+  selectedMemberIds = EMPTY_IDS,
   onMembersChange,
-  teamOptions = [],
-  selectedTeamIds = [],
+  teamOptions = EMPTY_OPTIONS,
+  selectedTeamIds = EMPTY_IDS,
   onTeamsChange,
-  defaultTeamIds = [],
+  defaultTeamIds = EMPTY_IDS,
   datePreset,
   onDatePresetChange,
   availableDatePresets = ALL_DATE_PRESETS,
   defaultDatePreset = 'last_30_days',
-  statusOptions = [],
-  selectedStatusIds = [],
+  statusOptions = EMPTY_OPTIONS,
+  selectedStatusIds = EMPTY_IDS,
   onStatusesChange,
   statusFilterLabel,
   includeDone,
@@ -113,14 +103,12 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
 }) => {
   const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
-  const [panelOpen, setPanelOpen] = React.useState(false);
 
   const showMembers = Boolean(onMembersChange);
   const showTeams = Boolean(onTeamsChange);
   const showDate = Boolean(datePreset && onDatePresetChange);
   const showStatuses = Boolean(onStatusesChange && statusOptions.length > 0);
-  const showIncludeDone =
-    typeof includeDone === 'boolean' && Boolean(onIncludeDoneChange);
+  const showIncludeDone = typeof includeDone === 'boolean' && Boolean(onIncludeDoneChange);
 
   const isDefaultTeamSelection = React.useCallback(
     (ids: string[]) => areSameIdSets(ids, defaultTeamIds),
@@ -130,48 +118,26 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
   const [draftProjectIds, setDraftProjectIds] = React.useState(selectedProjectIds);
   const [draftMemberIds, setDraftMemberIds] = React.useState(selectedMemberIds);
   const [draftTeamIds, setDraftTeamIds] = React.useState(selectedTeamIds);
-  const [draftDatePreset, setDraftDatePreset] = React.useState(
-    datePreset ?? defaultDatePreset
-  );
+  const [draftDatePreset, setDraftDatePreset] = React.useState(datePreset ?? defaultDatePreset);
   const [draftStatusIds, setDraftStatusIds] = React.useState(selectedStatusIds);
   const [draftIncludeDone, setDraftIncludeDone] = React.useState(includeDone ?? false);
 
+  // Keep staged controls in sync when a saved custom report loads its filter values.
   React.useEffect(() => {
-    if (!panelOpen) return;
+    // eslint-disable-next-line react/set-state-in-effect
     setDraftProjectIds(selectedProjectIds);
     setDraftMemberIds(selectedMemberIds);
     setDraftTeamIds(selectedTeamIds);
     setDraftDatePreset(datePreset ?? defaultDatePreset);
     setDraftStatusIds(selectedStatusIds);
     setDraftIncludeDone(includeDone ?? false);
-    // Re-sync drafts only when the panel opens (same pattern as Time Entries).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [panelOpen]);
-
-  const activeFilterCount = React.useMemo(() => {
-    let count = 0;
-    if (selectedProjectIds.length > 0) count++;
-    if (showMembers && selectedMemberIds.length > 0) count++;
-    if (showTeams && !isDefaultTeamSelection(selectedTeamIds)) {
-      count++;
-    }
-    if (showDate && datePreset && datePreset !== defaultDatePreset) count++;
-    if (showStatuses && selectedStatusIds.length > 0) count++;
-    if (showIncludeDone && includeDone) count++;
-    return count;
   }, [
     selectedProjectIds,
-    showMembers,
     selectedMemberIds,
-    showTeams,
     selectedTeamIds,
-    isDefaultTeamSelection,
-    showDate,
     datePreset,
     defaultDatePreset,
-    showStatuses,
     selectedStatusIds,
-    showIncludeDone,
     includeDone,
   ]);
 
@@ -190,7 +156,6 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
     if (onDatePresetChange) onDatePresetChange(draftDatePreset);
     if (onStatusesChange) onStatusesChange(draftStatusIds);
     if (onIncludeDoneChange) onIncludeDoneChange(draftIncludeDone);
-    setPanelOpen(false);
   };
 
   const handleClearAll = () => {
@@ -209,7 +174,6 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
     if (onDatePresetChange) onDatePresetChange(defaultDatePreset);
     if (onStatusesChange) onStatusesChange([]);
     if (onIncludeDoneChange) onIncludeDoneChange(false);
-    setPanelOpen(false);
   };
 
   const dateLabels: Record<AnalyticsDatePreset, string> = {
@@ -228,12 +192,19 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
   const selectedDateLabel =
     dateOptions.find(o => o.value === draftDatePreset)?.label ?? dateOptions[0]?.label;
 
-  const panelContent = (
-    <div style={{ width: 'min(420px, calc(100vw - 32px))', padding: '4px 0' }}>
-      <Text strong style={{ fontSize: 14, display: 'block', marginBottom: 12 }}>
-        {t('filtersTitle', { defaultValue: 'Filters' })}
-      </Text>
-
+  return (
+    <Card
+      role="group"
+      aria-label={t('filtersTitle', { defaultValue: 'Filters' })}
+      size="small"
+      title={t('filtersTitle', { defaultValue: 'Filters' })}
+      style={{
+        width: '100%',
+        borderRadius: token.borderRadiusLG,
+        borderColor: token.colorBorderSecondary,
+      }}
+      styles={{ body: { padding: 16 } }}
+    >
       <Flex gap={8} wrap="wrap" align="center">
         {showDate && (
           <SingleSelectFilterPill
@@ -285,9 +256,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
 
         {showStatuses && (
           <MultiSelectFilterPill
-            label={
-              statusFilterLabel ?? t('filterStatuses', { defaultValue: 'Statuses' })
-            }
+            label={statusFilterLabel ?? t('filterStatuses', { defaultValue: 'Statuses' })}
             options={statusOptions}
             value={draftStatusIds}
             onChange={setDraftStatusIds}
@@ -331,45 +300,6 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
           {t('applyFilters', { defaultValue: 'Apply' })}
         </Button>
       </Flex>
-    </div>
-  );
-
-  return (
-    <Popover
-      content={panelContent}
-      trigger="click"
-      placement="bottomLeft"
-      open={panelOpen}
-      onOpenChange={setPanelOpen}
-      styles={{ root: { padding: 0 }, body: { padding: '12px 16px', borderRadius: 8 } }}
-    >
-      <Button
-        icon={<FilterOutlined />}
-        style={
-          panelOpen || activeFilterCount > 0
-            ? {
-                ...FILTER_PILL_BUTTON_STYLE,
-                borderColor: token.colorPrimary,
-                color: token.colorPrimary,
-              }
-            : FILTER_PILL_BUTTON_STYLE
-        }
-        aria-label={
-          activeFilterCount > 0
-            ? `${t('filterButton', { defaultValue: 'Filter' })} (${activeFilterCount})`
-            : t('filterButton', { defaultValue: 'Filter' })
-        }
-        aria-expanded={panelOpen}
-      >
-        {t('filterButton', { defaultValue: 'Filter' })}
-        {activeFilterCount > 0 && (
-          <Badge
-            count={activeFilterCount}
-            size="small"
-            style={{ marginLeft: 4, backgroundColor: token.colorPrimary }}
-          />
-        )}
-      </Button>
-    </Popover>
+    </Card>
   );
 };
