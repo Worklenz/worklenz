@@ -5,7 +5,7 @@
 //   client_portal_thread_client_reads   a client user's own "read up to here" mark per discussion
 //                                        thread, so the sidebar badge and the unread dot are per person.
 //                                        (client_portal_thread_reads is the staff side, keyed by user.)
-//   client_portal_notification_reads    a client user's own read state per notification. A client
+//   client_portal_contact_notification_reads    a client user's own read state per notification. A client
 //                                        notification row is created once per organization event; who it
 //                                        reaches is decided at read time (project access, named approver),
 //                                        so "read" has to be stored per person too.
@@ -31,15 +31,15 @@ exports.up = async (pgm) => {
     CREATE INDEX IF NOT EXISTS idx_client_portal_thread_client_reads_contact
         ON client_portal_thread_client_reads (contact_id);
 
-    CREATE TABLE IF NOT EXISTS client_portal_notification_reads (
+    CREATE TABLE IF NOT EXISTS client_portal_contact_notification_reads (
         notification_id UUID                     NOT NULL REFERENCES client_portal_notifications (id) ON DELETE CASCADE,
         contact_id      UUID                     NOT NULL REFERENCES client_contacts (id) ON DELETE CASCADE,
         read_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (notification_id, contact_id)
     );
 
-    CREATE INDEX IF NOT EXISTS idx_client_portal_notification_reads_contact
-        ON client_portal_notification_reads (contact_id);
+    CREATE INDEX IF NOT EXISTS idx_client_portal_contact_notification_reads_contact
+        ON client_portal_contact_notification_reads (contact_id);
 
     CREATE TABLE IF NOT EXISTS client_contact_notification_prefs (
         contact_id UUID                     NOT NULL REFERENCES client_contacts (id) ON DELETE CASCADE,
@@ -57,7 +57,7 @@ exports.up = async (pgm) => {
 
     COMMENT ON TABLE client_portal_thread_client_reads IS
       'Per client user: when they last opened each discussion thread. A thread is unread while it holds a client-visible message from someone else newer than this.';
-    COMMENT ON TABLE client_portal_notification_reads IS
+    COMMENT ON TABLE client_portal_contact_notification_reads IS
       'Per client user read state for client_portal_notifications. No row = unread.';
     COMMENT ON TABLE client_contact_notification_prefs IS
       'Per client user email preference per event. In-app notifications are always on; no row = email on.';
@@ -69,7 +69,7 @@ exports.down = async (pgm) => {
   pgm.sql(`
     DROP INDEX IF EXISTS idx_client_portal_notifications_project;
     DROP TABLE IF EXISTS client_contact_notification_prefs;
-    DROP TABLE IF EXISTS client_portal_notification_reads;
+    DROP TABLE IF EXISTS client_portal_contact_notification_reads;
     DROP TABLE IF EXISTS client_portal_thread_client_reads;
   `);
 };

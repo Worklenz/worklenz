@@ -33,7 +33,8 @@ describe('scheduled reports delivery', () => {
     await runScheduledReports();
     expect(mockExportAllTasksCsv).toHaveBeenCalledWith(expect.anything(), ['2026-04-01', '2026-11-05'], expect.anything());
     expect(mockSendEmailEnhanced).toHaveBeenCalledWith(expect.objectContaining({ to: ['user@example.com'], attachments: expect.arrayContaining([expect.objectContaining({ filename: 'report.csv' })]) }));
-    expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining("status = 'SUCCESS'"), ['message', 'run']);
+    expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining("UPDATE scheduled_report_feed_logs SET status = 'SUCCESS'"), ['message', ['report.csv', 'report.csv', 'report.csv'], 36, 'run']);
+    expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('FROM scheduled_report_feeds WHERE is_active'), expect.any(Array));
     expect(mockRelease).toHaveBeenCalled();
   });
   it('does not resend a pending or successful run', async () => {
