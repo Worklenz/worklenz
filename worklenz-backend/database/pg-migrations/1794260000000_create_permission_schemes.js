@@ -6,6 +6,16 @@
 exports.up = (pgm) => {
   pgm.sql(`
     CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+    CREATE TABLE permission_scheme_migration_created_tables (
+      table_name TEXT PRIMARY KEY
+    );
+    INSERT INTO permission_scheme_migration_created_tables (table_name)
+    SELECT table_name FROM unnest(ARRAY[
+      'permission_schemes', 'permission_scheme_roles', 'permission_scheme_grants',
+      'project_scheme_assignments', 'permission_groups', 'permission_group_members',
+      'scheme_role_members'
+    ]) AS tables(table_name)
+    WHERE to_regclass(table_name) IS NULL;
     -- 1. permission_schemes
     CREATE TABLE IF NOT EXISTS permission_schemes (
       id          UUID        NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -91,12 +101,19 @@ exports.up = (pgm) => {
 /** @param pgm {import('node-pg-migrate').MigrationBuilder} */
 exports.down = (pgm) => {
   pgm.sql(`
-    DROP TABLE IF EXISTS scheme_role_members          CASCADE;
-    DROP TABLE IF EXISTS permission_group_members     CASCADE;
-    DROP TABLE IF EXISTS permission_groups            CASCADE;
-    DROP TABLE IF EXISTS project_scheme_assignments   CASCADE;
-    DROP TABLE IF EXISTS permission_scheme_grants     CASCADE;
-    DROP TABLE IF EXISTS permission_scheme_roles      CASCADE;
-    DROP TABLE IF EXISTS permission_schemes           CASCADE;
+    DO $$
+    DECLARE target_name TEXT;
+    BEGIN
+      FOREACH target_name IN ARRAY ARRAY[
+        'scheme_role_members', 'permission_group_members', 'permission_groups',
+        'project_scheme_assignments', 'permission_scheme_grants',
+        'permission_scheme_roles', 'permission_schemes'
+      ] LOOP
+        IF EXISTS (SELECT 1 FROM permission_scheme_migration_created_tables t WHERE t.table_name = target_name) THEN
+          EXECUTE format('DROP TABLE IF EXISTS %I', target_name);
+        END IF;
+      END LOOP;
+    END $$;
+    DROP TABLE permission_scheme_migration_created_tables;
   `);
 };

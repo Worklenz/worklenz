@@ -139,6 +139,7 @@ export default class WorkloadController extends WorklenzControllerBase {
                     ON pma.team_member_id = tml.team_member_id
                     AND pma.allocated_from <= dr.end_date
                     AND pma.allocated_to >= dr.start_date
+                    AND ($${memberId ? 6 : 5}::UUID[] IS NULL OR pma.project_id = ANY($${memberId ? 6 : 5}::UUID[]))
                 LEFT JOIN projects p ON p.id = pma.project_id
                 GROUP BY tml.team_member_id, tml.member_name, tml.member_email
             ),
@@ -183,9 +184,10 @@ export default class WorkloadController extends WorklenzControllerBase {
             FROM workload_summary;
         `;
 
-        const params = memberId 
+        const params: unknown[] = memberId
             ? [startDate, endDate, organizationId, hoursPerDay, memberId]
             : [startDate, endDate, organizationId, hoursPerDay];
+        params.push(req.plannerVisibleProjectIds ?? null);
 
         const result = await db.query(workloadQuery, params);
         const workloadData = (result.rows[0]?.workload_data || []).map(
@@ -315,6 +317,7 @@ export default class WorkloadController extends WorklenzControllerBase {
                 JOIN teams t ON t.id = tm.team_id
                 CROSS JOIN LATERAL generate_series(pma.allocated_from, pma.allocated_to, '1 day'::interval) AS day
                 WHERE t.organization_id = $1
+                  AND ($3::UUID[] IS NULL OR pma.project_id = ANY($3::UUID[]))
                 GROUP BY pma.team_member_id, u.name, day, max_hours_per_day
                 HAVING SUM(pma.seconds_per_day / 3600.0) > $2
             )
@@ -340,7 +343,7 @@ export default class WorkloadController extends WorklenzControllerBase {
             FROM daily_allocations;
         `;
 
-        const result = await db.query(conflictsQuery, [organizationId, hoursPerDay]);
+        const result = await db.query(conflictsQuery, [organizationId, hoursPerDay, req.plannerVisibleProjectIds ?? null]);
         const conflicts = result.rows[0]?.conflicts || [];
 
         return res.status(200).send(new ServerResponse(true, conflicts));
@@ -387,7 +390,7 @@ export default class WorkloadController extends WorklenzControllerBase {
                 FROM team_members tm
                 JOIN teams t ON t.id = tm.team_id
                 CROSS JOIN date_range dr
-                CROSS JOIN LATERAL calculate_member_capacity(tm.id, dr.start_date, dr.end_date) cap
+                CROSS JOIN LATERAL calculate_member_capacity_scoped(tm.id, dr.start_date, dr.end_date, $${teamId ? 6 : 5}::UUID[]) cap
                 WHERE t.organization_id = dr.organization_id
                     AND tm.active = true
                     ${teamId ? 'AND t.id = $5' : ''}
@@ -421,6 +424,7 @@ export default class WorkloadController extends WorklenzControllerBase {
                 WHERE t.organization_id = dr.organization_id
                     AND pma.allocated_from <= dr.end_date
                     AND pma.allocated_to >= dr.start_date
+                    AND ($${teamId ? 6 : 5}::UUID[] IS NULL OR pma.project_id = ANY($${teamId ? 6 : 5}::UUID[]))
                     ${teamId ? 'AND t.id = $5' : ''}
             )
             SELECT jsonb_build_object(
@@ -438,9 +442,10 @@ export default class WorkloadController extends WorklenzControllerBase {
             FROM team_capacity tc, allocated_capacity ac;
         `;
 
-        const params = teamId 
+        const params: unknown[] = teamId
             ? [startDate, endDate, organizationId, hoursPerDay, teamId]
             : [startDate, endDate, organizationId, hoursPerDay];
+        params.push(req.plannerVisibleProjectIds ?? null);
 
         const result = await db.query(reportQuery, params);
         const report = result.rows[0]?.report || {};

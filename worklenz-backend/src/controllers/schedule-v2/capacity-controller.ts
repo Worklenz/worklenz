@@ -111,17 +111,19 @@ export default class CapacityController extends WorklenzControllerBase {
 
         for (const member of membersResult.rows) {
             const capacityQuery = `
-                SELECT * FROM calculate_member_capacity(
+                SELECT * FROM calculate_member_capacity_scoped(
                     $1::UUID,
                     $2::DATE,
-                    $3::DATE
+                    $3::DATE,
+                    $4::UUID[]
                 )
             `;
 
             const capacityResult = await db.query(capacityQuery, [
                 member.team_member_id,
                 startDate,
-                endDate
+                endDate,
+                req.plannerVisibleProjectIds ?? null
             ]);
 
             const dailyCapacity: DailyCapacity[] = capacityResult.rows.map((row: any) => ({
@@ -215,10 +217,11 @@ export default class CapacityController extends WorklenzControllerBase {
                     ml.team_member_id,
                     cap.*
                 FROM member_list ml
-                CROSS JOIN LATERAL calculate_member_capacity(
+                CROSS JOIN LATERAL calculate_member_capacity_scoped(
                     ml.team_member_id,
                     $2::DATE,
-                    $3::DATE
+                    $3::DATE,
+                    $4::UUID[]
                 ) cap
             )
             SELECT 
@@ -235,7 +238,7 @@ export default class CapacityController extends WorklenzControllerBase {
             WHERE working_hours > 0
         `;
 
-        const result = await db.query(summaryQuery, [activeTeamId, startDate, endDate]);
+        const result = await db.query(summaryQuery, [activeTeamId, startDate, endDate, req.plannerVisibleProjectIds ?? null]);
 
         return res.status(200).send(new ServerResponse(true, result.rows[0]));
     }
@@ -293,10 +296,11 @@ export default class CapacityController extends WorklenzControllerBase {
                     ml.member_email,
                     cap.*
                 FROM member_list ml
-                CROSS JOIN LATERAL calculate_member_capacity(
+                CROSS JOIN LATERAL calculate_member_capacity_scoped(
                     ml.team_member_id,
                     $2::DATE,
-                    $3::DATE
+                    $3::DATE,
+                    $4::UUID[]
                 ) cap
                 WHERE cap.status = 'overallocated'
             )
@@ -314,7 +318,7 @@ export default class CapacityController extends WorklenzControllerBase {
             ORDER BY date, member_name
         `;
 
-        const result = await db.query(conflictsQuery, [activeTeamId, startDate, endDate]);
+        const result = await db.query(conflictsQuery, [activeTeamId, startDate, endDate, req.plannerVisibleProjectIds ?? null]);
 
         const conflicts = result.rows.map(row => ({
             type: 'overallocation',
