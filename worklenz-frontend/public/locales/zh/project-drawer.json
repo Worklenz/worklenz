@@ -96,7 +96,7 @@
   "restrictTaskCreationBusinessPlanTitle": "需要商业计划",
   "restrictTaskCreationBusinessPlanDescription": "将任务限制为管理员、团队负责创建和项目经理在商业和企业计划中可用。",
   "restrictTaskCreation": "将任务分配范围为管理员、团队负责人和项目经理",
-  "restrictTaskCreationTooltip": "启用后，只有管理员、团队负责和项目经理可以创建和分配任务。团队成员只能查看分配给自己的任务。",
+  "restrictTaskCreationTooltip": "启用后，只有所有者、管理员、团队负责人和项目经理可以创建或编辑任务以及更改任务分配。成员仍可查看项目任务可见性设置允许其查看的任务和详情；此选项不会隐藏任务。",
   "membersCanViewClientTeam": "允许成员查看客户的团队",
   "membersCanViewClientTeamTooltip": "启用后，普通项目成员可以在“成员”页面上看到“客户团队”选项卡。所有者、管理员、团队领导和项目经理始终会看到它。",
   "phaseAssigneesSettings": "阶段负责人",

@@ -96,7 +96,7 @@
   "restrictTaskCreationBusinessPlanTitle": "Piano aziendale richiesto",
   "restrictTaskCreationBusinessPlanDescription": "La limitazione della creazione di attività agli amministratori e ai team leader è disponibile sui piani Business ed Enterprise.",
   "restrictTaskCreation": "Limita l'assegnazione delle attività agli amministratori e ai responsabili del team",
-  "restrictTaskCreationTooltip": "Se abilitato, solo gli amministratori e i responsabili del team possono creare e assegnare attività. I membri del team possono solo visualizzare le attività assegnate.",
+  "restrictTaskCreationTooltip": "Se abilitata, solo proprietari, amministratori, team leader e project manager possono creare o modificare attività e cambiarne l'assegnazione. I membri possono comunque visualizzare le attività e i dettagli consentiti dalle impostazioni di visibilità delle attività del progetto; questa opzione non nasconde le attività.",
   "membersCanViewClientTeam": "Consenti ai membri di visualizzare il team del cliente",
   "membersCanViewClientTeamTooltip": "Se abilitati, i normali membri del progetto possono vedere la scheda del team del cliente nella pagina Membri. Proprietari, amministratori, team leader e project manager lo vedono sempre.",
   "phaseAssigneesSettings": "Assegnatari della fase",
