@@ -239,6 +239,9 @@ export function verifyNonGuestProjectAccess(
       const result = await db.query(q, [projectId, userId]);
 
       if (result.rowCount && result.rowCount > 0) {
+        if (!(await checkProjectRolePermission(userId, projectId, PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT)).allowed) {
+          return res.status(403).send(new ServerResponse(false, null, "You do not have permission to access this project"));
+        }
         if (permission && !(await checkProjectRolePermission(userId, projectId, permission)).allowed) {
           return res.status(403).send(new ServerResponse(false, null, "You do not have permission to perform this action"));
         }

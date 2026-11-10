@@ -84,6 +84,11 @@ export default class TaskTimelineController extends WorklenzControllerBase {
             }
         }
 
+        if (req.plannerVisibleProjectIds) {
+            whereClause += ` AND t.project_id = ANY($${paramIndex++}::UUID[])`;
+            params.push(req.plannerVisibleProjectIds);
+        }
+
         // Parse comma-separated status IDs
         if (statusId) {
             const statusIds = statusId.split(',').filter(id => id.trim());

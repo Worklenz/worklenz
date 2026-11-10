@@ -12,7 +12,7 @@ import { PROJECT_ROLE_PERMISSIONS } from "../../shared/organization-permissions"
 const taskCommentsApiRouter = express.Router();
 
 taskCommentsApiRouter.post("/", taskCommentBodyValidator, verifyTaskAccess('body', 'task_id'), verifyTaskRolePermission('body', 'task_id', PROJECT_ROLE_PERMISSIONS.COMMENT), safeControllerFunction(TaskCommentsController.create));
-taskCommentsApiRouter.get("/download", safeControllerFunction(TaskCommentsController.download));
+taskCommentsApiRouter.get("/download", verifyTaskAccessViaCommentAttachment('query', 'id'), safeControllerFunction(TaskCommentsController.download));
 taskCommentsApiRouter.get("/resolve/:id", idParamValidator, verifyTaskAccessViaComment('params', 'id'), safeControllerFunction(TaskCommentsController.resolveShortLink));
 taskCommentsApiRouter.get("/:id", idParamValidator, verifyTaskAccess('params', 'id'), safeControllerFunction(TaskCommentsController.getByTaskId));
 taskCommentsApiRouter.delete("/attachment/:id/:taskId", idParamValidator, verifyNonGuestTaskAccess('params', 'taskId', PROJECT_ROLE_PERMISSIONS.COMMENT), safeControllerFunction(TaskCommentsController.deleteAttachmentById));

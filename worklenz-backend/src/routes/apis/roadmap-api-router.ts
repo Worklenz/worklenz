@@ -15,12 +15,12 @@ const requirePhases = requireProjectPermission("phases", {
   sources: ["body.project_id", "query.project_id", "query.current_project_id"],
 });
 
-ganttApiRouter.get("/project-phase-label", safeControllerFunction(GanttController.getPhaseLabel));
+ganttApiRouter.get("/project-phase-label", verifyProjectAccess('query', 'project_id'), safeControllerFunction(GanttController.getPhaseLabel));
 
-ganttApiRouter.get("/project-roadmap", safeControllerFunction(GanttController.get));
-ganttApiRouter.get("/project-phases/:id", safeControllerFunction(GanttController.getPhasesByProject));
+ganttApiRouter.get("/project-roadmap", verifyProjectAccess('query', 'project_id'), safeControllerFunction(GanttController.get));
+ganttApiRouter.get("/project-phases/:id", verifyProjectAccess('params', 'id'), safeControllerFunction(GanttController.getPhasesByProject));
 
-ganttApiRouter.get("/project-workload", safeControllerFunction(GanttController.getWorkload));
+ganttApiRouter.get("/project-workload", verifyProjectAccess('query', 'project_id'), safeControllerFunction(GanttController.getWorkload));
 
 // New roadmap Gantt APIs
 ganttApiRouter.get("/roadmap-tasks", verifyProjectAccess('query', 'project_id'), verifyGuestViewAccess('query', 'project_id', 'roadmap'), safeControllerFunction(GanttController.getRoadmapTasks));

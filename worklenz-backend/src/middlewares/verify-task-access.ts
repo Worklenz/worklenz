@@ -523,6 +523,9 @@ export function verifyTaskAccessViaComment(
 
       if (result.rowCount && result.rowCount > 0) {
         const taskId = result.rows[0].task_id;
+        if (!(await checkTaskRolePermission(userId, taskId, PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT)).allowed) {
+          return res.status(403).send(new ServerResponse(false, null, "You do not have permission to access this task"));
+        }
 
         // For mutations, enforce assignee-scope restrictions
         if (!isReadOnlyHttpMethod(req.method)) {
@@ -609,6 +612,9 @@ export function verifyTaskAccessViaWorkLog(
       
       if (result.rowCount && result.rowCount > 0) {
         const taskId = result.rows[0].task_id;
+        if (!(await checkTaskRolePermission(userId, taskId, PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT)).allowed) {
+          return res.status(403).send(new ServerResponse(false, null, "You do not have permission to access this task"));
+        }
         
         // For mutations, enforce assignee-scope restrictions
         if (!isReadOnlyHttpMethod(req.method)) {
@@ -678,6 +684,9 @@ export function verifyTaskAccessViaAttachment(
       
       if (result.rowCount && result.rowCount > 0) {
         const taskId = result.rows[0].task_id;
+        if (!(await checkTaskRolePermission(userId, taskId, PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT)).allowed) {
+          return res.status(403).send(new ServerResponse(false, null, "You do not have permission to access this task"));
+        }
         
         // For mutations, enforce scheme and assignee-scope restrictions
         if (!isReadOnlyHttpMethod(req.method)) {
@@ -749,6 +758,9 @@ export function verifyTaskAccessViaCommentAttachment(
 
       if (result.rowCount && result.rowCount > 0) {
         const taskId = result.rows[0].task_id;
+        if (!(await checkTaskRolePermission(userId, taskId, PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT)).allowed) {
+          return res.status(403).send(new ServerResponse(false, null, "You do not have permission to access this task"));
+        }
         
         // For mutations, enforce assignee-scope restrictions
         if (!isReadOnlyHttpMethod(req.method)) {
@@ -881,6 +893,9 @@ export function verifyTaskAccessViaDependency(
 
       if (result.rowCount && result.rowCount > 0) {
         const taskId = result.rows[0].task_id;
+        if (!(await checkTaskRolePermission(userId, taskId, PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT)).allowed) {
+          return res.status(403).send(new ServerResponse(false, null, "You do not have permission to access this task"));
+        }
         
         // For mutations, enforce assignee-scope restrictions
         if (!isReadOnlyHttpMethod(req.method)) {
@@ -952,6 +967,9 @@ export function verifyTaskAccessViaSchedule(
 
       if (result.rowCount && result.rowCount > 0) {
         const taskId = result.rows[0].task_id;
+        if (!(await checkTaskRolePermission(userId, taskId, PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT)).allowed) {
+          return res.status(403).send(new ServerResponse(false, null, "You do not have permission to access this task"));
+        }
         
         // For mutations, enforce scheme and assignee-scope restrictions
         if (!isReadOnlyHttpMethod(req.method)) {

@@ -110,6 +110,7 @@ export async function verifyNonGuestProjectAccessSocket(
     `;
     const result = await db.query(q, [projectId, userId]);
     if (!result.rowCount) return false;
+    if (!(await checkProjectRolePermission(userId, projectId, PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT)).allowed) return false;
     return !permission || (await checkProjectRolePermission(userId, projectId, permission)).allowed;
   } catch (error) {
     log_error(`Error verifying non-guest project access: ${error}`);

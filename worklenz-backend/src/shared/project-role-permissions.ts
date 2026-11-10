@@ -2,6 +2,7 @@ import db from "../config/db";
 import { log_error } from "./utils";
 import { normalizeTeamRoleName, TEAM_ROLE_NAMES } from "./team-permissions";
 import {
+  DEFAULT_GRANTS,
   getProjectSchemeRoleGrants,
   GUEST_ROLE_NAME,
   PROJECT_ROLE_PERMISSIONS,
@@ -45,6 +46,7 @@ const ROLE_CONTEXT_SELECT = `
          COALESCE(tm.is_guest, FALSE) AS is_team_guest,
          (pm.id IS NOT NULL) AS is_project_member,
          COALESCE(pal.key = 'GUEST', FALSE) AS is_project_guest,
+         psa.scheme_id AS assigned_scheme_id,
          ARRAY(
            SELECT DISTINCT srm.role_name
            FROM project_scheme_assignments psa
@@ -61,6 +63,7 @@ const ROLE_CONTEXT_SELECT = `
   INNER JOIN roles r ON r.id = tm.role_id
   LEFT JOIN project_members pm ON pm.project_id = p.id AND pm.team_member_id = tm.id
   LEFT JOIN project_access_levels pal ON pal.id = pm.project_access_level_id
+  LEFT JOIN project_scheme_assignments psa ON psa.project_id = p.id
 `;
 
 interface IRoleContextRow {
@@ -72,6 +75,7 @@ interface IRoleContextRow {
   is_project_member: boolean;
   is_project_guest: boolean;
   assigned_roles: string[] | null;
+  assigned_scheme_id: string | null;
 }
 
 /** Maps a role-context query row to the permission check context. */
@@ -86,6 +90,45 @@ const toRoleContext = (row: IRoleContextRow): IProjectRoleContext => {
     assignedRoles: row.assigned_roles || [],
   };
 };
+
+/** Resolve visible project IDs in two queries for aggregate endpoints. */
+export async function getVisibleProjectIds(userId: string | undefined, teamId: string | undefined): Promise<string[]> {
+  if (!userId || !teamId) return [];
+
+  const contexts = await db.query(`${ROLE_CONTEXT_SELECT} WHERE p.team_id = $2`, [userId, teamId]);
+  const rows = contexts.rows as IRoleContextRow[];
+  if (!rows.length) return [];
+
+  const schemeIds = [...new Set(rows.map(row => row.assigned_scheme_id).filter((id): id is string => !!id))];
+  const result = await db.query(
+    `SELECT psg.scheme_id, ps.is_default, psg.role_name, psg.granted
+     FROM permission_scheme_grants psg
+     JOIN permission_schemes ps ON ps.id = psg.scheme_id
+     WHERE ps.team_id = $1 AND psg.permission = $2
+       AND (ps.is_default = TRUE OR ps.id = ANY($3::UUID[]))`,
+    [teamId, PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT, schemeIds]
+  );
+  const defaultGrants = new Map<string, boolean>();
+  const projectGrants = new Map<string, boolean>();
+  for (const grant of result.rows as Array<{ scheme_id: string; is_default: boolean; role_name: string; granted: boolean }>) {
+    (grant.is_default ? defaultGrants : projectGrants).set(
+      grant.is_default ? grant.role_name : `${grant.scheme_id}:${grant.role_name}`,
+      grant.granted
+    );
+  }
+
+  return rows.filter(row => {
+    const context = toRoleContext(row);
+    if (context.roleName === TEAM_ROLE_NAMES.OWNER || context.roleName === TEAM_ROLE_NAMES.ADMIN) return true;
+    const roles = context.assignedRoles.length ? context.assignedRoles : [context.roleName];
+    return roles.some(role =>
+      (row.assigned_scheme_id ? projectGrants.get(`${row.assigned_scheme_id}:${role}`) : undefined)
+        ?? defaultGrants.get(role)
+        ?? DEFAULT_GRANTS[PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT]?.[role]
+        ?? false
+    );
+  }).map(row => row.project_id);
+}
 
 /** Role and membership for a user on one project. */
 export async function getProjectRoleContext(

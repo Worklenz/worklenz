@@ -1,6 +1,6 @@
 jest.mock('../config/db', () => ({ __esModule: true, default: { query: jest.fn() } }));
 import db from '../config/db';
-import { checkProjectRolePermission } from '../shared/project-role-permissions';
+import { checkProjectRolePermission, getVisibleProjectIds } from '../shared/project-role-permissions';
 import { PROJECT_ROLE_PERMISSIONS } from '../shared/organization-permissions';
 
 const query = db.query as jest.Mock;
@@ -49,5 +49,22 @@ describe('assigned project scheme roles', () => {
     query.mockResolvedValueOnce({ rows: [context({ owner: true, assigned_roles: ['Guest'] })] });
     expect((await checkProjectRolePermission('user', 'project', PROJECT_ROLE_PERMISSIONS.DELETE_TASKS)).allowed).toBe(true);
     expect(query).toHaveBeenCalledTimes(1);
+  });
+  it('filters aggregate projects using assigned roles and project grants', async () => {
+    query.mockResolvedValueOnce({ rows: [
+      context({ project_id: 'visible', assigned_scheme_id: 'scheme', assigned_roles: ['Team Lead'] }),
+      context({ project_id: 'hidden', assigned_scheme_id: 'scheme', assigned_roles: ['Guest'] }),
+      context({ project_id: 'owner', owner: true, assigned_scheme_id: 'scheme', assigned_roles: ['Guest'] }),
+    ] }).mockResolvedValueOnce({ rows: [
+      { scheme_id: 'scheme', is_default: false, role_name: 'Team Lead', granted: true },
+      { scheme_id: 'scheme', is_default: false, role_name: 'Guest', granted: false },
+    ] });
+    expect(await getVisibleProjectIds('user', 'team')).toEqual(['visible', 'owner']);
+    expect(query).toHaveBeenCalledTimes(2);
+  });
+  it('applies default view grants when a project scheme does not override them', async () => {
+    query.mockResolvedValueOnce({ rows: [context({ project_id: 'project', assigned_scheme_id: 'scheme' })] })
+      .mockResolvedValueOnce({ rows: [{ scheme_id: 'default', is_default: true, role_name: 'Member', granted: false }] });
+    expect(await getVisibleProjectIds('user', 'team')).toEqual([]);
   });
 });

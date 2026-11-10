@@ -5,6 +5,7 @@ import { ServerResponse } from "../models/server-response";
 import { log_error } from "../shared/utils";
 import { canViewAllProjects, hasOrganizationPermission, ORGANIZATION_PERMISSIONS } from "../shared/organization-permissions";
 import { listGuestVisibleProjectIds } from "../shared/planner-project-visibility";
+import { getVisibleProjectIds } from "../shared/project-role-permissions";
 import { isGuestForActiveTeam } from "../shared/team-permissions";
 
 /**
@@ -54,6 +55,10 @@ export default async function verifyNonGuestPlannerAccess(
         req.plannerVisibleProjectIds = await listGuestVisibleProjectIds(userId, teamId);
       }
     }
+
+    const schemeVisible = new Set(await getVisibleProjectIds(userId, teamId));
+    req.plannerVisibleProjectIds = (req.plannerVisibleProjectIds ?? [...schemeVisible])
+      .filter(id => schemeVisible.has(id));
 
     return next();
   } catch (error) {

@@ -5,6 +5,7 @@ import { ServerResponse } from "../models/server-response";
 import db from "../config/db";
 import { canViewAnalyticsReports } from "../shared/reporting-analytics-permissions";
 import { canViewAllProjects } from "../shared/organization-permissions";
+import { getVisibleProjectIds } from "../shared/project-role-permissions";
 import {
   getEffectiveTeamRole,
   TEAM_ROLE_NAMES,
@@ -86,7 +87,16 @@ export default async function analyticsProjectAccessMiddleware(
       sessionAccessible,
       requestedTeamIds
     );
-    const accessible = new Set<string>(accessibleList);
+    const visibilityByTeam = await Promise.all(
+      [...new Set([teamId, ...requestedTeamIds])].map(id => getVisibleProjectIds(userId, id))
+    );
+    const visible = new Set(visibilityByTeam.flat());
+    if (role === TEAM_ROLE_NAMES.OWNER || role === TEAM_ROLE_NAMES.ADMIN) {
+      // Organization-wide reporting access includes sister teams even when the
+      // owner/admin has no separate team_members row in each one.
+      accessibleList.forEach(id => visible.add(id));
+    }
+    const accessible = new Set<string>(accessibleList.filter(id => visible.has(id)));
 
     if (requested.length > 0) {
       // Intersect with accessible set. Select All can include stale/out-of-scope

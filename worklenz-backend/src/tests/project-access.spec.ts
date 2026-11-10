@@ -5,6 +5,13 @@
 
 jest.unmock("../shared/project-access");
 jest.unmock("../shared/team-permissions");
+jest.mock("../shared/project-role-permissions", () => ({
+  getProjectRolePermissions: jest.fn().mockResolvedValue([
+    "View project", "Manage project settings", "Manage statuses", "Manage phases",
+    "Manage custom columns", "Manage members", "Save as template",
+    "View project finance", "Archive project", "Delete project",
+  ]),
+}));
 
 import { TEAM_ROLE_NAMES } from "../shared/team-permissions";
 import {
@@ -23,6 +30,7 @@ jest.mock("../config/db", () => ({
 }));
 
 import db from "../config/db";
+import { getProjectRolePermissions } from "../shared/project-role-permissions";
 
 const mockedDb = db as jest.Mocked<typeof db>;
 
@@ -243,5 +251,20 @@ describe("getProjectAccessForRequest cache", () => {
     expect(mockedDb.query).toHaveBeenCalledTimes(1);
     expect(first.isProjectManager).toBe(true);
     expect(first.permissions.settings).toBe(true);
+  });
+
+  it("denies management when the project view grant is revoked", async () => {
+    (getProjectRolePermissions as jest.Mock).mockResolvedValueOnce([]);
+    mockedDb.query.mockResolvedValueOnce({ rows: [{
+      team_role: "Member", is_guest: false, active: true,
+      access_level: "PROJECT_MANAGER", finance_access: true,
+      can_create_projects_from_templates: false, is_project_member: true,
+      project_team_id: "team-1",
+    }], rowCount: 1 } as never);
+    const user = { id: "user-1", team_id: "team-1", role_name: "Member" } as IPassportSession;
+    const access = await getProjectAccessForRequest({ user } as IWorkLenzRequest, "project-a");
+    expect(access.isProjectMember).toBe(false);
+    expect(access.permissions.settings).toBe(false);
+    expect(access.permissions.members.add).toBe(false);
   });
 });

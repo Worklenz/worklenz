@@ -381,11 +381,12 @@ export const getProjectAccess = async (
     canCreateProjectsFromTemplates: !!row.can_create_projects_from_templates,
     isProjectMember: !!row.is_project_member,
   });
-  if (!row.active || access.isGuest || !access.isProjectMember || teamRole === TEAM_ROLE_NAMES.OWNER || teamRole === TEAM_ROLE_NAMES.ADMIN) {
+  if (!row.active || teamRole === TEAM_ROLE_NAMES.OWNER || teamRole === TEAM_ROLE_NAMES.ADMIN) {
     return access;
   }
 
   const controlled = [
+    PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT,
     PROJECT_ROLE_PERMISSIONS.MANAGE_PROJECT_SETTINGS, PROJECT_ROLE_PERMISSIONS.MANAGE_STATUSES,
     PROJECT_ROLE_PERMISSIONS.MANAGE_PHASES, PROJECT_ROLE_PERMISSIONS.MANAGE_CUSTOM_COLUMNS,
     PROJECT_ROLE_PERMISSIONS.MANAGE_MEMBERS, PROJECT_ROLE_PERMISSIONS.SAVE_AS_TEMPLATE,
@@ -393,6 +394,11 @@ export const getProjectAccess = async (
     PROJECT_ROLE_PERMISSIONS.DELETE_PROJECT,
   ];
   const granted = new Set(await getProjectRolePermissions(user.id, projectId, controlled));
+  if (!granted.has(PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT)) {
+    return { ...access, isProjectMember: false, isProjectManager: false, financeAccess: false,
+      permissions: { ...DENIED_PERMISSIONS } };
+  }
+  if (access.isGuest || !access.isProjectMember) return access;
   const hasMembers = granted.has(PROJECT_ROLE_PERMISSIONS.MANAGE_MEMBERS);
   const hasFinance = granted.has(PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT_FINANCE);
   return {

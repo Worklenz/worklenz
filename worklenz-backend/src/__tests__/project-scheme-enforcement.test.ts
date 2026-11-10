@@ -46,7 +46,7 @@ describe('project scheme enforcement', () => {
   });
   it.each([true, false])('applies create permission to project requests (allowed=%s)', async allowed => {
     query.mockResolvedValueOnce({ rowCount: 1, rows: [{}] });
-    projectCheck.mockResolvedValueOnce({ allowed });
+    projectCheck.mockResolvedValueOnce({ allowed: true }).mockResolvedValueOnce({ allowed });
     const req = createMockRequest({ body: { project_id: 'project' } });
     const res = createMockResponse(); const next = jest.fn();
     await verifyNonGuestProjectAccess('body', 'project_id', PROJECT_ROLE_PERMISSIONS.CREATE_TASKS)(req, res, next);
