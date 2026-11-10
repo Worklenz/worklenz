@@ -592,6 +592,8 @@ export default class GanttController extends WorklenzControllerBase {
             exportedOn,
             groupingLabel: prepared.value.groupingLabel,
             rows: prepared.value.rows,
+            timelineStart: prepared.value.timelineStart,
+            timelineEnd: prepared.value.timelineEnd,
           }),
           contentType: "application/pdf",
         }

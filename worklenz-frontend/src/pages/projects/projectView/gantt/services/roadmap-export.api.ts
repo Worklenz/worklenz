@@ -65,12 +65,27 @@ export const exportRoadmapFile = async (
   if (payload.rows.length <= rowsPerPart) return exportRoadmapPart(payload);
 
   const files: Record<string, Uint8Array> = {};
-  const partCount = Math.ceil(payload.rows.length / rowsPerPart);
+  const dates = payload.rows.flatMap(row => [row.startDate, row.endDate]).filter((date): date is string => Boolean(date)).sort();
+  const parts: RoadmapExportPayload['rows'][] = [];
+  let group: RoadmapExportPayload['rows'][number] | undefined;
+  let part: RoadmapExportPayload['rows'] = [];
+  for (const row of payload.rows) {
+    if (part.length === rowsPerPart) {
+      parts.push(part);
+      part = row.kind !== 'group' && group ? [group] : [];
+    }
+    if (row.kind === 'group') group = row;
+    part.push(row);
+  }
+  if (part.length) parts.push(part);
+  const partCount = parts.length;
   let archiveName = 'Roadmap.zip';
   for (let index = 0; index < partCount; index += 1) {
     const part = await exportRoadmapPart({
       ...payload,
-      rows: payload.rows.slice(index * rowsPerPart, (index + 1) * rowsPerPart),
+      rows: parts[index],
+      timeline_start: dates[0],
+      timeline_end: dates[dates.length - 1],
     });
     const base = part.fileName.replace(/\.(pdf|xlsx)$/i, '');
     archiveName = `${base}.zip`;

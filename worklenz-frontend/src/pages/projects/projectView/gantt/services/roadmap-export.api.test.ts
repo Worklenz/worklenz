@@ -27,6 +27,22 @@ describe('roadmap export downloads', () => {
     expect(result.fileName).toBe('Roadmap.pdf');
     expect(apiClient.post).toHaveBeenCalledTimes(1);
   });
+
+  it('repeats the current group and sends shared timeline bounds across parts', async () => {
+    const data = payload(501);
+    data.rows[0] = { ...row(0), kind: 'group', name: 'Phase A' };
+    data.rows[1].startDate = '2026-01-01';
+    data.rows[500].endDate = '2026-12-31';
+    await exportRoadmapFile(data);
+    const calls = vi.mocked(apiClient.post).mock.calls;
+    const first = calls[0][1] as RoadmapExportPayload;
+    const second = calls[1][1] as RoadmapExportPayload;
+    expect(first.rows).toHaveLength(500);
+    expect(second.rows.map(item => item.name)).toEqual(['Phase A', 'Task 500']);
+    expect(first.timeline_start).toBe('2026-01-01');
+    expect(second.timeline_start).toBe(first.timeline_start);
+    expect(second.timeline_end).toBe('2026-12-31');
+  });
   it('archives sequentially rendered parts without dropping rows', async () => {
     const result = await exportRoadmapFile(payload(1001));
     expect(result.fileName).toBe('Roadmap.zip');

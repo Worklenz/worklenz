@@ -28,6 +28,12 @@ const row = (overrides: Record<string, unknown> = {}) => ({
 });
 
 describe("roadmap export", () => {
+  it("validates and preserves shared timeline bounds", () => {
+    const result = prepareRoadmapExport({ format: "pdf", group_by: "phase", rows: [row()], timeline_start: "2026-01-01", timeline_end: "2026-12-31" });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect([result.value.timelineStart, result.value.timelineEnd]).toEqual(["2026-01-01", "2026-12-31"]);
+    expect(prepareRoadmapExport({ format: "pdf", group_by: "phase", rows: [], timeline_start: "2026-12-31", timeline_end: "2026-01-01" }).ok).toBe(false);
+  });
   it("rejects an unknown format and an invalid date", () => {
     expect(prepareRoadmapExport({ format: "csv", group_by: "phase", rows: [] }).ok).toBe(false);
     const dated = prepareRoadmapExport({

@@ -30,6 +30,8 @@ export interface PreparedRoadmapExport {
   groupBy: RoadmapGroupBy;
   groupingLabel: string;
   rows: RoadmapExportRow[];
+  timelineStart: string | null;
+  timelineEnd: string | null;
 }
 
 export interface TimelineWindow {
@@ -190,7 +192,13 @@ export const prepareRoadmapExport = (
     });
   }
 
-  return { ok: true, value: { format, groupBy, groupingLabel, rows } };
+  const timelineStart = cleanDate(body.timeline_start);
+  const timelineEnd = cleanDate(body.timeline_end);
+  if ((body.timeline_start != null || body.timeline_end != null) &&
+      (!timelineStart || !timelineEnd || timelineStart > timelineEnd)) {
+    return { ok: false, message: "Timeline bounds must be valid ordered dates" };
+  }
+  return { ok: true, value: { format, groupBy, groupingLabel, rows, timelineStart, timelineEnd } };
 };
 
 export const timelineWindow = (rows: Array<Pick<RoadmapExportRow, "startDate" | "endDate">>): TimelineWindow | null => {
@@ -414,9 +422,13 @@ export const buildRoadmapPdf = async (input: {
   exportedOn: string;
   groupingLabel: string;
   rows: RoadmapExportRow[];
+  timelineStart?: string | null;
+  timelineEnd?: string | null;
 }): Promise<Buffer> => {
   registerPdfFonts();
-  const window = timelineWindow(input.rows);
+  const window = input.timelineStart && input.timelineEnd
+    ? timelineWindow([{ startDate: input.timelineStart, endDate: input.timelineEnd }])
+    : timelineWindow(input.rows);
   const model = {
     projectName: input.projectName,
     exportedOn: input.exportedOn,

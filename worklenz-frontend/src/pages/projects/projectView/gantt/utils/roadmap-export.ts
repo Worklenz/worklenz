@@ -24,6 +24,8 @@ export interface RoadmapExportPayload {
   group_by: GanttGroupingMode;
   grouping_label: string;
   rows: RoadmapExportRowPayload[];
+  timeline_start?: string;
+  timeline_end?: string;
 }
 
 const toIsoDate = (value: Date | null | undefined): string | null => {
