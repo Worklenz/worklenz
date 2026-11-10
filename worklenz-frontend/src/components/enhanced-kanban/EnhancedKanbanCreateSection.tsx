@@ -94,20 +94,22 @@ const EnhancedKanbanCreateSection: React.FC = () => {
 
   const getUniqueSectionName = (baseName: string): string => {
     // Check if the base name already exists
-    const existingNames = existingStatuses.map(status => status.name?.toLowerCase());
+    const existingNames = existingStatuses.map(status =>
+      status.name?.toLowerCase()
+    );
 
     if (!existingNames.includes(baseName.toLowerCase())) {
       return baseName;
     }
 
-    // If the base name exists, add a number suffix
     let counter = 1;
-    let newName = `${baseName.trim()} (${counter})`;
+    let newName = '';
 
-    while (existingNames.includes(newName.toLowerCase())) {
+    do {
+      const suffix = ` (${counter})`;
+      newName = `${baseName.trim().slice(0, 50 - suffix.length)}${suffix}`;
       counter++;
-      newName = `${baseName.trim()} (${counter})`;
-    }
+    } while (existingNames.includes(newName.toLowerCase()));
 
     return newName;
   };
@@ -213,6 +215,7 @@ const EnhancedKanbanCreateSection: React.FC = () => {
               <input
                 ref={inputRef}
                 value={sectionName}
+                maxLength={groupBy === IGroupBy.STATUS ? 50 : undefined}
                 onChange={e => setSectionName(e.target.value)}
                 onKeyDown={handleInputKeyDown}
                 className={`bg-transparent border-none outline-none text-sm font-semibold min-w-[120px] flex-1 ${themeMode === 'dark' ? 'text-gray-800 placeholder-gray-800' : 'text-gray-800 placeholder-gray-600'}`}
@@ -271,6 +274,18 @@ const EnhancedKanbanCreateSection: React.FC = () => {
                 </div>
               )}
             </div>
+            {groupBy === IGroupBy.STATUS && (
+              <div
+                style={{
+                  fontSize: 12,
+                  color: themeMode === 'dark' ? '#999' : '#888',
+                  textAlign: 'right',
+                  marginTop: -4,
+                }}
+              >
+                {sectionName.length}/50
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 8 }}>
               <Button
                 type="primary"
