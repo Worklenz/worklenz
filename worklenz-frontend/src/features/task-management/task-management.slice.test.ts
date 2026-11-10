@@ -161,6 +161,21 @@ describe('task status group updates', () => {
       updated_at: '2026-01-01T00:00:00.000Z',
     });
   });
+
+  it('keeps nested subtasks out of top-level groups for single and bulk status changes', () => {
+    const state = createState();
+    const subtask = { ...task('subtask', 'status-a'), parent_task_id: 'task-1' };
+    state.entities.subtask = subtask as never;
+    state.ids.push('subtask');
+    const single = taskManagementReducer(state, updateTask({ ...subtask, status: 'status-b' }));
+    expect(single.entities.subtask?.status).toBe('status-b');
+    expect(single.groups.every(group => !group.taskIds.includes('subtask'))).toBe(true);
+    const bulk = taskManagementReducer(state, bulkUpdateTaskStatuses({
+      taskIds: ['task-1', 'subtask'], statusId: 'status-b', updatedAt: '2026-01-01',
+    }));
+    expect(bulk.entities.subtask?.status).toBe('status-b');
+    expect(bulk.groups.find(group => group.id === 'status-b')?.taskIds).toEqual(['task-1', 'task-3']);
+  });
 });
 
 describe('convertTaskToSubtask vs stale fetchSubTasks.fulfilled', () => {

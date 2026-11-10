@@ -751,7 +751,8 @@ const taskManagementSlice = createSlice({
 
       tasksAdapter.upsertOne(state as EntityState<Task, string>, updatedTask);
 
-      if (oldTask && state.grouping === IGroupBy.STATUS && previousStatus !== updatedTask.status) {
+      const isGroupedTask = state.groups.some(group => group.taskIds.includes(updatedTask.id));
+      if (oldTask && isGroupedTask && state.grouping === IGroupBy.STATUS && previousStatus !== updatedTask.status) {
         state.groups.forEach(group => {
           group.taskIds = group.taskIds.filter(id => id !== updatedTask.id);
         });
@@ -835,15 +836,18 @@ const taskManagementSlice = createSlice({
 
       if (state.grouping !== IGroupBy.STATUS) return;
 
+      const groupedTaskIds = new Set(state.groups.flatMap(group => group.taskIds));
+      const movedTaskIds = updatedTaskIds.filter(taskId => groupedTaskIds.has(taskId));
+
       state.groups.forEach(group => {
-        group.taskIds = group.taskIds.filter(taskId => !updatedTaskIds.includes(taskId));
+        group.taskIds = group.taskIds.filter(taskId => !movedTaskIds.includes(taskId));
       });
 
       const targetGroup = state.groups.find(
         group => group.id === statusId || group.groupValue === statusId
       );
       if (targetGroup) {
-        targetGroup.taskIds.unshift(...updatedTaskIds.reverse());
+        targetGroup.taskIds.unshift(...movedTaskIds.reverse());
       }
     },
     bulkDeleteTasks: (state, action: PayloadAction<string[]>) => {
