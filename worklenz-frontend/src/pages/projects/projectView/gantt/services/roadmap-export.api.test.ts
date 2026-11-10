@@ -52,4 +52,18 @@ describe('roadmap export downloads', () => {
     const names = Object.values(files).flatMap(file => JSON.parse(new TextDecoder().decode(file)) as string[]);
     expect(names).toEqual(payload(1001).rows.map(item => item.name));
   });
+
+  it('repeats parent and group when a subtask begins a new part', async () => {
+    const data = payload(1000);
+    data.rows[0] = { ...row(0), kind: 'group', name: 'Group' };
+    data.rows[499] = { ...row(499), name: 'Parent' };
+    data.rows[500] = { ...row(500), kind: 'subtask', parent: 'Parent' };
+    await exportRoadmapFile(data);
+    const calls = vi.mocked(apiClient.post).mock.calls;
+    expect((calls[1][1] as RoadmapExportPayload).rows.slice(0, 3).map(item => item.name))
+      .toEqual(['Group', 'Parent', 'Task 500']);
+    expect(calls.every(call => (call[1] as RoadmapExportPayload).rows.length <= 500)).toBe(true);
+    expect(calls.flatMap(call => (call[1] as RoadmapExportPayload).rows)
+      .filter(item => item.name === 'Task 999')).toHaveLength(1);
+  });
 });

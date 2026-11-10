@@ -5,8 +5,7 @@ import { Font } from "@react-pdf/renderer";
  * Fonts come from @fontsource packages (plain npm deps, so `npm ci` is the only install step).
  * Helvetica, react-pdf's default, can't render non-Latin text, hence Noto Sans plus the
  * Latin Extended, Sinhala and Tamil faces as fallbacks.
- * Note: CJK (Chinese/Japanese/Korean), Cyrillic, and Greek require additional
- * @fontsource packages that are not yet installed; add them here once available.
+ * The portable Droid fallback covers Chinese, Japanese, and Korean glyphs.
  */
 export const PDF_FONT_FAMILY = ["NotoSans", "NotoSansLatinExt", "NotoSansSinhala", "NotoSansTamil"];
 
@@ -34,6 +33,16 @@ export const registerPdfFonts = (): void => {
       ],
     });
   }
+
+  const cjk = fontFile("@reductoai/portable-fonts", "DroidSansFallback.ttf");
+  Font.register({ family: "RoadmapSans", fonts: [
+    { src: fontFile("@reductoai/portable-fonts", "Carlito-Regular.ttf"), fontWeight: 400 },
+    { src: fontFile("@reductoai/portable-fonts", "Carlito-Bold.ttf"), fontWeight: 700 },
+  ] });
+  Font.register({ family: "DroidSansFallback", fonts: [
+    { src: cjk, fontWeight: 400 },
+    { src: cjk, fontWeight: 700 },
+  ] });
 
   // Never hyphenate: names, numbers and addresses should wrap whole.
   Font.registerHyphenationCallback(word => [word]);

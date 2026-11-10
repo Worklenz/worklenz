@@ -1,5 +1,4 @@
 import { Page, StyleSheet, Text, View, Document } from "@react-pdf/renderer";
-import { PDF_FONT_FAMILY } from "./fonts";
 import { safeColor } from "./format";
 import type { RoadmapExportRow, TimelineBar, TimelineTick } from "../../services/roadmap/roadmap-export";
 
@@ -22,7 +21,7 @@ const TIMELINE_WIDTH = 560;
 
 const styles = StyleSheet.create({
   page: {
-    fontFamily: PDF_FONT_FAMILY,
+    fontFamily: "RoadmapSans",
     fontSize: 9,
     color: "#262626",
     paddingTop: 28,
@@ -174,6 +173,23 @@ const clipName = (value: string, kind: RoadmapPdfRow["kind"]): string => {
   return chars.length > max ? `${chars.slice(0, max - 3).join("")}...` : value;
 };
 
+// Explicit text runs avoid renderer fallback producing incorrect glyph mappings
+// when a line mixes several font subsets.
+const PdfTextRuns = ({ text }: { text: string }) => {
+  const runs: Array<{ font: string; text: string }> = [];
+  for (const char of text) {
+    const code = char.codePointAt(0) ?? 0;
+    const font = ((code >= 0x3000 && code <= 0x30ff) || (code >= 0x3400 && code <= 0x9fff) || (code >= 0xac00 && code <= 0xd7af)) ? "DroidSansFallback"
+      : code >= 0x0d80 && code <= 0x0dff ? "NotoSansSinhala"
+      : code >= 0x0b80 && code <= 0x0bff ? "NotoSansTamil"
+      : "RoadmapSans";
+    const last = runs[runs.length - 1];
+    if (last?.font === font) last.text += char;
+    else runs.push({ font, text: char });
+  }
+  return <>{runs.map((run, index) => <Text key={index} style={{ fontFamily: run.font }}>{run.text}</Text>)}</>;
+};
+
 interface RoadmapDocumentProps {
   model: RoadmapPdfModel;
 }
@@ -182,9 +198,9 @@ export const RoadmapDocument = ({ model }: RoadmapDocumentProps) => (
   <Document title={`Roadmap - ${model.projectName}`} author="Worklenz">
     <Page size="A4" orientation="landscape" style={styles.page}>
       <Text style={styles.title}>Roadmap</Text>
-      <Text style={styles.project}>{model.projectName}</Text>
+      <Text style={styles.project}><PdfTextRuns text={model.projectName} /></Text>
       <Text style={styles.meta}>
-        {`Grouped by ${model.groupingLabel}  ·  Exported ${model.exportedOn}`}
+        <PdfTextRuns text={`Grouped by ${model.groupingLabel}  ·  Exported ${model.exportedOn}`} />
       </Text>
 
       {model.hasTimeline ? (
@@ -218,7 +234,7 @@ export const RoadmapDocument = ({ model }: RoadmapDocumentProps) => (
           >
             <View style={[styles.nameCell, { paddingLeft: indentFor(row.kind) }]}>
               <Text style={row.kind === "group" ? styles.groupName : styles.name}>
-                {clipName(row.name, row.kind)}
+                <PdfTextRuns text={clipName(row.name, row.kind)} />
               </Text>
             </View>
             <View style={styles.barTrack}>

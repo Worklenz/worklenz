@@ -68,13 +68,16 @@ export const exportRoadmapFile = async (
   const dates = payload.rows.flatMap(row => [row.startDate, row.endDate]).filter((date): date is string => Boolean(date)).sort();
   const parts: RoadmapExportPayload['rows'][] = [];
   let group: RoadmapExportPayload['rows'][number] | undefined;
+  let parent: RoadmapExportPayload['rows'][number] | undefined;
   let part: RoadmapExportPayload['rows'] = [];
   for (const row of payload.rows) {
     if (part.length === rowsPerPart) {
       parts.push(part);
       part = row.kind !== 'group' && group ? [group] : [];
+      if (row.kind === 'subtask' && parent) part.push(parent);
     }
-    if (row.kind === 'group') group = row;
+    if (row.kind === 'group') { group = row; parent = undefined; }
+    if (row.kind === 'task') parent = row;
     part.push(row);
   }
   if (part.length) parts.push(part);
