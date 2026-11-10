@@ -103,10 +103,10 @@ const ProjectViewHeader = memo(() => {
   const isGuest = useMemo(() => isUserGuest(selectedProject), [selectedProject]);
   const isSoftwareProject = isSoftwareProjectType(selectedProject?.project_type);
   const createTaskLabel = isSoftwareProject
-    ? t('createIssue', { defaultValue: 'Create Issue' })
+    ? t('createIssue', { defaultValue: 'Create work item' })
     : t('createTask', { defaultValue: 'Create task' });
   const createTaskTooltip = isSoftwareProject
-    ? t('createIssueTooltip', { defaultValue: 'Create a new issue' })
+    ? t('createIssueTooltip', { defaultValue: 'Create a new work item' })
     : t('createTaskTooltip', { defaultValue: 'Create a new task' });
 
   const [creatingTask, setCreatingTask] = useState(false);

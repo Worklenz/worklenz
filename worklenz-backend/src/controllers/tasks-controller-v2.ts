@@ -722,8 +722,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
       subtaskFilters.length > 0 ? `AND ${subtaskFilters.join(" AND ")}` : "";
 
     // Build has_filtered_children query - checks if any descendant (at any level) matches the active filters
-    // This is used to auto-expand parent tasks when their descendants match filters
-    const hasActiveFilters = !!(options.priorities || options.labels || options.members || options.phases || options.statuses || (options.search && !isSubTasks));
+    // This is used to auto-expand parent tasks when their descendants match filters.
+    // Phase is a scope filter (which sprints/phases are listed), not a match to surface.
+    // The software backlog pins every open sprint plus Unmapped, so counting phase here
+    // expands every parent that has a subtask as soon as the backlog opens.
+    const hasActiveFilters = !!(options.priorities || options.labels || options.members || options.statuses || (options.search && !isSubTasks));
 
     let hasFilteredChildrenQuery = "FALSE";
     if (hasActiveFilters) {
@@ -785,29 +788,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
         const { clause: inClause } = SqlHelper.buildInClause(statusIds, statusParamStart);
         descendantFilterConditions.push(`td.status_id IN (${inClause})`);
-      }
-
-      // Phase filter for descendants — phase lives in the task_phase join table,
-      // so we use a correlated subquery against td.id
-      if (options.phases) {
-        let phaseParamStart = 2;
-        if (projectId) phaseParamStart++;
-        if (isSubTasks && options.parent_task) phaseParamStart++;
-        phaseParamStart += statusesResult.params.length;
-        phaseParamStart += labelsResult.params.length;
-        phaseParamStart += membersResult.params.length;
-        phaseParamStart += assigneeScopeResult.params.length;
-        phaseParamStart += projectsResult.params.length;
-        phaseParamStart += priorityResult.params.length;
-
-        const descendantPhaseFilter = TasksControllerV2.buildPhaseFilterClause(
-          options.phases as string,
-          "td",
-          phaseParamStart
-        );
-        if (descendantPhaseFilter.clause) {
-          descendantFilterConditions.push(descendantPhaseFilter.clause);
-        }
       }
 
       if (descendantFilterConditions.length > 0) {

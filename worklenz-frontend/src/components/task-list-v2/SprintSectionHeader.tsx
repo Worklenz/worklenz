@@ -228,10 +228,11 @@ export const SprintSectionHeader = ({
         onKeyDown={handleToggleKeyDown}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className={`sticky left-0 z-[25] flex items-center gap-2.5 px-3 py-2 min-h-[44px] cursor-pointer transition-colors duration-150 focus:outline-none focus-visible:ring-2 ${
+        className={`sprint-section-bar sticky left-0 z-[25] flex items-center gap-2.5 px-3 py-2 min-h-[44px] cursor-pointer transition-colors duration-150 focus:outline-none focus-visible:ring-2 ${
           isCollapsed ? 'rounded-[10px]' : 'rounded-t-[10px]'
         }`}
         style={{
+          top: 'auto',
           width: visibleWidth ?? '100%',
           background: isActiveSprint
             ? token.colorPrimaryBg
