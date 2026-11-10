@@ -13,5 +13,8 @@
   "limitTimelogBackdatingTooltip": "Lorsque cette option est activée, les membres ne peuvent pas créer un journal de temps antérieur au nombre de jours autorisé. S'applique à tout le monde, y compris les propriétaires et les administrateurs. Les minuteries en cours d’exécution et les journaux importés ne sont pas affectés.",
   "timelogBackdateLimitDays": "Nombre maximum de jours pendant lesquels un journal de temps peut être antidaté",
   "timelogBackdateLimitNote": "Remarque : Les journaux de temps existants ne sont jamais modifiés. L'édition d'un journal déjà ancien reste possible tant que sa date n'est pas modifiée.",
-  "days": "jours"
+  "days": "jours",
+  "enforceDailyTimeLimit": "Appliquer la limite quotidienne de 24 heures",
+  "enforceDailyTimeLimitTooltip": "Lorsqu activé, les membres ne peuvent pas enregistrer plus de 24 heures de travail par jour sur l ensemble des tâches.",
+  "enforceDailyTimeLimitNote": "Remarque : Les entrées historiques existantes dépassant 24 heures sont conservées. La modification d une entrée existante dépassant la limite est autorisée tant que la durée est réduite."
 }
