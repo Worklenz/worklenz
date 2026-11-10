@@ -107,7 +107,16 @@ const EnhancedKanbanCreateSection: React.FC = () => {
 
     do {
       const suffix = ` (${counter})`;
-      newName = `${baseName.trim().slice(0, 50 - suffix.length)}${suffix}`;
+      const trimmedBaseName = baseName.trim();
+      let namePrefix = trimmedBaseName;
+      if (groupBy === IGroupBy.STATUS) {
+        namePrefix = '';
+        for (const character of trimmedBaseName) {
+          if (namePrefix.length + character.length > 50 - suffix.length) break;
+          namePrefix += character;
+        }
+      }
+      newName = `${namePrefix}${suffix}`;
       counter++;
     } while (existingNames.includes(newName.toLowerCase()));
 
