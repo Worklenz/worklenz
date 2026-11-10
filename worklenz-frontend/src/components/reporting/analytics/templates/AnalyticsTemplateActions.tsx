@@ -59,14 +59,14 @@ export const AnalyticsTemplateActions: React.FC<AnalyticsTemplateActionsProps> =
         disabled={canSaveTemplate ? saveDisabled : false}
         aria-label={
           canSaveTemplate
-            ? t('saveAsTemplate', { defaultValue: 'Save as Template' })
-            : t('saveAsTemplateUpgradeAria', {
-                defaultValue: 'Save as Template ? Business plan required',
+            ? t('saveCustomReports', { defaultValue: 'Save custom reports' })
+            : t('saveCustomReportsUpgradeAria', {
+                defaultValue: 'Save custom reports — Business plan required',
               })
         }
       >
         <Space size={6}>
-          <span>{t('saveAsTemplate', { defaultValue: 'Save as Template' })}</span>
+          <span>{t('saveCustomReports', { defaultValue: 'Save custom reports' })}</span>
           {!canSaveTemplate && (
             <CrownOutlined
               style={{ fontSize: 14, color: '#faad14' }}
