@@ -220,6 +220,10 @@ export default function verifyTaskAccess(
 
       const {project_id: projectId, project_team_id: projectTeamId} = taskLookup.rows[0];
 
+      if (!(await checkProjectRolePermission(userId, projectId, PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT)).allowed) {
+        return res.status(403).send(new ServerResponse(false, null, "You do not have permission to access this task"));
+      }
+
       let pendingTeam: TaskProjectTeamContext | null = null;
 
       if (projectTeamId !== teamId) {

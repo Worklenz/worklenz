@@ -9,9 +9,9 @@ jest.mock('../shared/assignee-task-scope', () => ({
 import db from '../config/db';
 import { checkProjectRolePermission, checkTaskRolePermission } from '../shared/project-role-permissions';
 import { PROJECT_ROLE_PERMISSIONS } from '../shared/organization-permissions';
-import { verifyNonGuestProjectAccess } from '../middlewares/verify-project-access';
-import { verifyNonGuestTaskAccess, verifyBulkTaskAccessMiddleware } from '../middlewares/verify-task-access';
-import { verifyNonGuestTaskAccessSocket } from '../socket.io/authorization';
+import verifyProjectAccess, { verifyNonGuestProjectAccess } from '../middlewares/verify-project-access';
+import verifyTaskAccess, { verifyNonGuestTaskAccess, verifyBulkTaskAccessMiddleware } from '../middlewares/verify-task-access';
+import { verifyNonGuestTaskAccessSocket, verifyProjectAccessSocket } from '../socket.io/authorization';
 import { createMockRequest, createMockResponse } from '../tests/utils/express-mock';
 
 const query = db.query as jest.Mock;
@@ -20,6 +20,30 @@ const taskCheck = checkTaskRolePermission as jest.Mock;
 beforeEach(() => { query.mockReset(); projectCheck.mockReset(); taskCheck.mockReset(); });
 
 describe('project scheme enforcement', () => {
+  it('denies project access when visibility is revoked', async () => {
+    query.mockResolvedValueOnce({ rowCount: 1, rows: [{}] })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ team_id: 'other-team' }] });
+    projectCheck.mockResolvedValueOnce({ allowed: false });
+    const res = createMockResponse(); const next = jest.fn();
+    await verifyProjectAccess('params', 'id')(createMockRequest({ params: { id: 'project' } }), res, next);
+    expect(res.statusCode).toBe(403);
+    expect(next).not.toHaveBeenCalled();
+    expect(query).toHaveBeenCalledTimes(2);
+  });
+  it('denies task detail when visibility is revoked', async () => {
+    query.mockResolvedValueOnce({ rowCount: 1, rows: [{ project_id: 'project', project_team_id: 'team-123' }] });
+    projectCheck.mockResolvedValueOnce({ allowed: false });
+    const res = createMockResponse(); const next = jest.fn();
+    await verifyTaskAccess('params', 'id')(createMockRequest({ params: { id: 'task' } }), res, next);
+    expect(res.statusCode).toBe(403);
+    expect(next).not.toHaveBeenCalled();
+  });
+  it('denies joining a project socket room when visibility is revoked', async () => {
+    query.mockResolvedValueOnce({ rowCount: 1, rows: [{}] });
+    projectCheck.mockResolvedValueOnce({ allowed: false });
+    const socket = { request: { session: { passport: { user: { id: 'user-123' } } } } };
+    expect(await verifyProjectAccessSocket(socket as never, 'project')).toBe(false);
+  });
   it.each([true, false])('applies create permission to project requests (allowed=%s)', async allowed => {
     query.mockResolvedValueOnce({ rowCount: 1, rows: [{}] });
     projectCheck.mockResolvedValueOnce({ allowed });

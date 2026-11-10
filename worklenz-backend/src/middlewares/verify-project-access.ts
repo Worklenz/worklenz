@@ -6,7 +6,7 @@ import db from "../config/db";
 import {log_error} from "../shared/utils";
 import {NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE} from "../shared/guest-access-sql";
 import { checkProjectRolePermission } from "../shared/project-role-permissions";
-import { ProjectRolePermission } from "../shared/organization-permissions";
+import { PROJECT_ROLE_PERMISSIONS, ProjectRolePermission } from "../shared/organization-permissions";
 
 /**
  * Middleware to verify user has access to a project
@@ -81,6 +81,10 @@ export default function verifyProjectAccess(
       }
 
       const projectTeamId = projectTeamResult.rows[0].team_id;
+
+      if (!(await checkProjectRolePermission(userId, projectId, PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT)).allowed) {
+        return res.status(403).send(new ServerResponse(false, null, "You do not have permission to access this project"));
+      }
 
       // Check if project belongs to user's current active team
       if (projectTeamId !== teamId) {

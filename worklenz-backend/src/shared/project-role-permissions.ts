@@ -121,16 +121,15 @@ const getGrantedPermissions = async (
     context.roleName === TEAM_ROLE_NAMES.MEMBER || context.roleName === GUEST_ROLE_NAME;
   // Non-members (including those viewing via "View all projects") are strictly view-only;
   // task mutation (create/edit/delete/comment) requires project membership.
-  if (isMemberOrGuest && !context.isProjectMember) {
-    return [];
-  }
-
   const roles = context.assignedRoles.length ? context.assignedRoles : [context.roleName];
+  const requested = [...new Set([...permissions, PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT])];
   const grants = await Promise.all(roles.map(role =>
-    getProjectSchemeRoleGrants(context.teamId, context.projectId, role, permissions)
+    getProjectSchemeRoleGrants(context.teamId, context.projectId, role, requested)
   ));
   const granted = new Set(grants.flat());
-  return permissions.filter(permission => granted.has(permission));
+  if (!granted.has(PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT)) return [];
+  return permissions.filter(permission => granted.has(permission) &&
+    (permission === PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT || !isMemberOrGuest || context.isProjectMember));
 };
 
 /** Resolve all project grants using the same role and membership rules as mutations. */

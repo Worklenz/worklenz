@@ -40,6 +40,8 @@ export async function verifyTaskAccessSocket(
       return false;
     }
 
+    if (!(await checkTaskRolePermission(userId, taskId, PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT)).allowed) return false;
+
     const { session } = socket.request as ISocketSession;
     // Assignee-scope + notification/mention exception (no deep-link signal on sockets)
     return canUserAccessTaskDetail(userId, taskId, session?.passport?.user as IPassportSession | undefined);
@@ -141,7 +143,7 @@ export async function verifyProjectAccessSocket(
       LIMIT 1;
     `;
     const result = await db.query(q, [projectId, userId]);
-    return result.rowCount ? result.rowCount > 0 : false;
+    return !!result.rowCount && (await checkProjectRolePermission(userId, projectId, PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT)).allowed;
   } catch (error) {
     log_error(`Error verifying project access: ${error}`);
     return false;

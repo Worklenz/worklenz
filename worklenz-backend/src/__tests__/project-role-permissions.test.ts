@@ -33,9 +33,17 @@ describe('assigned project scheme roles', () => {
     expect(query.mock.calls[1][1][2]).toBe('Member');
   });
   it('does not grant project mutations to an unassigned project member', async () => {
-    query.mockResolvedValueOnce({ rows: [context({ is_project_member: false, assigned_roles: ['Admin'] })] });
+    query.mockResolvedValueOnce({ rows: [context({ is_project_member: false, assigned_roles: ['Admin'] })] })
+      .mockResolvedValueOnce({ rows: [] });
     expect((await checkProjectRolePermission('user', 'project', PROJECT_ROLE_PERMISSIONS.EDIT_TASKS)).allowed).toBe(false);
-    expect(query).toHaveBeenCalledTimes(1);
+    expect(query).toHaveBeenCalledTimes(2);
+  });
+  it('denies task mutations when project visibility is revoked', async () => {
+    query.mockResolvedValueOnce({ rows: [context()] }).mockResolvedValueOnce({ rows: [
+      { permission: PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT, granted: false, is_default: false },
+      { permission: PROJECT_ROLE_PERMISSIONS.EDIT_TASKS, granted: true, is_default: false },
+    ] });
+    expect((await checkProjectRolePermission('user', 'project', PROJECT_ROLE_PERMISSIONS.EDIT_TASKS)).allowed).toBe(false);
   });
   it('preserves the actual owner override', async () => {
     query.mockResolvedValueOnce({ rows: [context({ owner: true, assigned_roles: ['Guest'] })] });
