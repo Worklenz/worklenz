@@ -91,7 +91,7 @@
       "status": "Estado de cara al cliente",
       "users": "Usuarios del cliente"
     },
-    "description": "Elija qué proyectos son visibles en el Portal del Cliente y qué se comparte dentro de cada uno. Todo comienza como solo interno.",
+    "description": "Elija qué proyectos son visibles en el Portal del Cliente y qué se comparte dentro de cada uno. Todo comienza como solo interno. Los proyectos archivados por un propietario o un administrador quedan fuera.",
     "empty": "Aún no hay proyectos. Cree un proyecto en su espacio de trabajo y luego vincúlelo a un cliente.",
     "fieldSaveFailed": "El proyecto no se pudo actualizar.",
     "fieldSaved": "{{name}} actualizado.",

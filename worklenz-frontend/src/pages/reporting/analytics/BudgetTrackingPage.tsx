@@ -157,6 +157,11 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
       }));
   }, [teamMembersState]);
 
+  const defaultTeamIds = useMemo(() => {
+    const id = session?.team_id ? String(session.team_id) : teamOptions[0]?.value;
+    return id ? [id] : [];
+  }, [session?.team_id, teamOptions]);
+
   const filters: BudgetTrackingFilters = useMemo(
     () => ({
       project_ids: selectedProjectIds,
@@ -414,6 +419,7 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
         teamOptions={teamOptions}
         selectedTeamIds={selectedTeamIds}
         onTeamsChange={setSelectedTeamIds}
+        defaultTeamIds={defaultTeamIds}
         loading={filtersLoading}
       />
     </Flex>

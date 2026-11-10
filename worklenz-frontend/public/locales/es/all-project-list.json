@@ -62,5 +62,11 @@
   "groups": "grupos",
   "retry": "Reintentar",
   "searchProjects": "Buscar por nombre de proyecto",
-  "members": "Miembros"
+  "members": "Miembros",
+  "expandAll": "Expandir todo",
+  "collapseAll": "Contraer todo",
+  "unnamedGroup": "Grupo sin nombre",
+  "projectCount_one": "{{count}} proyecto",
+  "projectCount_many": "{{count}} de proyectos",
+  "projectCount_other": "{{count}} proyectos"
 }

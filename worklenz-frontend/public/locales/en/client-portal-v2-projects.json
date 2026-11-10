@@ -91,7 +91,7 @@
       "status": "Client-facing status",
       "users": "Client users"
     },
-    "description": "Choose which projects are visible in the Client Portal and what is shared inside each one. Everything starts as Internal Only.",
+    "description": "Choose which projects are visible in the Client Portal and what is shared inside each one. Everything starts as Internal Only. Projects an Owner or Admin has archived are left out.",
     "empty": "No projects yet. Create a project in your workspace, then link it to a client.",
     "fieldSaveFailed": "The project could not be updated.",
     "fieldSaved": "{{name}} updated.",

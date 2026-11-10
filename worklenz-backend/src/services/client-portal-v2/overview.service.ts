@@ -6,6 +6,7 @@ import { getChangeRequestStats, listChangeRequests } from "./change-requests.ser
 import { countUnreadThreads, listThreads } from "./discussions.service";
 import { badRequest } from "./errors";
 import { EFFECTIVE_MILESTONES_SQL } from "./milestone-source";
+import { projectOpenForPortalSql } from "./scope";
 import { Queryable } from "./types";
 
 /**
@@ -55,6 +56,7 @@ const OPEN_MILESTONES_SQL = `
   JOIN project_client_settings pcs ON pcs.project_id = m.project_id AND pcs.portal_enabled IS TRUE
   LEFT JOIN clients c ON c.id = p.client_id
  WHERE m.target_date IS NOT NULL AND m.status <> 'completed'
+   AND ${projectOpenForPortalSql("p")}
 `;
 
 async function delayedMilestoneCount(q: Queryable, { teamId }: Ctx): Promise<number> {

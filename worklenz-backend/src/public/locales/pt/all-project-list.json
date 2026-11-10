@@ -60,5 +60,11 @@
   "endDate": "Data de término do projeto",
   "settingsTooltip": "Abrir configurações do projeto",
   "required": "Obrigatório",
-  "priority": "Prioridade"
+  "priority": "Prioridade",
+  "expandAll": "Expandir tudo",
+  "collapseAll": "Colapsar tudo",
+  "unnamedGroup": "Grupo sem nome",
+  "projectCount_one": "{{count}} projeto",
+  "projectCount_many": "{{count}} de projetos",
+  "projectCount_other": "{{count}} projetos"
 }

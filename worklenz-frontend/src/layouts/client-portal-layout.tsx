@@ -21,6 +21,7 @@ import '@/components/nav-rail/nav-rail.css';
 import FeatureUpgradePreview from '@/components/upgrade/FeatureUpgradePreview';
 import { useClientPortalFeaturePreviews } from '@/components/upgrade/clientPortalFeaturePreviews';
 import GlobalUpgradeModal from '@/components/upgrade/GlobalUpgradeModal';
+import { useClientPortalRealtimeSync } from '@/hooks/useClientPortalRealtimeSync';
 
 const CLIENT_PORTAL_BASE_PATH = '/worklenz/client-portal';
 
@@ -29,6 +30,8 @@ const ClientPortalLayout = () => {
   const sidebarCollapsed = resolved.collapsed;
   const { isMobile } = useResponsive();
   const location = useLocation();
+  // Keep Approvals / Change Requests / counts in sync with the client-side portal.
+  useClientPortalRealtimeSync();
 
   // theme details from theme slice
   const themeMode = useAppSelector(state => state.themeReducer.mode);

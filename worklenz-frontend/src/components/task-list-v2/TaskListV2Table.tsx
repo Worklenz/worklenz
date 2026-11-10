@@ -274,6 +274,29 @@ const SOFTWARE_COLUMN_LABELS: Record<string, string> = {
 const BACKLOG_COLUMN_IDS: readonly string[] = ['status', 'epic', 'assignees', 'priority', 'points'];
 /** Card borders (3px active-sprint accent + 1px right) and row padding around backlog columns. */
 const BACKLOG_ROW_CHROME_WIDTH = 18;
+/** Matches BacklogSectionColumnHeader. Sprint headers stick just below this bar. */
+const BACKLOG_COLUMN_HEADER_HEIGHT = 32;
+
+/** Keeps sprint headers under the pinned column labels instead of on the first row. */
+const BacklogStickyGroup = ({
+  style,
+  children,
+  context: _context,
+  ...rest
+}: React.HTMLAttributes<HTMLDivElement> & { context?: unknown }) => (
+  <div
+    {...rest}
+    className="tasklist-backlog-group-header"
+    style={{
+      ...style,
+      top: BACKLOG_COLUMN_HEADER_HEIGHT,
+      zIndex: 20,
+      backgroundColor: 'var(--tl-backlog-group-header-bg)',
+    }}
+  >
+    {children}
+  </div>
+);
 const ExampleTaskRows: React.FC<{
   visibleColumns: any[];
   isDarkMode?: boolean;
@@ -1378,16 +1401,27 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
 
     const tagStickyWrapper = (el: Element) => {
       if (!(el instanceof HTMLElement)) return;
-      if (el.classList.contains('virtuoso-group-header-wrapper')) return;
+      if (
+        el.classList.contains('virtuoso-group-header-wrapper') ||
+        el.classList.contains('tasklist-backlog-group-header')
+      ) {
+        return;
+      }
       if (window.getComputedStyle(el).position !== 'sticky') return;
       const child = el.firstElementChild;
       if (
         child &&
         (child.classList.contains('mt-2') || child.querySelector('[data-group-header]'))
       ) {
+        // Backlog has no global column header, so its sprint header must stick at
+        // top: 0. The shared 40px offset would pin that header on top of the rows.
         // Background color comes from CSS variables (--tl-group-header-bg /
         // --tl-backlog-group-header-bg) so theme changes never touch this code path.
-        el.classList.add('virtuoso-group-header-wrapper');
+        el.classList.add(
+          el.closest('.tasklist-backlog')
+            ? 'tasklist-backlog-group-header'
+            : 'virtuoso-group-header-wrapper'
+        );
       }
     };
 
@@ -1734,7 +1768,8 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
           insertAnchor?.groupId === group.id ? (insertAnchor.afterTaskId ?? null) : null,
       };
 
-      let itemsWithAddTask: Array<(Task & { originalIndex: number }) | AddTaskRowItem> = tasksForVirtuoso;
+      let itemsWithAddTask: Array<(Task & { originalIndex: number }) | AddTaskRowItem> =
+        tasksForVirtuoso;
       if (!isCurrentGroupCollapsed) {
         if (insertAnchor?.groupId === group.id && insertAnchor.afterTaskId) {
           const anchorIndex = tasksForVirtuoso.findIndex(
@@ -1818,7 +1853,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       const isGroupCollapsed = collapsedGroups.has(group.id);
       const isGroupEmpty = group.actualCount === 0;
 
-      const groupSpacingClass = isBacklogMode ? 'pt-3' : 'mt-2';
+      const groupSpacingClass = isBacklogMode ? 'mt-3' : 'mt-2';
 
       return (
         <div className={groupIndex > 0 ? groupSpacingClass : ''} data-group-header="true">
@@ -1837,12 +1872,6 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
               onToggle={() => handleGroupCollapse(group.id)}
               projectId={urlProjectId || ''}
             />
-            {isBacklogMode && !isGroupCollapsed && (
-              <BacklogSectionColumnHeader
-                visibleColumns={visibleColumns}
-                isActiveSprint={activeSprintGroupIds.has(group.id)}
-              />
-            )}
             {isGroupEmpty &&
               !isGroupCollapsed &&
               hasNoTasks &&
@@ -1886,7 +1915,6 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       isWorkReadOnly,
       isSoftwareProject,
       isBacklogMode,
-      activeSprintGroupIds,
     ]
   );
 
@@ -2572,10 +2600,19 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
             transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
           }
 
-          /* Software Backlog: sprint cards have no global column header and no cell dividers. */
-          .tasklist-backlog .virtuoso-group-header-wrapper {
-            top: 0 !important;
+          /* Software Backlog: column labels stay in the pinned header (${BACKLOG_COLUMN_HEADER_HEIGHT}px).
+             Sprint headers, including View on Board and Complete sprint, stick below that bar.
+             A top of 0 pins those buttons onto the first issue row. */
+          .tasklist-backlog .virtuoso-group-header-wrapper,
+          .tasklist-backlog-group-header {
+            top: ${BACKLOG_COLUMN_HEADER_HEIGHT}px !important;
+            z-index: 20 !important;
             background-color: var(--tl-backlog-group-header-bg) !important;
+          }
+
+          /* Horizontal stick only. A vertical top value drops the sprint actions onto a row. */
+          .tasklist-backlog .sprint-section-bar {
+            top: auto !important;
           }
 
           .tasklist-backlog .border-r {
@@ -2671,8 +2708,16 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                   overflowY: 'visible',
                 }}
               >
-                {/* Sticky Column Headers (Backlog cards render their own per section) */}
-                {!isBacklogMode && (
+                {/* Sticky column header. Backlog uses the same pattern as general projects:
+                    this bar stays put, sprint headers stick just below it, and only rows scroll. */}
+                {isBacklogMode ? (
+                  <div
+                    className="sticky top-0 z-30 bg-[var(--tl-header-bg)]"
+                    style={{ minWidth: 'max-content', height: BACKLOG_COLUMN_HEADER_HEIGHT }}
+                  >
+                    <BacklogSectionColumnHeader visibleColumns={visibleColumns} pinned />
+                  </div>
+                ) : (
                   <div
                     className="sticky top-0 z-30 bg-[var(--tl-header-bg)] transition-colors duration-200"
                     style={{ minWidth: 'max-content' }}
@@ -2689,25 +2734,31 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                     overscan={800}
                     groupCounts={virtuosoGroupCounts}
                     groupContent={renderGroup}
+                    components={
+                      isBacklogMode
+                        ? { Group: BacklogStickyGroup, TopItemList: BacklogStickyGroup }
+                        : undefined
+                    }
                     itemContent={(index, groupIndex) => {
                       const item = virtuosoItems[index];
                       if (!item) return <div />;
                       const group = virtuosoGroups[groupIndex];
-
                       const groupOffset = virtuosoGroupCounts
                         .slice(0, groupIndex)
                         .reduce((sum, c) => sum + c, 0);
                       const indexInGroup = index - groupOffset;
+                      const isLastItemOfGroup = indexInGroup === (group?.tasks.length ?? 0) - 1;
                       const isFirstInGroup = indexInGroup === 0 && !('isAddTaskRow' in item);
                       const previousItem =
                         indexInGroup > 0 ? group?.tasks?.[indexInGroup - 1] : null;
-                       const showInsertDivider =
-                         indexInGroup > 0 &&
-                         !('isAddTaskRow' in item) &&
-                         previousItem &&
-                         !('isAddTaskRow' in previousItem);
-                       // Check if this is the last real task in the group
-                      const isLastInGroup = !('isAddTaskRow' in item) && 
+                      const showInsertDivider =
+                        indexInGroup > 0 &&
+                        !('isAddTaskRow' in item) &&
+                        !!previousItem &&
+                        !('isAddTaskRow' in previousItem);
+                      // Check if this is the last real task in the group
+                      const isLastInGroup =
+                        !('isAddTaskRow' in item) &&
                         indexInGroup === group.tasks.length - 1 &&
                         group.tasks.filter(t => !('isAddTaskRow' in t)).length > 0 &&
                         item.id !== `add-task-${group.id}-0`;
@@ -2717,7 +2768,6 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                       const showBefore = isOverThisTask && dropPosition === 'before';
                       const showAfter = isOverThisTask && dropPosition === 'after';
                       const showIntoParent = isOverThisTask && dropPosition === 'into';
-                      const isLastItemOfGroup = indexInGroup === (group?.tasks.length ?? 0) - 1;
                       const backlogCardStyle: React.CSSProperties = isBacklogMode
                         ? {
                             background: themeToken.colorBgContainer,

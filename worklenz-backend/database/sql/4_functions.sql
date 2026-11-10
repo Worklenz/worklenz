@@ -6042,6 +6042,7 @@ BEGIN
     IF EXISTS(SELECT project_id FROM archived_projects WHERE project_id = _project_id)
     THEN
         DELETE FROM archived_projects WHERE project_id = _project_id;
+        UPDATE projects SET archived_for_team = FALSE WHERE id = _project_id;
     ELSE
         FOR _user_id IN
             SELECT user_id FROM team_members WHERE team_id = (SELECT team_id FROM projects WHERE id = _project_id)
@@ -6052,6 +6053,7 @@ BEGIN
                     VALUES (_user_id, _project_id);
                 END IF;
             END LOOP;
+        UPDATE projects SET archived_for_team = TRUE WHERE id = _project_id;
     END IF;
 END
 $$;

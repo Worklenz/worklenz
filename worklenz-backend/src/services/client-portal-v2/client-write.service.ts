@@ -179,6 +179,8 @@ export async function submitChangeRequest(subject: ClientSubject, body: SubmitCh
     body: `${subject.name}: ${created.title}`,
     url: `/worklenz/client-portal/change-requests/${created.id}`,
     projectId: created.projectId,
+    clientId: subject.clientId,
+    referenceId: created.id,
     emailEvent: "change_request",
   });
 
@@ -259,6 +261,8 @@ export async function replyToChangeRequest(subject: ClientSubject, id: string, t
     body: `${subject.name}: ${body.length > 140 ? `${body.slice(0, 137)}...` : body}`,
     url: `/worklenz/client-portal/change-requests/${id}`,
     projectId: notice.request.project_id,
+    clientId: subject.clientId,
+    referenceId: id,
     emailEvent: "change_request",
   });
 }
