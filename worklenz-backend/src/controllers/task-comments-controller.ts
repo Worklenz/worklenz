@@ -580,16 +580,16 @@ export default class TaskCommentsController extends WorklenzControllerBase {
              COALESCE(tca.project_id, t.project_id) AS project_id
       FROM task_comment_attachments tca
       LEFT JOIN tasks t ON t.id = tca.task_id
-      WHERE tca.id = $1;
+      WHERE tca.id = $1 AND tca.task_id = $2;
     `;
-    const lookupResult = await db.query(lookupQ, [req.params.id]);
+    const lookupResult = await db.query(lookupQ, [req.params.id, req.params.taskId]);
     const taskId = lookupResult.rows[0]?.task_id as string | undefined;
     const projectId = lookupResult.rows[0]?.project_id as string | undefined;
 
     const q = `DELETE
                 FROM task_comment_attachments
-                WHERE id = $1;`;
-    const result = await db.query(q, [req.params.id]);
+                WHERE id = $1 AND task_id = $2;`;
+    const result = await db.query(q, [req.params.id, req.params.taskId]);
     if (result.rowCount) {
       this.emitTaskCommentsUpdated(projectId, taskId);
     }

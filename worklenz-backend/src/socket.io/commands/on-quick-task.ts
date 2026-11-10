@@ -14,6 +14,8 @@ import { log_error } from "../../shared/utils";
 import { isTaskCreationRestricted } from "../../shared/task-creation-restriction";
 
 import { createQuickTaskRecord } from "../../shared/create-quick-task-record";
+import { verifyNonGuestProjectAccessSocket } from "../authorization";
+import { PROJECT_ROLE_PERMISSIONS } from "../../shared/organization-permissions";
 
 export async function getTaskCompleteInfo(task: any) {
   if (!task) return null;
@@ -73,6 +75,10 @@ export async function on_quick_task(_io: Server, socket: Socket, data?: string) 
     if (body.is_dragged) createGaantTask(body);
 
     if (body.name.length > 0) {
+      if (!(await verifyNonGuestProjectAccessSocket(socket, body.project_id, PROJECT_ROLE_PERMISSIONS.CREATE_TASKS))) {
+        socket.emit(SocketEvents.QUICK_TASK.toString(), { error: true, message: "You do not have permission to create tasks." });
+        return;
+      }
       // Check restrict_task_creation before proceeding
       const userId = getLoggedInUserIdFromSocket(socket);
       if (userId && body.project_id) {

@@ -13,6 +13,8 @@ import {
   TASK_ASSIGNEE_RESTRICTED_CODE,
 } from "../shared/assignee-task-scope";
 import {userHasProjectAccessInTeam} from "./verify-project-access";
+import { checkProjectRolePermission, checkTaskRolePermission } from "../shared/project-role-permissions";
+import { PROJECT_ROLE_PERMISSIONS, ProjectRolePermission } from "../shared/organization-permissions";
 
 export interface VerifyTaskAccessOptions {
   /**
@@ -293,7 +295,8 @@ export default function verifyTaskAccess(
 
 export function verifyNonGuestTaskAccess(
   location: 'params' | 'body' | 'query' = 'params',
-  fieldName: string = 'id'
+  fieldName: string = 'id',
+  permission: ProjectRolePermission = PROJECT_ROLE_PERMISSIONS.EDIT_TASKS
 ) {
   return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
     const userId = req.user?.id;
@@ -320,7 +323,7 @@ export function verifyNonGuestTaskAccess(
       `;
       const result = await db.query(q, [taskId, userId]);
 
-      if (result.rowCount && result.rowCount > 0) return next();
+      if (result.rowCount && result.rowCount > 0 && (await checkTaskRolePermission(userId, taskId, permission)).allowed) return next();
 
       return res.status(403).send(
         new ServerResponse(
@@ -408,7 +411,8 @@ export async function verifyBulkTaskAccess(
  */
 export function verifyBulkTaskAccessMiddleware(
   location: 'body' | 'query' = 'body',
-  fieldName: string = 'tasks'
+  fieldName: string = 'tasks',
+  permission: ProjectRolePermission = PROJECT_ROLE_PERMISSIONS.EDIT_TASKS
 ) {
   return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
     const teamId = req.user?.team_id;
@@ -454,6 +458,12 @@ export function verifyBulkTaskAccessMiddleware(
         );
       }
 
+      const projects = await db.query(`SELECT DISTINCT project_id FROM tasks WHERE id = ANY($1::UUID[])`, [taskIds]);
+      for (const row of projects.rows as Array<{ project_id: string }>) {
+        if (!(await checkProjectRolePermission(req.user?.id, row.project_id, permission)).allowed) {
+          return res.status(403).send(new ServerResponse(false, null, "You do not have permission to modify these tasks"));
+        }
+      }
       // All tasks are authorized, continue
       return next();
     } catch (error) {
@@ -512,6 +522,9 @@ export function verifyTaskAccessViaComment(
 
         // For mutations, enforce assignee-scope restrictions
         if (!isReadOnlyHttpMethod(req.method)) {
+          if (!(await checkTaskRolePermission(userId, taskId, PROJECT_ROLE_PERMISSIONS.COMMENT)).allowed) {
+            return res.status(403).send(new ServerResponse(false, null, "You do not have permission to comment on this task"));
+          }
           const mayEdit = await canUserEditTask(userId, taskId, req.user);
           if (!mayEdit) {
             return denyAssigneeReadonly(res);
@@ -529,6 +542,20 @@ export function verifyTaskAccessViaComment(
       return res.status(500).send(
         new ServerResponse(false, null, "An error occurred while verifying comment access")
       );
+    }
+  };
+}
+
+/** Apply a scheme grant after the normal task-access middleware. */
+export function verifyTaskRolePermission(
+  location: 'params' | 'body' | 'query', fieldName: string, permission: ProjectRolePermission
+) {
+  return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
+    try {
+      if ((await checkTaskRolePermission(req.user?.id, req[location]?.[fieldName], permission)).allowed) return next();
+      return res.status(403).send(new ServerResponse(false, null, "You do not have permission to perform this action"));
+    } catch (error) {
+      return next(error);
     }
   };
 }
@@ -648,8 +675,11 @@ export function verifyTaskAccessViaAttachment(
       if (result.rowCount && result.rowCount > 0) {
         const taskId = result.rows[0].task_id;
         
-        // For mutations, enforce assignee-scope restrictions
+        // For mutations, enforce scheme and assignee-scope restrictions
         if (!isReadOnlyHttpMethod(req.method)) {
+          if (!(await checkTaskRolePermission(userId, taskId, PROJECT_ROLE_PERMISSIONS.EDIT_TASKS)).allowed) {
+            return res.status(403).send(new ServerResponse(false, null, "You do not have permission to edit this task"));
+          }
           const mayEdit = await canUserEditTask(userId, taskId, req.user);
           if (!mayEdit) {
             return denyAssigneeReadonly(res);
@@ -771,7 +801,7 @@ export function verifyNonGuestTaskAccessViaAttachment(
 
     try {
       const q = `
-        SELECT 1
+        SELECT t.id AS task_id
         FROM task_attachments ta
         INNER JOIN tasks t ON ta.task_id = t.id
         INNER JOIN projects p ON t.project_id = p.id
@@ -784,6 +814,9 @@ export function verifyNonGuestTaskAccessViaAttachment(
       const result = await db.query(q, [attachmentId, userId]);
 
       if (result.rowCount && result.rowCount > 0) {
+        if (!(await checkTaskRolePermission(userId, result.rows[0].task_id, PROJECT_ROLE_PERMISSIONS.EDIT_TASKS)).allowed) {
+          return res.status(403).send(new ServerResponse(false, null, "You do not have permission to modify this task"));
+        }
         return next();
       }
 
@@ -847,6 +880,9 @@ export function verifyTaskAccessViaDependency(
         
         // For mutations, enforce assignee-scope restrictions
         if (!isReadOnlyHttpMethod(req.method)) {
+          if (!(await checkTaskRolePermission(userId, taskId, PROJECT_ROLE_PERMISSIONS.EDIT_TASKS)).allowed) {
+            return res.status(403).send(new ServerResponse(false, null, "You do not have permission to modify this task"));
+          }
           const mayEdit = await canUserEditTask(userId, taskId, req.user);
           if (!mayEdit) {
             return denyAssigneeReadonly(res);
@@ -913,8 +949,11 @@ export function verifyTaskAccessViaSchedule(
       if (result.rowCount && result.rowCount > 0) {
         const taskId = result.rows[0].task_id;
         
-        // For mutations, enforce assignee-scope restrictions
+        // For mutations, enforce scheme and assignee-scope restrictions
         if (!isReadOnlyHttpMethod(req.method)) {
+          if (!(await checkTaskRolePermission(userId, taskId, PROJECT_ROLE_PERMISSIONS.EDIT_TASKS)).allowed) {
+            return res.status(403).send(new ServerResponse(false, null, "You do not have permission to edit this task"));
+          }
           const mayEdit = await canUserEditTask(userId, taskId, req.user);
           if (!mayEdit) {
             return denyAssigneeReadonly(res);

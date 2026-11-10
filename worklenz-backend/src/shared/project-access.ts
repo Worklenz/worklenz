@@ -1,6 +1,8 @@
 import db from "../config/db";
 import { IPassportSession } from "../interfaces/passport-session";
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
+import { getProjectRolePermissions } from "./project-role-permissions";
+import { PROJECT_ROLE_PERMISSIONS } from "./organization-permissions";
 import {
   getEffectiveTeamRole,
   hasTeamAdminPrivileges,
@@ -370,15 +372,45 @@ export const getProjectAccess = async (
     ? normalizeTeamRoleName(row.team_role)
     : getEffectiveTeamRole(user);
 
-  return buildProjectAccess({
+  const access = buildProjectAccess({
     teamRole,
-    isGuest: !!row.is_guest || !!user.is_guest,
+    isGuest: !!row.is_guest || !!user.is_guest || (teamRole === TEAM_ROLE_NAMES.MEMBER && row.access_level === "GUEST"),
     isActive: !!row.active,
     accessLevel: row.access_level,
     financeAccess: !!row.finance_access,
     canCreateProjectsFromTemplates: !!row.can_create_projects_from_templates,
     isProjectMember: !!row.is_project_member,
   });
+  if (!row.active || access.isGuest || !access.isProjectMember || teamRole === TEAM_ROLE_NAMES.OWNER || teamRole === TEAM_ROLE_NAMES.ADMIN) {
+    return access;
+  }
+
+  const controlled = [
+    PROJECT_ROLE_PERMISSIONS.MANAGE_PROJECT_SETTINGS, PROJECT_ROLE_PERMISSIONS.MANAGE_STATUSES,
+    PROJECT_ROLE_PERMISSIONS.MANAGE_PHASES, PROJECT_ROLE_PERMISSIONS.MANAGE_CUSTOM_COLUMNS,
+    PROJECT_ROLE_PERMISSIONS.MANAGE_MEMBERS, PROJECT_ROLE_PERMISSIONS.SAVE_AS_TEMPLATE,
+    PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT_FINANCE, PROJECT_ROLE_PERMISSIONS.ARCHIVE_PROJECT,
+    PROJECT_ROLE_PERMISSIONS.DELETE_PROJECT,
+  ];
+  const granted = new Set(await getProjectRolePermissions(user.id, projectId, controlled));
+  const hasMembers = granted.has(PROJECT_ROLE_PERMISSIONS.MANAGE_MEMBERS);
+  const hasFinance = granted.has(PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT_FINANCE);
+  return {
+    ...access,
+    financeAccess: hasFinance,
+    permissions: {
+      ...access.permissions,
+      settings: granted.has(PROJECT_ROLE_PERMISSIONS.MANAGE_PROJECT_SETTINGS),
+      statuses: granted.has(PROJECT_ROLE_PERMISSIONS.MANAGE_STATUSES),
+      phases: granted.has(PROJECT_ROLE_PERMISSIONS.MANAGE_PHASES),
+      customColumns: granted.has(PROJECT_ROLE_PERMISSIONS.MANAGE_CUSTOM_COLUMNS),
+      members: { add: hasMembers, removeMember: hasMembers, changeMemberRole: hasMembers },
+      saveAsTemplate: granted.has(PROJECT_ROLE_PERMISSIONS.SAVE_AS_TEMPLATE),
+      finance: hasFinance,
+      archive: granted.has(PROJECT_ROLE_PERMISSIONS.ARCHIVE_PROJECT),
+      delete: granted.has(PROJECT_ROLE_PERMISSIONS.DELETE_PROJECT),
+    },
+  };
 };
 
 /**

@@ -24,6 +24,7 @@ export interface IProjectRoleContext {
   projectId: string;
   roleName: string;
   isProjectMember: boolean;
+  assignedRoles: string[];
 }
 
 export interface IProjectRolePermissionResult {
@@ -43,7 +44,18 @@ const ROLE_CONTEXT_SELECT = `
          r.owner,
          COALESCE(tm.is_guest, FALSE) AS is_team_guest,
          (pm.id IS NOT NULL) AS is_project_member,
-         COALESCE(pal.key = 'GUEST', FALSE) AS is_project_guest
+         COALESCE(pal.key = 'GUEST', FALSE) AS is_project_guest,
+         ARRAY(
+           SELECT DISTINCT srm.role_name
+           FROM project_scheme_assignments psa
+           JOIN scheme_role_members srm ON srm.project_id = psa.project_id AND srm.scheme_id = psa.scheme_id
+           WHERE psa.project_id = p.id
+             AND (srm.team_member_id = tm.id OR EXISTS (
+               SELECT 1 FROM permission_group_members pgm
+               JOIN permission_groups pg ON pg.id = pgm.group_id AND pg.team_id = p.team_id
+               WHERE pgm.group_id = srm.group_id AND pgm.team_member_id = tm.id
+             ))
+         ) AS assigned_roles
   FROM projects p
   INNER JOIN team_members tm ON tm.team_id = p.team_id AND tm.user_id = $1 AND tm.active = TRUE
   INNER JOIN roles r ON r.id = tm.role_id
@@ -59,6 +71,7 @@ interface IRoleContextRow {
   is_team_guest: boolean;
   is_project_member: boolean;
   is_project_guest: boolean;
+  assigned_roles: string[] | null;
 }
 
 /** Maps a role-context query row to the permission check context. */
@@ -70,6 +83,7 @@ const toRoleContext = (row: IRoleContextRow): IProjectRoleContext => {
     projectId: row.project_id,
     roleName: isGuest ? GUEST_ROLE_NAME : teamRole,
     isProjectMember: row.is_project_member,
+    assignedRoles: row.assigned_roles || [],
   };
 };
 
@@ -111,13 +125,23 @@ const getGrantedPermissions = async (
     return [];
   }
 
-  return (await getProjectSchemeRoleGrants(
-    context.teamId,
-    context.projectId,
-    context.roleName,
-    permissions
-  )) as ProjectRolePermission[];
+  const roles = context.assignedRoles.length ? context.assignedRoles : [context.roleName];
+  const grants = await Promise.all(roles.map(role =>
+    getProjectSchemeRoleGrants(context.teamId, context.projectId, role, permissions)
+  ));
+  const granted = new Set(grants.flat());
+  return permissions.filter(permission => granted.has(permission));
 };
+
+/** Resolve all project grants using the same role and membership rules as mutations. */
+export async function getProjectRolePermissions(
+  userId: string,
+  projectId: string,
+  permissions: ProjectRolePermission[]
+): Promise<ProjectRolePermission[]> {
+  const context = await getProjectRoleContext(userId, projectId);
+  return context ? getGrantedPermissions(context, permissions) : [];
+}
 
 /** Checks one permission against an already loaded project role context. */
 const checkContextPermission = async (

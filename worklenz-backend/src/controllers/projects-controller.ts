@@ -18,6 +18,7 @@ import { getCurrentProjectsCount, getFreePlanSettings } from "../shared/paddle-u
 import { ActivityLoggingService } from "../services/activity-logging.service";
 import { NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE } from "../shared/guest-access-sql";
 import { getProjectAccessForRequest } from "../shared/project-access";
+import { getProjectRolePermissionFlags } from "../shared/project-role-permissions";
 import { stripProjectFinanceFields } from "../shared/strip-finance-fields";
 import { actorFromSessionUser, logAuditEvent } from "../services/audit-log.service";
 import { captureProjectSettings, logProjectSettingChanges } from "../services/project-settings-audit.service";
@@ -948,6 +949,7 @@ export default class ProjectsController extends WorklenzControllerBase {
       try {
         const access = await getProjectAccessForRequest(req, req.params.id);
         data.permissions = access.permissions;
+        data.task_role_permissions = await getProjectRolePermissionFlags(req.user?.id, req.params.id);
         data.is_project_manager = access.isProjectManager;
         data.finance_access = access.financeAccess;
         data.can_create_projects_from_templates =
@@ -965,6 +967,7 @@ export default class ProjectsController extends WorklenzControllerBase {
         }
       } catch (error) {
         data.permissions = null;
+        data.task_role_permissions = { create_tasks: false, edit_tasks: false, delete_tasks: false, comment: false };
         data.is_project_manager = false;
         data.finance_access = false;
         data.can_create_projects_from_templates = false;
