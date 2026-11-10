@@ -213,6 +213,7 @@ const EnhancedKanbanCreateSection: React.FC = () => {
               <input
                 ref={inputRef}
                 value={sectionName}
+                maxLength={50}
                 onChange={e => setSectionName(e.target.value)}
                 onKeyDown={handleInputKeyDown}
                 className={`bg-transparent border-none outline-none text-sm font-semibold min-w-[120px] flex-1 ${themeMode === 'dark' ? 'text-gray-800 placeholder-gray-800' : 'text-gray-800 placeholder-gray-600'}`}
