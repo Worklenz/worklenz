@@ -764,7 +764,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     const teamId = req.user?.team_id;
     if (!teamId) return res.status(200).send(new ServerResponse(false, null, 'Team not found'));
 
-    const { projectId } = req.params;
+    const { id: projectId } = req.params;
     if (!(await isProjectInTeam(projectId, teamId)))
       return res.status(403).send(new ServerResponse(false, null, 'Forbidden'));
 
@@ -825,7 +825,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     const teamId = req.user?.team_id;
     if (!teamId) return res.status(200).send(new ServerResponse(false, null, 'Team not found'));
 
-    const { projectId } = req.params;
+    const { id: projectId } = req.params;
     const schemeId: string | null = req.body?.scheme_id ?? null;
 
     if (!(await isProjectInTeam(projectId, teamId)))
@@ -854,7 +854,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     const teamId = req.user?.team_id;
     if (!teamId) return res.status(200).send(new ServerResponse(false, null, 'Team not found'));
 
-    const { projectId } = req.params;
+    const { id: projectId } = req.params;
     const { scheme_id, role_name, team_member_id, group_id } = req.body || {};
 
     if (!scheme_id || !role_name)
