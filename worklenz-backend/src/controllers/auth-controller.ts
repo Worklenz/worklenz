@@ -102,15 +102,6 @@ export default class AuthController extends WorklenzControllerBase {
     });
   }
 
-  private static async destroyOtherSessions(userId: string, sessionId: string) {
-    try {
-      const q = `DELETE FROM pg_sessions WHERE (sess ->> 'passport')::JSON ->> 'user'::TEXT = $1 AND sid != $2;`;
-      await db.query(q, [userId, sessionId]);
-    } catch (error) {
-      // ignored
-    }
-  }
-
   @HandleExceptions()
   public static async changePassword(req: IWorkLenzRequest, res: IWorkLenzResponse) {
 
@@ -138,10 +129,34 @@ export default class AuthController extends WorklenzControllerBase {
         const encryptedPassword = bcrypt.hashSync(newPassword, salt);
 
         const updatePasswordQ = `UPDATE users SET password = $1 WHERE id = $2;`;
-        await db.query(updatePasswordQ, [encryptedPassword, req.user?.id || null]);
+        const userId = req.user?.id || null;
 
-        if (req.user?.id)
-          AuthController.destroyOtherSessions(req.user.id, req.sessionID);
+        if (req.body.logout_other_sessions === true && userId) {
+          const client = await db.connect();
+          try {
+            await client.query("BEGIN");
+            await client.query(updatePasswordQ, [encryptedPassword, userId]);
+            const deletedSessions = await client.query(
+              `DELETE FROM pg_sessions
+               WHERE sess::jsonb @> jsonb_build_object(
+                 'passport', jsonb_build_object('user', jsonb_build_object('id', $1::text))
+               )
+               OR sess::jsonb #>> '{passport,user}' = $1;`,
+              [userId]
+            );
+            if (deletedSessions.rowCount === 0) {
+              throw new Error("No active sessions were invalidated after password change.");
+            }
+            await client.query("COMMIT");
+          } catch (error) {
+            await client.query("ROLLBACK");
+            throw error;
+          } finally {
+            client.release();
+          }
+        } else {
+          await db.query(updatePasswordQ, [encryptedPassword, userId]);
+        }
 
         return res.status(200).send(new ServerResponse(true, null, "Password updated successfully!"));
       }
@@ -304,7 +319,11 @@ export default class AuthController extends WorklenzControllerBase {
     // cannot survive a password reset (changePassword does the same for its own context)
     try {
       await db.query(
-        `DELETE FROM pg_sessions WHERE (sess ->> 'passport')::JSON ->> 'user'::TEXT = $1`,
+        `DELETE FROM pg_sessions
+         WHERE sess::jsonb @> jsonb_build_object(
+           'passport', jsonb_build_object('user', jsonb_build_object('id', $1::text))
+         )
+         OR sess::jsonb #>> '{passport,user}' = $1`,
         [userId]
       );
     } catch (error) {
