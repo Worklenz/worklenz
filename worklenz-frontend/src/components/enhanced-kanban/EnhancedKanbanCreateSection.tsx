@@ -220,13 +220,11 @@ const EnhancedKanbanCreateSection: React.FC = () => {
               <input
                 ref={inputRef}
                 value={sectionName}
-                onChange={e =>
-                  setSectionName(
-                    groupBy === IGroupBy.STATUS
-                      ? Array.from(e.target.value).slice(0, 50).join('')
-                      : e.target.value
-                  )
-                }
+                onChange={e => {
+                  const value = e.target.value;
+                  if (groupBy === IGroupBy.STATUS && Array.from(value).length > 50) return;
+                  setSectionName(value);
+                }}
                 onKeyDown={handleInputKeyDown}
                 className={`bg-transparent border-none outline-none text-sm font-semibold min-w-[120px] flex-1 ${themeMode === 'dark' ? 'text-gray-800 placeholder-gray-800' : 'text-gray-800 placeholder-gray-600'}`}
                 placeholder={t('untitledSection')}
