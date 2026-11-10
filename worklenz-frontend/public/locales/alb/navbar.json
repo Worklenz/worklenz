@@ -81,7 +81,12 @@
     "stopAndStart": "Ndalo dhe Fillo",
     "cancel": "Anulo",
     "logTime": "Regjistro kohën",
-    "openTimeLogPanel": "Hape regjistrin e kohës për {{taskName}}"
+    "openTimeLogPanel": "Hape regjistrin e kohës për {{taskName}}",
+    "dailyLimitExceededTitle": "Limiti ditor u tejkalua",
+    "dailyLimitExceededDesc": "Koha totale e regjistruar nuk mund të kalojë 24 orë në ditë. Ky matës zgjati {{elapsed}}, por ju keni vetëm {{remaining}} të mbetur për {{day}}.",
+    "logRemainingAllowance": "Regjistro pjesën e mbetur ({{remaining}})",
+    "discardTimer": "Hiq matësin",
+    "keepRunning": "Vazhdo punën"
   },
   "ownerRole": "Pronar",
   "adminRole": "Administrator",

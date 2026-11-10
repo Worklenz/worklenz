@@ -13,5 +13,8 @@
   "limitTimelogBackdatingTooltip": "Quando ativado, os membros não podem criar um registo de tempo com data anterior ao número de dias permitido. Aplica-se a todos, incluindo proprietários e administradores. Os cronómetros em curso e os registos importados não são afetados.",
   "timelogBackdateLimitDays": "Dias máximos que um registo de tempo pode ser retroagido",
   "timelogBackdateLimitNote": "Nota: os registos de tempo existentes nunca são alterados. Editar um registo já antigo continua possível desde que a sua data não seja alterada.",
-  "days": "dias"
+  "days": "dias",
+  "enforceDailyTimeLimit": "Aplicar limite diário de 24 horas",
+  "enforceDailyTimeLimitTooltip": "Quando ativado, os membros não podem registrar mais de 24 horas de trabalho por dia em todas as tarefas.",
+  "enforceDailyTimeLimitNote": "Nota: Entradas históricas existentes que excedam 24 horas são preservadas. A edição de uma entrada existente é permitida desde que a duração seja reduzida."
 }

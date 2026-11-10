@@ -81,7 +81,12 @@
     "stopAndStart": "Beenden und Starten",
     "cancel": "Abbrechen",
     "logTime": "Zeit erfassen",
-    "openTimeLogPanel": "Offenes Zeitprotokoll für {{taskName}}"
+    "openTimeLogPanel": "Offenes Zeitprotokoll für {{taskName}}",
+    "dailyLimitExceededTitle": "Tageslimit überschritten",
+    "dailyLimitExceededDesc": "Die gesamte erfasste Zeit darf 24 Stunden pro Tag nicht überschreiten. Dieser Timer lief für {{elapsed}}, aber Sie haben für {{day}} nur noch {{remaining}} übrig.",
+    "logRemainingAllowance": "Verbleibende Zeit erfassen ({{remaining}})",
+    "discardTimer": "Timer verwerfen",
+    "keepRunning": "Weiterlaufen lassen"
   },
   "ownerRole": "Eigentümer",
   "adminRole": "Administrator",
