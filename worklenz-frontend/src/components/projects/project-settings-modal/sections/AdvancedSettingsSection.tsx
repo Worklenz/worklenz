@@ -173,7 +173,8 @@ const AdvancedSettingsSection = ({
               <Tooltip
                 title={t('restrictTaskCreationTooltip', {
                   defaultValue:
-                    'When enabled, only Admins, Team Leads, and Project Managers can create and assign tasks. Team Members can only view their assigned tasks.',
+                    'When enabled, only Owners, Admins, Team Leads, and Project Managers can create or edit tasks and change task assignments. ' +
+                    "Members can still view tasks and details allowed by the project's task visibility settings; this option does not hide tasks.",
                 })}
               >
                 <InfoCircleOutlined style={{ color: token.colorTextSecondary }} />

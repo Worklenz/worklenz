@@ -96,7 +96,7 @@
   "restrictTaskCreationBusinessPlanTitle": "Kërkohet Plani i Biznesit",
   "restrictTaskCreationBusinessPlanDescription": "Kufizimi i krijimit të detyrave te Administratorët, Drejtuesit e Ekipit dhe Menaxherët e Projektit është i disponueshëm në planet Business dhe Enterprise.",
   "restrictTaskCreation": "Kufizo caktimin e detyrave te Administratorët, Drejtuesit e Ekipit dhe Menaxherët e Projektit",
-  "restrictTaskCreationTooltip": "Kur aktivizohet, vetëm Administratorët, Drejtuesit e Ekipit dhe Menaxherët e Projektit mund të krijojnë dhe caktojnë detyra. Anëtarët e ekipit mund të shohin vetëm detyrat e caktuara për ta.",
+  "restrictTaskCreationTooltip": "Kur aktivizohet, vetëm pronarët, administratorët, drejtuesit e ekipit dhe menaxherët e projektit mund të krijojnë ose modifikojnë detyra dhe të ndryshojnë caktimet e tyre. Anëtarët mund të shohin ende detyrat dhe hollësitë që lejohen nga cilësimet e dukshmërisë së detyrave të projektit; ky opsion nuk i fsheh detyrat.",
   "membersCanViewClientTeam": "Lejo anëtarët të shohin ekipin e klientit",
   "membersCanViewClientTeamTooltip": "Kur aktivizohet, anëtarët normalë të projektit mund të shohin skedën e ekipit të klientit në faqen \"Anëtarët\". Pronarët, administratorët, drejtuesit e ekipit dhe menaxherët e projektit e shohin gjithmonë atë.",
   "phaseAssigneesSettings": "Të Caktuar për Fazë",

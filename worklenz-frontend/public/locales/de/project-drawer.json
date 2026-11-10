@@ -96,7 +96,7 @@
   "restrictTaskCreationBusinessPlanTitle": "Business-Plan erforderlich",
   "restrictTaskCreationBusinessPlanDescription": "Die Einschränkung der Aufgabenerstellung auf Admins, Teamleiter und Projektmanager ist in Business- und Enterprise-Plänen verfügbar.",
   "restrictTaskCreation": "Aufgabenzuweisung auf Admins, Teamleiter und Projektmanager beschränken",
-  "restrictTaskCreationTooltip": "Wenn aktiviert, können nur Admins, Teamleiter und Projektmanager Aufgaben erstellen und zuweisen. Teammitglieder können nur die ihnen zugewiesenen Aufgaben anzeigen.",
+  "restrictTaskCreationTooltip": "Wenn aktiviert, können nur Eigentümer, Admins, Teamleiter und Projektmanager Aufgaben erstellen oder bearbeiten und Aufgaben zuweisen. Mitglieder können weiterhin Aufgaben und Details sehen, die gemäß den Aufgabensichtbarkeitseinstellungen des Projekts für sie sichtbar sind. Diese Option blendet keine Aufgaben aus.",
   "membersCanViewClientTeam": "Erlauben Sie Mitgliedern, das Team des Kunden anzuzeigen",
   "membersCanViewClientTeamTooltip": "Wenn diese Option aktiviert ist, können normale Projektmitglieder die Registerkarte „Team“ des Kunden auf der Seite „Mitglieder“ sehen. Eigentümer, Administratoren, Teamleiter und Projektmanager sehen es immer.",
   "phaseAssigneesSettings": "Phasen-Beauftragte",
