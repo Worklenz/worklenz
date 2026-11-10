@@ -63,7 +63,14 @@
     "viewBy": "Ansicht nach",
     "sortBy": "Sortieren nach",
     "sortManual": "Manuell",
-    "sortChronological": "Chronologisch"
+    "sortChronological": "Chronologisch",
+    "export": "Exportieren",
+    "exportPdf": "PDF",
+    "exportExcel": "Excel",
+    "exportRoadmap": "Roadmap exportieren",
+    "exportRoadmapHint": "Diese Roadmap als PDF oder Excel-Datei herunterladen",
+    "exportFailed": "Roadmap konnte nicht exportiert werden. Bitte erneut versuchen.",
+    "exportEmpty": "Noch nichts zu exportieren."
   },
   "viewMode": {
     "day": "Tag",

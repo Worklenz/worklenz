@@ -1,7 +1,8 @@
 import React, { memo, useState } from 'react';
-import { Button, Space, theme } from '@/shared/antd-imports';
-import { ZoomInOutlined, ZoomOutOutlined, ExpandOutlined } from '@ant-design/icons';
+import { Button, Dropdown, Space, theme } from '@/shared/antd-imports';
+import { ZoomInOutlined, ZoomOutOutlined, ExpandOutlined, ExportOutlined } from '@ant-design/icons';
 import { GanttViewMode, GanttGroupingMode, PhaseSortMode } from '../../types/gantt-types';
+import { RoadmapExportFormat } from '../../utils/roadmap-export';
 import { useTranslation } from 'react-i18next';
 import AssigneeScopeIndicator from '@/components/task-management/assignee-scope-indicator';
 
@@ -15,6 +16,9 @@ interface GanttToolbarProps {
   dateRange?: { start: Date; end: Date };
   onScrollToToday?: () => void;
   onToggleFullscreen?: () => void;
+  onExport?: (format: RoadmapExportFormat) => void;
+  exporting?: boolean;
+  exportDisabled?: boolean;
 }
 
 // Pill-style toggle button group — mirrors PillToggle.tsx (pages/home) and the
@@ -80,6 +84,9 @@ const GanttToolbar: React.FC<GanttToolbarProps> = memo(
     onPhaseSortModeChange,
     onScrollToToday,
     onToggleFullscreen,
+    onExport,
+    exporting = false,
+    exportDisabled = false,
   }) => {
     const { t } = useTranslation('gantt');
     const { token } = theme.useToken();
@@ -107,7 +114,7 @@ const GanttToolbar: React.FC<GanttToolbarProps> = memo(
     };
 
     return (
-      <div className="p-1.5 bg-white dark:bg-[#1f1f1f] border border-gray-200 dark:border-[#303030] rounded-md shadow-sm flex justify-between items-center">
+      <div className="p-1.5 bg-white dark:bg-[#1f1f1f] border border-gray-200 dark:border-[#303030] rounded-md shadow-sm flex flex-wrap justify-between items-center gap-2">
         <div className="flex items-center gap-2">
           <AssigneeScopeIndicator />
           {/* Grouping Mode Selector */}
@@ -146,6 +153,35 @@ const GanttToolbar: React.FC<GanttToolbarProps> = memo(
         </div>
 
         <div className="flex items-center gap-2">
+          <Dropdown
+            disabled={exportDisabled || exporting || !onExport}
+            menu={{
+              items: [
+                { key: 'pdf', label: t('toolbar.exportPdf', { defaultValue: 'PDF' }) },
+                { key: 'excel', label: t('toolbar.exportExcel', { defaultValue: 'Excel' }) },
+              ],
+              onClick: ({ key }) => {
+                if (key === 'pdf' || key === 'excel') {
+                  window.setTimeout(() => onExport?.(key === 'pdf' ? 'pdf' : 'xlsx'), 0);
+                }
+              },
+            }}
+            trigger={['click']}
+          >
+            <Button
+              size="small"
+              icon={<ExportOutlined />}
+              loading={exporting}
+              disabled={exportDisabled || !onExport}
+              aria-haspopup="menu"
+              aria-label={t('toolbar.exportRoadmap', { defaultValue: 'Export roadmap' })}
+              title={t('toolbar.exportRoadmapHint', {
+                defaultValue: 'Download this roadmap as a PDF or Excel file',
+              })}
+            >
+              {t('toolbar.export', { defaultValue: 'Export' })}
+            </Button>
+          </Dropdown>
           {/* Zoom in/out + fullscreen — same circular icon-button style as Planner > Timeline.
               This is now the only way to switch Day/Week/Month (the separate pill toggle for
               it was removed), so it remains even though the buttons look secondary. */}

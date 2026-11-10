@@ -63,7 +63,14 @@
     "viewBy": "Ver por",
     "sortBy": "Ordenar por",
     "sortManual": "manuales",
-    "sortChronological": "Cronológico"
+    "sortChronological": "Cronológico",
+    "export": "Exportar",
+    "exportPdf": "PDF",
+    "exportExcel": "Excel",
+    "exportRoadmap": "Exportar hoja de ruta",
+    "exportRoadmapHint": "Descargar esta hoja de ruta como PDF o Excel",
+    "exportFailed": "No se pudo exportar la hoja de ruta. Inténtalo de nuevo.",
+    "exportEmpty": "Aún no hay nada que exportar."
   },
   "viewMode": {
     "day": "Día",
