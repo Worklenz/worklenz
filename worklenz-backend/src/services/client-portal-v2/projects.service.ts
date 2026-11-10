@@ -322,7 +322,7 @@ export async function getProjectOverview(
     status: row.client_status,
     phase: row.current_phase ?? null,
     progress_source: row.progress_source,
-    milestone_source: row.milestone_source === "worklenz" ? "worklenz" : "manual",
+    milestone_source: row.milestone_source === "manual" ? "manual" : "worklenz",
     worklenz_progress: row.worklenz_progress ?? 0,
     manual_progress: row.manual_progress ?? null,
     start_date: row.start_date ?? null,
@@ -589,4 +589,3 @@ export async function setProjectPortal(input: {
     return { portal_enabled: false, affected_users: result.affectedUsers, changed: result.changed };
   });
 }
-

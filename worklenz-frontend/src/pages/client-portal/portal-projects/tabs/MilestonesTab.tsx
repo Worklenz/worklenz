@@ -48,7 +48,7 @@ export const MilestonesTab = ({ project }: MilestonesTabProps) => {
   const query = useGetProjectMilestonesQuery(project.id);
   const overviewQuery = useGetProjectOverviewQuery(project.id);
   const [saveOverview, { isLoading: isSwitching }] = useSaveProjectOverviewMutation();
-  const source: MilestoneSource = overviewQuery.data?.body?.milestone_source ?? 'manual';
+  const source: MilestoneSource = overviewQuery.data?.body?.milestone_source ?? 'worklenz';
   const isPhases = source === 'worklenz';
   const [updateMilestone, { isLoading: isUpdating }] = useUpdateMilestoneMutation();
   const [deleteMilestone, { isLoading: isDeleting }] = useDeleteMilestoneMutation();
