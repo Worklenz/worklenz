@@ -360,11 +360,11 @@ export const RichCommentEditor = ({
 
   useEffect(() => {
     const extensions = editor?.extensionManager?.extensions;
-    if (!extensions || !placeholder) return;
+    if (!editor || editor.isDestroyed || !extensions || !placeholder) return;
     const placeholderExtension = extensions.find(
       extension => extension.name === 'placeholder'
     );
-    if (placeholderExtension) {
+    if (placeholderExtension && editor.view) {
       placeholderExtension.options.placeholder = placeholder;
       editor.view.dispatch(editor.state.tr);
     }

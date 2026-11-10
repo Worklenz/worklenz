@@ -303,7 +303,8 @@
 /* ─── Hover bar (floats above the bubble on hover) ───────────────────────── */
 .comment-hover-bar {
   position: absolute;
-  top: -40px;
+  bottom: 100%;
+  margin-bottom: 4px;
   right: 8px;
   width: max-content !important;
   max-width: none !important;
@@ -355,7 +356,9 @@
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    top: -14px;
+    bottom: 100%;
+    top: auto;
+    margin-bottom: 4px;
     padding: 4px 8px;
   }
 
