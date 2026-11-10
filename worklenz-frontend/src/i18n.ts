@@ -11,7 +11,7 @@ i18n
   .init({
     fallbackLng: 'en',
     defaultNS: 'common',
-    ns: ['common', 'home', 'task-drawer/task-drawer'], // Preload namespaces used on first paint
+    ns: ['common', 'home', 'task-drawer/task-drawer', 'all-project-list', 'project-view-docs'], // Preload namespaces used on first paint
 
     interpolation: {
       escapeValue: false,

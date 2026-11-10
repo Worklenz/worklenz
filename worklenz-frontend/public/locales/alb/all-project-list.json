@@ -62,5 +62,10 @@
   "groups": "grupe",
   "retry": "Provo përsëri",
   "searchProjects": "Kërkoni sipas emrit të projektit",
-  "members": "Anëtarë"
+  "members": "Anëtarë",
+  "expandAll": "Zgjero të gjitha",
+  "collapseAll": "Mblidh të gjitha",
+  "unnamedGroup": "Grup pa emër",
+  "projectCount_one": "{{count}} projekt",
+  "projectCount_other": "{{count}} projekte"
 }
