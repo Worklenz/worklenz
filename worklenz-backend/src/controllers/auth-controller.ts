@@ -23,6 +23,8 @@ import { getAppSumoPopupFrequencyDays } from "../shared/appsumo-popup";
 import TokenService from "../services/token-service";
 import { logAuditEvent, resolveOrganizationIdForUserId } from "../services/audit-log.service";
 import { AUDIT_EVENT_TYPE } from "../shared/audit-log-constants";
+import { IO } from "../shared/io";
+import { SocketEvents } from "../socket.io/events";
 
 // see the identical note in routes/auth/index.ts: mobile OAuth success
 // is logged, failures are not (provider/token-level, not a workspace access-control event).
@@ -148,6 +150,7 @@ export default class AuthController extends WorklenzControllerBase {
               throw new Error("No active sessions were invalidated after password change.");
             }
             await client.query("COMMIT");
+            IO.emitToRoom(`user:${userId}`, SocketEvents.SESSION_REVOKED, {});
           } catch (error) {
             await client.query("ROLLBACK");
             throw error;

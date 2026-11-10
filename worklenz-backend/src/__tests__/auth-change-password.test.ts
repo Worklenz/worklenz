@@ -14,8 +14,16 @@ jest.mock('../shared/utils', () => ({
   log_error: jest.fn(),
 }));
 
+jest.mock('../shared/io', () => ({
+  IO: {
+    emitToRoom: jest.fn(),
+  },
+}));
+
 import bcrypt from 'bcrypt';
 import AuthController from '../controllers/auth-controller';
+import { IO } from '../shared/io';
+import { SocketEvents } from '../socket.io/events';
 
 const db = require('../config/db').default;
 const sessionClient = {
@@ -111,6 +119,11 @@ describe('AuthController.changePassword', () => {
     );
     expect(sessionClient.query).toHaveBeenCalledWith('COMMIT');
     expect(sessionClient.release).toHaveBeenCalled();
+    expect(IO.emitToRoom).toHaveBeenCalledWith(
+      'user:user-1',
+      SocketEvents.SESSION_REVOKED,
+      {}
+    );
     expect(res.send.mock.calls[0][0].done).toBe(true);
   });
 
@@ -134,6 +147,7 @@ describe('AuthController.changePassword', () => {
 
     expect(sessionClient.query).toHaveBeenCalledWith('ROLLBACK');
     expect(sessionClient.query).not.toHaveBeenCalledWith('COMMIT');
+    expect(IO.emitToRoom).not.toHaveBeenCalled();
     expect(sessionClient.release).toHaveBeenCalled();
     expect(res.send.mock.calls[0][0].done).toBe(false);
   });
