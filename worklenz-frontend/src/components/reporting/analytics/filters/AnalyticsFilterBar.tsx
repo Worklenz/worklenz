@@ -335,18 +335,20 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
       <Divider style={{ margin: '12px 0' }} />
 
       <Flex justify="space-between" align="center">
-        <Button
-          disabled={!hasDraftFilters}
-          onClick={handleClearAll}
-          style={FILTER_PILL_BUTTON_STYLE}
-        >
-          {t('clearFilters', { defaultValue: 'Clear' })}
-        </Button>
-        <Flex gap={8} align="center" wrap="wrap">
-          {filterContext?.actions}
+        <Flex gap={8} align="center">
+          <Button
+            disabled={!hasDraftFilters}
+            onClick={handleClearAll}
+            style={FILTER_PILL_BUTTON_STYLE}
+          >
+            {t('clearFilters', { defaultValue: 'Clear' })}
+          </Button>
           <Button type="primary" onClick={handleApply} style={FILTER_PILL_BUTTON_STYLE}>
             {t('applyFilters', { defaultValue: 'Apply' })}
           </Button>
+        </Flex>
+        <Flex gap={8} align="center" wrap="wrap">
+          {filterContext?.actions}
         </Flex>
       </Flex>
     </Card>
