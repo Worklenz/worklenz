@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Space } from '@/shared/antd-imports';
+import { Button, Space, Tooltip } from '@/shared/antd-imports';
 import { CrownOutlined, SaveOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAuthService } from '@/hooks/useAuth';
@@ -53,28 +53,33 @@ export const AnalyticsTemplateActions: React.FC<AnalyticsTemplateActionsProps> =
 
   return (
     <>
-      <Button
-        icon={<SaveOutlined />}
-        onClick={handleClick}
-        disabled={canSaveTemplate ? saveDisabled : false}
-        aria-label={
-          canSaveTemplate
-            ? t('saveCustomReports', { defaultValue: 'Save custom reports' })
-            : t('saveCustomReportsUpgradeAria', {
-                defaultValue: 'Save custom reports — Business plan required',
-              })
-        }
+      <Tooltip
+        title={t('saveReportsTooltip', {
+          defaultValue: 'Save this report and its current filters as a reusable custom report.',
+        })}
       >
-        <Space size={6}>
-          <span>{t('saveCustomReports', { defaultValue: 'Save custom reports' })}</span>
-          {!canSaveTemplate && (
-            <CrownOutlined
-              style={{ fontSize: 14, color: '#faad14' }}
-              aria-hidden
-            />
-          )}
-        </Space>
-      </Button>
+        <span style={{ display: 'inline-block' }}>
+          <Button
+            icon={<SaveOutlined />}
+            onClick={handleClick}
+            disabled={canSaveTemplate ? saveDisabled : false}
+            aria-label={
+              canSaveTemplate
+                ? t('saveReports', { defaultValue: 'Save reports' })
+                : t('saveReportsUpgradeAria', {
+                    defaultValue: 'Save reports — Business plan required',
+                  })
+            }
+          >
+            <Space size={6}>
+              <span>{t('saveReports', { defaultValue: 'Save reports' })}</span>
+              {!canSaveTemplate && (
+                <CrownOutlined style={{ fontSize: 14, color: '#faad14' }} aria-hidden />
+              )}
+            </Space>
+          </Button>
+        </span>
+      </Tooltip>
       {canSaveTemplate && (
         <SaveAnalyticsTemplateModal
           open={saveOpen}
