@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { ConfigProvider } from 'antd';
 import { AnalyticsFilterBar } from './AnalyticsFilterBar';
+import { ReportHeaderFilterContext } from '../ReportHeaderFilterContext';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -65,7 +66,7 @@ describe('AnalyticsFilterBar', () => {
     expect(onTeamsChange).not.toHaveBeenCalledWith([]);
   });
 
-  it('shows all report filters inside the compact Filter popover', () => {
+  it('shows all report filters in the expanded filter section', () => {
     renderBar({
       selectedProjectIds: [],
       selectedTeamIds: ['t-default'],
@@ -83,21 +84,77 @@ describe('AnalyticsFilterBar', () => {
 
     const filterButton = screen.getByRole('button', { name: 'Filter' });
     expect(filterButton).toBeInTheDocument();
+    expect(filterButton).toHaveStyle({
+      height: '30px',
+      fontSize: '12px',
+      borderRadius: '7px',
+      paddingInline: '8px',
+    });
     expect(screen.queryByRole('button', { name: /Projects/ })).not.toBeInTheDocument();
 
     fireEvent.click(filterButton);
 
-    const filterPopover = screen.getByRole('tooltip');
-    expect(within(filterPopover).getByRole('button', { name: /Projects/ })).toBeInTheDocument();
-    expect(within(filterPopover).getByRole('button', { name: /Members/ })).toBeInTheDocument();
-    expect(within(filterPopover).getByRole('button', { name: /Teams/ })).toBeInTheDocument();
-    expect(within(filterPopover).getByRole('button', { name: 'Date range' })).toBeInTheDocument();
-    expect(within(filterPopover).getByRole('button', { name: /Statuses/ })).toBeInTheDocument();
-    expect(within(filterPopover).getByText('Hide done')).toBeInTheDocument();
-    expect(within(filterPopover).getByText('Show done')).toBeInTheDocument();
+    const filterCard = screen.getByRole('group', { name: 'Filters' });
+    expect(within(filterCard).getByRole('button', { name: /Projects/ })).toBeInTheDocument();
+    expect(within(filterCard).getByRole('button', { name: /Members/ })).toBeInTheDocument();
+    expect(within(filterCard).getByRole('button', { name: /Teams/ })).toBeInTheDocument();
+    expect(within(filterCard).getByRole('button', { name: 'Date range' })).toBeInTheDocument();
+    expect(within(filterCard).getByRole('button', { name: /Statuses/ })).toBeInTheDocument();
+    expect(within(filterCard).getByText('Hide done')).toBeInTheDocument();
+    expect(within(filterCard).getByText('Show done')).toBeInTheDocument();
+    expect(filterButton).toHaveAttribute('aria-expanded', 'true');
+    expect(within(filterCard).getByRole('button', { name: 'Apply' })).toBeInTheDocument();
   });
 
-  it('enables Clear when every team is removed and the default set is nonempty', () => {
+  it('moves Save reports and Export into the expanded section and collapses after Apply', () => {
+    const StatefulHeader: React.FC = () => {
+      const [isExpanded, setExpanded] = React.useState(false);
+      const actions = (
+        <>
+          <button type="button">Save reports</button>
+          <button type="button">Export</button>
+        </>
+      );
+
+      return (
+        <ConfigProvider>
+          <ReportHeaderFilterContext.Provider
+            value={{
+              isExpanded,
+              setExpanded,
+              actions,
+            }}
+          >
+            <div>
+              {!isExpanded && actions}
+              <AnalyticsFilterBar
+                projectOptions={PROJECT_OPTIONS}
+                selectedProjectIds={[]}
+                onProjectsChange={vi.fn()}
+              />
+            </div>
+          </ReportHeaderFilterContext.Provider>
+        </ConfigProvider>
+      );
+    };
+
+    render(<StatefulHeader />);
+    expect(screen.getByRole('button', { name: 'Save reports' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filter' }));
+
+    const filterCard = screen.getByRole('group', { name: 'Filters' });
+    expect(within(filterCard).getByRole('button', { name: 'Save reports' })).toBeInTheDocument();
+    expect(within(filterCard).getByRole('button', { name: 'Export' })).toBeInTheDocument();
+
+    fireEvent.click(within(filterCard).getByRole('button', { name: 'Apply' }));
+
+    expect(screen.queryByRole('group', { name: 'Filters' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save reports' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Export' })).toBeInTheDocument();
+  });
+
+  it('closes the expanded filter section after Clear', () => {
     const { onProjectsChange, onTeamsChange } = renderBar({
       selectedProjectIds: [],
       selectedTeamIds: [],
@@ -112,5 +169,9 @@ describe('AnalyticsFilterBar', () => {
 
     expect(onProjectsChange).toHaveBeenCalledWith([]);
     expect(onTeamsChange).toHaveBeenCalledWith(['t-default']);
+    expect(screen.getByRole('button', { name: /Filter/ })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    );
   });
 });

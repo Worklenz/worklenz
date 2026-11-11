@@ -1,5 +1,5 @@
 import React from 'react';
-import { Badge, Button, Divider, Flex, Popover, Segmented, theme } from '@/shared/antd-imports';
+import { Badge, Button, Card, Divider, Flex, Segmented, theme } from '@/shared/antd-imports';
 import { FilterOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import {
@@ -9,6 +9,7 @@ import {
   SingleSelectFilterPill,
   type FilterOption,
 } from '@/components/common/filters/MultiSelectFilterPill';
+import { ReportHeaderFilterContext } from '../ReportHeaderFilterContext';
 
 export type AnalyticsDatePreset =
   | 'last_7_days'
@@ -31,6 +32,13 @@ const ALL_DATE_PRESETS: AnalyticsDatePreset[] = [
 
 const EMPTY_IDS: string[] = [];
 const EMPTY_OPTIONS: FilterOption[] = [];
+const FILTER_TRIGGER_STYLE: React.CSSProperties = {
+  ...FILTER_PILL_BUTTON_STYLE,
+  height: 30,
+  fontSize: 12,
+  borderRadius: 7,
+  paddingInline: 8,
+};
 
 const areSameIdSets = (a: string[], b: string[]): boolean => {
   if (a.length !== b.length) return false;
@@ -104,7 +112,16 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
 }) => {
   const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
-  const [panelOpen, setPanelOpen] = React.useState(false);
+  const filterContext = React.useContext(ReportHeaderFilterContext);
+  const [localPanelOpen, setLocalPanelOpen] = React.useState(false);
+  const panelOpen = filterContext?.isExpanded ?? localPanelOpen;
+  const setPanelOpen = (open: boolean) => {
+    if (filterContext) {
+      filterContext.setExpanded(open);
+    } else {
+      setLocalPanelOpen(open);
+    }
+  };
 
   const showMembers = Boolean(onMembersChange);
   const showTeams = Boolean(onTeamsChange);
@@ -222,7 +239,18 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
     dateOptions.find(o => o.value === draftDatePreset)?.label ?? dateOptions[0]?.label;
 
   const panelContent = (
-    <div style={{ width: 'min(420px, calc(100vw - 32px))', padding: '4px 0' }}>
+    <Card
+      role="group"
+      aria-label={t('filtersTitle', { defaultValue: 'Filters' })}
+      size="small"
+      title={t('filtersTitle', { defaultValue: 'Filters' })}
+      style={{
+        width: '100%',
+        borderRadius: token.borderRadiusLG,
+        borderColor: token.colorBorderSecondary,
+      }}
+      styles={{ body: { padding: 16 } }}
+    >
       <Flex gap={8} wrap="wrap" align="center">
         {showDate && (
           <SingleSelectFilterPill
@@ -314,42 +342,46 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
         >
           {t('clearFilters', { defaultValue: 'Clear' })}
         </Button>
-        <Button type="primary" onClick={handleApply} style={FILTER_PILL_BUTTON_STYLE}>
-          {t('applyFilters', { defaultValue: 'Apply' })}
-        </Button>
+        <Flex gap={8} align="center" wrap="wrap">
+          {filterContext?.actions}
+          <Button type="primary" onClick={handleApply} style={FILTER_PILL_BUTTON_STYLE}>
+            {t('applyFilters', { defaultValue: 'Apply' })}
+          </Button>
+        </Flex>
       </Flex>
-    </div>
+    </Card>
   );
 
   return (
-    <Popover
-      content={panelContent}
-      trigger="click"
-      placement="bottomLeft"
-      open={panelOpen}
-      onOpenChange={next => {
-        if (next) {
-          setDraftProjectIds(selectedProjectIds);
-          setDraftMemberIds(selectedMemberIds);
-          setDraftTeamIds(selectedTeamIds);
-          setDraftDatePreset(datePreset ?? defaultDatePreset);
-          setDraftStatusIds(selectedStatusIds);
-          setDraftIncludeDone(includeDone ?? false);
-        }
-        setPanelOpen(next);
+    <Flex
+      vertical
+      gap={12}
+      align={panelOpen ? 'stretch' : 'flex-start'}
+      style={{
+        width: '100%',
       }}
-      styles={{ root: { padding: 0 }, body: { padding: '12px 16px', borderRadius: 8 } }}
     >
       <Button
         icon={<FilterOutlined />}
+        onClick={() => {
+          if (!panelOpen) {
+            setDraftProjectIds(selectedProjectIds);
+            setDraftMemberIds(selectedMemberIds);
+            setDraftTeamIds(selectedTeamIds);
+            setDraftDatePreset(datePreset ?? defaultDatePreset);
+            setDraftStatusIds(selectedStatusIds);
+            setDraftIncludeDone(includeDone ?? false);
+          }
+          setPanelOpen(!panelOpen);
+        }}
         style={
           panelOpen || activeFilterCount > 0
             ? {
-                ...FILTER_PILL_BUTTON_STYLE,
+                ...FILTER_TRIGGER_STYLE,
                 borderColor: token.colorPrimary,
                 color: token.colorPrimary,
               }
-            : FILTER_PILL_BUTTON_STYLE
+            : FILTER_TRIGGER_STYLE
         }
         aria-label={
           activeFilterCount > 0
@@ -367,6 +399,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
           />
         )}
       </Button>
-    </Popover>
+      {panelOpen && panelContent}
+    </Flex>
   );
 };
