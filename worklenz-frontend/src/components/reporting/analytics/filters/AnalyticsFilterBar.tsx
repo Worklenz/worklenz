@@ -358,7 +358,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
     <Flex
       vertical
       gap={12}
-      align={panelOpen ? 'stretch' : 'flex-start'}
+      align="flex-start"
       style={{
         width: '100%',
       }}
