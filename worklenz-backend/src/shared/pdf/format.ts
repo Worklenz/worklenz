@@ -20,43 +20,47 @@ const HTML_ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot
 export const htmlToPlainText = (html: string | null | undefined): string => {
   if (!html) return "";
   const lists: Array<{ tag: string; nextNumber: number }> = [];
-  let listItemDepth = 0;
-  const withListMarkers = html.replace(
-    /<(\/?)(ol|ul)\b[^>]*>|<li\b([^>]*)>|<\/li>|<\/?p\b[^>]*>/gi,
-    (match, closing, tag, attributes) => {
-      if (tag) {
-        if (closing) {
-          lists.pop();
-        } else {
-          lists.push({ tag: tag.toLowerCase(), nextNumber: 1 });
-        }
-        return "";
+  const structuralTags = /<(\/?)(ol|ul)\b[^>]*>|<(\/?)li\b([^>]*)>|<(\/?)p\b[^>]*>/gi;
+  let withListMarkers = "";
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+  const addLineBreak = () => {
+    if (withListMarkers.length > 0 && !withListMarkers.endsWith("\n")) withListMarkers += "\n";
+  };
+
+  while ((match = structuralTags.exec(html)) !== null) {
+    withListMarkers += html.slice(cursor, match.index);
+    cursor = structuralTags.lastIndex;
+
+    if (match[2]) {
+      if (match[1]) lists.pop();
+      else lists.push({ tag: match[2].toLowerCase(), nextNumber: 1 });
+      continue;
+    }
+
+    if (match[4] !== undefined) {
+      if (match[3]) {
+        addLineBreak();
+        continue;
       }
 
-      if (/^<li\b/i.test(match)) {
-        listItemDepth += 1;
-        const listType = /\bdata-list\s*=\s*["'](ordered|bullet)["']/i.exec(attributes)?.[1]?.toLowerCase();
-        const isOrdered = listType ? listType === "ordered" : lists[lists.length - 1]?.tag === "ol";
-        if (!isOrdered) return "• ";
-
-        const list = lists[lists.length - 1];
+      const listType = /\bdata-list\s*=\s*["'](ordered|bullet)["']/i.exec(match[4])?.[1]?.toLowerCase();
+      const list = lists[lists.length - 1];
+      const isOrdered = listType ? listType === "ordered" : list?.tag === "ol";
+      const indent = "  ".repeat(Math.max(0, lists.length - 1));
+      if (isOrdered) {
         const number = list?.nextNumber ?? 1;
         if (list) list.nextNumber += 1;
-        return `${number}. `;
+        withListMarkers += `${indent}${number}. `;
+      } else {
+        withListMarkers += `${indent}• `;
       }
-
-      if (/^<\/li/i.test(match)) {
-        listItemDepth = Math.max(0, listItemDepth - 1);
-        return "\n";
-      }
-
-      if (/^<\/p/i.test(match) && listItemDepth === 0) {
-        return "\n";
-      }
-
-      return "";
+      continue;
     }
-  );
+
+    if (match[5]) addLineBreak();
+  }
+  withListMarkers += html.slice(cursor);
   const withBreaks = withListMarkers
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/(div|h[1-6])>/gi, "\n");
