@@ -33,9 +33,7 @@ export const ReportPageShell: React.FC<ReportPageShellProps> = ({
         {title}
       </Title>
 
-      {filters}
-
-      {(onExport || actions) && (
+      {(filters || onExport || actions) && (
         <div
           style={{
             padding: 12,
@@ -44,7 +42,14 @@ export const ReportPageShell: React.FC<ReportPageShellProps> = ({
             background: token.colorBgContainer,
           }}
         >
-          <Flex justify="flex-end" align="center" gap={12} wrap="wrap" style={{ width: '100%' }}>
+          <Flex
+            justify="space-between"
+            align="center"
+            gap={12}
+            wrap="wrap"
+            style={{ width: '100%' }}
+          >
+            <div style={{ flex: '1 1 auto', minWidth: 0 }}>{filters}</div>
             <Space wrap size={8}>
               {actions}
               {onExport && (

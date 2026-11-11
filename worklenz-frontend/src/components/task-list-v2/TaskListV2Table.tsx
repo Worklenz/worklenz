@@ -2734,11 +2734,12 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                     overscan={800}
                     groupCounts={virtuosoGroupCounts}
                     groupContent={renderGroup}
-                    components={
-                      isBacklogMode
-                        ? { Group: BacklogStickyGroup, TopItemList: BacklogStickyGroup }
-                        : undefined
-                    }
+                    {...(isBacklogMode && {
+                      components: {
+                        Group: BacklogStickyGroup,
+                        TopItemList: BacklogStickyGroup,
+                      },
+                    })}
                     itemContent={(index, groupIndex) => {
                       const item = virtuosoItems[index];
                       if (!item) return <div />;

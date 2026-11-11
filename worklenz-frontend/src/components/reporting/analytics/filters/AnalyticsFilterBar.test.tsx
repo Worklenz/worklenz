@@ -57,6 +57,7 @@ describe('AnalyticsFilterBar', () => {
   it('restores defaultTeamIds on Clear instead of emptying teams', () => {
     const { onProjectsChange, onTeamsChange } = renderBar();
 
+    fireEvent.click(screen.getByRole('button', { name: /Filter/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
 
     expect(onProjectsChange).toHaveBeenCalledWith([]);
@@ -64,7 +65,7 @@ describe('AnalyticsFilterBar', () => {
     expect(onTeamsChange).not.toHaveBeenCalledWith([]);
   });
 
-  it('shows the available filters in a separate card without opening a popover', () => {
+  it('shows all report filters inside the compact Filter popover', () => {
     renderBar({
       selectedProjectIds: [],
       selectedTeamIds: ['t-default'],
@@ -80,16 +81,20 @@ describe('AnalyticsFilterBar', () => {
       onIncludeDoneChange: vi.fn(),
     });
 
-    const filterCard = screen.getByRole('group', { name: 'Filters' });
-    expect(filterCard).toBeInTheDocument();
-    expect(within(filterCard).getByRole('button', { name: /Projects/ })).toBeInTheDocument();
-    expect(within(filterCard).getByRole('button', { name: /Members/ })).toBeInTheDocument();
-    expect(within(filterCard).getByRole('button', { name: /Teams/ })).toBeInTheDocument();
-    expect(within(filterCard).getByRole('button', { name: 'Date range' })).toBeInTheDocument();
-    expect(within(filterCard).getByRole('button', { name: /Statuses/ })).toBeInTheDocument();
-    expect(within(filterCard).getByText('Hide done')).toBeInTheDocument();
-    expect(within(filterCard).getByText('Show done')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^Filter/ })).not.toBeInTheDocument();
+    const filterButton = screen.getByRole('button', { name: 'Filter' });
+    expect(filterButton).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Projects/ })).not.toBeInTheDocument();
+
+    fireEvent.click(filterButton);
+
+    const filterPopover = screen.getByRole('tooltip');
+    expect(within(filterPopover).getByRole('button', { name: /Projects/ })).toBeInTheDocument();
+    expect(within(filterPopover).getByRole('button', { name: /Members/ })).toBeInTheDocument();
+    expect(within(filterPopover).getByRole('button', { name: /Teams/ })).toBeInTheDocument();
+    expect(within(filterPopover).getByRole('button', { name: 'Date range' })).toBeInTheDocument();
+    expect(within(filterPopover).getByRole('button', { name: /Statuses/ })).toBeInTheDocument();
+    expect(within(filterPopover).getByText('Hide done')).toBeInTheDocument();
+    expect(within(filterPopover).getByText('Show done')).toBeInTheDocument();
   });
 
   it('enables Clear when every team is removed and the default set is nonempty', () => {
@@ -99,6 +104,7 @@ describe('AnalyticsFilterBar', () => {
       defaultTeamIds: ['t-default'],
     });
 
+    fireEvent.click(screen.getByRole('button', { name: /Filter/ }));
     const clearButton = screen.getByRole('button', { name: 'Clear' });
     expect(clearButton).toBeEnabled();
 
