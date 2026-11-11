@@ -60,6 +60,7 @@ export const AnalyticsTemplateActions: React.FC<AnalyticsTemplateActionsProps> =
       >
         <span style={{ display: 'inline-block' }}>
           <Button
+            type="primary"
             icon={<SaveOutlined />}
             onClick={handleClick}
             disabled={canSaveTemplate ? saveDisabled : false}
