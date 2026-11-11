@@ -19,10 +19,47 @@ const HTML_ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot
 /** Turns the sanitized rich-text notes HTML into plain text for a PDF <Text> node. */
 export const htmlToPlainText = (html: string | null | undefined): string => {
   if (!html) return "";
-  const withBreaks = html
+  const lists: Array<{ tag: string; nextNumber: number }> = [];
+  let listItemDepth = 0;
+  const withListMarkers = html.replace(
+    /<(\/?)(ol|ul)\b[^>]*>|<li\b([^>]*)>|<\/li>|<\/?p\b[^>]*>/gi,
+    (match, closing, tag, attributes) => {
+      if (tag) {
+        if (closing) {
+          lists.pop();
+        } else {
+          lists.push({ tag: tag.toLowerCase(), nextNumber: 1 });
+        }
+        return "";
+      }
+
+      if (/^<li\b/i.test(match)) {
+        listItemDepth += 1;
+        const listType = /\bdata-list\s*=\s*["'](ordered|bullet)["']/i.exec(attributes)?.[1]?.toLowerCase();
+        const isOrdered = listType ? listType === "ordered" : lists[lists.length - 1]?.tag === "ol";
+        if (!isOrdered) return "• ";
+
+        const list = lists[lists.length - 1];
+        const number = list?.nextNumber ?? 1;
+        if (list) list.nextNumber += 1;
+        return `${number}. `;
+      }
+
+      if (/^<\/li/i.test(match)) {
+        listItemDepth = Math.max(0, listItemDepth - 1);
+        return "\n";
+      }
+
+      if (/^<\/p/i.test(match) && listItemDepth === 0) {
+        return "\n";
+      }
+
+      return "";
+    }
+  );
+  const withBreaks = withListMarkers
     .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<li[^>]*>/gi, "\n• ")
-    .replace(/<\/(p|div|h[1-6]|ul|ol|li)>/gi, "\n");
+    .replace(/<\/(div|h[1-6])>/gi, "\n");
   // Repeat until stable so nested fragments like "<scr<b>ipt>" can't reassemble into a tag.
   let text = withBreaks;
   let previous: string;
