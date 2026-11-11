@@ -1,6 +1,8 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { scheduleApi } from '@/api/schedule/scheduleApi';
 import { PickerType } from '@/types/schedule/schedule-v2.types';
+import { getUserSession } from '@/utils/session-helper';
+import { loadShowWeekendsPreference } from './schedulePreferencesStorage';
 
 /**
  * Interface for segment data containing all information about a project segment
@@ -84,7 +86,7 @@ interface ScheduleState {
 
 const initialUIState: UIState = {
   isFullscreen: false,
-  showWeekends: false,
+  showWeekends: loadShowWeekendsPreference(getUserSession()?.id),
   zoomLevel: 1,
   viewMode: 'gantt',
   selectedTimeRange: 'month',
