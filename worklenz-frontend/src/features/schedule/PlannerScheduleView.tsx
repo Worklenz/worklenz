@@ -1641,6 +1641,7 @@ const PlannerScheduleView: React.FC = () => {
               style={{
                 overflowX: 'auto',
                 overflowY: 'hidden',
+                scrollbarGutter: 'stable',
                 scrollbarWidth: 'none',
                 background: cardBg,
                 borderBottom: `1px solid ${borderColor}`,
@@ -1741,7 +1742,12 @@ const PlannerScheduleView: React.FC = () => {
                   leftBodyScrollRef.current.scrollTop = bodyScrollRef.current.scrollTop;
                 }
               }}
-              style={{ flex: 1, minHeight: 0, overflow: 'auto' }}
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflow: 'auto',
+                scrollbarGutter: 'stable',
+              }}
             >
               <div style={{ minWidth: days.length * colWidth, minHeight: '100%', display: 'flex', flexDirection: 'column' }}>
                 {/* Rows */}
