@@ -194,6 +194,8 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
           color: token.colorText,
           borderRadius: token.borderRadiusLG,
           boxShadow: token.boxShadowSecondary,
+          padding: '4px 0',
+          minWidth: '200px',
         }}
       >
         {/* Copy link item */}
@@ -245,14 +247,14 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
           <div
             style={{
               padding: '8px 12px',
-              borderTop: '1px solid var(--ant-color-split)',
+              borderTop: `1px solid ${token.colorSplit}`,
             }}
           >
             <p
               style={{
                 margin: '0 0 8px 0',
                 fontSize: '12px',
-                color: 'var(--ant-color-text-secondary)',
+                color: token.colorTextSecondary,
               }}
             >
               {t('taskHeader.deleteTaskConfirmMessage', {
