@@ -32,6 +32,18 @@ export default class TeamsController extends WorklenzControllerBase {
              organizations.logo_url,
              (teams.id = $2) AS active,
              (teams.user_id = $1) AS owner,
+             COALESCE(
+               (
+                 SELECT roles.name
+                 FROM team_members
+                 JOIN roles ON roles.id = team_members.role_id
+                 WHERE team_members.user_id = $1
+                   AND team_members.team_id = teams.id
+                   AND team_members.active IS TRUE
+                 LIMIT 1
+               ),
+               CASE WHEN teams.user_id = $1 THEN 'Owner' END
+             ) AS role_name,
              EXISTS(
                SELECT 1
                FROM email_invitations
