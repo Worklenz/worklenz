@@ -35,7 +35,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
     }
   }
 
-  private static async getTimeLoggedByProjects(projects: string[], users: string[], key: string, dateRange: string[], archived = false, user_id = "", billable: { billable: boolean; nonBillable: boolean }): Promise<any> {
+  public static async getTimeLoggedByProjects(projects: string[], users: string[], key: string, dateRange: string[], archived = false, user_id = "", billable: { billable: boolean; nonBillable: boolean }, throwOnError = false): Promise<any> {
     try {
       // Use SqlHelper.buildInClause for safe IN clauses
       // Start from $2 because $1 is used for 'archived' parameter in subqueries
@@ -60,8 +60,8 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
       const billableQuery = this.buildBillableQuery(billable);
 
-      const projectTimeLogs = await this.getTotalTimeLogsByProject(archived, durationClauseForProject, projectIdsClause, userIdsClauseForProject, archivedClause, billableQuery, projectIdsParams, durationParamsForProject, userIdsParamsForProject, archivedParams);
-      const userTimeLogs = await this.getTotalTimeLogsByUser(archived, durationClauseForUser, projectIdsClause, userIdsClauseForUser, billableQuery, projectIdsParams, durationParamsForUser, userIdsParamsForUser);
+      const projectTimeLogs = await this.getTotalTimeLogsByProject(archived, durationClauseForProject, projectIdsClause, userIdsClauseForProject, archivedClause, billableQuery, projectIdsParams, durationParamsForProject, userIdsParamsForProject, archivedParams, throwOnError);
+      const userTimeLogs = await this.getTotalTimeLogsByUser(archived, durationClauseForUser, projectIdsClause, userIdsClauseForUser, billableQuery, projectIdsParams, durationParamsForUser, userIdsParamsForUser, throwOnError);
 
       const format = (seconds: number) => {
         if (seconds === 0) return "-";
@@ -96,12 +96,13 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
       return { projectTimeLogs, userTimeLogs };
     } catch (error) {
+      if (throwOnError) throw error;
       log_error(error);
     }
     return [];
   }
 
-  private static async getTotalTimeLogsByProject(archived: boolean, durationClause: string, projectIdsClause: string, userIdsClause: string, archivedClause: string, billableQuery: string, projectIdsParams: any[], durationParams: any[], userIdsParams: any[], archivedParams: any[]) {
+  private static async getTotalTimeLogsByProject(archived: boolean, durationClause: string, projectIdsClause: string, userIdsClause: string, archivedClause: string, billableQuery: string, projectIdsParams: any[], durationParams: any[], userIdsParams: any[], archivedParams: any[], throwOnError = false) {
     try {
       const q = `SELECT projects.name,
                projects.color_code,
@@ -145,12 +146,13 @@ export default class ReportingAllocationController extends ReportingControllerBa
       const result = await db.query(q, [archived, ...projectIdsParams, ...durationParams, ...userIdsParams, ...archivedParams]);
       return result.rows;
     } catch (error) {
+      if (throwOnError) throw error;
       log_error(error);
       return [];
     }
   }
 
-  private static async getTotalTimeLogsByUser(archived: boolean, durationClause: string, projectIdsClause: string, userIdsClause: string, billableQuery: string, projectIdsParams: any[], durationParams: any[], userIdsParams: any[]) {
+  private static async getTotalTimeLogsByUser(archived: boolean, durationClause: string, projectIdsClause: string, userIdsClause: string, billableQuery: string, projectIdsParams: any[], durationParams: any[], userIdsParams: any[], throwOnError = false) {
     try {
       const q = `(SELECT id,
                     (SELECT COALESCE(SUM(time_spent), 0)
@@ -167,12 +169,13 @@ export default class ReportingAllocationController extends ReportingControllerBa
       const result = await db.query(q, [archived, ...projectIdsParams, ...durationParams, ...userIdsParams]);
       return result.rows;
     } catch (error) {
+      if (throwOnError) throw error;
       log_error(error);
       return [];
     }
   }
 
-  private static async getUserIds(teamIds: string[]) {
+  public static async getUserIds(teamIds: string[], throwOnError = false) {
     try {
       // Use SqlHelper.buildInClause for safe IN clause
       const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teamIds, 1);
@@ -186,6 +189,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
       const result = await db.query(q, teamIdsParams);
       return result.rows;
     } catch (error) {
+      if (throwOnError) throw error;
       log_error(error);
       return [];
     }

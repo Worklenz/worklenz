@@ -1,4 +1,5 @@
 {
+  "projectReference": "Identyfikator projektu",
   "name": "Nazwa projektu",
   "client": "Klient",
   "category": "Kategoria",

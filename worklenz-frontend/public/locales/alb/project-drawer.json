@@ -1,4 +1,6 @@
 {
+  "projectReference": "Referenca e projektit",
+  "duplicateProjectReference": "Një projekt tjetër në këtë ekip e përdor tashmë këtë referencë.",
   "createProject": "Krijo Projekt",
   "editProject": "Modifiko Projektin",
   "projectSettings": "Cilësimet e projektit",

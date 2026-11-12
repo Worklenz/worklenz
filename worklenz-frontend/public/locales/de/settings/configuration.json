@@ -13,5 +13,8 @@
   "limitTimelogBackdatingTooltip": "Wenn aktiviert, können Mitglieder keine Zeiterfassung mit einem Datum vor der zulässigen Anzahl von Tagen anlegen. Gilt für alle, einschließlich Eigentümer und Administratoren. Laufende Timer und importierte Einträge sind nicht betroffen.",
   "timelogBackdateLimitDays": "Maximale Anzahl Tage, um die eine Zeiterfassung zurückdatiert werden darf",
   "timelogBackdateLimitNote": "Hinweis: Bestehende Zeiterfassungen werden nie verändert. Das Bearbeiten eines bereits alten Eintrags bleibt möglich, solange dessen Datum nicht geändert wird.",
-  "days": "Tage"
+  "days": "Tage",
+  "enforceDailyTimeLimit": "24-Stunden-Tageslimit erzwingen",
+  "enforceDailyTimeLimitTooltip": "Wenn aktiviert, können Mitglieder über alle Aufgaben hinweg nicht mehr als 24 Stunden Arbeit pro Tag erfassen.",
+  "enforceDailyTimeLimitNote": "Hinweis: Bestehende historische Einträge, die 24 Stunden überschreiten, bleiben erhalten. Das Bearbeiten eines bestehenden Eintrags über dem Limit ist zulässig, solange die Dauer reduziert wird."
 }

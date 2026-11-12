@@ -390,7 +390,7 @@ paths:
           in: query
           schema:
             type: string
-          description: Search query to filter projects by name
+          description: Search query to filter projects by name or project reference
       responses:
         '200':
           description: Projects retrieved successfully
@@ -411,7 +411,10 @@ paths:
       tags:
         - Projects
       summary: Create a new project
-      description: Create a new project (requires team owner or admin role)
+      description: |
+        Create a new project (requires team owner or admin role). A duplicate project
+        reference returns HTTP 200 with done=false and body.error_code set to
+        DUPLICATE_PROJECT_REFERENCE.
       requestBody:
         required: true
         content:
@@ -464,7 +467,11 @@ paths:
       tags:
         - Projects
       summary: Update project
-      description: Update an existing project's properties (requires project manager role)
+      description: |
+        Update an existing project's properties (requires project settings permission).
+        Omit project_reference to preserve it; send null or an empty string to clear it.
+        A duplicate returns HTTP 200 with done=false and body.error_code set to
+        DUPLICATE_PROJECT_REFERENCE.
       parameters:
         - $ref: '#/components/parameters/idParam'
       requestBody:
@@ -3675,6 +3682,8 @@ components:
           type: string
           maxLength: 100
           example: "Website Redesign"
+        project_reference:
+          $ref: '#/components/schemas/ProjectReference'
         key:
           type: string
           maxLength: 10
@@ -3712,6 +3721,13 @@ components:
           type: string
           format: date-time
 
+    ProjectReference:
+      type: string
+      nullable: true
+      maxLength: 200
+      description: Optional internal reference; unique within a team without regard to case. Surrounding whitespace is removed.
+      example: "XX/NCPL/SG0001/0001/2027"
+
     ProjectCreateRequest:
       type: object
       required:
@@ -3723,6 +3739,8 @@ components:
           maxLength: 100
           description: Project name
           example: "Website Redesign"
+        project_reference:
+          $ref: '#/components/schemas/ProjectReference'
         key:
           type: string
           maxLength: 10
@@ -3755,6 +3773,8 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+        project_reference:
+          $ref: '#/components/schemas/ProjectReference'
         key:
           type: string
           maxLength: 10

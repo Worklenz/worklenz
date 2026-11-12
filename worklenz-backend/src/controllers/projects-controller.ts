@@ -29,6 +29,19 @@ import {
 
 export default class ProjectsController extends WorklenzControllerBase {
 
+  private static validateProjectReference(body: Record<string, unknown>): boolean {
+    if (!("project_reference" in body) || body.project_reference == null) return true;
+    if (typeof body.project_reference !== "string") return false;
+    const reference = body.project_reference.trim();
+    body.project_reference = reference;
+    return reference.length <= 200;
+  }
+
+  private static isDuplicateProjectReference(error: unknown): boolean {
+    return typeof error === "object" && error !== null &&
+      "constraint" in error && error.constraint === "projects_team_reference_unique";
+  }
+
   // Legacy logging methods removed - now using ActivityLoggingService
 
   private static async getAllKeysByTeamId(teamId?: string) {
@@ -90,7 +103,10 @@ export default class ProjectsController extends WorklenzControllerBase {
       }
     }
 
-    const q = `SELECT create_project($1) AS project`;
+    const q = `SELECT create_project_with_reference($1) AS project`;
+
+    if (!this.validateProjectReference(req.body))
+      return res.status(200).send(new ServerResponse(false, { error_code: "INVALID_PROJECT_REFERENCE" }, "Invalid project reference."));
 
     req.body.team_id = req.user?.team_id || null;
     req.body.user_id = req.user?.id || null;
@@ -129,7 +145,14 @@ export default class ProjectsController extends WorklenzControllerBase {
     const keys = await this.getAllKeysByTeamId(req.user?.team_id as string);
     req.body.key = generateProjectKey(req.body.name, keys) || null;
 
-    const result = await db.query(q, [JSON.stringify(req.body)]);
+    let result;
+    try {
+      result = await db.query(q, [JSON.stringify(req.body)]);
+    } catch (error: unknown) {
+      if (this.isDuplicateProjectReference(error))
+        return res.status(200).send(new ServerResponse(false, { error_code: "DUPLICATE_PROJECT_REFERENCE" }, "Project reference already exists in this team."));
+      throw error;
+    }
     const [data] = result.rows;
 
     // Log project creation after successful database operation
@@ -253,7 +276,7 @@ export default class ProjectsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async getMyProjects(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const {searchQuery, searchParams = [], size, offset} = this.toPaginationOptions(req.query, "name", false, 1);
+    const {searchQuery, searchParams = [], size, offset} = this.toPaginationOptions(req.query, ["projects.name", "projects.project_reference"], false, 2);
     const userId = req.user?.id;
     
     // Use parameterized queries for user ID
@@ -275,6 +298,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                    (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
                     FROM (SELECT id,
                                  name,
+                                 project_reference,
                                  EXISTS(SELECT user_id
                                         FROM favorite_projects
                                         WHERE user_id = '${req.user?.id}'
@@ -589,7 +613,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     }
 
     // Now get search query with correct paramOffset
-    const {searchQuery, searchParams, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name", false, paramOffset);
+    const {searchQuery, searchParams, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, ["projects.name", "projects.project_reference"], false, paramOffset);
     
     // Add search parameters to queryParams
     if (searchParams.length > 0) {
@@ -621,6 +645,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                    (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
                     FROM (SELECT id,
                                  name,
+                                 project_reference,
                                  (SELECT name FROM sys_project_statuses WHERE id = status_id) AS status,
                                  (SELECT color_code FROM sys_project_statuses WHERE id = status_id) AS status_color,
                                  (SELECT icon FROM sys_project_statuses WHERE id = status_id) AS status_icon,
@@ -819,6 +844,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     const q = `
       SELECT projects.id,
              projects.name,
+             projects.project_reference,
              projects.color_code,
              projects.notes,
              projects.key,
@@ -988,7 +1014,10 @@ export default class ProjectsController extends WorklenzControllerBase {
     }
   })
   public static async update(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `SELECT update_project($1) AS project;`;
+    const q = `SELECT update_project_with_reference($1) AS project;`;
+
+    if (!this.validateProjectReference(req.body))
+      return res.status(200).send(new ServerResponse(false, { error_code: "INVALID_PROJECT_REFERENCE" }, "Invalid project reference."));
 
     const key = req.body.key?.toString().trim().toUpperCase();
 
@@ -1116,7 +1145,14 @@ export default class ProjectsController extends WorklenzControllerBase {
       req.body.end_date = req.body.end_date.toString().split('T')[0];
     }
 
-    const result = await db.query(q, [JSON.stringify(req.body)]);
+    let result;
+    try {
+      result = await db.query(q, [JSON.stringify(req.body)]);
+    } catch (error: unknown) {
+      if (this.isDuplicateProjectReference(error))
+        return res.status(200).send(new ServerResponse(false, { error_code: "DUPLICATE_PROJECT_REFERENCE" }, "Project reference already exists in this team."));
+      throw error;
+    }
     const [data] = result.rows;
 
     if (data.project?.id) {
@@ -1705,7 +1741,7 @@ export default class ProjectsController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getGrouped(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     // Use qualified field name for projects to avoid ambiguity
-    const {searchQuery, searchParams = [], sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, ["projects.name"], false, 2);
+    const {searchQuery, searchParams = [], sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, ["projects.name", "projects.project_reference"], false, 2);
     const groupBy = req.query.groupBy as string || "priority";
     const userId = req.user?.id;
     
@@ -1814,6 +1850,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                           FROM (
                             SELECT p2.id,
                                    p2.name,
+                                   p2.project_reference,
                                    (SELECT sys_project_statuses.name FROM sys_project_statuses WHERE sys_project_statuses.id = p2.status_id) AS status,
                                    (SELECT sys_project_statuses.color_code FROM sys_project_statuses WHERE sys_project_statuses.id = p2.status_id) AS status_color,
                                    (SELECT sys_project_statuses.icon FROM sys_project_statuses WHERE sys_project_statuses.id = p2.status_id) AS status_icon,
@@ -1890,7 +1927,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                               ${isArchived.replace("projects.", "p2.")}
                               ${isFavorites.replace("projects.", "p2.")}
                               ${filterByMember.replace("projects.", "p2.")}
-                              ${searchQuery.replace("projects.", "p2.")}
+                              ${searchQuery.replace(/projects\./g, "p2.")}
                             ORDER BY ${innerSortField} ${safeSortOrder}
                           ) project_data
                          ) AS projects

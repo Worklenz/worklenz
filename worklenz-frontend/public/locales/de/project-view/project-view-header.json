@@ -1,4 +1,5 @@
 {
+  "projectReference": "Projektreferenz",
   "importTasks": "Aufgaben importieren",
   "importTask": "Aufgabe importieren",
   "importTasksFromCsv": "Aufgaben aus CSV importieren",

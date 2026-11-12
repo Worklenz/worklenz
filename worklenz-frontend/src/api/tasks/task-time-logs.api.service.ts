@@ -243,9 +243,27 @@ export const taskTimeLogsApiService = {
   splitEntry: async (
     id: string,
     segment1: { seconds_spent: number; formatted_start: string; description?: string },
-    segment2: { seconds_spent: number; formatted_start: string }
+    segment2: { seconds_spent: number; formatted_start: string },
+    drawer = false,
+    newTaskId?: string
   ): Promise<IServerResponse<null>> => {
-    const response = await apiClient.post(`${rootUrl}/entries/${id}/split`, { segment1, segment2 });
+    const response = await apiClient.post(`${rootUrl}/${drawer ? '' : 'entries/'}${id}/split`, { segment1, segment2, ...(newTaskId ? { new_task_id: newTaskId } : {}) });
+    return response.data;
+  },
+
+  getDailyAllowance: async (
+    date?: string
+  ): Promise<
+    IServerResponse<{
+      enforce_daily_time_limit: boolean;
+      date?: string;
+      limit_seconds?: number;
+      logged_seconds?: number;
+      remaining_seconds?: number | null;
+    }>
+  > => {
+    const params = date ? `?date=${encodeURIComponent(date)}` : '';
+    const response = await apiClient.get(`${rootUrl}/daily-allowance${params}`);
     return response.data;
   },
 

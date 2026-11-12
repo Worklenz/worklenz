@@ -15,7 +15,7 @@ import { Queryable } from "./types";
  *   - a notification addressed to named people (an approval's approvers, a change request's requester)
  *     reaches only them;
  *   - what it points at (a file, milestone or discussion) must still be Client Visible;
- *   - read state is the person's own (client_portal_notification_reads), not the organization's.
+ *   - read state is the person's own (client_portal_contact_notification_reads), not the organization's.
  * Old v1 notification types (request updates, invoices, chat) are not v2 events and are not returned.
  */
 
@@ -121,7 +121,7 @@ export async function listClientNotifications(q: Queryable, subject: ClientSubje
     q.query(
       `SELECT n.id, n.type, n.reference_id, n.title, n.message, n.created_at,
               (n.metadata ->> 'project_id') AS project_id,
-              EXISTS (SELECT 1 FROM client_portal_notification_reads r
+              EXISTS (SELECT 1 FROM client_portal_contact_notification_reads r
                        WHERE r.notification_id = n.id AND r.contact_id = $4::uuid) AS is_read
          ${VISIBLE_NOTIFICATIONS_SQL}
         ORDER BY n.created_at DESC
@@ -149,7 +149,7 @@ export async function listClientNotifications(q: Queryable, subject: ClientSubje
   // The badge counts every unread one, not just the page of 100 above.
   const unread = await q.query(
     `SELECT COUNT(*)::int AS n ${VISIBLE_NOTIFICATIONS_SQL}
-        AND NOT EXISTS (SELECT 1 FROM client_portal_notification_reads r
+        AND NOT EXISTS (SELECT 1 FROM client_portal_contact_notification_reads r
                          WHERE r.notification_id = n.id AND r.contact_id = $4::uuid)`,
     params(subject, projectIds)
   );
@@ -174,12 +174,12 @@ export async function setClientNotificationRead(
 
   if (read) {
     await q.query(
-      `INSERT INTO client_portal_notification_reads (notification_id, contact_id) VALUES ($1, $2)
+      `INSERT INTO client_portal_contact_notification_reads (notification_id, contact_id) VALUES ($1, $2)
        ON CONFLICT (notification_id, contact_id) DO NOTHING`,
       [notificationId, subject.contactId]
     );
   } else {
-    await q.query(`DELETE FROM client_portal_notification_reads WHERE notification_id = $1 AND contact_id = $2`, [
+    await q.query(`DELETE FROM client_portal_contact_notification_reads WHERE notification_id = $1 AND contact_id = $2`, [
       notificationId,
       subject.contactId,
     ]);
@@ -192,7 +192,7 @@ export async function markAllClientNotificationsRead(q: Queryable, subject: Clie
   if (projectIds.length === 0) return;
 
   await q.query(
-    `INSERT INTO client_portal_notification_reads (notification_id, contact_id)
+    `INSERT INTO client_portal_contact_notification_reads (notification_id, contact_id)
      SELECT n.id, $4::uuid ${VISIBLE_NOTIFICATIONS_SQL}
      ON CONFLICT (notification_id, contact_id) DO NOTHING`,
     params(subject, projectIds)

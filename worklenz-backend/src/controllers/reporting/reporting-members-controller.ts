@@ -92,7 +92,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     return fEndDate.isSame(fCurrentDate);
   }
 
-  private static async getMembers(
+  public static async getMembers(
     teamId: string, searchQuery = "",
     searchParams: string[] = [],
     size: number | null = null,

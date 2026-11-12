@@ -21,7 +21,8 @@ export default class OrgConfigurationController extends WorklenzControllerBase {
       SELECT
         COALESCE(restrict_task_creation, FALSE)     AS restrict_task_creation,
         COALESCE(base_currency, 'USD')              AS base_currency,
-        COALESCE(timelog_backdate_limit_days, 0)    AS timelog_backdate_limit_days
+        COALESCE(timelog_backdate_limit_days, 0)    AS timelog_backdate_limit_days,
+        COALESCE(enforce_daily_time_limit, FALSE)   AS enforce_daily_time_limit
       FROM organizations
       WHERE user_id = (
         SELECT user_id FROM teams WHERE id = $1 LIMIT 1
@@ -37,6 +38,7 @@ export default class OrgConfigurationController extends WorklenzControllerBase {
         restrict_task_creation: false,
         base_currency: 'USD',
         timelog_backdate_limit_days: 0,
+        enforce_daily_time_limit: false,
       }));
     }
 
@@ -56,7 +58,7 @@ export default class OrgConfigurationController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    const { restrict_task_creation, base_currency, timelog_backdate_limit_days } = req.body;
+    const { restrict_task_creation, base_currency, timelog_backdate_limit_days, enforce_daily_time_limit } = req.body;
 
     // restrict_task_creation requires Business Plan
     if (restrict_task_creation !== undefined && !canUseFeature(req.user, "restrict_task_creation")) {
@@ -95,6 +97,11 @@ export default class OrgConfigurationController extends WorklenzControllerBase {
       values.push(days);
     }
 
+    if (enforce_daily_time_limit !== undefined) {
+      updates.push(`enforce_daily_time_limit = $${idx++}`);
+      values.push(enforce_daily_time_limit === true);
+    }
+
     if (updates.length === 0) {
       return res.status(400).send(new ServerResponse(false, null, "No fields to update."));
     }
@@ -108,7 +115,7 @@ export default class OrgConfigurationController extends WorklenzControllerBase {
       WHERE user_id = (
         SELECT user_id FROM teams WHERE id = $${idx} LIMIT 1
       )
-      RETURNING restrict_task_creation, COALESCE(base_currency, 'USD') AS base_currency, timelog_backdate_limit_days;
+      RETURNING restrict_task_creation, COALESCE(base_currency, 'USD') AS base_currency, timelog_backdate_limit_days, COALESCE(enforce_daily_time_limit, FALSE) AS enforce_daily_time_limit;
     `;
 
     const result = await db.query(q, values);

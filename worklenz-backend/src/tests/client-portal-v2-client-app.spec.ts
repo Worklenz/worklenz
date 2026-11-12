@@ -192,7 +192,7 @@ describe("client notifications", () => {
     expect(list).toMatch(/contact_ids/);
     expect(list).toMatch(/portal_visibility = 'client'/);
     // Read state is the person's own.
-    expect(list).toMatch(/client_portal_notification_reads r/);
+    expect(list).toMatch(/client_portal_contact_notification_reads r/);
     expect(result.unread_count).toBe(3);
     expect(result.items[0]).toMatchObject({ id: "n1", type: "Approval", unread: true, emailed: false, target: { page: "approval", id: "ap1" } });
   });
@@ -230,20 +230,20 @@ describe("client notifications", () => {
   it("marks one read or unread only when it is visible to this person, else 404", async () => {
     stubDb([PROJECT_ROW]);
     await expect(setClientNotificationRead(db as any, subject(), "n-hidden", true)).rejects.toMatchObject({ status: 404 });
-    expect(dbSql().some(sql => /INSERT INTO client_portal_notification_reads/.test(sql))).toBe(false);
+    expect(dbSql().some(sql => /INSERT INTO client_portal_contact_notification_reads/.test(sql))).toBe(false);
 
     stubDb([PROJECT_ROW, [/AND n\.id = \$6::uuid/, createQueryResult([{ id: "n1" }])]]);
     await setClientNotificationRead(db as any, subject(), "n1", true);
-    const insert = mockedQuery.mock.calls.find(([sql]) => /INSERT INTO client_portal_notification_reads/.test(String(sql)))!;
+    const insert = mockedQuery.mock.calls.find(([sql]) => /INSERT INTO client_portal_contact_notification_reads/.test(String(sql)))!;
     expect(insert[1]).toEqual(["n1", "alex"]);
     await setClientNotificationRead(db as any, subject(), "n1", false);
-    expect(dbSql().some(sql => /DELETE FROM client_portal_notification_reads/.test(sql))).toBe(true);
+    expect(dbSql().some(sql => /DELETE FROM client_portal_contact_notification_reads/.test(sql))).toBe(true);
   });
 
   it("mark-all writes only this person's read rows for what they can see", async () => {
     stubDb([PROJECT_ROW]);
     await markAllClientNotificationsRead(db as any, subject());
-    const write = mockedQuery.mock.calls.find(([sql]) => /INSERT INTO client_portal_notification_reads/.test(String(sql)))!;
+    const write = mockedQuery.mock.calls.find(([sql]) => /INSERT INTO client_portal_contact_notification_reads/.test(String(sql)))!;
     expect(String(write[0])).toMatch(/\(n\.metadata ->> 'project_id'\)::uuid = ANY/);
     expect((write[1] as unknown[])[3]).toBe("alex");
   });

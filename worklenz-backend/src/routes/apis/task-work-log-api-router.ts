@@ -21,6 +21,12 @@ taskWorkLogApiRouter.get("/export/:id", idParamValidator, verifyTaskAccess('para
 // through taskTimeLogValidator (which answers a bare 400) - preferences could never be saved.
 taskWorkLogApiRouter.put("/my-preferences", verifyNonGuestTimeEntriesAccess, timeEntriesPreferenceValidator, safeControllerFunction(TaskWorklogController.updateMyPreferences));
 
+taskWorkLogApiRouter.get("/daily-allowance", safeControllerFunction(TaskWorklogController.getDailyAllowance));
+
+// Drawer edits use the same management permissions as the existing PUT route.
+taskWorkLogApiRouter.post("/:id/split", idParamValidator, verifyTaskAccessViaWorkLog('params', 'id'),
+  (req, res, next) => req.body.new_task_id ? verifyTaskAccess('body', 'new_task_id')(req, res, next) : next(),
+  timeEntrySplitValidator, safeControllerFunction(TaskWorklogController.splitDrawerTimeEntry));
 taskWorkLogApiRouter.put("/:id", taskTimeLogValidator, idParamValidator, verifyTaskAccessViaWorkLog('params', 'id'), safeControllerFunction(TaskWorklogController.update));
 // Time Entries page ONLY: edit/delete a time log, where owners/admins may also change other
 // members' entries (see TaskWorklogController.updateTimeEntry). The task drawer keeps using the
@@ -35,7 +41,7 @@ taskWorkLogApiRouter.post(
   idParamValidator,
   verifyTaskAccessViaWorkLog('params', 'id'),
   timeEntrySplitValidator,
-  safeControllerFunction(TaskWorklogController.splitTimeEntry)
+  safeControllerFunction((req, res) => TaskWorklogController.splitTimeEntry(req, res))
 );
 taskWorkLogApiRouter.delete("/entries/:id", verifyNonGuestTimeEntriesAccess, idParamValidator, verifyTaskAccessViaWorkLog('params', 'id'), safeControllerFunction(TaskWorklogController.deleteTimeEntry));
 

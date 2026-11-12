@@ -24,6 +24,10 @@ const args = process.argv.slice(2).length > 0 ? process.argv.slice(2) : ['up'];
 
 function resolveAddonDir(addonId) {
   const candidates = [
+    path.resolve(process.cwd(), 'addons/worklenz-addons', addonId),
+    path.resolve(process.cwd(), '../addons/worklenz-addons', addonId),
+    path.resolve(__dirname, '../../addons/worklenz-addons', addonId),
+    path.resolve(__dirname, '../../../addons/worklenz-addons', addonId),
     path.resolve(process.cwd(), 'addons', addonId),
     path.resolve(process.cwd(), '../addons', addonId),
     path.resolve(__dirname, '../../addons', addonId),

@@ -1,4 +1,5 @@
 {
+  "projectReference": "Project reference",
   "importTasks": "Import tasks",
   "importTask": "Import task",
   "importTasksFromCsv": "Import tasks from CSV",

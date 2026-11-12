@@ -15,6 +15,7 @@ export interface ProjectListFieldState {
 export enum ProjectListFieldKey {
   FAVORITE = 'FAVORITE',
   NAME = 'NAME',
+  REFERENCE = 'REFERENCE',
   CLIENT = 'CLIENT',
   PRIORITY = 'PRIORITY',
   STATUS = 'STATUS',
@@ -35,4 +36,5 @@ export const DEFAULT_PROJECT_FIELDS: ProjectListField[] = [
   { key: ProjectListFieldKey.CATEGORY, name: 'Category', visible: true, order: 6 },
   { key: ProjectListFieldKey.UPDATED_AT, name: 'Last Updated', visible: true, order: 7 },
   { key: ProjectListFieldKey.END_DATE, name: 'Project End Date', visible: false, order: 8 },
+  { key: ProjectListFieldKey.REFERENCE, name: 'Project reference', visible: false, order: 9 },
 ];

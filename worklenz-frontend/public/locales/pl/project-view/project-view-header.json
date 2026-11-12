@@ -1,4 +1,5 @@
 {
+  "projectReference": "Identyfikator projektu",
   "importTasks": "Importuj zadania",
   "importTask": "Importuj zadanie",
   "importTasksFromCsv": "Importuj zadania z pliku CSV",

@@ -75,7 +75,15 @@ describe("TaskWorklogController.splitTimeEntry", () => {
       task_id: "task-original",
       user_id: "original-member-id", // Belongs to original member, NOT admin
     };
-    mockedDb.query.mockResolvedValueOnce(createQueryResult([originalLog]));
+    mockClient.query.mockImplementation(async (sql: string) => {
+      if (sql.includes("FOR UPDATE")) {
+        return { rows: [originalLog] };
+      }
+      if (sql.includes("organizations")) {
+        return { rows: [{ organization_id: "org-1", enforce_daily_time_limit: false }] };
+      }
+      return { rows: [] };
+    });
 
     const adminUser = {
       id: "admin-id",
@@ -117,6 +125,7 @@ describe("TaskWorklogController.splitTimeEntry", () => {
         50400,
         "Night shift by member",
         "2026-09-24T10:00:00.000Z",
+        "task-original",
       ]
     );
 
@@ -166,5 +175,28 @@ describe("TaskWorklogController.splitTimeEntry", () => {
     expect(res.body.done).toBe(false);
     expect(mockClient.query).toHaveBeenCalledWith("ROLLBACK");
     expect(mockClient.release).toHaveBeenCalled();
+  });
+
+  it("leaves the original drawer log unchanged when the second day exceeds the limit", async () => {
+    mockClient.query.mockImplementation(async (sql: string) => {
+      if (sql.includes("FOR UPDATE")) return { rows: [{ task_id: "task-original", user_id: "member", logged_by_timer: false }] };
+      if (sql.includes("FROM teams team") && sql.includes("organizations")) {
+        return { rows: [{ organization_id: "org-1", enforce_daily_time_limit: true, timezone: "UTC" }] };
+      }
+      if (sql.includes("FROM task_work_log wl")) return { rows: [{ id: "other", created_at: new Date("2026-09-25T00:00:00Z"), time_spent: "86400", logged_by_timer: false }] };
+      return { rows: [] };
+    });
+    const req = createMockRequest({ user: { id: "member", team_id: "team-1" }, params: { id: "log-1" }, body: {
+      segment1: { seconds_spent: 3600, formatted_start: "2026-09-24T23:00:00Z" },
+      segment2: { seconds_spent: 3600, formatted_start: "2026-09-25T00:00:00Z" },
+    } });
+    const res = createMockResponse();
+
+    await TaskWorklogController.splitTimeEntry(req, res, "task-original");
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(mockClient.query).toHaveBeenCalledWith("ROLLBACK");
+    expect(mockClient.query).not.toHaveBeenCalledWith(expect.stringContaining("UPDATE task_work_log"), expect.anything());
+    expect(mockClient.query).not.toHaveBeenCalledWith(expect.stringContaining("INSERT INTO task_work_log"), expect.anything());
   });
 });

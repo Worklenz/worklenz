@@ -29,9 +29,22 @@ ADD COLUMN IF NOT EXISTS status_id UUID;
 
 -- 3. Add unique constraint to prevent duplicate recurring tasks for the same date
 -- Using a partial unique index since schedule_id can be NULL for non-recurring tasks
-CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_schedule_end_date_unique
-ON tasks (schedule_id, ((end_date AT TIME ZONE 'UTC')::DATE))
-WHERE schedule_id IS NOT NULL AND end_date IS NOT NULL;
+DO $$
+DECLARE
+    _type TEXT;
+    _expr TEXT;
+BEGIN
+    IF to_regclass('public.idx_tasks_schedule_end_date_unique') IS NULL THEN
+        SELECT data_type INTO _type FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'tasks' AND column_name = 'end_date';
+        IF _type = 'timestamp with time zone' THEN
+            _expr := '((end_date AT TIME ZONE ''UTC'')::DATE)';
+        ELSE
+            _expr := '(end_date::DATE)';
+        END IF;
+        EXECUTE format('CREATE UNIQUE INDEX idx_tasks_schedule_end_date_unique ON tasks (schedule_id, %s) WHERE schedule_id IS NOT NULL AND end_date IS NOT NULL', _expr);
+    END IF;
+END $$;
 
 -- 4. Update create_quick_task to accept and save schedule_id + description
 CREATE OR REPLACE FUNCTION create_quick_task(_body json) RETURNS json

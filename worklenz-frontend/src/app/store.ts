@@ -99,6 +99,7 @@ import groupingReducer from '@/features/task-management/grouping.slice';
 import selectionReducer from '@/features/task-management/selection.slice';
 import homePageApiService from '@/api/home-page/home-page.api.service';
 import personalOverviewApi from '@/api/personal-overview/personal-overview.api.service';
+import portfolioApi from '@/api/reporting/portfolio.api.service';
 import { projectsApi } from '@/api/projects/projects.v1.api.service';
 import { userActivityApiService } from '@/api/home-page/user-activity.api.service';
 import { roadmapApi } from '@/pages/projects/projectView/gantt/services/roadmap-api.service';
@@ -145,6 +146,7 @@ const coreReducers = {
   homePreferencesReducer: homePreferencesReducer,
   [homePageApiService.reducerPath]: homePageApiService.reducer,
   [personalOverviewApi.reducerPath]: personalOverviewApi.reducer,
+  [portfolioApi.reducerPath]: portfolioApi.reducer,
   [projectsApi.reducerPath]: projectsApi.reducer,
   [clientPortalApi.reducerPath]: clientPortalApi.reducer,
   [roadmapApi.reducerPath]: roadmapApi.reducer,
@@ -281,6 +283,7 @@ export const store = configureStore({
       themeDomSyncMiddleware,
       homePageApiService.middleware,
       personalOverviewApi.middleware,
+      portfolioApi.middleware,
       projectsApi.middleware,
       clientPortalApi.middleware,
       userActivityApiService.middleware,

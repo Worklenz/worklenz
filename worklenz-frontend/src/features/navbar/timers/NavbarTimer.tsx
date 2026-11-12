@@ -123,10 +123,77 @@ const NavbarTimer: React.FC<NavbarTimerProps> = ({
 
   const handleStopTimer = () => {
     socket?.emit(SocketEvents.TASK_TIMER_STOP.toString(), JSON.stringify({ task_id: taskId }));
-    dispatch(updateTaskTimeTracking({ taskId, timeTracking: null }));
-    setLocalRunning(false);
-    onTimerChange?.();
   };
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleTimerStop = (data: any) => {
+      try {
+        if (!data) return;
+        const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+        const targetId = parsed?.task_id || parsed?.id;
+        if (targetId === taskId) {
+          if (parsed?.over_limit) {
+            setLocalRunning(true);
+            if (parsed.start_time) {
+              const startEpoch = new Date(parsed.start_time).getTime();
+              dispatch(updateTaskTimeTracking({ taskId, timeTracking: startEpoch }));
+            }
+            const remaining = Number(parsed.remaining_seconds) || 0;
+            const elapsed = Number(parsed.elapsed_seconds) || 0;
+            const day = parsed.exceeded_day || '';
+            const formatSecs = (s: number) => {
+              const h = Math.floor(s / 3600);
+              const m = Math.round((s % 3600) / 60);
+              return `${h}h ${m}m`;
+            };
+
+            Modal.confirm({
+              title: t('timerButton.dailyLimitExceededTitle', { defaultValue: 'Daily Time Limit Exceeded' }),
+              content: t('timerButton.dailyLimitExceededDesc', {
+                defaultValue: `Total logged time cannot exceed 24 hours per day. This timer ran for ${formatSecs(elapsed)}, but you only have ${formatSecs(remaining)} remaining for ${day}.`,
+                elapsed: formatSecs(elapsed),
+                remaining: formatSecs(remaining),
+                day,
+              }),
+              okText: remaining > 0
+                ? t('timerButton.logRemainingAllowance', {
+                    defaultValue: `Log Remaining (${formatSecs(remaining)})`,
+                    remaining: formatSecs(remaining),
+                  })
+                : t('timerButton.discardTimer', { defaultValue: 'Discard Timer' }),
+              cancelText: t('timerButton.keepRunning', { defaultValue: 'Keep Running' }),
+              onOk: () => {
+                if (remaining > 0) {
+                  socket?.emit(
+                    SocketEvents.TASK_TIMER_STOP.toString(),
+                    JSON.stringify({ task_id: taskId, override_seconds: remaining, override_day: day })
+                  );
+                } else {
+                  socket?.emit(
+                    SocketEvents.TASK_TIMER_STOP.toString(),
+                    JSON.stringify({ task_id: taskId, discard: true })
+                  );
+                }
+              },
+            });
+            return;
+          }
+          setLocalRunning(false);
+          dispatch(updateTaskTimeTracking({ taskId, timeTracking: null }));
+          onTimerChange?.();
+        }
+      } catch (err) {
+        console.error('Error handling timer stop in NavbarTimer:', err);
+      }
+    };
+
+    socket.on(SocketEvents.TASK_TIMER_STOP.toString(), handleTimerStop);
+    return () => {
+      socket.off(SocketEvents.TASK_TIMER_STOP.toString(), handleTimerStop);
+    };
+  }, [socket, taskId, dispatch, onTimerChange, t]);
 
   const renderStopIcon = () => {
     return (

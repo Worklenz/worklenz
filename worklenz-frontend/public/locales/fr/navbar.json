@@ -81,7 +81,12 @@
     "stopAndStart": "Arrêter et démarrer",
     "cancel": "Annuler",
     "logTime": "Heure de journalisation",
-    "openTimeLogPanel": "Journal des heures d'ouverture pour {{taskName}}"
+    "openTimeLogPanel": "Journal des heures d'ouverture pour {{taskName}}",
+    "dailyLimitExceededTitle": "Limite quotidienne dépassée",
+    "dailyLimitExceededDesc": "Le temps total enregistré ne peut pas dépasser 24 heures par jour. Ce minuteur a tourné pendant {{elapsed}}, mais il ne vous reste que {{remaining}} pour {{day}}.",
+    "logRemainingAllowance": "Enregistrer le temps restant ({{remaining}})",
+    "discardTimer": "Ignorer le minuteur",
+    "keepRunning": "Continuer le minuteur"
   },
   "ownerRole": "Propriétaire",
   "adminRole": "Administrateur",

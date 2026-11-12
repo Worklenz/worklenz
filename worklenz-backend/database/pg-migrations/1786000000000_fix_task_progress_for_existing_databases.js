@@ -211,7 +211,25 @@ exports.up = async (pgm) => {
     $$ LANGUAGE plpgsql;
 
     -- Ensure task progress matches the backend denominator semantics for parent-inclusive totals.
-    SELECT recalculate_all_task_progress();
+    -- Preserve historical rows while this transaction recalculates progress.
+    -- The table lock prevents concurrent writes until the constraint is restored.
+    DO $migration$
+    DECLARE
+      constraint_definition text;
+      constraint_validated boolean;
+    BEGIN
+      SELECT pg_get_constraintdef(oid), convalidated
+        INTO constraint_definition, constraint_validated
+      FROM pg_constraint
+      WHERE conrelid = 'public.tasks'::regclass AND conname = 'tasks_name_check';
+      IF constraint_definition IS NOT NULL AND NOT constraint_validated THEN
+        ALTER TABLE public.tasks DROP CONSTRAINT tasks_name_check;
+      END IF;
+      PERFORM recalculate_all_task_progress();
+      IF constraint_definition IS NOT NULL AND NOT constraint_validated THEN
+        EXECUTE format('ALTER TABLE public.tasks ADD CONSTRAINT tasks_name_check %s', constraint_definition);
+      END IF;
+    END $migration$;
   `);
 };
 

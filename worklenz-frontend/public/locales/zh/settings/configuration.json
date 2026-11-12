@@ -13,5 +13,8 @@
   "limitTimelogBackdatingTooltip": "启用后，成员无法创建早于允许天数的工时记录。该限制适用于所有人，包括所有者和管理员。正在运行的计时器和导入的记录不受影响。",
   "timelogBackdateLimitDays": "工时记录最多可补录的天数",
   "timelogBackdateLimitNote": "注意：已有的工时记录不会被修改。只要不更改日期，仍可编辑较早的记录。",
-  "days": "天"
+  "days": "天",
+  "enforceDailyTimeLimit": "强制执行 24 小时每日时间限制",
+  "enforceDailyTimeLimitTooltip": "启用后，成员在所有任务中每天记录的工作时间均不能超过 24 小时。",
+  "enforceDailyTimeLimitNote": "注意：超过 24 小时的现有历史记录将被保留。只要缩短持续时间，就允许编辑现有超限记录。"
 }

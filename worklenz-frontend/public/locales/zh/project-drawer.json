@@ -1,4 +1,6 @@
 {
+  "projectReference": "项目参考编号",
+  "duplicateProjectReference": "此团队中的另一个项目已使用该参考编号。",
   "createProject": "创建项目",
   "editProject": "编辑项目",
   "projectSettings": "项目设置",
