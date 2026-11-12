@@ -80,6 +80,7 @@
   "addSubTaskInputPlaceholder": "Type subtask name and press Enter to save",
   "noTasksInGroup": "No tasks in this group",
   "dropTaskHere": "Drop task here",
+  "dropHere": "Drop here",
   "openButton": "Open",
   "okButton": "Ok",
   "noLabelsFound": "No labels found",

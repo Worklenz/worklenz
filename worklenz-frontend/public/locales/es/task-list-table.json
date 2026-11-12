@@ -80,6 +80,7 @@
   "addSubTaskInputPlaceholder": "Escribe el nombre de la subtarea y presiona Enter para guardar",
   "noTasksInGroup": "No hay tareas en este grupo",
   "dropTaskHere": "Soltar tarea aquí",
+  "dropHere": "Soltar aquí",
   "openButton": "Abrir",
   "okButton": "Aceptar",
   "noLabelsFound": "No se encontraron etiquetas",
