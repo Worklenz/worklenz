@@ -109,6 +109,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     customFieldType,
   } = useAppSelector(state => state.taskListCustomColumnsReducer);
   const projectCustomColumns = useAppSelector(selectCustomColumns) as ITaskCustomColumn[];
+  const taskEntities = useAppSelector(state => state.taskManagement.entities);
 
   const fieldType: CustomFieldsTypes = useAppSelector(
     state => state.taskListCustomColumnsReducer.customFieldType
@@ -178,29 +179,96 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
   // switching away can restore them without touching the opened column.
   const stashedSelectionsRef = useRef<typeof selectionsList | null>(null);
 
-  /**
-   * A parent's child options belong to one child column. When a Dependent Selection picks an
-   * existing parent, the parent options load (the editor groups by them) but the child options
-   * start empty so new children can be created under each parent option. Children that were
-   * grouped under the previously chosen parent are dropped so they do not carry over.
-   */
-  const dropChildrenOfPreviousParent = (nextParentColumnId: string) => {
-    if (!parentColumnId || parentColumnId === NEW_PARENT_COLUMN_ID) return;
-    if (parentColumnId === nextParentColumnId) return;
-    const previousParent = (projectCustomColumns || []).find(column => column.id === parentColumnId);
-    const previousParentOptionIds = new Set(
-      (previousParent?.custom_column_obj?.selectionsList || []).map(option => option.selection_id)
+  // Hidden child column whose children were loaded into the form; it is removed on save once the
+  // opened column takes those children over (a parent's children belong to ONE child column).
+  const pendingChildColumnRef = useRef<{ columnId: string; parentId: string } | null>(null);
+
+  const getParentOptionIds = (parentId: string): Set<string> => {
+    const parent = (projectCustomColumns || []).find(column => column.id === parentId);
+    return new Set(
+      (parent?.custom_column_obj?.selectionsList || []).map(option => option.selection_id)
     );
-    if (previousParentOptionIds.size === 0) return;
-    dispatch(
-      setSelectionsList(
-        selectionsList.filter(
+  };
+
+  /**
+   * Finds a not-yet-claimed child column of the parent: a hidden Selection column that holds the
+   * child options saved with "Create new parent field" and has no task values.
+   */
+  const findUnclaimedChildColumn = (parentId: string): ITaskCustomColumn | null => {
+    const parentOptionIds = getParentOptionIds(parentId);
+    if (parentOptionIds.size === 0) return null;
+    const entities = Object.values(taskEntities || {}) as Array<{
+      custom_column_values?: Record<string, unknown>;
+    }>;
+    return (
+      (projectCustomColumns || []).find(column => {
+        if (!column.id || column.id === editingColumnUuid) return false;
+        if (column.pinned !== false) return false;
+        const columnObj = column.custom_column_obj;
+        if (columnObj?.fieldType !== 'selection' || columnObj?.parentColumnId !== parentId) {
+          return false;
+        }
+        const hasChildren = (columnObj.selectionsList || []).some(
+          option => option.parent_selection_id && parentOptionIds.has(option.parent_selection_id)
+        );
+        if (!hasChildren) return false;
+        const hasTaskValues = entities.some(task => {
+          const taskValue = task.custom_column_values?.[column.key as string];
+          return taskValue !== undefined && taskValue !== null && taskValue !== '';
+        });
+        return !hasTaskValues;
+      }) || null
+    );
+  };
+
+  /**
+   * A parent's child options can be used by ONE child column. Picking a parent loads its parent
+   * options; if its children are still unclaimed (saved hidden with the parent) the first column
+   * takes them over, otherwise the child options start empty so new ones can be created under
+   * each parent option. Children of the previously chosen parent are dropped.
+   */
+  const loadChildrenForParent = (nextParentColumnId: string) => {
+    if (parentColumnId === nextParentColumnId) return;
+
+    let baseSelections = selectionsList;
+    if (parentColumnId && parentColumnId !== NEW_PARENT_COLUMN_ID) {
+      const previousParentOptionIds = getParentOptionIds(parentColumnId);
+      if (previousParentOptionIds.size > 0) {
+        baseSelections = selectionsList.filter(
           selection =>
             !selection.parent_selection_id ||
             !previousParentOptionIds.has(selection.parent_selection_id)
-        )
-      )
-    );
+        );
+      }
+    }
+
+    pendingChildColumnRef.current = null;
+    const unclaimed = findUnclaimedChildColumn(nextParentColumnId);
+    if (unclaimed) {
+      const inherited = (unclaimed.custom_column_obj?.selectionsList || []).map(option => ({
+        ...option,
+        selection_id: nanoid(),
+      }));
+      // Re-link copied children to the same parent option ids (parent ids are unchanged).
+      baseSelections = [...baseSelections, ...inherited];
+      pendingChildColumnRef.current = { columnId: unclaimed.id as string, parentId: nextParentColumnId };
+    }
+
+    if (baseSelections !== selectionsList) {
+      dispatch(setSelectionsList(baseSelections));
+    }
+  };
+
+  /** Removes the hidden child column whose children were taken over by the saved column. */
+  const consumeUnclaimedChildColumn = async (finalParentId: string | null) => {
+    const pending = pendingChildColumnRef.current;
+    pendingChildColumnRef.current = null;
+    if (!pending || pending.parentId !== finalParentId) return;
+    try {
+      await tasksCustomColumnsService.deleteCustomColumn(pending.columnId);
+    } catch (error) {
+      logger.error('Error removing taken-over child column:', error);
+    }
   };
 
   const selectParentColumn = (nextParentColumnId: string | null) => {
@@ -228,7 +296,9 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       dispatch(setNewParentField(null));
     }
     if (nextParentColumnId && !isNextNew) {
-      dropChildrenOfPreviousParent(nextParentColumnId);
+      loadChildrenForParent(nextParentColumnId);
+    } else {
+      pendingChildColumnRef.current = null;
     }
     dispatch(setParentColumnId(nextParentColumnId));
   };
@@ -248,6 +318,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       dispatch(setParentColumnId(null));
       dispatch(setNewParentField(null));
       stashedSelectionsRef.current = null;
+      pendingChildColumnRef.current = null;
     }
 
     mainForm.setFieldValue('fieldType', selectedValue);
@@ -529,6 +600,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
         is_visible: true,
         configuration,
       });
+      await consumeUnclaimedChildColumn(apiFieldType === 'selection' ? effectiveParentId : null);
 
       resetModalData();
       message.success(
@@ -556,12 +628,30 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
   };
 
   /**
-   * "New parent field" on a new (or non-dependent) column: the field title becomes ONE visible
-   * Selection column holding the parent options. The child options are saved in a hidden
-   * Dependent Selection column named after the parent field, so a Dependent Selection added
-   * later can pick this column as its parent and load parents and children together.
+   * True when the opened column is a fresh Text column that holds no task values (for example the
+   * "New Column" added with the header "+"). Nothing can be lost by turning it into the parent.
    */
-  const handleSaveParentWithHiddenChildren = async (value: any, editColumnUuid: string | null) => {
+  const isOpenedColumnEmptyText = (): boolean => {
+    if (!isEditMode || !editingColumnUuid || !openedColumn) return false;
+    if (originalStoredFieldType !== 'text') return false;
+    const entities = Object.values(taskEntities || {}) as Array<{
+      custom_column_values?: Record<string, unknown>;
+    }>;
+    return !entities.some(task => {
+      const taskValue = task.custom_column_values?.[openedColumn.key as string];
+      return taskValue !== undefined && taskValue !== null && taskValue !== '';
+    });
+  };
+
+  /**
+   * "Create new parent field": ONE visible Selection column titled with the Field title holds only
+   * the parent options; the child options are saved in a hidden child column so a Dependent
+   * Selection can take them over later. A fresh empty Text column is reused as that column; any
+   * other opened column is never changed, so a new column named after the Parent field is added.
+   */
+  const handleSaveParentWithHiddenChildren = async (value: any) => {
+    const isCreateMode = customColumnModalType === 'create';
+    const reuseOpenedColumn = !isCreateMode && isOpenedColumnEmptyText();
     const parentName = newParentField?.name.trim() || '';
     const parentSelections = (newParentField?.selections || []).filter(
       selection => selection.selection_name.trim() !== ''
@@ -576,10 +666,14 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       return;
     }
 
+    const usesFieldTitle = isCreateMode || reuseOpenedColumn;
+    const visibleColumnName = usesFieldTitle ? value.fieldTitle : parentName;
+    const hiddenColumnName = usesFieldTitle ? parentName : `${value.fieldTitle} (${parentName})`;
+
     setIsSubmitting(true);
     try {
       const parentConfiguration = {
-        field_title: value.fieldTitle,
+        field_title: visibleColumnName,
         field_type: 'selection',
         parent_column_id: null,
         selections_list: parentSelections.map((selection, index) => ({
@@ -591,61 +685,37 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
         labels_list: [],
       };
 
-      let parentColumnUuid: string | null = null;
-      if (customColumnModalType === 'create') {
-        const parentRes = await tasksCustomColumnsService.createCustomColumn(projectId || '', {
-          name: value.fieldTitle,
-          key: nanoid(),
-          field_type: 'selection',
-          width: 120,
-          is_visible: true,
-          configuration: parentConfiguration,
-        });
-        if (!parentRes.done || !parentRes.body?.id) {
-          message.error(
-            parentRes.message || t('customColumns.modal.createErrorMessage')
-          );
-          return;
-        }
-        parentColumnUuid = parentRes.body.id as string;
-      } else if (isEditMode && editColumnUuid) {
-        const updateRes = await tasksCustomColumnsService.updateCustomColumn(editColumnUuid, {
-          name: value.fieldTitle,
-          field_type: 'selection',
-          width: 150,
-          is_visible: true,
-          configuration: parentConfiguration,
-        });
-        if (!updateRes.done) {
-          message.error(
-            updateRes.message ||
-              t('customColumns.modal.updateErrorMessage', {
-                defaultValue: 'Failed to update custom column',
-              })
-          );
-          return;
-        }
-        // The id used to open the column can be its key; the API returns the real UUID.
-        parentColumnUuid = (updateRes.body?.id as string | undefined) || editingColumnUuid || null;
-      }
-
-      if (!parentColumnUuid) {
-        message.error(
-          t('customColumns.modal.updateErrorMessage', {
-            defaultValue: 'Failed to update custom column',
-          })
-        );
+      const parentRes =
+        reuseOpenedColumn && editingColumnUuid
+          ? await tasksCustomColumnsService.updateCustomColumn(editingColumnUuid, {
+              name: visibleColumnName,
+              field_type: 'selection',
+              width: 150,
+              is_visible: true,
+              configuration: parentConfiguration,
+            })
+          : await tasksCustomColumnsService.createCustomColumn(projectId || '', {
+              name: visibleColumnName,
+              key: nanoid(),
+              field_type: 'selection',
+              width: 120,
+              is_visible: true,
+              configuration: parentConfiguration,
+            });
+      if (!parentRes.done || !parentRes.body?.id) {
+        message.error(parentRes.message || t('customColumns.modal.createErrorMessage'));
         return;
       }
+      const parentColumnUuid = parentRes.body.id as string;
 
       const childRes = await tasksCustomColumnsService.createCustomColumn(projectId || '', {
-        name: parentName,
+        name: hiddenColumnName,
         key: nanoid(),
         field_type: 'selection',
         width: 120,
         is_visible: false,
         configuration: {
-          field_title: parentName,
+          field_title: hiddenColumnName,
           field_type: 'selection',
           parent_column_id: parentColumnUuid,
           selections_list: buildSelectionsPayload('selection', parentColumnUuid),
@@ -657,9 +727,10 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       }
 
       stashedSelectionsRef.current = null;
+      pendingChildColumnRef.current = null;
       resetModalData();
       message.success(
-        customColumnModalType === 'create'
+        isCreateMode
           ? t('customColumns.modal.createSuccessMessage')
           : t('customColumns.modal.updateSuccessMessage', {
               defaultValue: 'Custom column updated successfully',
@@ -732,7 +803,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
 
     try {
       if (uiFieldType === 'dependent_selection' && isCreatingNewParent && !originalParentColumnId) {
-        await handleSaveParentWithHiddenChildren(value, editColumnId);
+        await handleSaveParentWithHiddenChildren(value);
         return;
       }
 
@@ -802,6 +873,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
 
           if (res.done) {
             if (res.body.id) newColumn.id = res.body.id;
+            await consumeUnclaimedChildColumn(effectiveParentId);
             dispatch(addCustomColumn(newColumn));
             socket?.emit(
               SocketEvents.CUSTOM_COLUMN_CREATED.toString(),
@@ -849,6 +921,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
   };
 
   const handleCancel = () => {
+    pendingChildColumnRef.current = null;
     resetModalData();
     onDone();
   };
