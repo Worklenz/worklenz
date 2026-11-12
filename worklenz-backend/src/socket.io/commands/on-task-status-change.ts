@@ -7,7 +7,6 @@ import {SocketEvents} from "../events";
 import {getLoggedInUserIdFromSocket, notifyProjectUpdates} from "../util";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
 import {getTaskDetails, logProgressChange, logStatusChange} from "../../services/activity-logs/activity-logs.service";
-import { assignMemberIfNot } from "./on-quick-assign-or-remove";
 import { ExternalNotificationsService } from "../../services/external-notifications.service";
 import { log_error } from "../../shared/utils";
 import {verifyNonGuestTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
@@ -169,12 +168,6 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
       completed_count: info?.total_completed,
       total_tasks_count: info?.total_tasks
     });
-
-    const isAlreadyAssigned = await TasksControllerV2.checkUserAssignedToTask(body.task_id, userId as string, body.team_id);
-
-    if (!isAlreadyAssigned) {
-      await assignMemberIfNot(body.task_id, userId as string, body.team_id, _io, socket);
-    }
 
     logStatusChange({
       task_id: body.task_id,
