@@ -7,6 +7,7 @@ import ReportingOverviewController from "../../controllers/reporting/overview/re
 import ReportingInfoController from "../../controllers/reporting/reporting-info-controller";
 import ReportingAllocationController from "../../controllers/reporting/reporting-allocation-controller";
 import ReportingProjectsController from "../../controllers/reporting/projects/reporting-projects-controller";
+import ReportingPortfolioController from "../../controllers/reporting/projects/reporting-portfolio-controller";
 import ReportingMembersController from "../../controllers/reporting/reporting-members-controller";
 import ReportingTimeLogsController from "../../controllers/reporting/reporting-time-logs-controller";
 import ReportingAllTasksController from "../../controllers/reporting/reporting-all-tasks-controller";
@@ -118,6 +119,12 @@ reportingApiRouter.get("/projects/grouped",
   safeControllerFunction(ReportingProjectsController.getGrouped)
 );
 reportingApiRouter.post("/project-timelogs", teamOwnerOrAdminValidator, safeControllerFunction(ReportingProjectsController.getProjectTimeLogs));
+
+reportingApiRouter.get("/portfolio",
+  teamOwnerOrAdminValidator,
+  validateEnumParam("period", ["yearly", "quarterly", "monthly"]),
+  safeControllerFunction(ReportingPortfolioController.get)
+);
 
 // members
 reportingApiRouter.get("/members",
