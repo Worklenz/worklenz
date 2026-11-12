@@ -55,6 +55,7 @@ const RESIZE_BASE_HOURS = 1; // chip stays at CHIP_BASE_HEIGHT for <=1h/day
 const MIN_TOTAL_MINUTES = 30; // 0.5h floor, mirrors PlannerAddTaskModal's est-hours min={0.5}
 const MAX_TOTAL_MINUTES = 24 * 60; // 24h ceiling
 const ROW_HEIGHT_FLOOR = 112; // doubled from the previous hardcoded 56
+const MONTH_TASK_BAR_HEIGHT = 18;
 const EMPTY_TASKS: any[] = []; // stable fallback so rawTasks doesn't get a new reference every render while loading
 
 const getChipHeight = (hours: number, dense: 'full' | 'compact') =>
@@ -105,6 +106,7 @@ const PlannerScheduleView: React.FC = () => {
   const leftBodyScrollRef = useRef<HTMLDivElement>(null);
   const gridWrapperRef = useRef<HTMLDivElement>(null);
   const [gridWidth, setGridWidth] = useState(0);
+  const [bodyScrollbarWidth, setBodyScrollbarWidth] = useState(0);
 
   // The member column (left) and the day grid (right) are two entirely separate,
   // non-overlapping panels — not a position:sticky column inside the horizontally
@@ -270,16 +272,17 @@ const PlannerScheduleView: React.FC = () => {
     return list;
   }, [baseDate, anchor, cfg.weeksSpan, showWeekends]);
 
-  // Measure the grid pane so day columns can stretch to fill leftover width instead of
-  // leaving a blank gap — both header and body read this same value, so they always
-  // agree on column width (unlike flex-grow, which drifted between the two panes).
+  // Measure the body scrollport so day columns fill its inner width (excluding any
+  // classic vertical scrollbar) and the header can reserve the matching right gutter.
   useEffect(() => {
-    const el = gridWrapperRef.current;
+    const el = bodyScrollRef.current;
     if (!el) return;
-    const observer = new ResizeObserver(entries => {
-      const width = entries[0]?.contentRect.width;
-      if (width) setGridWidth(width);
-    });
+    const syncMetrics = () => {
+      if (el.clientWidth) setGridWidth(el.clientWidth);
+      setBodyScrollbarWidth(Math.max(0, el.offsetWidth - el.clientWidth));
+    };
+    syncMetrics();
+    const observer = new ResizeObserver(syncMetrics);
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
@@ -394,7 +397,7 @@ const PlannerScheduleView: React.FC = () => {
           if (!cancelled) {
             // Filter projects by client name
             const clientNames = filterClients;
-            const filtered = (res.body?.data || []).filter((p: any) =>
+            const filtered = (res.body?.data || []).filter((p: any) => 
               clientNames.includes(p.client_name)
             );
             setClientProjectList(filtered);
@@ -1333,8 +1336,8 @@ const PlannerScheduleView: React.FC = () => {
         <div style={{ fontSize: 12, opacity: 0.55, maxWidth: 340 }}>
           {anyFilterActive
             ? t('scheduleEmptyFilteredDesc', {
-              defaultValue: 'No one matches the current filters. Try widening Role, Members, Projects, Clients, Status, Priority, or Utilization.',
-            })
+                defaultValue: 'No one matches the current filters. Try widening Role, Members, Projects, Clients, Status, Priority, or Utilization.',
+              })
             : t('scheduleEmptyMembersDesc', { defaultValue: 'No team members to show yet.' })}
         </div>
         {anyFilterActive && (
@@ -1380,125 +1383,125 @@ const PlannerScheduleView: React.FC = () => {
           flexShrink: 0,
         }}
       >
-        {/* Filters row */}
-        <Flex align="center" gap={8} wrap="wrap" style={{ padding: '10px 12px' }}>
-          <PlannerMultiFilterDropdown
-            label={t('allRoles', { defaultValue: 'Role' })}
-            options={roles.map(r => ({ value: r, label: r }))}
-            selected={filterRoles}
-            onChange={setFilterRoles}
-          />
-          <PlannerMultiFilterDropdown
-            label={t('allMembers', { defaultValue: 'Members' })}
-            options={teamData.map((m: any) => ({ value: m.team_member_id || m.id, label: m.name || m.email || '' }))}
-            selected={filterMembers}
-            onChange={setFilterMembers}
-          />
-          {(!showMoreFilters ? true : true) && (
-            <>
-              <PlannerMultiFilterDropdown
-                label={t('allProjects', { defaultValue: 'Projects' })}
-                options={filteredProjectOptions}
-                selected={filterProjects}
-                onChange={setFilterProjects}
-              />
-              <PlannerMultiFilterDropdown
-                label={t('allClients', { defaultValue: 'Clients' })}
-                options={clients.map(c => ({ value: c as string, label: c as string }))}
-                selected={filterClients}
-                onChange={setFilterClients}
-              />
-              <PlannerMultiFilterDropdown
-                label={t('allStatuses', { defaultValue: 'Project Status' })}
-                options={projectStatuses.map((s: any) => ({ value: s.id, label: s.name || '' }))}
-                selected={filterStatuses}
-                onChange={setFilterStatuses}
-              />
-              <PlannerMultiFilterDropdown
-                label={t('allPriorities', { defaultValue: 'Priority' })}
-                options={projectPriorities.map((p: any) => ({ value: p.id, label: p.name || '' }))}
-                selected={filterPriorities}
-                onChange={setFilterPriorities}
-              />
-              <PlannerMultiFilterDropdown
-                label={t('allUtilLevels', { defaultValue: 'Utilization' })}
-                options={UTIL_LEVELS.map(l => ({ value: l.value, label: t('util' + l.value.charAt(0).toUpperCase() + l.value.slice(1), { defaultValue: l.label }) }))}
-                selected={filterUtilLevels}
-                onChange={setFilterUtilLevels}
-              />
-            </>
-          )}
-        </Flex>
+      {/* Filters row */}
+      <Flex align="center" gap={8} wrap="wrap" style={{ padding: '10px 12px' }}>
+        <PlannerMultiFilterDropdown
+          label={t('allRoles', { defaultValue: 'Role' })}
+          options={roles.map(r => ({ value: r, label: r }))}
+          selected={filterRoles}
+          onChange={setFilterRoles}
+        />
+        <PlannerMultiFilterDropdown
+          label={t('allMembers', { defaultValue: 'Members' })}
+          options={teamData.map((m: any) => ({ value: m.team_member_id || m.id, label: m.name || m.email || '' }))}
+          selected={filterMembers}
+          onChange={setFilterMembers}
+        />
+        {(!showMoreFilters ? true : true) && (
+          <>
+            <PlannerMultiFilterDropdown
+              label={t('allProjects', { defaultValue: 'Projects' })}
+              options={filteredProjectOptions}
+              selected={filterProjects}
+              onChange={setFilterProjects}
+            />
+            <PlannerMultiFilterDropdown
+              label={t('allClients', { defaultValue: 'Clients' })}
+              options={clients.map(c => ({ value: c as string, label: c as string }))}
+              selected={filterClients}
+              onChange={setFilterClients}
+            />
+            <PlannerMultiFilterDropdown
+              label={t('allStatuses', { defaultValue: 'Project Status' })}
+              options={projectStatuses.map((s: any) => ({ value: s.id, label: s.name || '' }))}
+              selected={filterStatuses}
+              onChange={setFilterStatuses}
+            />
+            <PlannerMultiFilterDropdown
+              label={t('allPriorities', { defaultValue: 'Priority' })}
+              options={projectPriorities.map((p: any) => ({ value: p.id, label: p.name || '' }))}
+              selected={filterPriorities}
+              onChange={setFilterPriorities}
+            />
+            <PlannerMultiFilterDropdown
+              label={t('allUtilLevels', { defaultValue: 'Utilization' })}
+              options={UTIL_LEVELS.map(l => ({ value: l.value, label: t('util' + l.value.charAt(0).toUpperCase() + l.value.slice(1), { defaultValue: l.label }) }))}
+              selected={filterUtilLevels}
+              onChange={setFilterUtilLevels}
+            />
+          </>
+        )}
+      </Flex>
 
-        {/* Date-nav + zoom row */}
-        <Flex
-          align="center"
-          gap={8}
-          wrap="wrap"
-          style={{ padding: '8px 12px', borderTop: `1px solid ${borderColor}` }}
+      {/* Date-nav + zoom row */}
+      <Flex
+        align="center"
+        gap={8}
+        wrap="wrap"
+        style={{ padding: '8px 12px', borderTop: `1px solid ${borderColor}` }}
+      >
+        <span style={{ fontSize: 14, fontWeight: 600, marginRight: 8 }}>{rangeLabel}</span>
+        <Button
+          size="small"
+          style={{ fontSize: 12, borderRadius: 7 }}
+          onClick={handlePrevious}
+          title={t('previous', { defaultValue: 'Previous' })}
         >
-          <span style={{ fontSize: 14, fontWeight: 600, marginRight: 8 }}>{rangeLabel}</span>
-          <Button
-            size="small"
-            style={{ fontSize: 12, borderRadius: 7 }}
-            onClick={handlePrevious}
-            title={t('previous', { defaultValue: 'Previous' })}
-          >
-            ‹
-          </Button>
-          <Button size="small" style={{ fontSize: 12, borderRadius: 7 }} onClick={handleCurrent}>
-            {t('today', { defaultValue: 'Today' })}
-          </Button>
-          <Button
-            size="small"
-            style={{ fontSize: 12, borderRadius: 7 }}
-            onClick={handleNext}
-            title={t('next', { defaultValue: 'Next' })}
-          >
-            ›
-          </Button>
+          ‹
+        </Button>
+        <Button size="small" style={{ fontSize: 12, borderRadius: 7 }} onClick={handleCurrent}>
+          {t('today', { defaultValue: 'Today' })}
+        </Button>
+        <Button
+          size="small"
+          style={{ fontSize: 12, borderRadius: 7 }}
+          onClick={handleNext}
+          title={t('next', { defaultValue: 'Next' })}
+        >
+          ›
+        </Button>
 
-          <div
-            style={{
-              marginLeft: 'auto',
-              display: 'inline-flex',
-              border: `1px solid ${token.colorBorderSecondary}`,
-              borderRadius: 7,
-              overflow: 'hidden',
-            }}
-          >
-            {Object.entries(ZOOM_CFG).map(([k, z], idx, arr) => (
-              <button
-                key={k}
-                onClick={() => setZoom(k as ZoomLevel)}
-                style={zoomBtnStyle(zoom === k, idx === arr.length - 1)}
-              >
-                {t(`zoom${k.charAt(0).toUpperCase()}${k.slice(1)}`, { defaultValue: z.label })}
-              </button>
-            ))}
-          </div>
+        <div
+          style={{
+            marginLeft: 'auto',
+            display: 'inline-flex',
+            border: `1px solid ${token.colorBorderSecondary}`,
+            borderRadius: 7,
+            overflow: 'hidden',
+          }}
+        >
+          {Object.entries(ZOOM_CFG).map(([k, z], idx, arr) => (
+            <button
+              key={k}
+              onClick={() => setZoom(k as ZoomLevel)}
+              style={zoomBtnStyle(zoom === k, idx === arr.length - 1)}
+            >
+              {t(`zoom${k.charAt(0).toUpperCase()}${k.slice(1)}`, { defaultValue: z.label })}
+            </button>
+          ))}
+        </div>
 
-          <Space size={4}>
-            <Tooltip title={t('refreshSchedule', { defaultValue: 'Refresh Schedule' })}>
-              <Button
-                size="small"
-                shape="circle"
-                icon={<SyncOutlined spin={isRefreshing} />}
-                disabled={isRefreshing}
-                onClick={handleRefresh}
-                aria-label={t('refreshSchedule', { defaultValue: 'Refresh Schedule' })}
-              />
-            </Tooltip>
+        <Space size={4}>
+          <Tooltip title={t('refreshSchedule', { defaultValue: 'Refresh Schedule' })}>
             <Button
               size="small"
               shape="circle"
-              onClick={handleOpenSettings}
-              title={t('settings', { defaultValue: 'Settings' })}
-            >
-              <SettingOutlined />
-            </Button>
-          </Space>
-        </Flex>
+              icon={<SyncOutlined spin={isRefreshing} />}
+              disabled={isRefreshing}
+              onClick={handleRefresh}
+              aria-label={t('refreshSchedule', { defaultValue: 'Refresh Schedule' })}
+            />
+          </Tooltip>
+          <Button
+            size="small"
+            shape="circle"
+            onClick={handleOpenSettings}
+            title={t('settings', { defaultValue: 'Settings' })}
+          >
+            <SettingOutlined />
+          </Button>
+        </Space>
+      </Flex>
       </div>
 
       {/* Calendar box — boxed to match the filters box above (mirrors the task list
@@ -1515,379 +1518,537 @@ const PlannerScheduleView: React.FC = () => {
           background: cardBg,
         }}
       >
-        {/* Grid — the member column (left) and the day grid (right) are two separate
+      {/* Grid — the member column (left) and the day grid (right) are two separate
           panels rather than a position:sticky column inside the scrolling grid (see
           the note by rowHeights above for why). */}
-        <div style={{ flex: 1, minHeight: 0, display: 'flex', position: 'relative' }}>
-          {/* Loading spinner centered over the whole grid (both panels) — rendering it
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', position: 'relative' }}>
+        {/* Loading spinner centered over the whole grid (both panels) — rendering it
             inside just the narrow 240px member column instead would center it in that
             sliver, not on screen. */}
-          {teamLoading && (
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 5,
-                background: bg,
-              }}
-            >
-              <WorklenzLogoLoader />
-            </div>
-          )}
+        {teamLoading && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 5,
+              background: bg,
+            }}
+          >
+            <WorklenzLogoLoader />
+          </div>
+        )}
 
-          {/* Empty state, same overlay technique as the loading spinner above — centered
+        {/* Empty state, same overlay technique as the loading spinner above — centered
             over the whole grid body (both panels), not just the narrow member column or
             wherever the day-grid happens to be scrolled to. Starts below headerHeight so
             the member/day column headers stay visible, same as Workload's empty state. */}
-          {!teamLoading && visibleMembers.length === 0 && (
-            <div
-              style={{
-                position: 'absolute',
-                top: headerHeight,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 5,
-                background: bg,
-              }}
-            >
-              {emptyStateBlock}
-            </div>
-          )}
-
-          {/* LEFT: member column */}
+        {!teamLoading && visibleMembers.length === 0 && (
           <div
             style={{
-              width: 240,
-              minWidth: 240,
-              flexShrink: 0,
+              position: 'absolute',
+              top: headerHeight,
+              left: 0,
+              right: 0,
+              bottom: 0,
               display: 'flex',
-              flexDirection: 'column',
-              borderRight: `1px solid ${borderColor}`,
-              background: cardBg,
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 5,
+              background: bg,
             }}
           >
-            {cfg.dense === 'bar' && <div style={{ height: 24, minHeight: 24, borderBottom: `1px solid ${borderColor}` }} />}
-            {zoom === 'weeks' && <div style={{ height: 24, minHeight: 24, borderBottom: `1px solid ${borderColor}` }} />}
-            <div
-              style={{
-                height: 40,
-                minHeight: 40,
-                display: 'flex',
-                alignItems: 'center',
-                padding: '0 16px',
-                fontSize: 12,
-                fontWeight: 600,
-                opacity: 0.45,
-                textTransform: 'uppercase',
-                borderBottom: `1px solid ${borderColor}`,
-              }}
-            >
-              {t('member', { defaultValue: 'Member' })}
-            </div>
-            <div
-              ref={leftBodyScrollRef}
-              onScroll={() => {
-                if (bodyScrollRef.current && leftBodyScrollRef.current) {
-                  bodyScrollRef.current.scrollTop = leftBodyScrollRef.current.scrollTop;
-                }
-              }}
-              style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'none' }}
-            >
-              {teamLoading || visibleMembers.length === 0 ? null : (
-                visibleMembers.map((m: any) => {
-                  const memberId = m.team_member_id || m.id;
-                  const totalHours = memberTotalHours(memberId);
-                  const totalHoursLabel = `${Math.floor(totalHours)}h ${Math.round((totalHours % 1) * 60)
-                    .toString()
-                    .padStart(2, '0')}min`;
-
-                  return (
-                    <div
-                      key={memberId}
-                      style={{
-                        height: rowHeights[memberId] ?? ROW_HEIGHT_FLOOR,
-                        minHeight: ROW_HEIGHT_FLOOR,
-                        borderBottom: `1px solid ${borderColor}`,
-                        padding: '10px 12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                      }}
-                    >
-                      <CustomAvatar avatarName={m.name || '?'} avatarUrl={m.avatar_url} size={30} />
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 12 }}>{m.name}</div>
-                        <div style={{ fontSize: 12, opacity: 0.45 }}>{totalHoursLabel}</div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+            {emptyStateBlock}
           </div>
+        )}
 
-          {/* RIGHT: day grid */}
-          <div ref={gridWrapperRef} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            {/* Header */}
+        {/* LEFT: member column */}
+        <div
+          style={{
+            width: 240,
+            minWidth: 240,
+            flexShrink: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            borderRight: `1px solid ${borderColor}`,
+            background: cardBg,
+          }}
+        >
+          {cfg.dense === 'bar' && <div style={{ height: 24, minHeight: 24, borderBottom: `1px solid ${borderColor}` }} />}
+          {zoom === 'weeks' && <div style={{ height: 24, minHeight: 24, borderBottom: `1px solid ${borderColor}` }} />}
+          <div
+            style={{
+              height: 40,
+              minHeight: 40,
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0 16px',
+              fontSize: 12,
+              fontWeight: 600,
+              opacity: 0.45,
+              textTransform: 'uppercase',
+              borderBottom: `1px solid ${borderColor}`,
+            }}
+          >
+            {t('member', { defaultValue: 'Member' })}
+          </div>
+          <div
+            ref={leftBodyScrollRef}
+            onScroll={() => {
+              if (bodyScrollRef.current && leftBodyScrollRef.current) {
+                bodyScrollRef.current.scrollTop = leftBodyScrollRef.current.scrollTop;
+              }
+            }}
+            style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'none' }}
+          >
+            {teamLoading || visibleMembers.length === 0 ? null : (
+              visibleMembers.map((m: any) => {
+                const memberId = m.team_member_id || m.id;
+                const totalHours = memberTotalHours(memberId);
+                const totalHoursLabel = `${Math.floor(totalHours)}h ${Math.round((totalHours % 1) * 60)
+                  .toString()
+                  .padStart(2, '0')}min`;
+
+                return (
+                  <div
+                    key={memberId}
+                    style={{
+                      height: rowHeights[memberId] ?? ROW_HEIGHT_FLOOR,
+                      minHeight: ROW_HEIGHT_FLOOR,
+                      borderBottom: `1px solid ${borderColor}`,
+                      padding: '10px 12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    <CustomAvatar avatarName={m.name || '?'} avatarUrl={m.avatar_url} size={30} />
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 12 }}>{m.name}</div>
+                      <div style={{ fontSize: 12, opacity: 0.45 }}>{totalHoursLabel}</div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT: day grid */}
+        <div ref={gridWrapperRef} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Header */}
+          <div
+            style={{
+              display: 'flex',
+              flexShrink: 0,
+              background: cardBg,
+              borderBottom: `1px solid ${borderColor}`,
+            }}
+          >
             <div
               ref={headerScrollRef}
               style={{
+                flex: 1,
+                minWidth: 0,
                 overflowX: 'auto',
                 overflowY: 'hidden',
-                scrollbarGutter: 'stable',
                 scrollbarWidth: 'none',
-                background: cardBg,
-                borderBottom: `1px solid ${borderColor}`,
-                flexShrink: 0,
               }}
             >
-              {cfg.dense === 'bar' && (
-                <div style={{ display: 'flex', width: days.length * colWidth, height: 24, minHeight: 24, borderBottom: `1px solid ${borderColor}` }}>
-                  {monthGroups.map(g => (
-                    <div
-                      key={g.key}
-                      style={{
-                        width: g.count * colWidth,
-                        minWidth: g.count * colWidth,
-                        textAlign: 'center',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        opacity: 0.55,
-                        borderRight: `1px solid ${borderColor}`,
-                      }}
-                    >
-                      {g.label}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {zoom === 'weeks' && (
-                <div style={{ display: 'flex', width: days.length * colWidth, height: 24, minHeight: 24, borderBottom: `1px solid ${borderColor}` }}>
-                  {weekGroups.map(g => (
-                    <div
-                      key={g.key}
-                      style={{
-                        width: g.count * colWidth,
-                        minWidth: g.count * colWidth,
-                        textAlign: 'center',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        opacity: 0.55,
-                        borderRight: `1px solid ${borderColor}`,
-                      }}
-                    >
-                      {g.label}
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div style={{ display: 'flex', width: days.length * colWidth, height: 40, minHeight: 40 }}>
-                {days.map(d => {
-                  const dateStr = d.date.format('YYYY-MM-DD');
-                  const isToday = dateStr === todayStr;
-                  const isNonWorkingDay = !isWorkingDay(d.date);
-                  return (
-                    <div
-                      key={d.offset}
-                      style={{
-                        width: colWidth,
-                        minWidth: colWidth,
-                        flexShrink: 0,
-                        textAlign: 'center',
-                        padding: '6px 4px',
-                        borderRight: `1px solid ${borderColor}`,
-                        background: isToday ? token.colorPrimaryBg : isNonWorkingDay ? token.colorFillQuaternary : cardBg,
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: isToday ? token.colorPrimary : undefined,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 3,
-                        }}
-                      >
-                        {cfg.dense === 'bar' ? d.date.date() : `${weekdayShort[(d.date.day() + 6) % 7]} ${d.date.date()}`}
-                        {isOrgHoliday.has(dateStr) && (
-                          <Tooltip title={t('holiday', { defaultValue: 'Holiday' })}>
-                            <span style={{ fontSize: 10 }}>🎉</span>
-                          </Tooltip>
-                        )}
-                      </div>
-                      {cfg.dense !== 'bar' && <div style={{ fontSize: 12, opacity: 0.45 }}>{d.date.format('MMM')}</div>}
-                    </div>
-                  );
-                })}
+            {cfg.dense === 'bar' && (
+              <div style={{ display: 'flex', width: days.length * colWidth, height: 24, minHeight: 24, borderBottom: `1px solid ${borderColor}` }}>
+                {monthGroups.map(g => (
+                  <div
+                    key={g.key}
+                    style={{
+                      width: g.count * colWidth,
+                      minWidth: g.count * colWidth,
+                      textAlign: 'center',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      opacity: 0.55,
+                      borderRight: `1px solid ${borderColor}`,
+                    }}
+                  >
+                    {g.label}
+                  </div>
+                ))}
               </div>
+            )}
+            {zoom === 'weeks' && (
+              <div style={{ display: 'flex', width: days.length * colWidth, height: 24, minHeight: 24, borderBottom: `1px solid ${borderColor}` }}>
+                {weekGroups.map(g => (
+                  <div
+                    key={g.key}
+                    style={{
+                      width: g.count * colWidth,
+                      minWidth: g.count * colWidth,
+                      textAlign: 'center',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      opacity: 0.55,
+                      borderRight: `1px solid ${borderColor}`,
+                    }}
+                  >
+                    {g.label}
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ display: 'flex', width: days.length * colWidth, height: 40, minHeight: 40 }}>
+              {days.map(d => {
+                const dateStr = d.date.format('YYYY-MM-DD');
+                const isToday = dateStr === todayStr;
+                const isNonWorkingDay = !isWorkingDay(d.date);
+                return (
+                  <div
+                    key={d.offset}
+                    style={{
+                      width: colWidth,
+                      minWidth: colWidth,
+                      flexShrink: 0,
+                      textAlign: 'center',
+                      padding: '6px 4px',
+                      borderRight: `1px solid ${borderColor}`,
+                      background: isToday ? token.colorPrimaryBg : isNonWorkingDay ? token.colorFillQuaternary : cardBg,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: isToday ? token.colorPrimary : undefined,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 3,
+                      }}
+                    >
+                      {cfg.dense === 'bar' ? d.date.date() : `${weekdayShort[(d.date.day() + 6) % 7]} ${d.date.date()}`}
+                      {isOrgHoliday.has(dateStr) && (
+                        <Tooltip title={t('holiday', { defaultValue: 'Holiday' })}>
+                          <span style={{ fontSize: 10 }}>🎉</span>
+                        </Tooltip>
+                      )}
+                    </div>
+                    {cfg.dense !== 'bar' && <div style={{ fontSize: 12, opacity: 0.45 }}>{d.date.format('MMM')}</div>}
+                  </div>
+                );
+              })}
             </div>
+            </div>
+            {bodyScrollbarWidth > 0 && <div style={{ width: bodyScrollbarWidth, flexShrink: 0 }} />}
+          </div>
 
-            {/* Body */}
-            <div
-              ref={bodyScrollRef}
-              onScroll={() => {
-                if (headerScrollRef.current && bodyScrollRef.current) {
-                  headerScrollRef.current.scrollLeft = bodyScrollRef.current.scrollLeft;
-                }
-                if (leftBodyScrollRef.current && bodyScrollRef.current) {
-                  leftBodyScrollRef.current.scrollTop = bodyScrollRef.current.scrollTop;
-                }
-              }}
-              style={{
-                flex: 1,
-                minHeight: 0,
-                overflow: 'auto',
-                scrollbarGutter: 'stable',
-              }}
-            >
-              <div style={{ minWidth: days.length * colWidth, minHeight: '100%', display: 'flex', flexDirection: 'column' }}>
-                {/* Rows */}
-                <div style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column' }}>
-                  {!teamLoading && visibleMembers.length > 0 &&
-                    visibleMembers.map((m: any) => {
-                      const memberId = m.team_member_id || m.id;
+          {/* Body */}
+          <div
+            ref={bodyScrollRef}
+            onScroll={() => {
+              if (headerScrollRef.current && bodyScrollRef.current) {
+                headerScrollRef.current.scrollLeft = bodyScrollRef.current.scrollLeft;
+              }
+              if (leftBodyScrollRef.current && bodyScrollRef.current) {
+                leftBodyScrollRef.current.scrollTop = bodyScrollRef.current.scrollTop;
+              }
+            }}
+            style={{ flex: 1, minHeight: 0, overflow: 'auto', scrollbarGutter: 'stable' }}
+          >
+          <div style={{ minWidth: days.length * colWidth, minHeight: '100%', display: 'flex', flexDirection: 'column' }}>
+            {/* Rows */}
+            <div style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column' }}>
+              {!teamLoading && visibleMembers.length > 0 &&
+              visibleMembers.map((m: any) => {
+                const memberId = m.team_member_id || m.id;
+
+                return (
+                  // No flex-grow / fixed minHeight here on purpose — the row's height must
+                  // come from its tallest child (the day cell with the most stacked task
+                  // chips), which the left panel's row then matches via rowHeights
+                  // (measured through the ResizeObserver registered below).
+                  <div
+                    key={memberId}
+                    ref={registerRowRef(memberId)}
+                    style={{ display: 'flex', minHeight: ROW_HEIGHT_FLOOR, borderBottom: `1px solid ${borderColor}` }}
+                  >
+                    {days.map(d => {
+                      const dateStr = d.date.format('YYYY-MM-DD');
+                      const capInfo = memberCapacityMap.get(`${memberId}_${dateStr}`);
+                      const nonWorkingDay = !isWorkingDay(d.date);
+                      const effectiveDayCap = capInfo ? capInfo.working_hours : (nonWorkingDay ? 0 : workingHours);
+                      const isFullDayTimeOff = Boolean(
+                        capInfo?.is_time_off && capInfo?.is_full_day_time_off !== false && capInfo?.working_hours === 0
+                      );
+                      const isHoliday = Boolean(capInfo?.is_holiday);
+                      const isPartialTimeOff = Boolean(
+                        capInfo?.is_time_off && (capInfo?.is_full_day_time_off === false || (capInfo.time_off_hours && capInfo.working_hours > 0))
+                      );
+                      const dayTasks = tasksFor(memberId, d.date);
+                      const used = dayEstTotal(memberId, d.date);
+                      const over = used > effectiveDayCap;
+                      // Parent tasks and their subtasks carry independent, additive estimates
+                      // (never rolled up) — so both counting toward the day total is correct,
+                      // not a bug. This just surfaces the combination to the PM rather than
+                      // silently altering the total.
+                      const dayHasParentSubtaskOverlap = hasParentSubtaskOverlap(
+                        dayTasks,
+                        (t: any) => t.id,
+                        (t: any) => t.parent_task_id
+                      );
+
+                      // When more than 4 tasks stack in one cell, only the first 3
+                      // render as full chips; the rest collapse behind a "+N" badge
+                      // (hover to see the list, click a task there for the normal flow).
+                      const maxVisible = 3;
+                      const isCollapsed = dayTasks.length > 4;
+                      const visibleTasks = isCollapsed ? dayTasks.slice(0, maxVisible) : dayTasks;
+                      const hiddenTasks = isCollapsed ? dayTasks.slice(maxVisible) : [];
+
+                      const openTaskDrawer = (task: any) => {
+                        dispatch(setProjectId(task.project_id));
+                        dispatch(setSelectedTaskId(task.id));
+                        dispatch(setShowTaskDrawer(true));
+                      };
 
                       return (
-                        // No flex-grow / fixed minHeight here on purpose — the row's height must
-                        // come from its tallest child (the day cell with the most stacked task
-                        // chips), which the left panel's row then matches via rowHeights
-                        // (measured through the ResizeObserver registered below).
                         <div
-                          key={memberId}
-                          ref={registerRowRef(memberId)}
-                          style={{ display: 'flex', minHeight: ROW_HEIGHT_FLOOR, borderBottom: `1px solid ${borderColor}` }}
+                          key={d.offset}
+                          className="planner-day-cell"
+                          onClick={() => {
+                            // A resize gesture's terminal mouseup landed here — consume the
+                            // flag and swallow this click rather than opening Add Task.
+                            if (suppressCellClickRef.current) {
+                              suppressCellClickRef.current = false;
+                              return;
+                            }
+                            if (!isFullDayTimeOff) openCreateTask(memberId, d.date);
+                          }}
+                          onDragOver={e => e.preventDefault()}
+                          onDrop={e => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleChipDrop(memberId, d.date);
+                          }}
+                          style={{
+                            width: colWidth,
+                            minWidth: colWidth,
+                            flexShrink: 0,
+                            borderRight: `1px solid ${borderColor}`,
+                            padding: '6px 5px',
+                            background: over
+                              ? 'rgba(255,77,79,.06)'
+                              : isFullDayTimeOff
+                                ? 'repeating-linear-gradient(45deg, rgba(250, 173, 20, 0.08) 0 4px, transparent 4px 8px)'
+                                : nonWorkingDay
+                                  ? token.colorFillQuaternary
+                                  : undefined,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 4,
+                            position: 'relative',
+                            cursor: isFullDayTimeOff ? 'not-allowed' : 'pointer',
+                          }}
                         >
-                          {days.map(d => {
-                            const dateStr = d.date.format('YYYY-MM-DD');
-                            const capInfo = memberCapacityMap.get(`${memberId}_${dateStr}`);
-                            const nonWorkingDay = !isWorkingDay(d.date);
-                            const effectiveDayCap = capInfo ? capInfo.working_hours : (nonWorkingDay ? 0 : workingHours);
-                            const isFullDayTimeOff = Boolean(
-                              capInfo?.is_time_off && capInfo?.is_full_day_time_off !== false && capInfo?.working_hours === 0
-                            );
-                            const isHoliday = Boolean(capInfo?.is_holiday);
-                            const isPartialTimeOff = Boolean(
-                              capInfo?.is_time_off && (capInfo?.is_full_day_time_off === false || (capInfo.time_off_hours && capInfo.working_hours > 0))
-                            );
-                            const dayTasks = tasksFor(memberId, d.date);
-                            const used = dayEstTotal(memberId, d.date);
-                            const over = used > effectiveDayCap;
-                            // Parent tasks and their subtasks carry independent, additive estimates
-                            // (never rolled up) — so both counting toward the day total is correct,
-                            // not a bug. This just surfaces the combination to the PM rather than
-                            // silently altering the total.
-                            const dayHasParentSubtaskOverlap = hasParentSubtaskOverlap(
-                              dayTasks,
-                              (t: any) => t.id,
-                              (t: any) => t.parent_task_id
-                            );
-
-                            // When more than 4 tasks stack in one cell, only the first 3
-                            // render as full chips; the rest collapse behind a "+N" badge
-                            // (hover to see the list, click a task there for the normal flow).
-                            const maxVisible = 3;
-                            const isCollapsed = dayTasks.length > 4;
-                            const visibleTasks = isCollapsed ? dayTasks.slice(0, maxVisible) : dayTasks;
-                            const hiddenTasks = isCollapsed ? dayTasks.slice(maxVisible) : [];
-
-                            const openTaskDrawer = (task: any) => {
-                              dispatch(setProjectId(task.project_id));
-                              dispatch(setSelectedTaskId(task.id));
-                              dispatch(setShowTaskDrawer(true));
-                            };
-
-                            return (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+                            {dayHasParentSubtaskOverlap && (
+                              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                <Tooltip
+                                  title={t('includesParentAndSubtask', {
+                                    defaultValue: 'Includes parent + subtask of the same task — hours are counted separately',
+                                  })}
+                                >
+                                  <BranchesOutlined style={{ fontSize: 12, color: token.colorWarning }} />
+                                </Tooltip>
+                              </div>
+                            )}
+                            {dayTasks.length === 0 && (
                               <div
-                                key={d.offset}
-                                className="planner-day-cell"
-                                onClick={() => {
-                                  // A resize gesture's terminal mouseup landed here — consume the
-                                  // flag and swallow this click rather than opening Add Task.
-                                  if (suppressCellClickRef.current) {
-                                    suppressCellClickRef.current = false;
-                                    return;
-                                  }
-                                  if (!isFullDayTimeOff) openCreateTask(memberId, d.date);
-                                }}
-                                onDragOver={e => e.preventDefault()}
-                                onDrop={e => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleChipDrop(memberId, d.date);
-                                }}
+                                className="planner-add-hint"
                                 style={{
-                                  width: colWidth,
-                                  minWidth: colWidth,
-                                  flexShrink: 0,
-                                  borderRight: `1px solid ${borderColor}`,
-                                  padding: '6px 5px',
-                                  background: over
-                                    ? 'rgba(255,77,79,.06)'
-                                    : isFullDayTimeOff
-                                      ? 'repeating-linear-gradient(45deg, rgba(250, 173, 20, 0.08) 0 4px, transparent 4px 8px)'
-                                      : nonWorkingDay
-                                        ? token.colorFillQuaternary
-                                        : undefined,
+                                  flex: 1,
                                   display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: 4,
-                                  position: 'relative',
-                                  cursor: isFullDayTimeOff ? 'not-allowed' : 'pointer',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: cfg.dense === 'bar' ? 10 : 12,
+                                  color: token.colorTextTertiary,
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
                                 }}
                               >
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
-                                  {dayHasParentSubtaskOverlap && (
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                      <Tooltip
-                                        title={t('includesParentAndSubtask', {
-                                          defaultValue: 'Includes parent + subtask of the same task — hours are counted separately',
-                                        })}
-                                      >
-                                        <BranchesOutlined style={{ fontSize: 12, color: token.colorWarning }} />
-                                      </Tooltip>
-                                    </div>
-                                  )}
-                                  {dayTasks.length === 0 && (
+                                {cfg.dense === 'bar' ? '+' : `+ ${t('addNew', { defaultValue: 'Add new' })}`}
+                              </div>
+                            )}
+                            {visibleTasks.map((task: any) => {
+                              const color = task.project_color || token.colorPrimary;
+                              const hours = hoursForTaskOnDay(task, d.date);
+                              const dateStr = d.date.format('YYYY-MM-DD');
+                              const taskRange = taskDateRange(task);
+                              const isFirstDay = dateStr === taskRange.start;
+                              const isLastDay = dateStr === taskRange.end;
+                              const isSubtask = !!task.parent_task_id;
+                              return (
+                                <Tooltip
+                                  key={task.id}
+                                  // The Task Drawer opens docked to the right edge of the screen. When it's
+                                  // open, flip the tooltip to the left so it grows away from the drawer
+                                  // instead of extending over it (issue #1883).
+                                  placement={showTaskDrawer ? 'left' : 'right'}
+                                  autoAdjustOverflow
+                                  color={themeMode === 'dark' ? undefined : '#fff'}
+                                  styles={{
+                                    body:
+                                      themeMode === 'dark'
+                                        ? undefined
+                                        : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' },
+                                  }}
+                                  title={renderTaskTooltipTitle(task, d.date)}
+                                >
+                                <div
+                                  className="planner-chip"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    openTaskDrawer(task);
+                                  }}
+                                  draggable
+                                  onDragStart={makeChipDragStartHandler(task, memberId, d.date)}
+                                  style={{
+                                    position: 'relative',
+                                    cursor: 'grab',
+                                    borderRadius: 4,
+                                    marginLeft: isSubtask ? 8 : 0,
+                                    background: isSubtask ? `${color}0c` : `${color}18`,
+                                    border: `1px solid ${color}${isSubtask ? '30' : '40'}`,
+                                    borderLeft: `3px solid ${color}`,
+                                    padding: cfg.dense === 'full' ? '3px 6px' : cfg.dense === 'compact' ? '2px 4px' : 0,
+                                    height: cfg.dense === 'bar' ? MONTH_TASK_BAR_HEIGHT : undefined,
+                                    flexShrink: cfg.dense === 'bar' ? 0 : undefined,
+                                    minHeight:
+                                      cfg.dense === 'bar'
+                                        ? MONTH_TASK_BAR_HEIGHT
+                                        : cfg.dense === 'full' || cfg.dense === 'compact'
+                                          ? getChipHeight(hours, cfg.dense)
+                                          : undefined,
+                                    overflow: 'hidden',
+                                    display: cfg.dense === 'full' ? 'flex' : undefined,
+                                    flexDirection: cfg.dense === 'full' ? 'column' : undefined,
+                                  }}
+                                >
+                                  {cfg.dense === 'full' && (
                                     <div
-                                      className="planner-add-hint"
                                       style={{
-                                        flex: 1,
                                         display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: cfg.dense === 'bar' ? 10 : 12,
-                                        color: token.colorTextTertiary,
-                                        whiteSpace: 'nowrap',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
+                                        alignItems: 'flex-start',
+                                        gap: 4,
+                                        minWidth: 0,
                                       }}
                                     >
-                                      {cfg.dense === 'bar' ? '+' : `+ ${t('addNew', { defaultValue: 'Add new' })}`}
+                                      {isWorkingDay(d.date) && (
+                                        <span
+                                          style={{
+                                            minWidth: 36,
+                                            flexShrink: 0,
+                                            fontSize: 12,
+                                            fontWeight: 700,
+                                            color,
+                                            whiteSpace: 'nowrap',
+                                          }}
+                                        >
+                                          {hours.toFixed(1)}h{hours > effectiveDayCap && ' ⚠'}
+                                        </span>
+                                      )}
+                                      <div
+                                        style={{
+                                          display: 'flex',
+                                          flexDirection: 'column',
+                                          gap: 2,
+                                          flex: '1 1 0',
+                                          minWidth: 0,
+                                        }}
+                                      >
+                                        <span
+                                          style={{
+                                            minWidth: 0,
+                                            fontSize: 12,
+                                            opacity: 0.5,
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                          }}
+                                        >
+                                          {t('project', { defaultValue: 'Project' })}: {decodeHtmlEntities(task.project_name)}
+                                        </span>
+                                        <span
+                                          style={{
+                                            minWidth: 0,
+                                            fontSize: 12,
+                                            lineHeight: 1.3,
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                          }}
+                                        >
+                                          {taskChipLabel(task)}
+                                        </span>
+                                      </div>
                                     </div>
                                   )}
-                                  {visibleTasks.map((task: any) => {
-                                    const color = task.project_color || token.colorPrimary;
-                                    const hours = hoursForTaskOnDay(task, d.date);
-                                    const dateStr = d.date.format('YYYY-MM-DD');
-                                    const taskRange = taskDateRange(task);
-                                    const isFirstDay = dateStr === taskRange.start;
-                                    const isLastDay = dateStr === taskRange.end;
-                                    const isSubtask = !!task.parent_task_id;
-                                    return (
+                                  {cfg.dense === 'compact' && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 3, overflow: 'hidden' }}>
+                                      {isWorkingDay(d.date) && (
+                                        <span style={{ fontSize: 12, fontWeight: 700, color, flexShrink: 0 }}>{hours.toFixed(1)}h</span>
+                                      )}
+                                      <span
+                                        style={{
+                                          fontSize: 12,
+                                          color,
+                                          fontWeight: 500,
+                                          whiteSpace: 'nowrap',
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                        }}
+                                      >
+                                        {taskChipLabel(task)}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {(cfg.dense === 'full' || cfg.dense === 'compact') &&
+                                    renderResizeHandle(task, cfg.dense, color, cfg.dense === 'full' ? 8 : 6)}
+                                  {(cfg.dense === 'full' || cfg.dense === 'compact') &&
+                                    isFirstDay &&
+                                    renderDateResizeHandle(task, 'start', color)}
+                                  {(cfg.dense === 'full' || cfg.dense === 'compact') &&
+                                    isLastDay &&
+                                    renderDateResizeHandle(task, 'end', color)}
+                                </div>
+                                </Tooltip>
+                              );
+                            })}
+                            {hiddenTasks.length > 0 && (
+                              <Popover
+                                trigger="hover"
+                                placement={showTaskDrawer ? 'left' : 'right'}
+                                styles={{ body: { padding: 6 } }}
+                                content={
+                                  <div
+                                    style={{
+                                      minWidth: 180,
+                                      maxHeight: 220,
+                                      overflowY: 'auto',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      gap: 2,
+                                    }}
+                                  >
+                                    {hiddenTasks.map((task: any) => {
+                                      const hDateStr = d.date.format('YYYY-MM-DD');
+                                      const hTaskRange = taskDateRange(task);
+                                      const hIsFirstDay = hDateStr === hTaskRange.start;
+                                      const hIsLastDay = hDateStr === hTaskRange.end;
+                                      return (
                                       <Tooltip
                                         key={task.id}
-                                        // The Task Drawer opens docked to the right edge of the screen. When it's
-                                        // open, flip the tooltip to the left so it grows away from the drawer
-                                        // instead of extending over it (issue #1883).
                                         placement={showTaskDrawer ? 'left' : 'right'}
                                         autoAdjustOverflow
                                         color={themeMode === 'dark' ? undefined : '#fff'}
@@ -1909,277 +2070,118 @@ const PlannerScheduleView: React.FC = () => {
                                           onDragStart={makeChipDragStartHandler(task, memberId, d.date)}
                                           style={{
                                             position: 'relative',
-                                            cursor: 'grab',
+                                            padding: cfg.dense === 'bar' ? '5px 8px' : '5px 8px 9px',
+                                            marginLeft: task.parent_task_id ? 8 : 0,
+                                            fontSize: 12,
                                             borderRadius: 4,
-                                            marginLeft: isSubtask ? 8 : 0,
-                                            background: isSubtask ? `${color}0c` : `${color}18`,
-                                            border: `1px solid ${color}${isSubtask ? '30' : '40'}`,
-                                            borderLeft: `3px solid ${color}`,
-                                            padding: cfg.dense === 'full' ? '3px 6px' : cfg.dense === 'compact' ? '2px 4px' : 0,
-                                            height: cfg.dense === 'bar' ? 8 : undefined,
-                                            minHeight:
-                                              cfg.dense === 'full' || cfg.dense === 'compact'
-                                                ? getChipHeight(hours, cfg.dense)
-                                                : undefined,
+                                            cursor: 'grab',
+                                            opacity: task.parent_task_id ? 0.85 : 1,
+                                            borderLeft: `3px solid ${task.project_color || token.colorPrimary}`,
+                                            whiteSpace: 'nowrap',
                                             overflow: 'hidden',
-                                            display: cfg.dense === 'full' ? 'flex' : undefined,
-                                            flexDirection: cfg.dense === 'full' ? 'column' : undefined,
+                                            textOverflow: 'ellipsis',
                                           }}
                                         >
-
-                                          {cfg.dense === 'full' && (() => {
-                                            const showHours = isWorkingDay(d.date);
-
-                                            return (
-                                              <div
-                                                style={{
-                                                  display: 'flex',
-                                                  alignItems: 'flex-start',
-                                                  gap: 4,
-                                                  minWidth: 0,
-                                                }}
-                                              >
-                                                <span
-                                                  style={{
-                                                    flex: '0 0 44px',
-                                                    fontSize: 12,
-                                                    fontWeight: 700,
-                                                    color,
-                                                    whiteSpace: 'nowrap',
-                                                  }}
-                                                >
-                                                  {showHours
-                                                    ? `${hours.toFixed(1)}h${hours > effectiveDayCap ? ' ⚠' : ''}`
-                                                    : ''}
-                                                </span>
-
-                                                <div
-                                                  style={{
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    gap: 2,
-                                                    flex: '1 1 0',
-                                                    minWidth: 0,
-                                                  }}
-                                                >
-                                                  <span
-                                                    style={{
-                                                      minWidth: 0,
-                                                      fontSize: 12,
-                                                      opacity: 0.5,
-                                                      whiteSpace: 'nowrap',
-                                                      overflow: 'hidden',
-                                                      textOverflow: 'ellipsis',
-                                                    }}
-                                                  >
-                                                    {t('project', { defaultValue: 'Project' })}: {decodeHtmlEntities(task.project_name)}
-                                                  </span>
-
-                                                  <span
-                                                    style={{
-                                                      minWidth: 0,
-                                                      fontSize: 12,
-                                                      lineHeight: 1.3,
-                                                      whiteSpace: 'nowrap',
-                                                      overflow: 'hidden',
-                                                      textOverflow: 'ellipsis',
-                                                    }}
-                                                  >
-                                                    {taskChipLabel(task)}
-                                                  </span>
-                                                </div>
-                                              </div>
-                                            );
-                                          })()}
-
-                                          {cfg.dense === 'compact' && (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 3, overflow: 'hidden' }}>
-                                              {isWorkingDay(d.date) && (
-                                                <span style={{ fontSize: 12, fontWeight: 700, color, flexShrink: 0 }}>{hours.toFixed(1)}h</span>
-                                              )}
-                                              <span
-                                                style={{
-                                                  fontSize: 12,
-                                                  color,
-                                                  fontWeight: 500,
-                                                  whiteSpace: 'nowrap',
-                                                  overflow: 'hidden',
-                                                  textOverflow: 'ellipsis',
-                                                }}
-                                              >
-                                                {taskChipLabel(task)}
-                                              </span>
-                                            </div>
+                                          {isWorkingDay(d.date) && (
+                                            <span style={{ fontWeight: 700 }}>
+                                              {hoursForTaskOnDay(task, d.date).toFixed(1)}h{' '}
+                                            </span>
                                           )}
-                                          {(cfg.dense === 'full' || cfg.dense === 'compact') &&
-                                            renderResizeHandle(task, cfg.dense, color, cfg.dense === 'full' ? 8 : 6)}
-                                          {(cfg.dense === 'full' || cfg.dense === 'compact') &&
-                                            isFirstDay &&
-                                            renderDateResizeHandle(task, 'start', color)}
-                                          {(cfg.dense === 'full' || cfg.dense === 'compact') &&
-                                            isLastDay &&
-                                            renderDateResizeHandle(task, 'end', color)}
+                                          {taskChipLabel(task)}
+                                          {cfg.dense !== 'bar' &&
+                                            renderResizeHandle(
+                                              task,
+                                              cfg.dense as 'full' | 'compact',
+                                              task.project_color || token.colorPrimary,
+                                              6
+                                            )}
+                                          {cfg.dense !== 'bar' &&
+                                            hIsFirstDay &&
+                                            renderDateResizeHandle(task, 'start', task.project_color || token.colorPrimary)}
+                                          {cfg.dense !== 'bar' &&
+                                            hIsLastDay &&
+                                            renderDateResizeHandle(task, 'end', task.project_color || token.colorPrimary)}
                                         </div>
                                       </Tooltip>
-                                    );
-                                  })}
-                                  {hiddenTasks.length > 0 && (
-                                    <Popover
-                                      trigger="hover"
-                                      placement={showTaskDrawer ? 'left' : 'right'}
-                                      styles={{ body: { padding: 6 } }}
-                                      content={
-                                        <div
-                                          style={{
-                                            minWidth: 180,
-                                            maxHeight: 220,
-                                            overflowY: 'auto',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: 2,
-                                          }}
-                                        >
-                                          {hiddenTasks.map((task: any) => {
-                                            const hDateStr = d.date.format('YYYY-MM-DD');
-                                            const hTaskRange = taskDateRange(task);
-                                            const hIsFirstDay = hDateStr === hTaskRange.start;
-                                            const hIsLastDay = hDateStr === hTaskRange.end;
-                                            return (
-                                              <Tooltip
-                                                key={task.id}
-                                                placement={showTaskDrawer ? 'left' : 'right'}
-                                                autoAdjustOverflow
-                                                color={themeMode === 'dark' ? undefined : '#fff'}
-                                                styles={{
-                                                  body:
-                                                    themeMode === 'dark'
-                                                      ? undefined
-                                                      : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' },
-                                                }}
-                                                title={renderTaskTooltipTitle(task, d.date)}
-                                              >
-                                                <div
-                                                  className="planner-chip"
-                                                  onClick={e => {
-                                                    e.stopPropagation();
-                                                    openTaskDrawer(task);
-                                                  }}
-                                                  draggable
-                                                  onDragStart={makeChipDragStartHandler(task, memberId, d.date)}
-                                                  style={{
-                                                    position: 'relative',
-                                                    padding: cfg.dense === 'bar' ? '5px 8px' : '5px 8px 9px',
-                                                    marginLeft: task.parent_task_id ? 8 : 0,
-                                                    fontSize: 12,
-                                                    borderRadius: 4,
-                                                    cursor: 'grab',
-                                                    opacity: task.parent_task_id ? 0.85 : 1,
-                                                    borderLeft: `3px solid ${task.project_color || token.colorPrimary}`,
-                                                    whiteSpace: 'nowrap',
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis',
-                                                  }}
-                                                >
-                                                  {isWorkingDay(d.date) && (
-                                                    <span style={{ fontWeight: 700 }}>
-                                                      {hoursForTaskOnDay(task, d.date).toFixed(1)}h{' '}
-                                                    </span>
-                                                  )}
-                                                  {taskChipLabel(task)}
-                                                  {cfg.dense !== 'bar' &&
-                                                    renderResizeHandle(
-                                                      task,
-                                                      cfg.dense as 'full' | 'compact',
-                                                      task.project_color || token.colorPrimary,
-                                                      6
-                                                    )}
-                                                  {cfg.dense !== 'bar' &&
-                                                    hIsFirstDay &&
-                                                    renderDateResizeHandle(task, 'start', task.project_color || token.colorPrimary)}
-                                                  {cfg.dense !== 'bar' &&
-                                                    hIsLastDay &&
-                                                    renderDateResizeHandle(task, 'end', task.project_color || token.colorPrimary)}
-                                                </div>
-                                              </Tooltip>
-                                            );
-                                          })}
-                                        </div>
-                                      }
-                                    >
-                                      <div
-                                        onClick={e => e.stopPropagation()}
-                                        style={{
-                                          fontSize: 12,
-                                          fontWeight: 700,
-                                          textAlign: 'center',
-                                          padding: '3px 4px',
-                                          borderRadius: 4,
-                                          cursor: 'pointer',
-                                          background: token.colorFillSecondary,
-                                          color: token.colorTextSecondary,
-                                        }}
-                                      >
-                                        +{hiddenTasks.length}
-                                      </div>
-                                    </Popover>
-                                  )}
-                                  {dayTasks.length > 0 && (
-                                    <div
-                                      className="planner-add-hint planner-add-hint-inline"
-                                      style={{
-                                        fontSize: cfg.dense === 'bar' ? 10 : 12,
-                                        color: token.colorTextTertiary,
-                                        textAlign: 'center',
-                                        whiteSpace: 'nowrap',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        flexShrink: 0,
-                                      }}
-                                    >
-                                      {cfg.dense === 'bar' ? '+' : `+ ${t('addNew', { defaultValue: 'Add new' })}`}
-                                    </div>
-                                  )}
+                                      );
+                                    })}
+                                  </div>
+                                }
+                              >
+                                <div
+                                  onClick={e => e.stopPropagation()}
+                                  style={{
+                                    fontSize: 12,
+                                    fontWeight: 700,
+                                    textAlign: 'center',
+                                    padding: '3px 4px',
+                                    borderRadius: 4,
+                                    cursor: 'pointer',
+                                    background: token.colorFillSecondary,
+                                    color: token.colorTextSecondary,
+                                  }}
+                                >
+                                  +{hiddenTasks.length}
                                 </div>
-                                {isFullDayTimeOff && (
-                                  <div style={{ fontSize: 11, color: '#fa8c16', fontWeight: 600, textAlign: 'center', margin: '2px 0' }}>
-                                    🔵 {t('timeOff', { defaultValue: 'Time Off' })}
-                                  </div>
-                                )}
-                                {isHoliday && effectiveDayCap === 0 && !isFullDayTimeOff && (
-                                  <div style={{ fontSize: 11, color: '#faad14', fontWeight: 600, textAlign: 'center', margin: '2px 0' }}>
-                                    🎉 {t('holiday', { defaultValue: 'Holiday' })}
-                                  </div>
-                                )}
-                                {isPartialTimeOff && (
-                                  <div style={{ fontSize: 10, color: '#fa8c16', fontWeight: 600, textAlign: 'center', margin: '2px 0' }}>
-                                    {capInfo.time_off_hours}h {t('timeOff', { defaultValue: 'Time Off' })}
-                                  </div>
-                                )}
-                                {!nonWorkingDay && (cfg.dense === 'full' || cfg.dense === 'compact') && (
-                                  <div
-                                    style={{
-                                      fontSize: 12,
-                                      fontWeight: over ? 700 : 400,
-                                      opacity: over ? 1 : 0.4,
-                                      color: over ? '#ff4d4f' : undefined,
-                                      textAlign: 'center',
-                                      marginTop: cfg.dense === 'full' ? 6 : 3,
-                                    }}
-                                  >
-                                    {used.toFixed(1)}h / {effectiveDayCap}h
-                                  </div>
-                                )}
+                              </Popover>
+                            )}
+                            {dayTasks.length > 0 && (
+                              <div
+                                className="planner-add-hint planner-add-hint-inline"
+                                style={{
+                                  fontSize: cfg.dense === 'bar' ? 10 : 12,
+                                  color: token.colorTextTertiary,
+                                  textAlign: 'center',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {cfg.dense === 'bar' ? '+' : `+ ${t('addNew', { defaultValue: 'Add new' })}`}
                               </div>
-                            );
-                          })}
+                            )}
+                          </div>
+                          {isFullDayTimeOff && (
+                            <div style={{ fontSize: 11, color: '#fa8c16', fontWeight: 600, textAlign: 'center', margin: '2px 0' }}>
+                              🔵 {t('timeOff', { defaultValue: 'Time Off' })}
+                            </div>
+                          )}
+                          {isHoliday && effectiveDayCap === 0 && !isFullDayTimeOff && (
+                            <div style={{ fontSize: 11, color: '#faad14', fontWeight: 600, textAlign: 'center', margin: '2px 0' }}>
+                              🎉 {t('holiday', { defaultValue: 'Holiday' })}
+                            </div>
+                          )}
+                          {isPartialTimeOff && (
+                            <div style={{ fontSize: 10, color: '#fa8c16', fontWeight: 600, textAlign: 'center', margin: '2px 0' }}>
+                              {capInfo.time_off_hours}h {t('timeOff', { defaultValue: 'Time Off' })}
+                            </div>
+                          )}
+                          {!nonWorkingDay && (cfg.dense === 'full' || cfg.dense === 'compact') && (
+                            <div
+                              style={{
+                                fontSize: 12,
+                                fontWeight: over ? 700 : 400,
+                                opacity: over ? 1 : 0.4,
+                                color: over ? '#ff4d4f' : undefined,
+                                textAlign: 'center',
+                                marginTop: cfg.dense === 'full' ? 6 : 3,
+                              }}
+                            >
+                              {used.toFixed(1)}h / {effectiveDayCap}h
+                            </div>
+                          )}
                         </div>
                       );
                     })}
-                </div>
-              </div>
-            </div>
+                  </div>
+                );
+              })}
           </div>
         </div>
+        </div>
+      </div>
+      </div>
       </div>
 
       <PlannerAddTaskModal
