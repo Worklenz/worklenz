@@ -1,4 +1,5 @@
 {
+  "exampleTaskCreateFailed": "Impossible de confirmer la création de la tâche. Vérifiez la liste avant de réessayer.",
   "apply": "Appliquer",
   "keyColumn": "Clé",
   "taskColumn": "Tâche",

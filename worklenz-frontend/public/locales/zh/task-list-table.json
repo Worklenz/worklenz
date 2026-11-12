@@ -1,4 +1,5 @@
 {
+  "exampleTaskCreateFailed": "无法确认任务是否已创建。请先检查任务列表，再重试。",
   "apply": "应用",
   "keyColumn": "ID",
   "taskColumn": "任务",

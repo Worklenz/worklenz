@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Input } from '@/shared/antd-imports';
+import { Input, message } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAuthService } from '@/hooks/useAuth';
 import {
@@ -72,6 +72,12 @@ export const ExampleTaskRows: React.FC<{
   const [taskName, setTaskName] = React.useState('');
   const [creatingTask, setCreatingTask] = React.useState(false);
   const inputRef = React.useRef<any>(null);
+  const isMounted = React.useRef(true);
+  const isRequestPending = React.useRef(false);
+  React.useEffect(() => {
+    isMounted.current = true;
+    return () => { isMounted.current = false; };
+  }, []);
   const listMode = useTaskListMode();
 
   const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
@@ -109,7 +115,7 @@ export const ExampleTaskRows: React.FC<{
 
   const handleCreateTask = React.useCallback(
     (openDrawer: boolean = false) => {
-      if (creatingTask || !currentSession || !taskName.trim() || !socket || !connected) return;
+      if (isRequestPending.current || !currentSession || !taskName.trim() || !socket || !connected) return;
 
       const body: any = {
         name: taskName.trim(),
@@ -140,11 +146,23 @@ export const ExampleTaskRows: React.FC<{
         body.phase_id = UNMAPPED_PHASE_ID;
       }
 
+      isRequestPending.current = true;
+      let hasSettled = false;
       setCreatingTask(true);
-      socket.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
-      socket.once(SocketEvents.QUICK_TASK.toString(), (task: any) => {
-        setCreatingTask(false);
-        if (task?.id) {
+      socket.timeout(15000).emit(
+        SocketEvents.QUICK_TASK.toString(),
+        JSON.stringify(body),
+        (error: Error | null, task: { id?: string; error?: boolean } | null) => {
+          if (hasSettled || !isMounted.current) return;
+          hasSettled = true;
+          isRequestPending.current = false;
+          setCreatingTask(false);
+          if (error || !task?.id || task.error) {
+            message.error(t('exampleTaskCreateFailed', {
+              defaultValue: 'Could not confirm task creation. Check the task list before retrying.',
+            }));
+            return;
+          }
           if (groupType === 'assignee') {
             assignTaskToMember({
               socket,
@@ -155,12 +173,11 @@ export const ExampleTaskRows: React.FC<{
               teamId: currentSession.team_id,
             });
           }
+          setTaskName('');
+          setActiveRowIndex(null);
           onTaskCreated(task, { openDrawer, insertAfterTaskId: null });
         }
-      });
-
-      setTaskName('');
-      setActiveRowIndex(null);
+      );
     },
     [
       creatingTask,
@@ -173,6 +190,7 @@ export const ExampleTaskRows: React.FC<{
       currentSession,
       onTaskCreated,
       listMode,
+      t,
     ]
   );
 
@@ -181,19 +199,20 @@ export const ExampleTaskRows: React.FC<{
       if (e.key === 'Enter') {
         e.preventDefault();
         handleCreateTask(false);
-      } else if (e.key === 'Escape') {
+      } else if (e.key === 'Escape' && !creatingTask) {
         e.preventDefault();
         setTaskName('');
         setActiveRowIndex(null);
       }
     },
-    [handleCreateTask]
+    [handleCreateTask, creatingTask]
   );
 
   const handleBlur = React.useCallback(() => {
+    if (creatingTask) return;
     if (taskName.trim()) handleCreateTask(false);
     else setActiveRowIndex(null);
-  }, [taskName, handleCreateTask]);
+  }, [taskName, handleCreateTask, creatingTask]);
 
   return (
     <>
@@ -297,15 +316,18 @@ export const ExampleTaskRows: React.FC<{
                         autoFocus
                       />
                     ) : (
-                      <span
-                        className="text-sm text-gray-400 dark:text-gray-500 truncate"
+                      <button
+                        type="button"
+                        disabled={!canActivateRow}
+                        onClick={() => { if (canActivateRow) setActiveRowIndex(rowIndex); }}
+                        className="text-sm text-gray-400 dark:text-gray-500 truncate bg-transparent border-0 p-0 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
                         style={{
                           opacity: showPlaceholders ? 1 : 0,
                           transition: 'opacity 0.25s ease-in',
                         }}
                       >
                         {egPrefix} {name}
-                      </span>
+                      </button>
                     )}
                   </div>
                 );
@@ -461,6 +483,8 @@ export const ExampleTaskRows: React.FC<{
               return (
                 <div
                   key={column.id}
+                  ref={element => { if (element) element.inert = true; }}
+                  aria-hidden="true"
                   style={{
                     ...colStyle,
                     pointerEvents: 'none',

@@ -1,4 +1,5 @@
 {
+  "exampleTaskCreateFailed": "Impossibile confermare la creazione dell’attività. Controlla l’elenco prima di riprovare.",
   "apply": "Applicare",
   "keyColumn": "Chiave",
   "taskColumn": "Compito",

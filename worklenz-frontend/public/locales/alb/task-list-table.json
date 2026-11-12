@@ -1,4 +1,5 @@
 {
+  "exampleTaskCreateFailed": "Nuk u konfirmua krijimi i detyrës. Kontrolloni listën përpara se të provoni përsëri.",
   "apply": "Apliko",
   "keyColumn": "Çelësi",
   "taskColumn": "Detyra",

@@ -1,4 +1,5 @@
 {
+  "exampleTaskCreateFailed": "Die Aufgabenerstellung konnte nicht bestätigt werden. Prüfen Sie die Aufgabenliste, bevor Sie es erneut versuchen.",
   "apply": "Anwenden",
   "keyColumn": "Schlüssel",
   "taskColumn": "Aufgabe",
