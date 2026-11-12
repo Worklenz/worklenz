@@ -187,12 +187,12 @@ export const NewParentFieldEditor = () => {
               event.preventDefault();
               handleAddSelections();
             }}
-            placeholder={t('customColumns.dependentSelection.newParentAddPlaceholder', {
+            aria-label={t('customColumns.dependentSelection.newParentAddPlaceholder', {
               defaultValue: 'New parent option… (comma-separated for multiple)',
             })}
             style={{ flex: 1, minWidth: 0 }}
           />
-          <Button size="small" htmlType="button" onClick={handleAddSelections}>
+          <Button htmlType="button" onClick={handleAddSelections}>
             {t('customColumns.dependentSelection.addButton', { defaultValue: '+ Add' })}
           </Button>
         </Flex>
