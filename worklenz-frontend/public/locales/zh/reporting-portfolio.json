@@ -19,7 +19,6 @@
   "closeSub": "已关闭项目",
   "closingCount": "期末项目数",
   "closingSub": "项目组合余额",
-  "kpiNote": "项目没有关闭日期，因此期初和关闭数量根据项目最后更新时间估算。",
   "kpiNoteLabel": "计算方式",
   "projectCategory": "项目类别",
   "totalProjects": "项目总数",
@@ -45,8 +44,8 @@
   "collapseRow": "收起{{name}}",
   "loading": "正在加载项目组合",
   "endDate": "结束日期",
-  "openingTip": "Projects that started before this period and were still open when it began. Uses the project start date, or the created date when no start date is set.",
-  "newTip": "Projects whose start date falls in this period. Uses the created date when no start date is set.",
-  "closeTip": "Projects now Completed or Cancelled that were last updated in this period. Projects have no closed date, so the last update is used as the close date.",
-  "closingTip": "Projects still open at the end of this period: Opening + New − Close."
+  "openingTip": "在此周期开始前启动且在周期开始时仍处于打开状态的项目。使用项目开始日期；若未设置开始日期，则使用创建日期。",
+  "newTip": "开始日期落在此周期内的项目。若未设置开始日期，则使用创建日期。",
+  "closeTip": "当前状态为已完成或已取消且在此周期内最后更新的项目。项目没有关闭日期，因此使用最后更新时间作为关闭日期。",
+  "closingTip": "在此周期结束时仍处于打开状态的项目：期初 + 新增 − 关闭。"
 }

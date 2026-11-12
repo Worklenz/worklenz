@@ -19,7 +19,6 @@
   "closeSub": "Projets clôturés",
   "closingCount": "Projets de clôture",
   "closingSub": "Solde du portefeuille",
-  "kpiNote": "Les projets n’ont pas de date de clôture : l’ouverture et la clôture sont estimées d’après la dernière mise à jour.",
   "kpiNoteLabel": "Mode de calcul",
   "projectCategory": "Catégorie de projet",
   "totalProjects": "Total des projets",
@@ -45,8 +44,8 @@
   "collapseRow": "Réduire {{name}}",
   "loading": "Chargement du portefeuille",
   "endDate": "Date de fin",
-  "openingTip": "Projects that started before this period and were still open when it began. Uses the project start date, or the created date when no start date is set.",
-  "newTip": "Projects whose start date falls in this period. Uses the created date when no start date is set.",
-  "closeTip": "Projects now Completed or Cancelled that were last updated in this period. Projects have no closed date, so the last update is used as the close date.",
-  "closingTip": "Projects still open at the end of this period: Opening + New − Close."
+  "openingTip": "Projets commencés avant cette période et encore ouverts à son début. Utilise la date de début du projet ou la date de création lorsqu’aucune date de début n’est définie.",
+  "newTip": "Projets dont la date de début se situe dans cette période. Utilise la date de création lorsqu’aucune date de début n’est définie.",
+  "closeTip": "Projets désormais Terminés ou Annulés mis à jour pour la dernière fois durant cette période. Les projets n’ayant pas de date de clôture, la dernière mise à jour sert de date de clôture.",
+  "closingTip": "Projets encore ouverts à la fin de cette période : Ouverture + Nouveaux − Clôture."
 }

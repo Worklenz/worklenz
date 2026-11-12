@@ -93,6 +93,30 @@ describe("buildPortfolio", () => {
     expect(result.totals.total).toBe(4);
   });
 
+  it("excludes projects closed before their planned start date and counts in-period closures with start_date", () => {
+    const rows = [
+      // closed before March, planned start in March: excluded so Closing(Mar) === Opening(Apr)
+      row({ id: "pre-closed", status_name: "Completed", start_date: "2026-03-10T00:00:00Z", updated_at: "2026-02-15T00:00:00Z" }),
+      // started before March and closed in March: opening + close
+      row({ id: "open-closed", status_name: "Completed", start_date: "2026-01-05T00:00:00Z", updated_at: "2026-03-12T00:00:00Z" }),
+      // started in March and closed in March: new + close
+      row({ id: "new-closed", status_name: "Cancelled", start_date: "2026-03-04T00:00:00Z", updated_at: "2026-03-20T00:00:00Z" }),
+      // starts after March and already closed in March: excluded
+      row({ id: "future-closed", status_name: "Cancelled", start_date: "2026-05-01T00:00:00Z", updated_at: "2026-03-18T00:00:00Z" }),
+    ];
+    const march = buildPortfolio(rows, "monthly", range, lookups, now);
+    expect(march.kpis).toEqual({ opening: 1, new: 1, close: 2, closing: 0 });
+    expect(march.totals.total).toBe(2);
+
+    const feb = buildPortfolio(rows, "monthly", resolvePortfolioRange({ period: "monthly", year: 2026, month: 2 })!, lookups, now);
+    expect(feb.kpis).toEqual({ opening: 1, new: 0, close: 0, closing: 1 });
+    expect(feb.kpis.closing).toBe(march.kpis.opening);
+
+    const apr = buildPortfolio(rows, "monthly", resolvePortfolioRange({ period: "monthly", year: 2026, month: 4 })!, lookups, now);
+    expect(apr.kpis).toEqual({ opening: 0, new: 0, close: 0, closing: 0 });
+    expect(march.kpis.closing).toBe(apr.kpis.opening);
+  });
+
   it("counts per real status/priority/health option and groups uncategorised projects last", () => {
     const rows = [
       row({ id: "a", status_id: "s-proposed", status_name: "Proposed", priority_id: "pr-critical", health_id: "h-risk", end_date: "2026-03-01T00:00:00Z" }),

@@ -19,7 +19,6 @@
   "closeSub": "Abgeschlossene Projekte",
   "closingCount": "Endbestand",
   "closingSub": "Portfoliobilanz",
-  "kpiNote": "Projekte haben kein Abschlussdatum, daher werden Anfangsbestand und Abschluss anhand der letzten Aktualisierung geschätzt.",
   "kpiNoteLabel": "So wird es berechnet",
   "projectCategory": "Projektkategorie",
   "totalProjects": "Projekte gesamt",
@@ -45,8 +44,8 @@
   "collapseRow": "{{name}} reduzieren",
   "loading": "Portfolio wird geladen",
   "endDate": "Enddatum",
-  "openingTip": "Projects that started before this period and were still open when it began. Uses the project start date, or the created date when no start date is set.",
-  "newTip": "Projects whose start date falls in this period. Uses the created date when no start date is set.",
-  "closeTip": "Projects now Completed or Cancelled that were last updated in this period. Projects have no closed date, so the last update is used as the close date.",
-  "closingTip": "Projects still open at the end of this period: Opening + New − Close."
+  "openingTip": "Projekte, die vor diesem Zeitraum begonnen haben und zu dessen Beginn noch offen waren. Verwendet das Projektstartdatum oder das Erstellungsdatum, wenn kein Startdatum festgelegt ist.",
+  "newTip": "Projekte, deren Startdatum in diesen Zeitraum fällt. Verwendet das Erstellungsdatum, wenn kein Startdatum festgelegt ist.",
+  "closeTip": "Projekte, die jetzt abgeschlossen oder abgebrochen sind und in diesem Zeitraum zuletzt aktualisiert wurden. Projekte haben kein Abschlussdatum, daher wird die letzte Aktualisierung als Abschlussdatum verwendet.",
+  "closingTip": "Projekte, die am Ende dieses Zeitraums noch offen sind: Anfangsbestand + Neu − Abschluss."
 }

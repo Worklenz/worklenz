@@ -317,7 +317,7 @@ const PortfolioKpiCards = memo(({ kpis }: { kpis: PortfolioKpis }) => {
             <Tooltip title={card.tip}>
               <InfoCircleOutlined
                 tabIndex={0}
-                aria-label={t('kpiNoteLabel', { defaultValue: 'How this is calculated' })}
+                aria-label={`${card.label}: ${t('kpiNoteLabel', { defaultValue: 'How this is calculated' })}`}
                 style={{ color: token.colorTextSecondary }}
               />
             </Tooltip>

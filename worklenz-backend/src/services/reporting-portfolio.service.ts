@@ -4,7 +4,7 @@ import db from "../config/db";
  * Data for Reports > Project Portfolio. Only existing project fields are used (no status history
  * exists). A project's period position comes from its start date (`start_date`, falling back to
  * `created_at` when unset); closing comes from its actual status, not the planned end date:
- *  - new     = started in the period
+ *  - new     = started in the period (and not already closed before it began)
  *  - close   = now Completed/Cancelled, last updated in the period (estimated close date)
  *  - opening = started before the period and not already closed (by `updated_at`) before it
  *  - closing = opening + new - close
@@ -180,9 +180,10 @@ export function buildPortfolio(
     // Planned start date places the project in a period; projects without one use created_at.
     const startedAt = toTime(row.start_date) ?? createdAt;
     const isClosed = CLOSED_STATUSES.includes(row.status_name);
+    const wasClosedBeforePeriod = isClosed && updatedAt < start;
 
-    const isNew = startedAt >= start && startedAt < end;
-    const isOpening = startedAt < start && !(isClosed && updatedAt < start);
+    const isNew = startedAt >= start && startedAt < end && !wasClosedBeforePeriod;
+    const isOpening = startedAt < start && !wasClosedBeforePeriod;
     const isClosedInPeriod = isClosed && updatedAt >= start && updatedAt < end;
 
     if (isNew) kpis.new += 1;

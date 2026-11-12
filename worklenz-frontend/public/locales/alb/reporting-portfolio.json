@@ -19,7 +19,6 @@
   "closeSub": "Projekte të mbyllura",
   "closingCount": "Projekte në fund",
   "closingSub": "Bilanci i portofolit",
-  "kpiNote": "Projektet nuk kanë datë mbylljeje, ndaj fillimi dhe mbyllja vlerësohen nga përditësimi i fundit.",
   "kpiNoteLabel": "Si llogaritet",
   "projectCategory": "Kategoria e projektit",
   "totalProjects": "Projekte gjithësej",
@@ -45,8 +44,8 @@
   "collapseRow": "Mbyll {{name}}",
   "loading": "Po ngarkohet portofoli",
   "endDate": "Data e përfundimit",
-  "openingTip": "Projects that started before this period and were still open when it began. Uses the project start date, or the created date when no start date is set.",
-  "newTip": "Projects whose start date falls in this period. Uses the created date when no start date is set.",
-  "closeTip": "Projects now Completed or Cancelled that were last updated in this period. Projects have no closed date, so the last update is used as the close date.",
-  "closingTip": "Projects still open at the end of this period: Opening + New − Close."
+  "openingTip": "Projekte që kanë filluar para kësaj periudhe dhe ishin ende të hapura kur ajo filloi. Përdor datën e fillimit të projektit, ose datën e krijimit kur nuk është vendosur data e fillimit.",
+  "newTip": "Projekte data e fillimit të të cilave bie në këtë periudhë. Përdor datën e krijimit kur nuk është vendosur data e fillimit.",
+  "closeTip": "Projekte të Përfunduara ose të Anuluara që u përditësuan për herë të fundit në këtë periudhë. Projektet nuk kanë datë mbylljeje, ndaj përditësimi i fundit përdoret si data e mbylljes.",
+  "closingTip": "Projekte ende të hapura në fund të kësaj periudhe: Fillimi + Të reja − Mbyllur."
 }

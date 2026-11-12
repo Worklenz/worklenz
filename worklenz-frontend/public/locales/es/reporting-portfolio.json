@@ -19,7 +19,6 @@
   "closeSub": "Proyectos cerrados",
   "closingCount": "Proyectos finales",
   "closingSub": "Balance de la cartera",
-  "kpiNote": "Los proyectos no tienen fecha de cierre, por lo que los iniciales y los cerrados se estiman a partir de la última actualización.",
   "kpiNoteLabel": "Cómo se calcula",
   "projectCategory": "Categoría del proyecto",
   "totalProjects": "Total de proyectos",
@@ -45,8 +44,8 @@
   "collapseRow": "Contraer {{name}}",
   "loading": "Cargando la cartera",
   "endDate": "Fecha de fin",
-  "openingTip": "Projects that started before this period and were still open when it began. Uses the project start date, or the created date when no start date is set.",
-  "newTip": "Projects whose start date falls in this period. Uses the created date when no start date is set.",
-  "closeTip": "Projects now Completed or Cancelled that were last updated in this period. Projects have no closed date, so the last update is used as the close date.",
-  "closingTip": "Projects still open at the end of this period: Opening + New − Close."
+  "openingTip": "Proyectos que comenzaron antes de este período y seguían abiertos cuando empezó. Usa la fecha de inicio del proyecto o la fecha de creación cuando no se ha definido una fecha de inicio.",
+  "newTip": "Proyectos cuya fecha de inicio cae en este período. Usa la fecha de creación cuando no se ha definido una fecha de inicio.",
+  "closeTip": "Proyectos ahora Completados o Cancelados que se actualizaron por última vez en este período. Los proyectos no tienen fecha de cierre, por lo que se usa la última actualización como fecha de cierre.",
+  "closingTip": "Proyectos que siguen abiertos al final de este período: Iniciales + Nuevos − Cierre."
 }
