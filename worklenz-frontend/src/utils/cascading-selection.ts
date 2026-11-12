@@ -12,7 +12,10 @@ import {
  * grouped under the task's current parent value can be picked.
  */
 
-/** Type-dropdown value meaning "Selection field that depends on column <id>". */
+/** Type-dropdown value for the "Dependent Selection" field type (parent chosen in the form). */
+export const DEPENDENT_SELECTION_TYPE_VALUE = 'dependent';
+
+/** Legacy type-dropdown value meaning "Selection field that depends on column <id>". */
 export const DEPENDS_ON_TYPE_PREFIX = 'dependsOn:';
 
 export const toDependsOnTypeValue = (parentColumnId: string) =>

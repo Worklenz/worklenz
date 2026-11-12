@@ -138,7 +138,7 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
     return (
       <Typography.Text type="secondary">
         {t('customColumns.dependentSelection.parentMissing', {
-          defaultValue: 'The parent field could not be found. Choose another field in Type.',
+          defaultValue: 'The parent field could not be found. Choose another Parent field.',
         })}
       </Typography.Text>
     );

@@ -10,6 +10,7 @@ import {
   Input,
   message,
   Select,
+  Tag,
   Tooltip,
   Typography,
   Popconfirm,
@@ -49,11 +50,7 @@ import {
 import { PhaseColorCodes } from '@/shared/constants';
 import { selectCustomColumns } from '@/features/task-management/task-management.selectors';
 import { ITaskCustomColumn } from '@/types/tasks/task.types';
-import {
-  getEligibleParentColumns,
-  parseDependsOnTypeValue,
-  toDependsOnTypeValue,
-} from '@/utils/cascading-selection';
+import { DEPENDENT_SELECTION_TYPE_VALUE, getEligibleParentColumns } from '@/utils/cascading-selection';
 import { getCustomColumnTypeDependentNames } from '@/utils/custom-column-type-dependencies';
 import { getTaskCustomFieldDisplayName } from '@/utils/task-custom-columns';
 import CustomColumnHeader from '../custom-column-header/custom-column-header';
@@ -190,16 +187,21 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
   };
 
   const applyFieldTypeChange = (selectedValue: string) => {
-    const dependsOnColumnId = parseDependsOnTypeValue(selectedValue);
-    dispatch(setCustomFieldType(dependsOnColumnId ? 'selection' : (selectedValue as CustomFieldsTypes)));
-    selectParentColumn(dependsOnColumnId);
+    const isDependentType = selectedValue === DEPENDENT_SELECTION_TYPE_VALUE;
+    dispatch(setCustomFieldType(isDependentType ? 'selection' : (selectedValue as CustomFieldsTypes)));
+    // "Dependent Selection" starts on the first eligible parent, or on a new parent when none exists.
+    selectParentColumn(
+      isDependentType ? eligibleParentColumns[0]?.id || NEW_PARENT_COLUMN_ID : null
+    );
     mainForm.setFieldValue('fieldType', selectedValue);
     previousTypeValueRef.current = selectedValue;
   };
 
   const handleFieldTypeChange = (selectedValue: string) => {
-    const dependsOnColumnId = parseDependsOnTypeValue(selectedValue);
-    const newFieldType = dependsOnColumnId ? 'selection' : (selectedValue as CustomFieldsTypes);
+    const newFieldType =
+      selectedValue === DEPENDENT_SELECTION_TYPE_VALUE
+        ? 'selection'
+        : (selectedValue as CustomFieldsTypes);
 
     if (isEditMode && newFieldType !== originalFieldType) {
       Modal.confirm({
@@ -313,7 +315,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
           : null;
 
       const initialTypeValue = openedParentColumnId
-        ? toDependsOnTypeValue(openedParentColumnId)
+        ? DEPENDENT_SELECTION_TYPE_VALUE
         : openedColumn.custom_column_obj?.fieldType || openedColumn.field_type || 'text';
       previousTypeValueRef.current = initialTypeValue;
 
@@ -407,49 +409,47 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     { key: 'selection', value: 'selection', label: t('customColumns.fieldTypes.selection'), disabled: false },
   ];
 
-  const dependsOnTypeOptions = eligibleParentColumns.map(column => ({
-    key: toDependsOnTypeValue(column.id),
-    value: toDependsOnTypeValue(column.id),
-    title: getTaskCustomFieldDisplayName(column),
-    label: (
-      <Flex align="center" gap={6} style={{ minWidth: 0 }}>
-        <ApartmentOutlined style={{ color: token.colorTextSecondary }} />
-        <span className="truncate">{getTaskCustomFieldDisplayName(column)}</span>
-      </Flex>
-    ),
-  }));
-
   const createNewParentLabel = t('customColumns.dependentSelection.createNewParent', {
     defaultValue: '+ Create new parent field',
   });
 
-  if (!hasDependentColumns) {
-    dependsOnTypeOptions.push({
-      key: toDependsOnTypeValue(NEW_PARENT_COLUMN_ID),
-      value: toDependsOnTypeValue(NEW_PARENT_COLUMN_ID),
-      title: createNewParentLabel,
-      label: (
-        <Flex align="center" gap={6} style={{ minWidth: 0, color: token.colorPrimary }}>
-          <span className="truncate">{createNewParentLabel}</span>
-        </Flex>
-      ),
-    });
-  }
+  const dependentSelectionLabel = t('customColumns.fieldTypes.dependentSelection', {
+    defaultValue: 'Dependent Selection',
+  });
+
   const typeSelectOptions = [
     ...fieldTypesOptions,
-    ...(dependsOnTypeOptions.length > 0
-      ? [
-        {
-          label: t('customColumns.dependentSelection.typeGroup', {
-            defaultValue: 'Depends on selection',
-          }),
-          title: t('customColumns.dependentSelection.typeGroup', {
-            defaultValue: 'Depends on selection',
-          }),
-          options: dependsOnTypeOptions,
-        },
-      ]
-      : []),
+    {
+      key: DEPENDENT_SELECTION_TYPE_VALUE,
+      value: DEPENDENT_SELECTION_TYPE_VALUE,
+      title: dependentSelectionLabel,
+      disabled: false,
+      label: (
+        <Flex align="center" justify="space-between" gap={8}>
+          <span>{dependentSelectionLabel}</span>
+          <Tag color="error" bordered={false} style={{ marginInlineEnd: 0, fontWeight: 700 }}>
+            {t('customColumns.dependentSelection.newBadge', { defaultValue: 'NEW' })}
+          </Tag>
+        </Flex>
+      ),
+    },
+  ];
+
+  // Parent field choices shown once "Dependent Selection" is the chosen type.
+  const parentFieldOptions = [
+    ...eligibleParentColumns.map(column => ({
+      value: column.id,
+      label: (
+        <Flex align="center" gap={6} style={{ minWidth: 0 }}>
+          <ApartmentOutlined style={{ color: token.colorTextSecondary }} />
+          <span className="truncate">{getTaskCustomFieldDisplayName(column)}</span>
+        </Flex>
+      ),
+    })),
+    {
+      value: NEW_PARENT_COLUMN_ID,
+      label: <span style={{ color: token.colorPrimary }}>{createNewParentLabel}</span>,
+    },
   ];
 
   const buildSelectionsPayload = (fieldTypeValue: string, effectiveParentId: string | null) => {
@@ -577,7 +577,8 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     // The Type dropdown encodes "Selection that depends on <column>" as its own value.
     const value = {
       ...formValue,
-      fieldType: parseDependsOnTypeValue(formValue.fieldType) ? 'selection' : formValue.fieldType,
+      fieldType:
+        formValue.fieldType === DEPENDENT_SELECTION_TYPE_VALUE ? 'selection' : formValue.fieldType,
     };
 
     const resolvedTypeForParent = isTypeChangeAllowed ? value.fieldType : originalFieldType;
@@ -788,6 +789,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
             ) : (
               <Select
                 options={typeSelectOptions}
+                optionLabelProp="title"
                 listHeight={420}
                 onChange={handleFieldTypeChange}
                 open={isFieldTypeDropdownOpen}
@@ -853,6 +855,25 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
                   ),
                 },
               ]}
+            />
+          </Form.Item>
+        )}
+
+        {isTypeChangeAllowed && customFieldType === 'selection' && !!parentColumnId && (
+          <Form.Item
+            label={
+              <Typography.Text>
+                {t('customColumns.dependentSelection.parentField', { defaultValue: 'Parent field' })}
+              </Typography.Text>
+            }
+          >
+            <Select
+              value={parentColumnId}
+              onChange={selectedValue => selectParentColumn(selectedValue)}
+              options={parentFieldOptions}
+              aria-label={t('customColumns.dependentSelection.parentField', {
+                defaultValue: 'Parent field',
+              })}
             />
           </Form.Item>
         )}
