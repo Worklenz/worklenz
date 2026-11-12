@@ -325,51 +325,6 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     previousTypeValueRef.current = selectedValue;
   };
 
-  /** Creates the inline "new parent field" column and returns its id, or null on failure. */
-  const createNewParentColumn = async (): Promise<string | null> => {
-    const parentName = newParentField?.name.trim() || '';
-    const parentSelections = (newParentField?.selections || []).filter(
-      selection => selection.selection_name.trim() !== ''
-    );
-
-    if (!parentName || parentSelections.length === 0) {
-      message.error(
-        t('customColumns.dependentSelection.newParentIncomplete', {
-          defaultValue: 'Give the new parent field a title and at least one option.',
-        })
-      );
-      return null;
-    }
-
-    const res = await tasksCustomColumnsService.createCustomColumn(projectId || '', {
-      name: parentName,
-      key: nanoid(),
-      field_type: 'selection',
-      width: 120,
-      is_visible: true,
-      configuration: {
-        field_title: parentName,
-        field_type: 'selection',
-        parent_column_id: null,
-        selections_list: parentSelections.map((selection, index) => ({
-          selection_id: selection.selection_id,
-          selection_name: selection.selection_name.trim(),
-          selection_color: selection.selection_color,
-          selection_order: index,
-        })),
-        labels_list: [],
-      },
-    });
-
-    if (!res.done || !res.body?.id) {
-      if (res.message) message.error(res.message);
-      return null;
-    }
-
-    socket?.emit(SocketEvents.CUSTOM_COLUMN_CREATED.toString(), JSON.stringify({ project_id: projectId }));
-    return res.body.id as string;
-  };
-
   const resetModalData = () => {
     mainForm.resetFields();
     previousTypeValueRef.current = 'text';
@@ -753,6 +708,10 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     }
   };
 
+  // Creating a new parent from an existing column leaves that column untouched, so its title is
+  // not edited here: only the parent field's title (which names the new column) is asked for.
+  const hideFieldTitle = isEditMode && isCreatingNewParent && !isOpenedColumnEmptyText();
+
   const handleFormSubmit = async (formValue: any) => {
     if (isSubmitting) return;
 
@@ -788,7 +747,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       return;
     }
 
-    let effectiveParentId: string | null =
+    const effectiveParentId: string | null =
       uiFieldType === 'dependent_selection' && parentColumnId !== NEW_PARENT_COLUMN_ID
         ? parentColumnId
         : null;
@@ -802,19 +761,9 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       null;
 
     try {
-      if (uiFieldType === 'dependent_selection' && isCreatingNewParent && !originalParentColumnId) {
+      if (uiFieldType === 'dependent_selection' && isCreatingNewParent) {
         await handleSaveParentWithHiddenChildren(value);
         return;
-      }
-
-      if (uiFieldType === 'dependent_selection' && isCreatingNewParent) {
-        setIsSubmitting(true);
-        const newParentId = await createNewParentColumn();
-        if (!newParentId) {
-          setIsSubmitting(false);
-          return;
-        }
-        effectiveParentId = newParentId;
       }
 
       if (customColumnModalType === 'create') {
@@ -961,6 +910,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       >
         <Flex gap={16}>
           <Form.Item
+            hidden={hideFieldTitle}
             name={'fieldTitle'}
             label={<Typography.Text>{t('customColumns.modal.fieldTitle')}</Typography.Text>}
             layout="vertical"
