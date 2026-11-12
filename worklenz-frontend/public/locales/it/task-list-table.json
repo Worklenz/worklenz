@@ -264,7 +264,7 @@
       "newParentOptions": "Opzioni del campo padre",
       "newParentAddPlaceholder": "Nuova opzione padre… (separate da virgola per più opzioni)",
       "newParentIncomplete": "Assegna un titolo e almeno un'opzione al nuovo campo principale.",
-      "newParentTogetherHint": "Le opzioni padre vengono salvate con questo campo. Solo questa colonna compare nell’elenco attività come Selezione dipendente.",
+      "newParentTogetherHint": "Questo crea un nuovo campo Selezione accanto a questo al salvataggio. Apparirà anche come colonna separata.",
       "newParentOnlyHint": "Crea solo una colonna di selezione principale. Aggiungi una colonna secondaria in un secondo momento e imposta Dipende da questo campo.",
       "dependentOptions": "Opzioni dipendenti",
       "addUnderPlaceholder": "Nuova opzione sotto {{value}}… (separate da virgola per più opzioni)",
@@ -299,8 +299,7 @@
       "rejected": "Valore non salvato: {{reason}}",
       "parentValueRequired": "Seleziona prima il valore del campo principale.",
       "invalidPair": "Questa opzione non è valida per il valore principale corrente.",
-      "hasDependentsTypeHint": "{{fields}} dipende da questo campo, quindi il suo tipo non può essere modificato.",
-      "selectHiddenParent": "Seleziona {{parent}}"
+      "hasDependentsTypeHint": "{{fields}} dipende da questo campo, quindi il suo tipo non può essere modificato."
     },
     "newColumn": "Nuova colonna",
     "projectNotFound": "Progetto non trovato",

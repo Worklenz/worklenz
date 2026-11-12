@@ -263,7 +263,7 @@
       "newParentOptions": "Options du champ parent",
       "newParentAddPlaceholder": "Nouvelle option parent… (séparées par des virgules)",
       "newParentIncomplete": "Donnez au nouveau champ parent un titre et au moins une option.",
-      "newParentTogetherHint": "Les options parentes sont enregistrées avec ce champ. Seule cette colonne apparaît dans la liste des tâches en tant que Sélection dépendante.",
+      "newParentTogetherHint": "Cela crée un nouveau champ Sélection à côté de celui-ci lors de l’enregistrement. Il apparaîtra aussi comme sa propre colonne.",
       "newParentOnlyHint": "Crée uniquement une colonne Sélection principale. Ajoutez ensuite une colonne enfant et définissez Dépend de sur ce champ.",
       "dependentOptions": "Options dépendantes",
       "addUnderPlaceholder": "Nouvelle option sous {{value}}… (séparées par des virgules pour plusieurs)",
@@ -298,8 +298,7 @@
       "rejected": "Valeur non enregistrée : {{reason}}",
       "parentValueRequired": "Sélectionnez d'abord la valeur du champ parent.",
       "invalidPair": "Cette option n'est pas valide pour la valeur parente actuelle.",
-      "hasDependentsTypeHint": "{{fields}} dépend de ce champ, son type ne peut donc pas être modifié.",
-      "selectHiddenParent": "Sélectionner {{parent}}"
+      "hasDependentsTypeHint": "{{fields}} dépend de ce champ, son type ne peut donc pas être modifié."
     },
     "newColumn": "Nouvelle colonne",
     "projectNotFound": "Projet non trouvé",

@@ -263,7 +263,7 @@
       "newParentOptions": "Optionen des übergeordneten Felds",
       "newParentAddPlaceholder": "Neue übergeordnete Option… (kommagetrennt für mehrere)",
       "newParentIncomplete": "Geben Sie dem neuen übergeordneten Feld einen Titel und mindestens eine Option.",
-      "newParentTogetherHint": "Übergeordnete Optionen werden mit diesem Feld gespeichert. Nur diese Spalte erscheint in der Aufgabenliste als Abhängige Auswahl.",
+      "newParentTogetherHint": "Dies erstellt beim Speichern ein neues Auswahlfeld neben diesem. Es erscheint auch als eigene Spalte.",
       "newParentOnlyHint": "Erstellt nur eine Haupt-Auswahlspalte. Fügen Sie später eine Kindspalte hinzu und setzen Sie Abhängig von auf dieses Feld.",
       "dependentOptions": "Abhängige Optionen",
       "addUnderPlaceholder": "Neue Option unter {{value}}… (kommagetrennt für mehrere)",
@@ -298,8 +298,7 @@
       "rejected": "Wert nicht gespeichert: {{reason}}",
       "parentValueRequired": "Wählen Sie zuerst den Wert des übergeordneten Felds.",
       "invalidPair": "Diese Option ist für den aktuellen übergeordneten Wert ungültig.",
-      "hasDependentsTypeHint": "{{fields}} hängt von diesem Feld ab, daher kann sein Typ nicht geändert werden.",
-      "selectHiddenParent": "{{parent}} auswählen"
+      "hasDependentsTypeHint": "{{fields}} hängt von diesem Feld ab, daher kann sein Typ nicht geändert werden."
     },
     "newColumn": "Neue Spalte",
     "projectNotFound": "Projekt nicht gefunden",

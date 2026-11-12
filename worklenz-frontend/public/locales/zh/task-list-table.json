@@ -263,7 +263,7 @@
       "newParentOptions": "父字段选项",
       "newParentAddPlaceholder": "新的父选项…（可用逗号一次添加多个）",
       "newParentIncomplete": "请为新的父字段填写标题并至少添加一个选项。",
-      "newParentTogetherHint": "父选项会随此字段一起保存。任务列表中只会显示此依赖选择列。",
+      "newParentTogetherHint": "保存时会与此字段一起创建一个新的选择字段。它也会显示为单独的一列。",
       "newParentOnlyHint": "仅创建主选择列。稍后添加子列，并将“依赖于”设置为此字段。",
       "dependentOptions": "依赖选项",
       "addUnderPlaceholder": "在 {{value}} 下新增选项…（可用逗号一次添加多个）",
@@ -298,8 +298,7 @@
       "rejected": "值未保存：{{reason}}",
       "parentValueRequired": "请先选择父字段的值。",
       "invalidPair": "该选项对当前父值无效。",
-      "hasDependentsTypeHint": "{{fields}} 依赖于此字段，因此无法更改其类型。",
-      "selectHiddenParent": "选择 {{parent}}"
+      "hasDependentsTypeHint": "{{fields}} 依赖于此字段，因此无法更改其类型。"
     },
     "newColumn": "新列",
     "projectNotFound": "未找到项目",

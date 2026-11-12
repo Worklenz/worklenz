@@ -178,6 +178,48 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
   // switching away can restore them without touching the opened column.
   const stashedSelectionsRef = useRef<typeof selectionsList | null>(null);
 
+  /**
+   * When a Dependent Selection picks an existing parent that another dependent column already
+   * uses (e.g. the hidden column that keeps the child options saved with the parent), start from
+   * that column's grouped child options, copied with fresh ids, so parent and children load
+   * together. Existing input is only replaced when none of it belongs to the chosen parent.
+   */
+  const seedSelectionsFromSibling = (nextParentColumnId: string) => {
+    const nextParent = (projectCustomColumns || []).find(column => column.id === nextParentColumnId);
+    const nextParentOptionIds = new Set(
+      (nextParent?.custom_column_obj?.selectionsList || []).map(option => option.selection_id)
+    );
+    if (nextParentOptionIds.size === 0) return;
+
+    const alreadyGrouped = selectionsList.some(
+      selection =>
+        !!selection.parent_selection_id && nextParentOptionIds.has(selection.parent_selection_id)
+    );
+    if (alreadyGrouped) return;
+
+    const sibling = (projectCustomColumns || []).find(
+      column =>
+        column.id !== editingColumnUuid &&
+        column.custom_column_obj?.fieldType === 'selection' &&
+        column.custom_column_obj?.parentColumnId === nextParentColumnId
+    );
+    const siblingOptions = (sibling?.custom_column_obj?.selectionsList || []).filter(
+      option => !!option.parent_selection_id && nextParentOptionIds.has(option.parent_selection_id)
+    );
+    if (siblingOptions.length === 0) return;
+
+    dispatch(
+      setSelectionsList(
+        siblingOptions.map(option => ({
+          selection_id: nanoid(),
+          selection_name: option.selection_name,
+          selection_color: option.selection_color,
+          parent_selection_id: option.parent_selection_id,
+        }))
+      )
+    );
+  };
+
   const selectParentColumn = (nextParentColumnId: string | null) => {
     const isNextNew = nextParentColumnId === NEW_PARENT_COLUMN_ID;
     if (isNextNew && !newParentField) {
@@ -203,6 +245,9 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       dispatch(setNewParentField(null));
     }
     dispatch(setParentColumnId(nextParentColumnId));
+    if (nextParentColumnId && !isNextNew) {
+      seedSelectionsFromSibling(nextParentColumnId);
+    }
   };
 
   const handleFieldTypeChange = (selectedValue: CustomFieldsTypes) => {
@@ -242,14 +287,12 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       return null;
     }
 
-    // Keep the parent Selection in the project (needed for cascade) but hidden
-    // from the task list so only the Dependent Selection (Field title) appears.
     const res = await tasksCustomColumnsService.createCustomColumn(projectId || '', {
       name: parentName,
       key: nanoid(),
       field_type: 'selection',
       width: 120,
-      is_visible: false,
+      is_visible: true,
       configuration: {
         field_title: parentName,
         field_type: 'selection',
@@ -529,6 +572,133 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     }
   };
 
+  /**
+   * "New parent field" on a new (or non-dependent) column: the field title becomes ONE visible
+   * Selection column holding the parent options. The child options are saved in a hidden
+   * Dependent Selection column named after the parent field, so a Dependent Selection added
+   * later can pick this column as its parent and load parents and children together.
+   */
+  const handleSaveParentWithHiddenChildren = async (value: any, editColumnUuid: string | null) => {
+    const parentName = newParentField?.name.trim() || '';
+    const parentSelections = (newParentField?.selections || []).filter(
+      selection => selection.selection_name.trim() !== ''
+    );
+
+    if (!parentName || parentSelections.length === 0) {
+      message.error(
+        t('customColumns.dependentSelection.newParentIncomplete', {
+          defaultValue: 'Give the new parent field a title and at least one option.',
+        })
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const parentConfiguration = {
+        field_title: value.fieldTitle,
+        field_type: 'selection',
+        parent_column_id: null,
+        selections_list: parentSelections.map((selection, index) => ({
+          selection_id: selection.selection_id,
+          selection_name: selection.selection_name.trim(),
+          selection_color: selection.selection_color,
+          selection_order: index,
+        })),
+        labels_list: [],
+      };
+
+      let parentColumnUuid: string | null = null;
+      if (customColumnModalType === 'create') {
+        const parentRes = await tasksCustomColumnsService.createCustomColumn(projectId || '', {
+          name: value.fieldTitle,
+          key: nanoid(),
+          field_type: 'selection',
+          width: 120,
+          is_visible: true,
+          configuration: parentConfiguration,
+        });
+        if (!parentRes.done || !parentRes.body?.id) {
+          message.error(
+            parentRes.message || t('customColumns.modal.createErrorMessage')
+          );
+          return;
+        }
+        parentColumnUuid = parentRes.body.id as string;
+      } else if (isEditMode && editColumnUuid) {
+        const updateRes = await tasksCustomColumnsService.updateCustomColumn(editColumnUuid, {
+          name: value.fieldTitle,
+          field_type: 'selection',
+          width: 150,
+          is_visible: true,
+          configuration: parentConfiguration,
+        });
+        if (!updateRes.done) {
+          message.error(
+            updateRes.message ||
+              t('customColumns.modal.updateErrorMessage', {
+                defaultValue: 'Failed to update custom column',
+              })
+          );
+          return;
+        }
+        // The id used to open the column can be its key; the API returns the real UUID.
+        parentColumnUuid = (updateRes.body?.id as string | undefined) || editingColumnUuid || null;
+      }
+
+      if (!parentColumnUuid) {
+        message.error(
+          t('customColumns.modal.updateErrorMessage', {
+            defaultValue: 'Failed to update custom column',
+          })
+        );
+        return;
+      }
+
+      const childRes = await tasksCustomColumnsService.createCustomColumn(projectId || '', {
+        name: parentName,
+        key: nanoid(),
+        field_type: 'selection',
+        width: 120,
+        is_visible: false,
+        configuration: {
+          field_title: parentName,
+          field_type: 'selection',
+          parent_column_id: parentColumnUuid,
+          selections_list: buildSelectionsPayload('selection', parentColumnUuid),
+          labels_list: [],
+        },
+      });
+      if (!childRes.done) {
+        message.error(childRes.message || t('customColumns.modal.createErrorMessage'));
+      }
+
+      stashedSelectionsRef.current = null;
+      resetModalData();
+      message.success(
+        customColumnModalType === 'create'
+          ? t('customColumns.modal.createSuccessMessage')
+          : t('customColumns.modal.updateSuccessMessage', {
+              defaultValue: 'Custom column updated successfully',
+            })
+      );
+      socket?.emit(
+        SocketEvents.CUSTOM_COLUMN_CREATED.toString(),
+        JSON.stringify({ project_id: projectId })
+      );
+      if (projectId) {
+        dispatch(fetchTaskListColumns(projectId));
+        dispatch(fetchTasksV3(projectId));
+      }
+      onDone();
+    } catch (error) {
+      logger.error('Error saving parent column with hidden children:', error);
+      message.error(t('customColumns.modal.createErrorMessage'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleFormSubmit = async (formValue: any) => {
     if (isSubmitting) return;
 
@@ -578,6 +748,11 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       null;
 
     try {
+      if (uiFieldType === 'dependent_selection' && isCreatingNewParent && !originalParentColumnId) {
+        await handleSaveParentWithHiddenChildren(value, editColumnId);
+        return;
+      }
+
       if (uiFieldType === 'dependent_selection' && isCreatingNewParent) {
         setIsSubmitting(true);
         const newParentId = await createNewParentColumn();
@@ -805,10 +980,15 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
                 </Typography.Text>
               ) : isCreatingNewParent ? (
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {t('customColumns.dependentSelection.newParentTogetherHint', {
-                    defaultValue:
-                      'Parent options are saved with this field. Only this column appears in the task list as Dependent Selection.',
-                  })}
+                  {originalParentColumnId
+                    ? t('customColumns.dependentSelection.newParentTogetherHint', {
+                        defaultValue:
+                          'This creates a brand-new Selection field alongside this one when you save.it will also appear as its own column.',
+                      })
+                    : t('customColumns.dependentSelection.newParentSingleColumnHint', {
+                        defaultValue:
+                          'Saves one column with the parent options. The child options are kept with it, so a Dependent Selection you add later can pick this column as its parent and load them.',
+                      })}
                 </Typography.Text>
               ) : (
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
