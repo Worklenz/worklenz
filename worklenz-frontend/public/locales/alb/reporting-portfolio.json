@@ -19,6 +19,7 @@
   "closeSub": "Projekte të mbyllura",
   "closingCount": "Projekte në fund",
   "closingSub": "Bilanci i portofolit",
+  "kpiNote": "Projektet nuk kanë datë mbylljeje, ndaj fillimi dhe mbyllja vlerësohen nga përditësimi i fundit.",
   "kpiNoteLabel": "Si llogaritet",
   "projectCategory": "Kategoria e projektit",
   "totalProjects": "Projekte gjithësej",

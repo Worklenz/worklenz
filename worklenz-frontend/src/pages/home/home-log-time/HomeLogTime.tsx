@@ -547,12 +547,23 @@ const HomeLogTime: React.FC = () => {
         overnightSplitInfo &&
         overnightSplitInfo.splits.length > 0
       ) {
-        for (const split of overnightSplitInfo.splits) {
+        if (overnightSplitInfo.splits.length > 1) {
+          await taskTimeLogsApiService.create({
+            id: selTaskId,
+            entries: overnightSplitInfo.splits.map(split => ({
+              id: selTaskId,
+              project_id: selProjectId,
+              formatted_start: split.formatted_start,
+              seconds_spent: split.seconds_spent,
+              description: notes || undefined,
+            })),
+          });
+        } else {
           await taskTimeLogsApiService.create({
             id: selTaskId,
             project_id: selProjectId,
-            formatted_start: split.formatted_start,
-            seconds_spent: split.seconds_spent,
+            formatted_start: overnightSplitInfo.splits[0].formatted_start,
+            seconds_spent: overnightSplitInfo.splits[0].seconds_spent,
             description: notes || undefined,
           });
         }

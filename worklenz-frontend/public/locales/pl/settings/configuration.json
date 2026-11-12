@@ -13,5 +13,8 @@
   "limitTimelogBackdatingTooltip": "Gdy ta opcja jest włączona, członkowie nie mogą tworzyć dziennika czasu z datą wcześniejszą niż dozwolona liczba dni. Dotyczy wszystkich, w tym właścicieli i administratorów. Nie ma to wpływu na uruchomione liczniki czasu i zaimportowane dzienniki.",
   "timelogBackdateLimitDays": "Maksymalna liczba dni, w których dziennik czasu może być datowany wstecz",
   "timelogBackdateLimitNote": "Uwaga: istniejące rejestry czasu nigdy nie są zmieniane. Edycja już starego logu pozostaje możliwa, o ile nie zmieni się jego data.",
-  "days": "dni"
+  "days": "dni",
+  "enforceDailyTimeLimit": "Wymuś 24-godzinny dzienny limit",
+  "enforceDailyTimeLimitTooltip": "Gdy włączone, członkowie nie mogą rejestrować więcej niż 24 godzin pracy dziennie we wszystkich zadaniach.",
+  "enforceDailyTimeLimitNote": "Uwaga: Istniejące wpisy historyczne przekraczające 24 godziny zostają zachowane. Edycja istniejącego wpisu jest dozwolona, o ile czas trwania zostanie skrócony."
 }

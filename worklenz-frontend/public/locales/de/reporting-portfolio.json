@@ -19,6 +19,7 @@
   "closeSub": "Abgeschlossene Projekte",
   "closingCount": "Endbestand",
   "closingSub": "Portfoliobilanz",
+  "kpiNote": "Projekte haben kein Abschlussdatum, daher werden Anfangsbestand und Abschluss anhand der letzten Aktualisierung geschätzt.",
   "kpiNoteLabel": "So wird es berechnet",
   "projectCategory": "Projektkategorie",
   "totalProjects": "Projekte gesamt",

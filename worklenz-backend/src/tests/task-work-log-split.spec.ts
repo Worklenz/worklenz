@@ -75,7 +75,15 @@ describe("TaskWorklogController.splitTimeEntry", () => {
       task_id: "task-original",
       user_id: "original-member-id", // Belongs to original member, NOT admin
     };
-    mockedDb.query.mockResolvedValueOnce(createQueryResult([originalLog]));
+    mockClient.query.mockImplementation(async (sql: string) => {
+      if (sql.includes("FOR UPDATE")) {
+        return { rows: [originalLog] };
+      }
+      if (sql.includes("organizations")) {
+        return { rows: [{ organization_id: "org-1", enforce_daily_time_limit: false }] };
+      }
+      return { rows: [] };
+    });
 
     const adminUser = {
       id: "admin-id",

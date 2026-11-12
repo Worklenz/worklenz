@@ -8,7 +8,33 @@ import { getProjectStartDateViolation } from "../../shared/timelog-project-date-
 
 export default async function (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction): Promise<IWorkLenzResponse | void> {
 
-  const {id, seconds_spent, created_at, formatted_start, new_task_id} = req.body;
+  const { id, seconds_spent, created_at, formatted_start, new_task_id, entries } = req.body;
+
+  if (Array.isArray(entries) && entries.length > 0) {
+    for (const entry of entries) {
+      const entryTaskId = entry.id || id;
+      if (!entryTaskId || !entry.seconds_spent || !entry.formatted_start) {
+        return res.sendStatus(400);
+      }
+
+      const projectViolation = await getProjectStartDateViolation({
+        taskId: entryTaskId,
+        workLogId: null,
+        formattedStart: entry.formatted_start,
+        userId: req.user?.id,
+      });
+      if (projectViolation) return res.status(400).send(new ServerResponse(false, null, projectViolation));
+
+      const violation = await getBackdateViolation(
+        entry.formatted_start,
+        req.user?.id,
+        req.user?.team_id,
+        null
+      );
+      if (violation) return res.status(400).send(new ServerResponse(false, null, violation));
+    }
+    return next();
+  }
 
   if (!id || !seconds_spent || !formatted_start) return res.sendStatus(400);
 

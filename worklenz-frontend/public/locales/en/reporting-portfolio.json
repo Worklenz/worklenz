@@ -19,6 +19,7 @@
   "closeSub": "Closed projects",
   "closingCount": "Closing project count",
   "closingSub": "Portfolio balance",
+  "kpiNote": "Projects have no closed date, so Opening and Close are estimated from each project’s last update.",
   "kpiNoteLabel": "How this is calculated",
   "projectCategory": "Project Category",
   "totalProjects": "Total Projects",

@@ -19,6 +19,7 @@
   "closeSub": "Zamknięte projekty",
   "closingCount": "Liczba projektów na koniec",
   "closingSub": "Saldo portfolio",
+  "kpiNote": "Projekty nie mają daty zamknięcia, dlatego wartości początkowe i zamknięte są szacowane na podstawie ostatniej aktualizacji.",
   "kpiNoteLabel": "Jak to obliczono",
   "projectCategory": "Kategoria projektu",
   "totalProjects": "Wszystkie projekty",

@@ -249,6 +249,22 @@ export const taskTimeLogsApiService = {
     return response.data;
   },
 
+  getDailyAllowance: async (
+    date?: string
+  ): Promise<
+    IServerResponse<{
+      enforce_daily_time_limit: boolean;
+      date?: string;
+      limit_seconds?: number;
+      logged_seconds?: number;
+      remaining_seconds?: number | null;
+    }>
+  > => {
+    const params = date ? `?date=${encodeURIComponent(date)}` : '';
+    const response = await apiClient.get(`${rootUrl}/daily-allowance${params}`);
+    return response.data;
+  },
+
   getRunningTimers: async (): Promise<IServerResponse<IRunningTimer[]>> => {
     const response = await apiClient.get(`${rootUrl}/running-timers`);
     return response.data;

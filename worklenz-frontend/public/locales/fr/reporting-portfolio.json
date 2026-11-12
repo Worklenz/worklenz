@@ -19,6 +19,7 @@
   "closeSub": "Projets clôturés",
   "closingCount": "Projets de clôture",
   "closingSub": "Solde du portefeuille",
+  "kpiNote": "Les projets n’ont pas de date de clôture : l’ouverture et la clôture sont estimées d’après la dernière mise à jour.",
   "kpiNoteLabel": "Mode de calcul",
   "projectCategory": "Catégorie de projet",
   "totalProjects": "Total des projets",

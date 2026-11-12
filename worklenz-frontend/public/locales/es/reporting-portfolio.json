@@ -19,6 +19,7 @@
   "closeSub": "Proyectos cerrados",
   "closingCount": "Proyectos finales",
   "closingSub": "Balance de la cartera",
+  "kpiNote": "Los proyectos no tienen fecha de cierre, por lo que los iniciales y los cerrados se estiman a partir de la última actualización.",
   "kpiNoteLabel": "Cómo se calcula",
   "projectCategory": "Categoría del proyecto",
   "totalProjects": "Total de proyectos",

@@ -19,6 +19,7 @@
   "closeSub": "已关闭项目",
   "closingCount": "期末项目数",
   "closingSub": "项目组合余额",
+  "kpiNote": "项目没有关闭日期，因此期初和关闭数量根据项目最后更新时间估算。",
   "kpiNoteLabel": "计算方式",
   "projectCategory": "项目类别",
   "totalProjects": "项目总数",
