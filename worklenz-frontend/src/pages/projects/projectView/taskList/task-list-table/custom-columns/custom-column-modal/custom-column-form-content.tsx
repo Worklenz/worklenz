@@ -710,6 +710,13 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
 
   // Creating a new parent from an existing column leaves that column untouched, so its title is
   // not edited here: only the parent field's title (which names the new column) is asked for.
+  // A Selection column that other columns depend on is the parent half of a Dependent Selection,
+  // so its read-only type is shown as "Dependent Selection" to avoid confusing the user.
+  const readOnlyTypeKey: CustomFieldsTypes =
+    originalFieldType === 'selection' && hasDependentColumns
+      ? 'dependent_selection'
+      : originalFieldType;
+
   const hideFieldTitle = isEditMode && isCreatingNewParent && !isOpenedColumnEmptyText();
 
   const handleFormSubmit = async (formValue: any) => {
@@ -944,8 +951,8 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
           >
             {isEditMode && !isTypeChangeAllowed ? (
               <Typography.Text aria-readonly="true">
-                {t(`customColumns.fieldTypes.${originalFieldType}`, {
-                  defaultValue: originalFieldType,
+                {t(`customColumns.fieldTypes.${readOnlyTypeKey}`, {
+                  defaultValue: readOnlyTypeKey,
                 })}
               </Typography.Text>
             ) : (
