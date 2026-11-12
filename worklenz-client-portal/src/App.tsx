@@ -9,6 +9,8 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { getThemeConfig } from '@/config/theme.config';
 import { AppRoutes } from '@/config/routes.config';
 import AuthProvider from '@/components/AuthProvider';
+import { ClientPortalRealtimeSync } from '@/components/ClientPortalRealtimeSync';
+import { SocketProvider } from '@/socket/socketContext';
 
 const AppContent: React.FC = () => {
   const { theme: currentTheme, orgPrimaryColor } = useAppSelector((state) => state.ui);
@@ -17,9 +19,12 @@ const AppContent: React.FC = () => {
     <ConfigProvider theme={getThemeConfig(currentTheme, orgPrimaryColor)}>
       <AntdApp>
         <AuthProvider>
-          <Router>
-            <AppRoutes />
-          </Router>
+          <SocketProvider>
+            <ClientPortalRealtimeSync />
+            <Router>
+              <AppRoutes />
+            </Router>
+          </SocketProvider>
         </AuthProvider>
       </AntdApp>
     </ConfigProvider>

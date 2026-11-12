@@ -53,7 +53,7 @@
   "errorLoadingTasks": "Errore durante il caricamento delle attività",
   "noTasksFound": "Nessuna attività trovata",
   "noIssuesFound": "Nessuna issue trovata",
-  "createIssue": "Crea issue",
+  "createIssue": "Crea elemento di lavoro",
   "newIssueNamePlaceholder": "Scrivi il titolo dell’issue",
   "loadingFilters": "Caricamento dei filtri...",
   "failedToUpdateColumnOrder": "Impossibile aggiornare l’ordine delle colonne",

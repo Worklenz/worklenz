@@ -63,7 +63,14 @@
     "viewBy": "Zobacz według",
     "sortBy": "Sortuj według",
     "sortManual": "Instrukcja",
-    "sortChronological": "Chronologiczny"
+    "sortChronological": "Chronologiczny",
+    "export": "Eksportuj",
+    "exportPdf": "PDF",
+    "exportExcel": "Excel",
+    "exportRoadmap": "Eksportuj plan działania",
+    "exportRoadmapHint": "Pobierz ten plan działania jako PDF lub Excel",
+    "exportFailed": "Nie udało się wyeksportować planu działania. Spróbuj ponownie.",
+    "exportEmpty": "Nie ma jeszcze nic do wyeksportowania."
   },
   "viewMode": {
     "day": "Dzień",

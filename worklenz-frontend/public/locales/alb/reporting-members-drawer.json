@@ -30,6 +30,8 @@
   "billableButton": "Fakturueshme",
   "billableText": "Fakturueshme",
   "nonBillableText": "Jo Fakturueshme",
+  "billableAndNonBillableText": "Të Gjitha",
+  "noneSelected": "Asnjë e përzgjedhur",
   "timeLogsEmptyPlaceholder": "Asnjë regjistrim kohe për të shfaqur",
   "loggedText": "Regjistruar",
   "forText": "për",

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
-import { CheckOutlined, LockOutlined, MinusOutlined } from '@ant-design/icons';
+import { CheckOutlined, LockOutlined, MinusOutlined, PlusOutlined, UserAddOutlined } from '@ant-design/icons';
 import {
   Alert,
   Button,
@@ -16,6 +16,8 @@ import {
 import { profileSettingsApiService } from '@/api/settings/profile/profile-settings.api.service';
 import { useGetProjectAccessQuery } from '@/api/client-portal/portal-projects-api';
 import { useGetPreviewQuery, useGetPreviewUsersQuery } from '@/api/client-portal/portal-workflow-api';
+import { openAddClientWizard } from '@/features/clients-portal/clients/clients-slice';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { RoleTag, StatusTag, ROLE_LABEL_COPY } from '@/components/client-portal/v2';
 import { CLIENT_PORTAL_BRAND_COLORS, type IClientPortalSettings } from '@/types/settings/client-portal-settings.types';
 import type { ClientCapability, ClientRole, PreviewUser } from '@/types/client-portal/v2';
@@ -67,6 +69,7 @@ const usePortalBranding = () => {
 const ClientPortalPreviewPage = () => {
   const { t } = useTranslation('client-portal-v2-preview');
   const { t: tShared } = useTranslation('client-portal-v2');
+  const dispatch = useAppDispatch();
   const { token } = theme.useToken();
   const [searchParams] = useSearchParams();
   const projectParam = searchParams.get('project');
@@ -78,7 +81,9 @@ const ClientPortalPreviewPage = () => {
   const [openProjectId, setOpenProjectId] = useState<string | null>(projectParam);
 
   const usersQuery = useGetPreviewUsersQuery();
-  const users: PreviewUser[] = useMemo(() => usersQuery.data?.body ?? [], [usersQuery.data]);
+  const previewUsers = usersQuery.data?.body;
+  const users: PreviewUser[] = useMemo(() => previewUsers?.users ?? [], [previewUsers]);
+  const hasClientUsers = previewUsers?.has_client_users === true;
 
   // Coming from a project: preview as a Client Admin assigned to it (or anyone assigned), not the first user in the list.
   const accessQuery = useGetProjectAccessQuery(projectParam ?? '', { skip: !projectParam });
@@ -149,15 +154,42 @@ const ClientPortalPreviewPage = () => {
 
   if (users.length === 0) {
     return (
-      <div>
+      <Flex vertical style={{ height: '100%', minHeight: 0 }}>
         {header}
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={t('noUsers', {
-            defaultValue: 'No active client users with a project yet. Invite a user and assign a project to preview the portal.',
-          })}
-        />
-      </div>
+        <Flex flex={1} align="center" justify="center" style={{ minHeight: 320 }}>
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            style={{ margin: 0 }}
+            description={
+              hasClientUsers
+                ? t('noUsersWithProject', {
+                    defaultValue: 'No client users with a project yet. Invite a user and assign a project to preview the portal.',
+                  })
+                : t('noClientUsers', {
+                    defaultValue: 'No client users yet. Add a client and a client user, then assign a project to preview the portal.',
+                  })
+            }
+          >
+            {!hasClientUsers && (
+              <Flex gap={8} justify="center" wrap="wrap">
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined aria-hidden />}
+                  onClick={() => dispatch(openAddClientWizard('new_organization'))}
+                >
+                  {t('addClient', { defaultValue: 'Add client' })}
+                </Button>
+                <Button
+                  icon={<UserAddOutlined aria-hidden />}
+                  onClick={() => dispatch(openAddClientWizard('existing_organization'))}
+                >
+                  {t('addClientUser', { defaultValue: 'Add client user' })}
+                </Button>
+              </Flex>
+            )}
+          </Empty>
+        </Flex>
+      </Flex>
     );
   }
 
@@ -244,14 +276,24 @@ const ClientPortalPreviewPage = () => {
           }}
           options={clientUsers.map(user => ({
             value: user.id,
-            label: t('userOption', {
-              name: user.name,
-              role: roleLabel(user.role),
-              defaultValue: '{{name}} · {{role}}',
-            }),
+            label:
+              user.status === 'invited'
+                ? t('userOptionPending', {
+                    name: user.name,
+                    role: roleLabel(user.role),
+                    defaultValue: '{{name}} · {{role}} · Pending invite',
+                  })
+                : t('userOption', {
+                    name: user.name,
+                    role: roleLabel(user.role),
+                    defaultValue: '{{name}} · {{role}}',
+                  }),
           }))}
         />
         {role && <RoleTag role={role} />}
+        {selectedUser?.status === 'invited' && (
+          <StatusTag tone="orange">{t('pendingInvite', { defaultValue: 'Pending invite' })}</StatusTag>
+        )}
       </Flex>
 
       <Flex gap={20} align="flex-start" wrap="wrap">

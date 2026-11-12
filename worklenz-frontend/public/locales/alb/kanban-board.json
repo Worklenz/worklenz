@@ -53,7 +53,7 @@
   "errorLoadingTasks": "Gabim gjatë ngarkimit të detyrave",
   "noTasksFound": "Nuk u gjetën detyra",
   "noIssuesFound": "Nuk u gjetën probleme",
-  "createIssue": "Krijo çështje",
+  "createIssue": "Krijo artikull pune",
   "newIssueNamePlaceholder": "Shkruani një titull problemi",
   "loadingFilters": "Duke ngarkuar filtra...",
   "failedToUpdateColumnOrder": "Dështoi përditësimi i rendit të kolonave",

@@ -122,6 +122,26 @@ describe("ReportingProjectsController", () => {
       expect(query[1].slice(1, 3)).toEqual([10, 10]);
     });
 
+    it("keeps the days-left query safe when manager invitations or memberships are duplicated", async () => {
+      const req = createMockRequest({
+        query: { field: "days_left", order: "descend", index: "1", size: "10" },
+        user: { id: "u-1", team_id: "t-1", name: "Test", email: "test@example.com", owner: true }
+      });
+      const res = createMockResponse();
+
+      await ReportingProjectsController.get(req, res);
+
+      const query = (db.query as jest.Mock).mock.calls.find(
+        ([sql]: [string]) => sql.includes("AS projects") && sql.includes("LIMIT $2 OFFSET $3")
+      );
+      expect(query).toBeDefined();
+      expect(query[0]).not.toContain("team_member_info_view");
+      expect(query[0].split("ORDER BY ei.updated_at DESC, ei.id DESC")).toHaveLength(3);
+      expect(query[0].split("ORDER BY pm.team_member_id")).toHaveLength(3);
+      expect(query[0]).toContain("LIMIT 1) AS project_manager_name");
+      expect(query[0]).toContain("LIMIT 1) pm) AS project_manager");
+    });
+
     it("preserves workflow status ordering and stable pagination", async () => {
       const req = createMockRequest({
         query: { field: "status_name", order: "ascend", index: "1", size: "10" },

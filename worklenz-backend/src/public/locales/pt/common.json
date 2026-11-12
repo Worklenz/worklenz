@@ -40,5 +40,12 @@
   "linkPlaceholder": "https://exemplo.com",
   "apply": "Aplicar",
   "link": "Link",
-  "textColor": "Cor do texto"
+  "textColor": "Cor do texto",
+  "sidebarTrialDays_one": "{{count}} dia",
+  "sidebarTrialDays_other": "{{count}} dias",
+  "sidebarTrialLabel": "Teste",
+  "sidebarUpgradeLabel": "MELHORAR",
+  "sidebarUpgradeTooltip": "Melhorar seu plano",
+  "sidebarTrialTooltip_one": "Resta {{count}} dia de teste",
+  "sidebarTrialTooltip_other": "Restam {{count}} dias de teste"
 }

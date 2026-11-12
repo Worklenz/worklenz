@@ -58,5 +58,10 @@
   "groups": "groups",
   "endDate": "Project End Date",
   "settingsTooltip": "Open project settings",
-  "priority": "Priority"
+  "priority": "Priority",
+  "expandAll": "Expand All",
+  "collapseAll": "Collapse All",
+  "unnamedGroup": "Unnamed Group",
+  "projectCount_one": "{{count}} project",
+  "projectCount_other": "{{count}} projects"
 }

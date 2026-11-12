@@ -858,7 +858,8 @@ CREATE TABLE IF NOT EXISTS projects (
     hours_per_day          INTEGER                  DEFAULT 8,
     health_id              UUID,
     estimated_working_days INTEGER                  DEFAULT 0,
-    priority_id            UUID
+    priority_id            UUID,
+    archived_for_team      BOOLEAN                  DEFAULT FALSE              NOT NULL
 );
 
 ALTER TABLE projects

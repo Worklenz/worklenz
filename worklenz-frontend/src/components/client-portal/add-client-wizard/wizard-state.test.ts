@@ -86,6 +86,17 @@ describe('add client wizard state', () => {
     expect(buildAddClientRequest(state)).not.toHaveProperty('role');
   });
 
+  it('opens on the details step for a chosen method', () => {
+    expect(wizardReducer(INITIAL_WIZARD_STATE, { type: 'startWithMethod', method: 'new_organization' })).toMatchObject({
+      step: 2,
+      method: 'new_organization',
+      organization: null,
+    });
+    expect(wizardReducer(INITIAL_WIZARD_STATE, { type: 'startWithMethod', method: 'existing_organization' }).method).toBe(
+      'existing_organization'
+    );
+  });
+
   it('opens on the user details when started from an organization', () => {
     const state = wizardReducer(INITIAL_WIZARD_STATE, {
       type: 'startForOrganization',

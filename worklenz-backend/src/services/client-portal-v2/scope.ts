@@ -10,12 +10,24 @@ import { Queryable } from "./types";
  *   2. the user is a Client Admin (every project of their client) or is assigned to the project
  *                                                          (SUBJECT_PROJECTS_SQL)
  *   3. the project's Client Portal switch is on            (SUBJECT_PROJECTS_SQL)
- *   4. the item itself is Client Visible                   (the *_CLIENT_VISIBLE_SQL fragments)
+ *   4. the project is not archived for the team            (projectOpenForPortalSql)
+ *   5. the item itself is Client Visible                   (the *_CLIENT_VISIBLE_SQL fragments)
  *
  * Controllers and services must build client payloads from these, never hand-write the checks, so
  * the admin Preview (which calls the same functions with the previewed user as subject) cannot
  * drift from what a real client sees.
  */
+
+/**
+ * True when the project was archived for the team.
+ *
+ * `projects.archived_for_team` changes only in archive-for-team and restore-for-team.
+ * A later role change, deactivation, or a member's personal archive does not.
+ */
+export const projectArchivedForTeamSql = (projectAlias = "p") => `${projectAlias}.archived_for_team IS TRUE`;
+
+/** The project is still an open portal project: it has not been archived for the team. */
+export const projectOpenForPortalSql = (projectAlias = "p") => `NOT (${projectArchivedForTeamSql(projectAlias)})`;
 
 /**
  * A Client Admin opens every project of their client automatically; a Member or Viewer only the
@@ -27,16 +39,20 @@ export const CONTACT_CAN_OPEN_PROJECT_SQL = (contactId: string, projectId: strin
   OR EXISTS (SELECT 1 FROM client_contact_project_access acc
               WHERE acc.client_contact_id = ${contactId} AND acc.project_id = ${projectId}))`;
 
-/** Projects a subject can open. Parameters: $1 contact id, $2 client id, $3 team id. */
-export const SUBJECT_PROJECTS_SQL = `
+/** Projects a subject can open. Arguments are trusted SQL expressions, not bound parameters. */
+export const subjectProjectsSql = (contactId: string, clientId: string, teamId: string) => `
   SELECT p.id
     FROM projects p
     JOIN project_client_settings pcs
       ON pcs.project_id = p.id AND pcs.portal_enabled IS TRUE
-   WHERE p.client_id = $2
-     AND p.team_id = $3
-     AND ${CONTACT_CAN_OPEN_PROJECT_SQL("$1", "p.id")}
+   WHERE p.client_id = ${clientId}
+     AND p.team_id = ${teamId}
+     AND ${CONTACT_CAN_OPEN_PROJECT_SQL(contactId, "p.id")}
+     AND ${projectOpenForPortalSql("p")}
 `;
+
+/** Projects a subject can open. Parameters: $1 contact id, $2 client id, $3 team id. */
+export const SUBJECT_PROJECTS_SQL = subjectProjectsSql("$1", "$2", "$3");
 
 /** A task is shared only when its settings row says so. No row means Internal Only. */
 export const taskClientVisibleSql = (alias = "t") => `

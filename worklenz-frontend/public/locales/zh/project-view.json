@@ -98,7 +98,7 @@
   "terminology": {
     "issue": "问题",
     "issues": "问题",
-    "createIssue": "创建问题",
+    "createIssue": "创建工作项",
     "issueList": "列表",
     "backlog": "积压",
     "sprint": "冲刺",

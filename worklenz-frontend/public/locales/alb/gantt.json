@@ -63,7 +63,14 @@
     "viewBy": "Shiko nga",
     "sortBy": "Rendit sipas",
     "sortManual": "Manuale",
-    "sortChronological": "Kronologjike"
+    "sortChronological": "Kronologjike",
+    "export": "Eksporto",
+    "exportPdf": "PDF",
+    "exportExcel": "Excel",
+    "exportRoadmap": "Eksporto rrugën e projektit",
+    "exportRoadmapHint": "Shkarko këtë rrugë projekti si PDF ose Excel",
+    "exportFailed": "Nuk mund të eksportohej rruga e projektit. Provo përsëri.",
+    "exportEmpty": "Ende nuk ka asgjë për të eksportuar."
   },
   "viewMode": {
     "day": "Ditë",

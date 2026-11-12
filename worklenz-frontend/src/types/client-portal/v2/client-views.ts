@@ -207,6 +207,14 @@ export interface PreviewUser {
   organization_id: string;
   organization_name: string;
   role: ClientRole;
+  /** `invited` means the user was added but has not accepted the invite yet. */
+  status: 'active' | 'invited';
+}
+
+export interface PreviewUsersResponse {
+  users: PreviewUser[];
+  /** False when no client users have been added (deleted accounts do not count). */
+  has_client_users: boolean;
 }
 
 export interface PreviewResponse {

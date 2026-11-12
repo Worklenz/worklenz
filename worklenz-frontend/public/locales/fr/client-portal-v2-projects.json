@@ -91,7 +91,7 @@
       "status": "Statut orienté client",
       "users": "Utilisateurs clients"
     },
-    "description": "Choisissez quels projets sont visibles dans le portail client et ce qui est partagé dans chacun d'eux. Tout commence en interne uniquement.",
+    "description": "Choisissez quels projets sont visibles dans le portail client et ce qui est partagé dans chacun d'eux. Tout commence en interne uniquement. Les projets archivés par un propriétaire ou un administrateur sont exclus.",
     "empty": "Aucun projet pour l'instant. Créez un projet dans votre espace de travail, puis associez-le à un client.",
     "fieldSaveFailed": "Le projet n'a pas pu être mis à jour.",
     "fieldSaved": "{{name}} mis à jour.",

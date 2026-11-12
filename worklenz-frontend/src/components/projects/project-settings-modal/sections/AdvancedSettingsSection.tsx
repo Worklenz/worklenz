@@ -173,7 +173,8 @@ const AdvancedSettingsSection = ({
               <Tooltip
                 title={t('restrictTaskCreationTooltip', {
                   defaultValue:
-                    'When enabled, only Admins, Team Leads, and Project Managers can create and assign tasks. Team Members can only view their assigned tasks.',
+                    'When enabled, only Owners, Admins, Team Leads, and Project Managers can create or edit tasks and change task assignments. ' +
+                    "Members can still view tasks and details allowed by the project's task visibility settings; this option does not hide tasks.",
                 })}
               >
                 <InfoCircleOutlined style={{ color: token.colorTextSecondary }} />
@@ -198,36 +199,6 @@ const AdvancedSettingsSection = ({
                 title={t('membersCanViewClientTeamTooltip', {
                   defaultValue:
                     "When enabled, normal project members can see the Client's team tab on the Members page. Owners, Admins, Team Leads, and Project Managers always see it.",
-                })}
-              >
-                <InfoCircleOutlined style={{ color: token.colorTextSecondary }} />
-              </Tooltip>
-            </Space>
-          }
-          valuePropName="checked"
-        >
-          <Switch disabled={disabled} />
-        </Form.Item>
-      </SettingsCard>
-
-      <SettingsCard
-        title={t('phaseAssigneesSettings', { defaultValue: 'Phase Assignees' })}
-        description={t('phaseAssigneesSettingsDescription', {
-          defaultValue:
-            'When enabled, each pipeline phase can have a dedicated assignee. Tasks can only be advanced by their phase assignee (admins can always override).',
-        })}
-      >
-        <Form.Item
-          name="phase_assignees_enabled"
-          label={
-            <Space>
-              <Typography.Text>
-                {t('phaseAssigneesEnabled', { defaultValue: 'Enable Phase Assignees' })}
-              </Typography.Text>
-              <Tooltip
-                title={t('phaseAssigneesEnabledTooltip', {
-                  defaultValue:
-                    'When enabled, each phase in the pipeline can have a default assignee who is automatically assigned and responsible for completing tasks in that phase.',
                 })}
               >
                 <InfoCircleOutlined style={{ color: token.colorTextSecondary }} />

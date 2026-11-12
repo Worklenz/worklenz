@@ -101,6 +101,7 @@ const PlannerLeftSidebar: React.FC<PlannerLeftSidebarProps> = ({ activeView, onV
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { t } = useTranslation('planner-sidebar');
+  const { t: tCommon } = useTranslation('common');
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -185,12 +186,13 @@ const PlannerLeftSidebar: React.FC<PlannerLeftSidebarProps> = ({ activeView, onV
         {/* Trial badge */}
         {isTrial && trialDaysLeft !== null && (
           <Tooltip
-            title={t('trialDaysLeft', { count: trialDaysLeft, defaultValue: '{{count}} days left in your trial' })}
+            title={tCommon('sidebarTrialTooltip', { count: trialDaysLeft, defaultValue: '{{count}} days left in your trial' })}
             placement="right"
             {...tooltipProps}
           >
             <button
               onClick={() => dispatch(toggleUpgradeModal())}
+              aria-label={tCommon('sidebarTrialTooltip', { count: trialDaysLeft, defaultValue: '{{count}} days left in your trial' })}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -205,10 +207,10 @@ const PlannerLeftSidebar: React.FC<PlannerLeftSidebarProps> = ({ activeView, onV
               }}
             >
               <span style={{ fontSize: 9, fontWeight: 400, lineHeight: 1.4, color: '#fa541c', textAlign: 'center' }}>
-                {trialDaysLeft} Days
+                {tCommon('sidebarTrialDays', { count: trialDaysLeft, defaultValue: '{{count}} days' })}
               </span>
               <span style={{ fontSize: 9, fontWeight: 400, lineHeight: 1.4, color: '#fa541c', textAlign: 'center' }}>
-                Trial
+                {tCommon('sidebarTrialLabel', { defaultValue: 'Trial' })}
               </span>
             </button>
           </Tooltip>
@@ -216,9 +218,10 @@ const PlannerLeftSidebar: React.FC<PlannerLeftSidebarProps> = ({ activeView, onV
 
         {/* Upgrade button */}
         {isTrial && (
-          <Tooltip title={t('upgradeToPro', { defaultValue: 'Upgrade to Pro' })} placement="right" {...tooltipProps}>
+          <Tooltip title={tCommon('sidebarUpgradeTooltip', { defaultValue: 'Upgrade your plan' })} placement="right" {...tooltipProps}>
             <button
               onClick={() => dispatch(toggleUpgradeModal())}
+              aria-label={tCommon('sidebarUpgradeTooltip', { defaultValue: 'Upgrade your plan' })}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -235,6 +238,9 @@ const PlannerLeftSidebar: React.FC<PlannerLeftSidebarProps> = ({ activeView, onV
                 fontSize: 9,
                 fontWeight: 700,
                 letterSpacing: 0.2,
+                textAlign: 'center',
+                overflowWrap: 'anywhere',
+                lineHeight: 1.2,
               }}
               onMouseEnter={e => {
                 (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg,#cf1322,#ff4d4f)';
@@ -245,8 +251,8 @@ const PlannerLeftSidebar: React.FC<PlannerLeftSidebarProps> = ({ activeView, onV
                 (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
               }}
             >
-              <span style={{ fontSize: 16, lineHeight: 1 }}>⚡</span>
-              UPGRADE
+              <span aria-hidden="true" style={{ fontSize: 16, lineHeight: 1 }}>⚡</span>
+              {tCommon('sidebarUpgradeLabel', { defaultValue: 'UPGRADE' })}
             </button>
           </Tooltip>
         )}

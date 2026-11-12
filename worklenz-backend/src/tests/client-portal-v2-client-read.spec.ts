@@ -5,6 +5,7 @@ jest.mock("../config/db", () => ({
 jest.mock("../shared/email", () => ({ __esModule: true, sendEmail: jest.fn(), sendEmailEnhanced: jest.fn(), EmailRequest: jest.fn() }));
 jest.mock("../cron_jobs/helpers", () => ({ __esModule: true, getClientPortalBaseUrl: () => "https://portal.test" }));
 
+import db from "../config/db";
 import {
   getClientDashboard,
   listClientApprovals,
@@ -13,8 +14,9 @@ import {
   listClientProjects,
   listClientTasks,
 } from "../services/client-portal-v2/client-read.service";
+import { listPortalProjects } from "../services/client-portal-v2/projects.service";
 import { PortalError } from "../services/client-portal-v2/errors";
-import { assertSubjectProject, fileClientVisibleSql, taskClientVisibleSql } from "../services/client-portal-v2/scope";
+import { assertSubjectProject, fileClientVisibleSql, projectOpenForPortalSql, taskClientVisibleSql } from "../services/client-portal-v2/scope";
 import type { ClientSubject } from "../services/client-portal-v2/subject";
 import { createQueryResult } from "./utils/db-mock";
 
@@ -66,6 +68,23 @@ describe("project scope", () => {
     expect(sql).toMatch(/portal_enabled IS TRUE/);
     expect(sql).toMatch(/p\.client_id = \$2/);
     expect(sql).toMatch(/p\.team_id = \$3/);
+    expect(sql).toContain(projectOpenForPortalSql("p").trim());
+  });
+
+  it("keeps a team-archived project out of the portal without reading current staff roles", () => {
+    const sql = projectOpenForPortalSql("p");
+    expect(sql).toContain("p.archived_for_team IS TRUE");
+    expect(sql).not.toMatch(/archived_projects|team_members|roles/);
+  });
+
+  it("leaves archived projects out of the admin portal project list and its counts", async () => {
+    const query = db.query as jest.Mock;
+    query.mockReset();
+    query.mockResolvedValue(createQueryResult([{ total: 0, portal_enabled: 0 }]));
+    await listPortalProjects("team-1", {});
+    const sql = query.mock.calls.map(([text]) => String(text)).join("\n");
+    expect(sql).toContain(projectOpenForPortalSql("p").trim());
+    expect(query.mock.calls.length).toBe(2);
   });
 
   it("shares an item only when its own visibility says so", () => {

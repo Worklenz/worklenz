@@ -63,5 +63,10 @@
   "groups": "团体",
   "retry": "重试",
   "searchProjects": "按项目名称搜索",
-  "members": "成员"
+  "members": "成员",
+  "expandAll": "展开全部",
+  "collapseAll": "折叠全部",
+  "unnamedGroup": "未命名分组",
+  "projectCount_one": "{{count}} 个项目",
+  "projectCount_other": "{{count}} 个项目"
 }

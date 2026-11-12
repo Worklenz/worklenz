@@ -510,9 +510,9 @@
 }
 
 /* Hover bar - appears above message */
-.comment-hover-bar {
+.project-view-updates .comment-hover-bar {
   position: absolute;
-  top: -14px;
+  bottom: 100%;
   right: 8px;
   transform: translateY(0);
   display: inline-flex !important;
@@ -535,17 +535,19 @@
   pointer-events: none;
 }
 
-.theme-light .comment-hover-bar {
+.theme-light .project-view-updates .comment-hover-bar,
+.project-view-updates.theme-light .comment-hover-bar {
   background-color: #ffffff;
   border: 1px solid #e6e6e6;
 }
 
-.theme-dark .comment-hover-bar {
+.theme-dark .project-view-updates .comment-hover-bar,
+.project-view-updates.theme-dark .comment-hover-bar {
   background-color: #2a2a2a;
   border: 1px solid #3a3a3a;
 }
 
-.comment-wrapper:hover .comment-hover-bar {
+.project-view-updates .comment-wrapper:hover .comment-hover-bar {
   opacity: 1;
   visibility: visible;
   transition-delay: 0.5s;
@@ -632,7 +634,7 @@
 }
 
 /* For current user comments, position bar on the right */
-.current-user-comment .comment-hover-bar {
+.project-view-updates .current-user-comment .comment-hover-bar {
   right: 10px;
   left: auto;
 }

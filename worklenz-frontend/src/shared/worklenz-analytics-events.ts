@@ -99,6 +99,9 @@ export const evt_project_task_list_create_task = 'project_task_list_create_task'
 export const evt_project_task_list_create_subtask = 'project_task_list_create_subtask';
 export const evt_project_task_list_open_task = 'project_task_list_open_task';
 export const evt_project_task_list_drag_and_move = 'project_task_list_drag_and_move';
+export const evt_project_task_move_project_opened = 'project_task_move_project_opened';
+export const evt_project_task_move_project_confirmed = 'project_task_move_project_confirmed';
+export const evt_project_task_move_project_failed = 'project_task_move_project_failed';
 export const evt_project_task_list_show_fields = 'project_task_list_show_fields';
 export const evt_project_task_list_search_task = 'project_task_list_search_task';
 

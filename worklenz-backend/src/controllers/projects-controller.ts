@@ -660,6 +660,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                                  color_code,
                                  start_date,
                                  end_date,
+                                 project_type,
                                  category_id,
                                  to_jsonb(projects)->>'worklenz_id' AS worklenz_id,
                                  (SELECT COUNT(*)
@@ -1864,6 +1865,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                                    p2.color_code,
                                    p2.start_date,
                                    p2.end_date,
+                                   p2.project_type,
                                    p2.category_id,
                                    to_jsonb(p2)->>'worklenz_id' AS worklenz_id,
                                    (SELECT COUNT(*)
