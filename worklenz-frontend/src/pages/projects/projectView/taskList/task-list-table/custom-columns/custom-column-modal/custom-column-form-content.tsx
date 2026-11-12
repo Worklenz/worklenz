@@ -1049,7 +1049,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
           // the top of the modal (and the footer actions) always stay in view.
           <div
             style={{
-              maxHeight: 'max(180px, calc(100vh - 430px))',
+              maxHeight: 'max(120px, calc(100vh - 400px))',
               overflowY: 'auto',
               paddingRight: 8,
             }}
