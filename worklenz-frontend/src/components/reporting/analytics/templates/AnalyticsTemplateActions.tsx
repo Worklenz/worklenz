@@ -6,6 +6,7 @@ import { useAuthService } from '@/hooks/useAuth';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { openUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { canUseFeature } from '@/utils/subscription-utils';
+import { FILTER_PILL_BUTTON_STYLE } from '@/components/common/filters/MultiSelectFilterPill';
 import {
   SaveAnalyticsTemplateModal,
   type SaveAnalyticsTemplateValues,
@@ -64,6 +65,7 @@ export const AnalyticsTemplateActions: React.FC<AnalyticsTemplateActionsProps> =
             icon={<SaveOutlined />}
             onClick={handleClick}
             disabled={canSaveTemplate ? saveDisabled : false}
+            style={FILTER_PILL_BUTTON_STYLE}
             aria-label={
               canSaveTemplate
                 ? t('saveReports', { defaultValue: 'Save reports' })

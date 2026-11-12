@@ -32,13 +32,7 @@ const ALL_DATE_PRESETS: AnalyticsDatePreset[] = [
 
 const EMPTY_IDS: string[] = [];
 const EMPTY_OPTIONS: FilterOption[] = [];
-const FILTER_TRIGGER_STYLE: React.CSSProperties = {
-  ...FILTER_PILL_BUTTON_STYLE,
-  height: 30,
-  fontSize: 12,
-  borderRadius: 7,
-  paddingInline: 8,
-};
+const FILTER_TRIGGER_STYLE = FILTER_PILL_BUTTON_STYLE;
 
 const areSameIdSets = (a: string[], b: string[]): boolean => {
   if (a.length !== b.length) return false;
@@ -358,7 +352,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
     <Flex
       vertical
       gap={12}
-      align="flex-start"
+      align="flex-end"
       style={{
         width: '100%',
       }}

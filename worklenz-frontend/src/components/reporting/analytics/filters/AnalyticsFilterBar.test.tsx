@@ -88,7 +88,7 @@ describe('AnalyticsFilterBar', () => {
       height: '30px',
       fontSize: '12px',
       borderRadius: '7px',
-      paddingInline: '8px',
+      paddingInline: '12px',
     });
     expect(screen.queryByRole('button', { name: /Projects/ })).not.toBeInTheDocument();
 
