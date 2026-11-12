@@ -32,7 +32,6 @@ export const ReportPageShell: React.FC<ReportPageShellProps> = ({
   const headerActions = useMemo(
     () => (
       <Space wrap size={8}>
-        {actions}
         {onExport && (
           <AnalyticsExportMenu
             onExport={onExport}
@@ -41,6 +40,7 @@ export const ReportPageShell: React.FC<ReportPageShellProps> = ({
             loading={exportLoading}
           />
         )}
+        {actions}
       </Space>
     ),
     [actions, onExport, exportDisabled, exportFormats, exportLoading]

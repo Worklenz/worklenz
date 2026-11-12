@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { ConfigProvider } from 'antd';
 import { AnalyticsFilterBar } from './AnalyticsFilterBar';
-import { ReportHeaderFilterContext } from '../ReportHeaderFilterContext';
+import { ReportPageShell } from '../ReportPageShell';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -95,6 +95,7 @@ describe('AnalyticsFilterBar', () => {
     fireEvent.click(filterButton);
 
     const filterCard = screen.getByRole('group', { name: 'Filters' });
+    expect(within(filterCard).queryByText('Filters')).not.toBeInTheDocument();
     expect(within(filterCard).getByRole('button', { name: /Projects/ })).toBeInTheDocument();
     expect(within(filterCard).getByRole('button', { name: /Members/ })).toBeInTheDocument();
     expect(within(filterCard).getByRole('button', { name: /Teams/ })).toBeInTheDocument();
@@ -106,46 +107,47 @@ describe('AnalyticsFilterBar', () => {
     expect(within(filterCard).getByRole('button', { name: 'Apply' })).toBeInTheDocument();
   });
 
-  it('moves Save reports and Export into the expanded section and collapses after Apply', () => {
-    const StatefulHeader: React.FC = () => {
-      const [isExpanded, setExpanded] = React.useState(false);
-      const actions = (
-        <>
-          <button type="button">Save reports</button>
-          <button type="button">Export</button>
-        </>
-      );
+  it('keeps Save reports and Export beside Filter while expanded and collapses after Apply', () => {
+    render(
+      <ConfigProvider>
+        <ReportPageShell
+          title="Report"
+          filters={
+            <AnalyticsFilterBar
+              projectOptions={PROJECT_OPTIONS}
+              selectedProjectIds={[]}
+              onProjectsChange={vi.fn()}
+            />
+          }
+          onExport={vi.fn()}
+          actions={<button type="button">Save reports</button>}
+        >
+          <div />
+        </ReportPageShell>
+      </ConfigProvider>
+    );
 
-      return (
-        <ConfigProvider>
-          <ReportHeaderFilterContext.Provider
-            value={{
-              isExpanded,
-              setExpanded,
-              actions,
-            }}
-          >
-            <div>
-              {!isExpanded && actions}
-              <AnalyticsFilterBar
-                projectOptions={PROJECT_OPTIONS}
-                selectedProjectIds={[]}
-                onProjectsChange={vi.fn()}
-              />
-            </div>
-          </ReportHeaderFilterContext.Provider>
-        </ConfigProvider>
-      );
-    };
+    const getActionOrder = (container: HTMLElement) =>
+      within(container)
+        .getAllByRole('button')
+        .map(button => button.textContent?.trim())
+        .filter(label => label === 'Export' || label === 'Save reports');
 
-    render(<StatefulHeader />);
-    expect(screen.getByRole('button', { name: 'Save reports' })).toBeInTheDocument();
+    expect(getActionOrder(document.body)).toEqual(['Export', 'Save reports']);
 
     fireEvent.click(screen.getByRole('button', { name: 'Filter' }));
 
     const filterCard = screen.getByRole('group', { name: 'Filters' });
-    expect(within(filterCard).getByRole('button', { name: 'Save reports' })).toBeInTheDocument();
-    expect(within(filterCard).getByRole('button', { name: 'Export' })).toBeInTheDocument();
+    const saveButton = screen.getByRole('button', { name: 'Save reports' });
+    const exportButton = screen.getByRole('button', { name: 'Export' });
+    expect(
+      within(filterCard).queryByRole('button', { name: 'Save reports' })
+    ).not.toBeInTheDocument();
+    expect(within(filterCard).queryByRole('button', { name: 'Export' })).not.toBeInTheDocument();
+    expect(getActionOrder(document.body)).toEqual(['Export', 'Save reports']);
+    const expandedOrder = Array.from(document.body.querySelectorAll('button,[role="group"]'));
+    expect(expandedOrder.indexOf(exportButton)).toBeLessThan(expandedOrder.indexOf(filterCard));
+    expect(expandedOrder.indexOf(saveButton)).toBeLessThan(expandedOrder.indexOf(filterCard));
 
     fireEvent.click(within(filterCard).getByRole('button', { name: 'Apply' }));
 

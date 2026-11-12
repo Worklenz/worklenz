@@ -1,5 +1,5 @@
 import React from 'react';
-import { Badge, Button, Card, Divider, Flex, Segmented, theme } from '@/shared/antd-imports';
+import { Badge, Button, Divider, Flex, Segmented, theme } from '@/shared/antd-imports';
 import { FilterOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import {
@@ -233,17 +233,10 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
     dateOptions.find(o => o.value === draftDatePreset)?.label ?? dateOptions[0]?.label;
 
   const panelContent = (
-    <Card
+    <div
       role="group"
       aria-label={t('filtersTitle', { defaultValue: 'Filters' })}
-      size="small"
-      title={t('filtersTitle', { defaultValue: 'Filters' })}
-      style={{
-        width: '100%',
-        borderRadius: token.borderRadiusLG,
-        borderColor: token.colorBorderSecondary,
-      }}
-      styles={{ body: { padding: 16 } }}
+      style={{ width: '100%' }}
     >
       <Flex gap={8} wrap="wrap" align="center">
         {showDate && (
@@ -328,7 +321,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
 
       <Divider style={{ margin: '12px 0' }} />
 
-      <Flex justify="space-between" align="center">
+      <Flex align="center">
         <Flex gap={8} align="center">
           <Button
             disabled={!hasDraftFilters}
@@ -341,11 +334,8 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
             {t('applyFilters', { defaultValue: 'Apply' })}
           </Button>
         </Flex>
-        <Flex gap={8} align="center" wrap="wrap">
-          {filterContext?.actions}
-        </Flex>
       </Flex>
-    </Card>
+    </div>
   );
 
   return (
@@ -357,44 +347,47 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
         width: '100%',
       }}
     >
-      <Button
-        icon={<FilterOutlined />}
-        onClick={() => {
-          if (!panelOpen) {
-            setDraftProjectIds(selectedProjectIds);
-            setDraftMemberIds(selectedMemberIds);
-            setDraftTeamIds(selectedTeamIds);
-            setDraftDatePreset(datePreset ?? defaultDatePreset);
-            setDraftStatusIds(selectedStatusIds);
-            setDraftIncludeDone(includeDone ?? false);
+      <Flex gap={8} align="center" style={{ width: '100%', justifyContent: 'flex-end' }}>
+        <Button
+          icon={<FilterOutlined />}
+          onClick={() => {
+            if (!panelOpen) {
+              setDraftProjectIds(selectedProjectIds);
+              setDraftMemberIds(selectedMemberIds);
+              setDraftTeamIds(selectedTeamIds);
+              setDraftDatePreset(datePreset ?? defaultDatePreset);
+              setDraftStatusIds(selectedStatusIds);
+              setDraftIncludeDone(includeDone ?? false);
+            }
+            setPanelOpen(!panelOpen);
+          }}
+          style={
+            panelOpen || activeFilterCount > 0
+              ? {
+                  ...FILTER_TRIGGER_STYLE,
+                  borderColor: token.colorPrimary,
+                  color: token.colorPrimary,
+                }
+              : FILTER_TRIGGER_STYLE
           }
-          setPanelOpen(!panelOpen);
-        }}
-        style={
-          panelOpen || activeFilterCount > 0
-            ? {
-                ...FILTER_TRIGGER_STYLE,
-                borderColor: token.colorPrimary,
-                color: token.colorPrimary,
-              }
-            : FILTER_TRIGGER_STYLE
-        }
-        aria-label={
-          activeFilterCount > 0
-            ? `${t('filterButton', { defaultValue: 'Filter' })} (${activeFilterCount})`
-            : t('filterButton', { defaultValue: 'Filter' })
-        }
-        aria-expanded={panelOpen}
-      >
-        {t('filterButton', { defaultValue: 'Filter' })}
-        {activeFilterCount > 0 && (
-          <Badge
-            count={activeFilterCount}
-            size="small"
-            style={{ marginLeft: 4, backgroundColor: token.colorPrimary }}
-          />
-        )}
-      </Button>
+          aria-label={
+            activeFilterCount > 0
+              ? `${t('filterButton', { defaultValue: 'Filter' })} (${activeFilterCount})`
+              : t('filterButton', { defaultValue: 'Filter' })
+          }
+          aria-expanded={panelOpen}
+        >
+          {t('filterButton', { defaultValue: 'Filter' })}
+          {activeFilterCount > 0 && (
+            <Badge
+              count={activeFilterCount}
+              size="small"
+              style={{ marginLeft: 4, backgroundColor: token.colorPrimary }}
+            />
+          )}
+        </Button>
+        {panelOpen && filterContext?.actions}
+      </Flex>
       {panelOpen && panelContent}
     </Flex>
   );
