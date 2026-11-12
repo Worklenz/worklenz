@@ -149,7 +149,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     const rawEntries: Array<{ id: string; seconds_spent: number; description?: string; formatted_start: string }> =
       Array.isArray(entries) && entries.length > 0
         ? entries.map(e => ({
-            id: e.id || id,
+            id,
             seconds_spent: Number(e.seconds_spent),
             description: e.description ?? description,
             formatted_start: e.formatted_start,
