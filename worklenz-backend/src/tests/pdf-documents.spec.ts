@@ -52,6 +52,18 @@ describe("PDF documents", () => {
     );
   });
 
+  it("handles nested lists without paragraph wrappers, headings, and data-list markers", () => {
+    expect(
+      invoiceNotesToPlainText("<h1>Notes</h1><ol><li>parent<ul><li>child</li></ul></li><li>second</li></ol>")
+    ).toBe("Notes\n1. parent\n  • child\n2. second");
+
+    expect(
+      invoiceNotesToPlainText(
+        '<ol><li data-list="bullet">dot</li><li data-list="ordered">one</li><li data-list="ordered">two</li></ol>'
+      )
+    ).toBe("• dot\n1. one\n2. two");
+  });
+
   it("renders an invoice", async () => {
     const pdf = await buildInvoicePdf(base, "invoice");
     expect(isPdf(pdf)).toBe(true);

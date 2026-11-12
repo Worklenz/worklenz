@@ -20,7 +20,7 @@ const HTML_ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot
 export const htmlToPlainText = (html: string | null | undefined): string => {
   if (!html) return "";
   const lists: Array<{ tag: string; nextNumber: number }> = [];
-  const structuralTags = /<(\/?)(ol|ul)\b[^>]*>|<(\/?)li\b([^>]*)>|<(\/?)p\b[^>]*>/gi;
+  const structuralTags = /<(\/?)(ol|ul)\b[^>]*>|<(\/?)li\b([^>]*)>|<(\/?)p\b[^>]*>|<\/(div|h[1-6])\b[^>]*>/gi;
   let withListMarkers = "";
   let cursor = 0;
   let match: RegExpExecArray | null;
@@ -44,6 +44,7 @@ export const htmlToPlainText = (html: string | null | undefined): string => {
         continue;
       }
 
+      addLineBreak();
       const listType = /\bdata-list\s*=\s*["'](ordered|bullet)["']/i.exec(match[4])?.[1]?.toLowerCase();
       const list = lists[lists.length - 1];
       const isOrdered = listType ? listType === "ordered" : list?.tag === "ol";
@@ -58,12 +59,10 @@ export const htmlToPlainText = (html: string | null | undefined): string => {
       continue;
     }
 
-    if (match[5]) addLineBreak();
+    if (match[5] || match[6]) addLineBreak();
   }
   withListMarkers += html.slice(cursor);
-  const withBreaks = withListMarkers
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/(div|h[1-6])>/gi, "\n");
+  const withBreaks = withListMarkers.replace(/<br\s*\/?>/gi, "\n");
   // Repeat until stable so nested fragments like "<scr<b>ipt>" can't reassemble into a tag.
   let text = withBreaks;
   let previous: string;
