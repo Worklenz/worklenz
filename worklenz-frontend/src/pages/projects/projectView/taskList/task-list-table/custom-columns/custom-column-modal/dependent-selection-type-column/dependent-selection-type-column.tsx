@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { nanoid } from 'nanoid';
 import { useTranslation } from 'react-i18next';
 import {
@@ -11,6 +11,7 @@ import {
   Typography,
   theme,
 } from '@/shared/antd-imports';
+import type { InputRef } from '@/shared/antd-imports';
 import { CloseCircleOutlined, HolderOutlined, WarningOutlined } from '@/shared/antd-imports';
 import { PhaseColorCodes } from '@/shared/constants';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -27,6 +28,8 @@ const splitOptionLabels = (raw: string) =>
     .map(label => label.trim())
     .filter(Boolean);
 
+const addInputFocusId = (parentOptionId: string) => `__add_${parentOptionId}__`;
+
 /**
  * Option editor for Dependent Selection: one group per parent option, plus Unassigned
  * for options whose parent option no longer exists. Reads/writes modal `selectionsList`.
@@ -37,6 +40,14 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
   const { token } = theme.useToken();
   const selections = useAppSelector(state => state.taskListCustomColumnsReducer.selectionsList);
   const [draftByParentId, setDraftByParentId] = useState<Record<string, string>>({});
+  const inputRefs = useRef<Record<string, InputRef | null>>({});
+  const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!pendingFocusId) return;
+    inputRefs.current[pendingFocusId]?.focus();
+    setPendingFocusId(null);
+  }, [pendingFocusId, selections, draftByParentId]);
 
   const parentName = parentColumn ? getTaskCustomFieldDisplayName(parentColumn) : '';
   const parentOptions = useMemo(
@@ -86,10 +97,34 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
     });
     updateSelections(nextSelections);
     setDraftByParentId(prev => ({ ...prev, [parentOption.selection_id]: '' }));
+    setPendingFocusId(addInputFocusId(parentOption.selection_id));
   };
 
   const handleRemoveSelection = (selectionId: string) => {
     updateSelections(selections.filter(selection => selection.selection_id !== selectionId));
+  };
+
+  const handleGroupSelectionEnter = (
+    event: React.KeyboardEvent<HTMLInputElement>,
+    parentOption: ITaskCustomColumnSelectionOption,
+    selection: SelectionType
+  ) => {
+    event.preventDefault();
+    if (!selection.selection_name.trim()) return;
+
+    const groupSelections = selections.filter(
+      item => item.parent_selection_id === parentOption.selection_id
+    );
+    const currentIndex = groupSelections.findIndex(
+      item => item.selection_id === selection.selection_id
+    );
+    const nextSelection = groupSelections[currentIndex + 1];
+
+    if (nextSelection) {
+      setPendingFocusId(nextSelection.selection_id);
+    } else {
+      setPendingFocusId(addInputFocusId(parentOption.selection_id));
+    }
   };
 
   if (!parentColumn) {
@@ -102,15 +137,28 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
     );
   }
 
-  const renderSelectionRow = (selection: SelectionType, isUnassigned: boolean) => (
+  const renderSelectionRow = (
+    selection: SelectionType,
+    isUnassigned: boolean,
+    parentOption?: ITaskCustomColumnSelectionOption
+  ) => (
     <Flex gap={8} align="center" key={selection.selection_id}>
       <HolderOutlined style={{ fontSize: 14, color: token.colorTextQuaternary }} />
       <Input
+        ref={element => {
+          inputRefs.current[selection.selection_id] = element;
+        }}
         value={selection.selection_name}
         onChange={event =>
           updateSelection(selection.selection_id, { selection_name: event.target.value })
         }
-        onPressEnter={event => event.preventDefault()}
+        onPressEnter={event => {
+          if (isUnassigned || !parentOption) {
+            event.preventDefault();
+            return;
+          }
+          handleGroupSelectionEnter(event, parentOption, selection);
+        }}
         placeholder={t('customColumns.dependentSelection.optionPlaceholder', {
           defaultValue: 'Type an option and press Enter',
         })}
@@ -147,6 +195,7 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
         <Button
           type="text"
           size="small"
+          htmlType="button"
           icon={<CloseCircleOutlined />}
           onClick={() => handleRemoveSelection(selection.selection_id)}
           aria-label={t('customColumns.dependentSelection.removeOption', {
@@ -180,6 +229,7 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
                 selection => selection.parent_selection_id === parentOption.selection_id
               );
               const draftValue = draftByParentId[parentOption.selection_id] || '';
+              const addFocusKey = addInputFocusId(parentOption.selection_id);
 
               return (
                 <div
@@ -196,10 +246,15 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
                       <Typography.Text strong>{parentOption.selection_name}</Typography.Text>
                     </Flex>
 
-                    {groupSelections.map(selection => renderSelectionRow(selection, false))}
+                    {groupSelections.map(selection =>
+                      renderSelectionRow(selection, false, parentOption)
+                    )}
 
                     <Flex gap={6}>
                       <Input
+                        ref={element => {
+                          inputRefs.current[addFocusKey] = element;
+                        }}
                         size="small"
                         value={draftValue}
                         onChange={event =>
