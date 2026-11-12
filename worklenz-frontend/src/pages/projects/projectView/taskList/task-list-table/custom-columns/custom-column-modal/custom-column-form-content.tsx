@@ -1044,11 +1044,19 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
         {customFieldType === 'formula' && <FormulaTypeColumn />}
         {customFieldType === 'labels' && <LabelTypeColumn />}
         {customFieldType === 'selection' && <SelectionTypeColumn />}
-        {isDependentSelectionUi && isCreatingNewParent && (
-          <NewParentFieldEditor />
-        )}
-        {isDependentSelectionUi && parentColumnId && (
-          <DependentSelectionTypeColumn parentColumn={parentColumnForEditor} />
+        {isDependentSelectionUi && (isCreatingNewParent || parentColumnId) && (
+          // Only the parent/child option sections scroll, so the title, type and parent field at
+          // the top of the modal (and the footer actions) always stay in view.
+          <div
+            style={{
+              maxHeight: 'max(180px, calc(100vh - 430px))',
+              overflowY: 'auto',
+              paddingRight: 8,
+            }}
+          >
+            {isCreatingNewParent && <NewParentFieldEditor />}
+            {parentColumnId && <DependentSelectionTypeColumn parentColumn={parentColumnForEditor} />}
+          </div>
         )}
 
         <Divider style={{ margin: '20px 0 16px' }} />

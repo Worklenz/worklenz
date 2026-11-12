@@ -213,7 +213,7 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
         })}
       </Typography.Text>
 
-      <div style={{ maxHeight: 340, overflowY: 'auto' }}>
+      <div>
         {parentOptions.length === 0 ? (
           <Typography.Text type="secondary">
             {t('customColumns.dependentSelection.parentHasNoOptions', {
