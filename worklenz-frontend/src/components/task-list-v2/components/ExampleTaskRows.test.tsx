@@ -37,6 +37,20 @@ describe('ExampleTaskRows', () => {
     expect(mocks.assign).toHaveBeenCalledWith(expect.objectContaining({ taskId: 'own-task' }));
     expect(props.onTaskCreated).toHaveBeenCalledWith({ id: 'own-task' }, expect.anything());
   });
+  it('assigns the created task after unmount without calling UI callbacks', () => {
+    const { unmount } = render(<ExampleTaskRows {...props} />);
+    fireEvent.click(screen.getByRole('button', { name: /Define project scope/ }));
+    const input = screen.getByPlaceholderText('Type task name and press Enter to save');
+    fireEvent.change(input, { target: { value: 'My task' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    unmount();
+    act(() => mocks.emit.mock.calls[0][2](null, { id: 'created-task' }));
+    expect(mocks.assign).toHaveBeenCalledWith(expect.objectContaining({ taskId: 'created-task' }));
+    expect(props.onTaskCreated).not.toHaveBeenCalled();
+    act(() => mocks.emit.mock.calls[0][2](null, { id: 'created-task' }));
+    expect(mocks.assign).toHaveBeenCalledTimes(1);
+  });
+
   it('makes placeholder controls inert and the title focusable', () => {
     render(<ExampleTaskRows {...props} />);
     const example = screen.getByRole('button', { name: /Define project scope/ });

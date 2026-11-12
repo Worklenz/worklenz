@@ -153,12 +153,12 @@ export const ExampleTaskRows: React.FC<{
         SocketEvents.QUICK_TASK.toString(),
         JSON.stringify(body),
         (error: Error | null, task: { id?: string; error?: boolean } | null) => {
-          if (hasSettled || !isMounted.current) return;
+          if (hasSettled) return;
           hasSettled = true;
           isRequestPending.current = false;
-          setCreatingTask(false);
+          if (isMounted.current) setCreatingTask(false);
           if (error || !task?.id || task.error) {
-            message.error(t('exampleTaskCreateFailed', {
+            if (isMounted.current) message.error(t('exampleTaskCreateFailed', {
               defaultValue: 'Could not confirm task creation. Check the task list before retrying.',
             }));
             return;
@@ -173,9 +173,11 @@ export const ExampleTaskRows: React.FC<{
               teamId: currentSession.team_id,
             });
           }
-          setTaskName('');
-          setActiveRowIndex(null);
-          onTaskCreated(task, { openDrawer, insertAfterTaskId: null });
+          if (isMounted.current) {
+            setTaskName('');
+            setActiveRowIndex(null);
+            onTaskCreated(task, { openDrawer, insertAfterTaskId: null });
+          }
         }
       );
     },
