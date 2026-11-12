@@ -1,21 +1,17 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import type { InputRef } from '@/shared/antd-imports';
+import React, { useMemo, useState } from 'react';
 import { nanoid } from 'nanoid';
 import { useTranslation } from 'react-i18next';
 import {
   Badge,
   Button,
-  Collapse,
-  ColorPicker,
   Flex,
   Input,
   Select,
-  Tag,
   Tooltip,
   Typography,
   theme,
 } from '@/shared/antd-imports';
-import { CloseCircleOutlined, WarningOutlined } from '@/shared/antd-imports';
+import { CloseCircleOutlined, HolderOutlined, WarningOutlined } from '@/shared/antd-imports';
 import { PhaseColorCodes } from '@/shared/constants';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -23,26 +19,24 @@ import { setSelectionsList } from '@/features/projects/singleProject/task-list-c
 import { ITaskCustomColumn, ITaskCustomColumnSelectionOption } from '@/types/tasks/task.types';
 import { getTaskCustomFieldDisplayName } from '@/utils/task-custom-columns';
 import { SelectionType } from '../selection-type-column/selection-type-column';
+import SelectionColorPicker from '../SelectionColorPicker';
+
+const splitOptionLabels = (raw: string) =>
+  raw
+    .split(',')
+    .map(label => label.trim())
+    .filter(Boolean);
 
 /**
- * Option editor for a Selection field that depends on another Selection field: one collapsible
- * group per parent option, plus an "Unassigned" group for options whose parent option no longer
- * exists. Reads and writes the modal's `selectionsList` in the store.
+ * Option editor for Dependent Selection: one group per parent option, plus Unassigned
+ * for options whose parent option no longer exists. Reads/writes modal `selectionsList`.
  */
 export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectionTypeColumnProps) => {
   const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
   const { token } = theme.useToken();
   const selections = useAppSelector(state => state.taskListCustomColumnsReducer.selectionsList);
-  const inputRefs = useRef<Record<string, InputRef | null>>({});
-  const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
-  const [collapsedGroupIds, setCollapsedGroupIds] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (!pendingFocusId) return;
-    inputRefs.current[pendingFocusId]?.focus();
-    setPendingFocusId(null);
-  }, [pendingFocusId, selections]);
+  const [draftByParentId, setDraftByParentId] = useState<Record<string, string>>({});
 
   const parentName = parentColumn ? getTaskCustomFieldDisplayName(parentColumn) : '';
   const parentOptions = useMemo(
@@ -54,21 +48,8 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
     [parentOptions]
   );
   const unassignedSelections = selections.filter(
-    selection => !selection.parent_selection_id || !parentOptionIds.has(selection.parent_selection_id)
-  );
-
-  const colorOptions = useMemo(
-    () =>
-      PhaseColorCodes.map(color => ({
-        value: color,
-        label: (
-          <Tag
-            color={color}
-            style={{ display: 'flex', alignItems: 'center', width: 15, height: 15, borderRadius: '50%' }}
-          />
-        ),
-      })),
-    []
+    selection =>
+      !selection.parent_selection_id || !parentOptionIds.has(selection.parent_selection_id)
   );
 
   const moveToOptions = parentOptions.map(option => ({
@@ -88,46 +69,23 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
     );
   };
 
-  const handleAddSelection = (parentOption: ITaskCustomColumnSelectionOption) => {
-    const selectionId = nanoid();
-    updateSelections([
-      ...selections,
-      {
-        selection_id: selectionId,
-        selection_name: '',
-        selection_color: parentOption.selection_color || PhaseColorCodes[0],
+  const handleAddSelections = (parentOption: ITaskCustomColumnSelectionOption, rawValue: string) => {
+    const labels = splitOptionLabels(rawValue);
+    if (!labels.length) return;
+
+    const nextSelections = [...selections];
+    labels.forEach((label, index) => {
+      nextSelections.push({
+        selection_id: nanoid(),
+        selection_name: label,
+        selection_color:
+          parentOption.selection_color ||
+          PhaseColorCodes[(selections.length + index) % PhaseColorCodes.length],
         parent_selection_id: parentOption.selection_id,
-      },
-    ]);
-    setPendingFocusId(selectionId);
-  };
-
-  // Enter moves to the next option in the same group (adding one at the end) instead of
-  // submitting the form.
-  const handleSelectionEnter = (
-    event: React.KeyboardEvent<HTMLInputElement>,
-    selection: SelectionType,
-    isUnassigned: boolean
-  ) => {
-    event.preventDefault();
-    if (isUnassigned || !selection.selection_name.trim()) return;
-
-    const parentOption = parentOptions.find(
-      option => option.selection_id === selection.parent_selection_id
-    );
-    if (!parentOption) return;
-
-    const groupSelections = selections.filter(
-      item => item.parent_selection_id === parentOption.selection_id
-    );
-    const nextSelection =
-      groupSelections[groupSelections.findIndex(item => item.selection_id === selection.selection_id) + 1];
-
-    if (nextSelection) {
-      setPendingFocusId(nextSelection.selection_id);
-    } else {
-      handleAddSelection(parentOption);
-    }
+      });
+    });
+    updateSelections(nextSelections);
+    setDraftByParentId(prev => ({ ...prev, [parentOption.selection_id]: '' }));
   };
 
   const handleRemoveSelection = (selectionId: string) => {
@@ -146,15 +104,13 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
 
   const renderSelectionRow = (selection: SelectionType, isUnassigned: boolean) => (
     <Flex gap={8} align="center" key={selection.selection_id}>
+      <HolderOutlined style={{ fontSize: 14, color: token.colorTextQuaternary }} />
       <Input
-        ref={element => {
-          inputRefs.current[selection.selection_id] = element;
-        }}
         value={selection.selection_name}
         onChange={event =>
           updateSelection(selection.selection_id, { selection_name: event.target.value })
         }
-        onPressEnter={event => handleSelectionEnter(event, selection, isUnassigned)}
+        onPressEnter={event => event.preventDefault()}
         placeholder={t('customColumns.dependentSelection.optionPlaceholder', {
           defaultValue: 'Type an option and press Enter',
         })}
@@ -164,16 +120,10 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
           defaultValue: 'Option name',
         })}
       />
-      <ColorPicker
+      <SelectionColorPicker
         value={selection.selection_color}
-        onChange={value =>
-          updateSelection(selection.selection_id, {
-            selection_color: value.toHexString(),
-          })
-        }
-        size="small"
-        disabledAlpha
-        aria-label={t('customColumns.dependentSelection.optionColorLabel', {
+        onChange={color => updateSelection(selection.selection_id, { selection_color: color })}
+        ariaLabel={t('customColumns.dependentSelection.optionColorLabel', {
           defaultValue: 'Option color',
         })}
       />
@@ -207,71 +157,13 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
     </Flex>
   );
 
-  const groupItems = parentOptions.map(parentOption => {
-    const groupSelections = selections.filter(
-      selection => selection.parent_selection_id === parentOption.selection_id
-    );
-
-    return {
-      key: parentOption.selection_id,
-      label: (
-        <Flex align="center" gap={8}>
-          <Badge color={parentOption.selection_color} />
-          <Typography.Text strong>{parentOption.selection_name}</Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {t('customColumns.dependentSelection.optionCount', {
-              count: groupSelections.length,
-              defaultValue_one: '{{count}} option',
-              defaultValue_other: '{{count}} options',
-            })}
-          </Typography.Text>
-        </Flex>
-      ),
-      children: (
-        <Flex vertical gap={8}>
-          {groupSelections.length === 0 && (
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {t('customColumns.dependentSelection.emptyGroup', {
-                defaultValue: 'No options yet. Add the choices available when {{parent}} is {{value}}.',
-                parent: parentName,
-                value: parentOption.selection_name,
-              })}
-            </Typography.Text>
-          )}
-          {groupSelections.map(selection => renderSelectionRow(selection, false))}
-          <Button
-            type="link"
-            size="small"
-            onClick={() => handleAddSelection(parentOption)}
-            style={{ width: 'fit-content', padding: 0 }}
-          >
-            {t('customColumns.dependentSelection.addOption', {
-              defaultValue: '+ Add option under {{value}}',
-              value: parentOption.selection_name,
-            })}
-          </Button>
-        </Flex>
-      ),
-    };
-  });
-
   return (
     <Flex vertical gap={8} style={{ maxWidth: '100%' }}>
-      <Flex vertical gap={2}>
-        <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>
-          {t('customColumns.dependentSelection.title', {
-            defaultValue: 'Options grouped by {{parent}}',
-            parent: parentName,
-          })}
-        </Typography.Text>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {t('customColumns.dependentSelection.hint', {
-            defaultValue:
-              "On a task, only the options in the group matching the task's {{parent}} value can be picked.",
-            parent: parentName,
-          })}
-        </Typography.Text>
-      </Flex>
+      <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>
+        {t('customColumns.dependentSelection.dependentOptions', {
+          defaultValue: 'Dependent options',
+        })}
+      </Typography.Text>
 
       <div style={{ maxHeight: 340, overflowY: 'auto' }}>
         {parentOptions.length === 0 ? (
@@ -282,21 +174,69 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
             })}
           </Typography.Text>
         ) : (
-          <Collapse
-            size="small"
-            items={groupItems}
-            activeKey={parentOptions
-              .map(option => option.selection_id)
-              .filter(optionId => !collapsedGroupIds.includes(optionId))}
-            onChange={keys => {
-              const openIds = Array.isArray(keys) ? keys : [keys];
-              setCollapsedGroupIds(
-                parentOptions
-                  .map(option => option.selection_id)
-                  .filter(optionId => !openIds.includes(optionId))
+          <Flex vertical gap={10}>
+            {parentOptions.map(parentOption => {
+              const groupSelections = selections.filter(
+                selection => selection.parent_selection_id === parentOption.selection_id
               );
-            }}
-          />
+              const draftValue = draftByParentId[parentOption.selection_id] || '';
+
+              return (
+                <div
+                  key={parentOption.selection_id}
+                  style={{
+                    border: `1px dashed ${token.colorBorder}`,
+                    borderRadius: token.borderRadiusLG,
+                    padding: 12,
+                  }}
+                >
+                  <Flex vertical gap={8}>
+                    <Flex align="center" gap={8}>
+                      <Badge color={parentOption.selection_color} />
+                      <Typography.Text strong>{parentOption.selection_name}</Typography.Text>
+                    </Flex>
+
+                    {groupSelections.map(selection => renderSelectionRow(selection, false))}
+
+                    <Flex gap={6}>
+                      <Input
+                        size="small"
+                        value={draftValue}
+                        onChange={event =>
+                          setDraftByParentId(prev => ({
+                            ...prev,
+                            [parentOption.selection_id]: event.target.value,
+                          }))
+                        }
+                        onPressEnter={event => {
+                          event.preventDefault();
+                          handleAddSelections(parentOption, draftValue);
+                        }}
+                        placeholder={t('customColumns.dependentSelection.addUnderPlaceholder', {
+                          defaultValue: 'New option under {{value}}… (comma-separated)',
+                          value: parentOption.selection_name,
+                        })}
+                        aria-label={t('customColumns.dependentSelection.addUnderPlaceholder', {
+                          defaultValue: 'New option under {{value}}… (comma-separated)',
+                          value: parentOption.selection_name,
+                        })}
+                        style={{ flex: 1, minWidth: 0 }}
+                      />
+                      <Button
+                        size="small"
+                        htmlType="button"
+                        onClick={() => handleAddSelections(parentOption, draftValue)}
+                      >
+                        {t('customColumns.dependentSelection.addButton', {
+                          defaultValue: '+ Add',
+                        })}
+                      </Button>
+                    </Flex>
+                  </Flex>
+                </div>
+              );
+            })}
+          </Flex>
         )}
 
         {unassignedSelections.length > 0 && (
@@ -306,7 +246,7 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
               defaultValue: 'Unassigned',
             })}
             style={{
-              marginTop: 8,
+              marginTop: 10,
               padding: 12,
               borderRadius: token.borderRadiusLG,
               border: `1px solid ${token.colorWarningBorder}`,

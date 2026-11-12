@@ -208,6 +208,7 @@
       "number": "Número",
       "date": "Data",
       "selection": "Seleção",
+      "dependent_selection": "Dependent Selection",
       "checkbox": "Caixa de seleção",
       "labels": "Etiquetas",
       "key": "Chave",

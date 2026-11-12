@@ -208,6 +208,7 @@
       "number": "Numéro",
       "date": "Date de saisie",
       "selection": "Sélection",
+      "dependent_selection": "Dependent Selection",
       "checkbox": "Case à cocher",
       "labels": "Étiquettes",
       "key": "Clé",

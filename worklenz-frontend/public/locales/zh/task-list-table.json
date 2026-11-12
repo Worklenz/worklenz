@@ -208,6 +208,7 @@
       "number": "数字",
       "date": "日期",
       "selection": "选择",
+      "dependent_selection": "Dependent Selection",
       "checkbox": "复选框",
       "labels": "标签",
       "key": "键",

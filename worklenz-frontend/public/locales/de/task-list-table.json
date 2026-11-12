@@ -208,6 +208,7 @@
       "number": "Zahl",
       "date": "Datum",
       "selection": "Auswahl",
+      "dependent_selection": "Dependent Selection",
       "checkbox": "Kontrollkästchen",
       "labels": "Etiketten",
       "key": "Schlüssel",

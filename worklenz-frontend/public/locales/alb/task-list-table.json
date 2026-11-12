@@ -208,6 +208,7 @@
       "number": "Numër",
       "date": "Data",
       "selection": "Zgjedhje",
+      "dependent_selection": "Dependent Selection",
       "checkbox": "Kutia e kontrollit",
       "labels": "Etiketat",
       "key": "Çelësi",

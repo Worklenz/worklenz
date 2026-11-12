@@ -1,9 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { nanoid } from 'nanoid';
 import { useTranslation } from 'react-i18next';
 import { Button, Flex, Input, Tooltip, Typography, theme } from '@/shared/antd-imports';
-import { CloseCircleOutlined } from '@/shared/antd-imports';
-import type { InputRef } from '@/shared/antd-imports';
+import { CloseCircleOutlined, HolderOutlined } from '@/shared/antd-imports';
 import { PhaseColorCodes } from '@/shared/constants';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -14,22 +13,26 @@ import {
 import { SelectionType } from '../selection-type-column/selection-type-column';
 import SelectionColorPicker from '../SelectionColorPicker';
 
+const splitOptionLabels = (raw: string) =>
+  raw
+    .split(',')
+    .map(label => label.trim())
+    .filter(Boolean);
+
+interface NewParentFieldEditorProps {
+  dependentFieldTitle?: string;
+}
+
 /**
- * Inline editor for "+ Create new parent field": name + flat options for a standalone parent
- * Selection column. Saved as its own column; child columns are added later via Depends on.
+ * Inline editor for "+ Create new parent field" inside Dependent Selection setup.
+ * Saved together with the dependent child column on form submit.
  */
-export const NewParentFieldEditor = () => {
+export const NewParentFieldEditor = ({ dependentFieldTitle = '' }: NewParentFieldEditorProps) => {
   const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
+  const { token } = theme.useToken();
   const draft = useAppSelector(state => state.taskListCustomColumnsReducer.newParentField);
-  const inputRefs = useRef<Record<string, InputRef | null>>({});
-  const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!pendingFocusId) return;
-    inputRefs.current[pendingFocusId]?.focus();
-    setPendingFocusId(null);
-  }, [pendingFocusId, draft]);
+  const [draftOption, setDraftOption] = useState('');
 
   if (!draft) return null;
 
@@ -45,40 +48,47 @@ export const NewParentFieldEditor = () => {
     });
   };
 
-  const handleAddSelection = () => {
-    const selectionId = nanoid();
+  const handleAddSelections = () => {
+    const labels = splitOptionLabels(draftOption);
+    if (!labels.length) return;
+
     updateDraft({
       selections: [
         ...draft.selections,
-        {
-          selection_id: selectionId,
-          selection_name: '',
-          selection_color: PhaseColorCodes[draft.selections.length % PhaseColorCodes.length],
-        },
+        ...labels.map((label, index) => ({
+          selection_id: nanoid(),
+          selection_name: label,
+          selection_color:
+            PhaseColorCodes[(draft.selections.length + index) % PhaseColorCodes.length],
+        })),
       ],
     });
-    setPendingFocusId(selectionId);
-  };
-
-  const handleSelectionEnter = (event: React.KeyboardEvent<HTMLInputElement>, index: number) => {
-    event.preventDefault();
-    if (!draft.selections[index]?.selection_name.trim()) return;
-
-    const nextSelection = draft.selections[index + 1];
-    if (nextSelection) {
-      setPendingFocusId(nextSelection.selection_id);
-    } else {
-      handleAddSelection();
-    }
+    setDraftOption('');
   };
 
   return (
-    <div>
-
+    <div
+      style={{
+        border: `1px solid ${token.colorPrimary}`,
+        borderRadius: token.borderRadiusLG,
+        padding: 12,
+        marginBottom: 12,
+      }}
+    >
       <Flex vertical gap={8}>
         <Typography.Text strong>
-          {t('customColumns.dependentSelection.newParentTitle', {
-            defaultValue: 'New parent field',
+          {t('customColumns.dependentSelection.creatingNewParent', {
+            defaultValue: 'Creating a new field to be the parent',
+          })}
+        </Typography.Text>
+
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          {t('customColumns.dependentSelection.newParentTitleHint', {
+            defaultValue:
+              'Parent field title (this is a different field from "{{name}}" above)',
+            name:
+              dependentFieldTitle ||
+              t('customColumns.modal.fieldTitle', { defaultValue: 'this field' }),
           })}
         </Typography.Text>
 
@@ -93,6 +103,7 @@ export const NewParentFieldEditor = () => {
           aria-label={t('customColumns.dependentSelection.newParentNameLabel', {
             defaultValue: 'Parent field title',
           })}
+          style={{ fontWeight: 600 }}
         />
 
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -101,19 +112,17 @@ export const NewParentFieldEditor = () => {
           })}
         </Typography.Text>
 
-        {draft.selections.map((selection, index) => (
+        {draft.selections.map(selection => (
           <Flex gap={8} align="center" key={selection.selection_id}>
+            <HolderOutlined style={{ fontSize: 14, color: token.colorTextQuaternary }} />
             <Input
-              ref={element => {
-                inputRefs.current[selection.selection_id] = element;
-              }}
               size="small"
               style={{ flex: 1, minWidth: 0 }}
               value={selection.selection_name}
               onChange={event =>
                 updateSelection(selection.selection_id, { selection_name: event.target.value })
               }
-              onPressEnter={event => handleSelectionEnter(event, index)}
+              onPressEnter={event => event.preventDefault()}
               placeholder={t('customColumns.fieldTypeForms.selectionPlaceholder', {
                 defaultValue: 'Type a selection and press Enter',
               })}
@@ -154,14 +163,24 @@ export const NewParentFieldEditor = () => {
           </Flex>
         ))}
 
-        <Button
-          type="link"
-          size="small"
-          onClick={handleAddSelection}
-          style={{ width: 'fit-content', padding: 0 }}
-        >
-          {t('customColumns.fieldTypeForms.addSelection', { defaultValue: '+ Add a selection' })}
-        </Button>
+        <Flex gap={6}>
+          <Input
+            size="small"
+            value={draftOption}
+            onChange={event => setDraftOption(event.target.value)}
+            onPressEnter={event => {
+              event.preventDefault();
+              handleAddSelections();
+            }}
+            placeholder={t('customColumns.dependentSelection.newParentAddPlaceholder', {
+              defaultValue: 'New parent option… (comma-separated for multiple)',
+            })}
+            style={{ flex: 1, minWidth: 0 }}
+          />
+          <Button size="small" htmlType="button" onClick={handleAddSelections}>
+            {t('customColumns.dependentSelection.addButton', { defaultValue: '+ Add' })}
+          </Button>
+        </Flex>
       </Flex>
     </div>
   );
