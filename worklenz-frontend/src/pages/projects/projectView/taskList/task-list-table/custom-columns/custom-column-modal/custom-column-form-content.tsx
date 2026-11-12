@@ -242,12 +242,14 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       return null;
     }
 
+    // Keep the parent Selection in the project (needed for cascade) but hidden
+    // from the task list so only the Dependent Selection (Field title) appears.
     const res = await tasksCustomColumnsService.createCustomColumn(projectId || '', {
       name: parentName,
       key: nanoid(),
       field_type: 'selection',
       width: 120,
-      is_visible: true,
+      is_visible: false,
       configuration: {
         field_title: parentName,
         field_type: 'selection',
@@ -805,7 +807,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   {t('customColumns.dependentSelection.newParentTogetherHint', {
                     defaultValue:
-                      'This creates a brand-new Selection field alongside this one when you save.it will also appear as its own column.',
+                      'Parent options are saved with this field. Only this column appears in the task list as Dependent Selection.',
                   })}
                 </Typography.Text>
               ) : (

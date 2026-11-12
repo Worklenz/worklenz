@@ -1000,9 +1000,11 @@ export const SelectionCustomColumnCell: React.FC<{
     [columnKey, columnObj, projectCustomColumns, task.custom_column_values]
   );
   const selectionsList = dependentState.allowedOptions;
-  const parentFieldName = dependentState.parentColumn
-    ? getTaskCustomFieldDisplayName(dependentState.parentColumn)
-    : '';
+  const parentColumn = dependentState.parentColumn;
+  const parentFieldName = parentColumn ? getTaskCustomFieldDisplayName(parentColumn) : '';
+  const parentOptions = parentColumn?.custom_column_obj?.selectionsList || [];
+  // Inline-created parents are saved hidden (pinned=false); pick their value here.
+  const isParentHidden = Boolean(parentColumn && parentColumn.pinned === false);
   const hasValue = typeof customValue === 'string' && customValue !== '';
   const selectedOption = findSelectionOption(columnObj?.selectionsList || [], customValue);
   const isWaitingForParent = dependentState.isAwaitingParent && !hasValue;
@@ -1027,13 +1029,34 @@ export const SelectionCustomColumnCell: React.FC<{
     }
   };
 
+  const handleParentOptionSelect = async (option: {
+    selection_id: string;
+    selection_name: string;
+    selection_color?: string;
+  }) => {
+    if (!task.id || !parentColumn?.key) return;
+
+    setIsDropdownOpen(false);
+    setIsLoading(true);
+
+    try {
+      updateTaskCustomColumnValue(task.id, parentColumn.key, option.selection_name);
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 200);
+    } catch (error) {
+      console.error('Error updating parent selection:', error);
+      setIsLoading(false);
+    }
+  };
+
   const handleClear = () => {
     if (!task.id) return;
     setIsDropdownOpen(false);
     updateTaskCustomColumnValue(task.id, columnKey, null);
   };
 
-  if (isWaitingForParent) {
+  if (isWaitingForParent && !(isParentHidden && parentOptions.length > 0)) {
     const waitingText = t('customColumns.dependentSelection.selectParentFirst', {
       defaultValue: 'Select {{parent}} first',
       parent: parentFieldName,
@@ -1061,6 +1084,20 @@ export const SelectionCustomColumnCell: React.FC<{
     );
   }
 
+  const isPickingHiddenParent = isWaitingForParent && isParentHidden && parentOptions.length > 0;
+  const activeOptions = isPickingHiddenParent ? parentOptions : selectionsList;
+  const activeHeader = isPickingHiddenParent
+    ? t('customColumns.dependentSelection.selectHiddenParent', {
+        defaultValue: 'Select {{parent}}',
+        parent: parentFieldName,
+      })
+    : t('customColumns.selectOption', {
+        defaultValue: 'Select option',
+      });
+  const onActiveOptionSelect = isPickingHiddenParent
+    ? handleParentOptionSelect
+    : handleOptionSelect;
+
   const dropdownContent = (
     <div
       className={`
@@ -1079,21 +1116,19 @@ export const SelectionCustomColumnCell: React.FC<{
         }
       `}
       >
-        {t('customColumns.selectOption', {
-          defaultValue: 'Select option',
-        })}
+        {activeHeader}
       </div>
 
       {/* Options */}
       <div className="p-1">
-        {selectionsList.map((option: any) => (
+        {activeOptions.map((option: any) => (
           <div
             key={option.selection_id}
-            onClick={() => handleOptionSelect(option)}
+            onClick={() => onActiveOptionSelect(option)}
             className={`
               flex items-center gap-3 p-2 rounded-md cursor-pointer transition-all duration-200
               ${
-                selectedOption?.selection_id === option.selection_id
+                !isPickingHiddenParent && selectedOption?.selection_id === option.selection_id
                   ? isDarkMode
                     ? 'bg-blue-900/50 text-blue-200'
                     : 'bg-blue-50 text-blue-700'
@@ -1108,7 +1143,7 @@ export const SelectionCustomColumnCell: React.FC<{
               style={{ backgroundColor: option.selection_color || '#6b7280' }}
             />
             <span className="text-sm font-medium flex-1">{option.selection_name}</span>
-            {selectedOption?.selection_id === option.selection_id && (
+            {!isPickingHiddenParent && selectedOption?.selection_id === option.selection_id && (
               <div
                 className={`
                 w-4 h-4 rounded-full flex items-center justify-center
@@ -1127,7 +1162,7 @@ export const SelectionCustomColumnCell: React.FC<{
           </div>
         ))}
 
-        {selectionsList.length === 0 && (
+        {activeOptions.length === 0 && (
           <div
             className={`
             text-center py-8 text-sm
@@ -1148,7 +1183,7 @@ export const SelectionCustomColumnCell: React.FC<{
           </div>
         )}
 
-        {hasValue && (
+        {hasValue && !isPickingHiddenParent && (
           <div
             role="button"
             tabIndex={0}

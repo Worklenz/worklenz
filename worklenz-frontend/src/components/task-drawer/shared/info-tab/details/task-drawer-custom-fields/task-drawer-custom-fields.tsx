@@ -232,7 +232,10 @@ const TaskDrawerCustomFields = ({
       storeCustomColumns?.length > 0
         ? (storeCustomColumns as ITaskCustomColumn[])
         : customColumns;
-    const supportedColumns = getDrawerSupportedCustomFields(sourceColumns);
+    // Exclude hidden cascade parents (pinned=false); they stay in allProjectColumns for lookups.
+    const supportedColumns = getDrawerSupportedCustomFields(sourceColumns).filter(
+      column => column.pinned !== false
+    );
     if (!projectId) return supportedColumns;
 
     try {
@@ -515,13 +518,21 @@ const TaskDrawerCustomFields = ({
           allProjectColumns,
           task?.custom_column_values
         );
-        const parentFieldName = dependentState.parentColumn
-          ? getTaskCustomFieldDisplayName(dependentState.parentColumn)
+        const parentColumn = dependentState.parentColumn;
+        const parentFieldName = parentColumn
+          ? getTaskCustomFieldDisplayName(parentColumn)
           : '';
+        const parentOptions = parentColumn?.custom_column_obj?.selectionsList || [];
+        const isParentHidden = Boolean(parentColumn && parentColumn.pinned === false);
         const currentOption = findSelectionOption(getSelectionOptions(column), rawValue);
         const hasValue = typeof rawValue === 'string' && rawValue !== '';
         const isWaitingForParent = dependentState.isAwaitingParent && !hasValue;
-        const options = dependentState.allowedOptions.map(option => ({
+        const isPickingHiddenParent =
+          isWaitingForParent && isParentHidden && parentOptions.length > 0;
+        const selectableOptions = isPickingHiddenParent
+          ? parentOptions
+          : dependentState.allowedOptions;
+        const options = selectableOptions.map(option => ({
           value: option.selection_name,
           label: (
             <Flex align="center" gap={8}>
@@ -547,20 +558,25 @@ const TaskDrawerCustomFields = ({
         return (
           <Flex vertical gap={4}>
             <Select
-              allowClear
-              disabled={isReadOnly || isWaitingForParent}
+              allowClear={!isPickingHiddenParent}
+              disabled={isReadOnly || (isWaitingForParent && !isPickingHiddenParent)}
               value={hasValue ? String(rawValue) : undefined}
               status={dependentState.isCurrentValueInvalid ? 'warning' : undefined}
               className="w-full"
               placeholder={
-                isWaitingForParent
-                  ? tTaskList('customColumns.dependentSelection.selectParentFirst', {
-                      defaultValue: 'Select {{parent}} first',
+                isPickingHiddenParent
+                  ? tTaskList('customColumns.dependentSelection.selectHiddenParent', {
+                      defaultValue: 'Select {{parent}}',
                       parent: parentFieldName,
                     })
-                  : t('taskInfoTab.details.customFields.selectOption', {
-                      defaultValue: 'Select option',
-                    })
+                  : isWaitingForParent
+                    ? tTaskList('customColumns.dependentSelection.selectParentFirst', {
+                        defaultValue: 'Select {{parent}} first',
+                        parent: parentFieldName,
+                      })
+                    : t('taskInfoTab.details.customFields.selectOption', {
+                        defaultValue: 'Select option',
+                      })
               }
               notFoundContent={
                 dependentState.parentOption
@@ -570,7 +586,13 @@ const TaskDrawerCustomFields = ({
                     })
                   : undefined
               }
-              onChange={value => handleValueChange(column, value ?? null)}
+              onChange={value => {
+                if (isPickingHiddenParent && parentColumn) {
+                  void handleValueChange(parentColumn, value ?? null);
+                  return;
+                }
+                void handleValueChange(column, value ?? null);
+              }}
               options={options}
             />
             {dependentState.isCurrentValueInvalid && (

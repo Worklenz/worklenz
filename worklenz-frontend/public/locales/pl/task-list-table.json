@@ -263,7 +263,7 @@
       "newParentOptions": "Opcje pola nadrzędnego",
       "newParentAddPlaceholder": "Nowa opcja nadrzędna… (oddzielone przecinkami dla wielu)",
       "newParentIncomplete": "Nadaj nowemu polu nadrzędnemu tytuł i co najmniej jedną opcję.",
-      "newParentTogetherHint": "Przy zapisie tworzy to nowe pole Wyboru obok tego. Pojawi się też jako osobna kolumna.",
+      "newParentTogetherHint": "Opcje nadrzędne są zapisywane z tym polem. Tylko ta kolumna pojawia się na liście zadań jako Wybór zależny.",
       "newParentOnlyHint": "Tworzy tylko główną kolumnę Wyboru. Później dodaj kolumnę podrzędną i ustaw Zależy od na to pole.",
       "dependentOptions": "Opcje zależne",
       "addUnderPlaceholder": "Nowa opcja pod {{value}}… (oddzielone przecinkami dla wielu)",
@@ -298,7 +298,8 @@
       "rejected": "Wartość nie została zapisana: {{reason}}",
       "parentValueRequired": "Najpierw wybierz wartość pola nadrzędnego.",
       "invalidPair": "Ta opcja jest nieprawidłowa dla bieżącej wartości nadrzędnej.",
-      "hasDependentsTypeHint": "{{fields}} zależy od tego pola, więc nie można zmienić jego typu."
+      "hasDependentsTypeHint": "{{fields}} zależy od tego pola, więc nie można zmienić jego typu.",
+      "selectHiddenParent": "Wybierz {{parent}}"
     },
     "newColumn": "Nowa kolumna",
     "projectNotFound": "Nie znaleziono projektu",
