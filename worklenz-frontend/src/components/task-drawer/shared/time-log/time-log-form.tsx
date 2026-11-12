@@ -643,25 +643,20 @@ const TimeLogForm = ({
           }
         } else {
           if (requestBodies.length === 2) {
-            if (asTimeEntry) {
-              // Use the atomic split endpoint so the new segment is credited to the
-              // ORIGINAL member, not the editing admin. Both writes are transactional.
-              await taskTimeLogsApiService.splitEntry(
-                initialValues.id,
-                {
-                  seconds_spent: requestBodies[0].seconds_spent,
-                  formatted_start: requestBodies[0].formatted_start,
-                  description: requestBodies[0].description,
-                },
-                {
-                  seconds_spent: requestBodies[1].seconds_spent,
-                  formatted_start: requestBodies[1].formatted_start,
-                }
-              );
-            } else {
-              await doUpdate(initialValues.id, requestBodies[0]);
-              await taskTimeLogsApiService.create({ ...requestBodies[1], id: targetTaskId });
-            }
+            await taskTimeLogsApiService.splitEntry(
+              initialValues.id,
+              {
+                seconds_spent: requestBodies[0].seconds_spent,
+                formatted_start: requestBodies[0].formatted_start,
+                description: requestBodies[0].description,
+              },
+              {
+                seconds_spent: requestBodies[1].seconds_spent,
+                formatted_start: requestBodies[1].formatted_start,
+              },
+              !asTimeEntry,
+              !asTimeEntry ? requestBodies[0].new_task_id : undefined
+            );
           } else {
             await doUpdate(initialValues.id, requestBodies[0]);
           }

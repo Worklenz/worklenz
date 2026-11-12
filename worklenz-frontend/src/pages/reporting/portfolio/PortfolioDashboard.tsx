@@ -53,7 +53,7 @@ const compareDate = (a: string | null, b: string | null) =>
 const NO_CATEGORY_KEY = '__none__';
 
 const formatDate = (value: string | null) =>
-  value ? new Date(value).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+  value ? new Date(value).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '-';
 
 const columnKey = (group: ColumnGroup, id: string) => `${group}:${id}`;
 
@@ -102,8 +102,8 @@ export const PortfolioDashboard = () => {
   }, []);
 
   const selection = useMemo(() => ({ period, year, quarter, month }), [period, year, quarter, month]);
-  const { data, isLoading, isFetching, isError, refetch } = useGetPortfolioQuery(selection);
-  const portfolio = data?.body;
+  const { currentData, isLoading, isFetching, isError, refetch } = useGetPortfolioQuery(selection);
+  const portfolio = currentData?.body;
 
   const periodOptions = [
     { value: 'yearly', label: t('yearly', { defaultValue: 'Yearly' }) },
@@ -416,6 +416,15 @@ const PortfolioCategoryTable = memo(
   const { token } = theme.useToken();
 
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (loading) return;
+    const available = new Set(categories.map(category => category.id ?? NO_CATEGORY_KEY));
+    setCategoryFilter(previous => {
+      const next = previous.filter(id => available.has(id));
+      return next.length === previous.length ? previous : next;
+    });
+  }, [categories, loading]);
 
   const countColumn = (key: string, title: ReactNode) => ({
     key,

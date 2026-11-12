@@ -35,7 +35,7 @@ export async function checkDailyTimeLimit(
        JOIN users u ON u.id = $2
        LEFT JOIN timezones tz ON tz.id = u.timezone_id
       WHERE team.id = $1
-      LIMIT 1`,
+      LIMIT 1 FOR SHARE OF o`,
     [teamId, userId]
   );
   const row = context.rows[0];

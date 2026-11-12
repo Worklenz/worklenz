@@ -34,12 +34,13 @@ async function loadPortfolio(req: IWorkLenzRequest): Promise<{ data: PortfolioRe
   const period = (req.query.period as string) || "monthly";
   if (!(PORTFOLIO_PERIODS as readonly string[]).includes(period)) return { error: "Invalid period" };
 
-  const year = toInt(req.query.year) ?? moment.utc().year();
+  const year = req.query.year === undefined ? moment.utc().year() : toInt(req.query.year);
+  if (year === undefined) return { error: "Invalid reporting period" };
   const range = resolvePortfolioRange({
     period: period as PortfolioPeriod,
     year,
     quarter: toInt(req.query.quarter),
-    month: toInt(req.query.month),
+    month: req.query.period === undefined && req.query.month === undefined ? moment.utc().month() + 1 : toInt(req.query.month),
   });
   if (!range) return { error: "Invalid reporting period" };
 
@@ -123,8 +124,8 @@ export default class ReportingPortfolioController extends WorklenzControllerBase
             priority: project.priority ?? "-",
             health: project.health ?? "-",
             manager: project.manager ?? "-",
-            start: project.startDate ? moment(project.startDate).format("YYYY-MM-DD") : "-",
-            end: project.endDate ? moment(project.endDate).format("YYYY-MM-DD") : "-",
+            start: project.startDate ? moment.utc(project.startDate).format("YYYY-MM-DD") : "-",
+            end: project.endDate ? moment.utc(project.endDate).format("YYYY-MM-DD") : "-",
           });
         }
       }

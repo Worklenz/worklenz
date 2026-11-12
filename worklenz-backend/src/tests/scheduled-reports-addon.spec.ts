@@ -12,10 +12,13 @@ jest.mock('@worklenz/addon-sdk', () => ({
 }), { virtual: true });
 jest.mock('../../../addons/worklenz-addons/scheduled-reports/backend/feed-export.service', () => ({
   FeedExportService: { resolveOrganizationContext: mockResolveOrganizationContext, exportMembersCsv: mockExportMembersCsv, exportAllocationCsv: mockExportAllocationCsv, exportAllTasksCsv: mockExportAllTasksCsv },
-}));
-const { runScheduledReports } = require('../../../addons/worklenz-addons/scheduled-reports/backend/scheduler');
+}), { virtual: true });
+const fs = require('fs');
+const path = require('path');
+const hasAddon = fs.existsSync(path.resolve(__dirname, '../../../addons/worklenz-addons/scheduled-reports/backend/scheduler.ts')) || fs.existsSync(path.resolve(__dirname, '../../../addons/worklenz-addons/scheduled-reports/backend/scheduler.js'));
+const runScheduledReports = hasAddon ? require('../../../addons/worklenz-addons/scheduled-reports/backend/scheduler').runScheduledReports : undefined;
 
-describe('scheduled reports delivery', () => {
+(hasAddon ? describe : describe.skip)('scheduled reports delivery', () => {
   beforeEach(() => {
     jest.useFakeTimers({ doNotFake: ['performance'] }).setSystemTime(new Date('2026-11-06T01:00:00Z'));
     mockQuery.mockReset(); mockRelease.mockReset(); mockSendEmailEnhanced.mockReset();

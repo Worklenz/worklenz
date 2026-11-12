@@ -7,16 +7,19 @@ const path = require('path');
 
 const repoRoot = path.resolve(__dirname, '../..');
 const nestedAddonsDir = path.join(repoRoot, 'addons', 'worklenz-addons');
-const addonsDir = fs.existsSync(nestedAddonsDir) ? nestedAddonsDir : path.join(repoRoot, 'addons');
+const addonsRoot = path.join(repoRoot, 'addons');
+if (!fs.existsSync(addonsRoot)) process.exit(0);
 
-if (!fs.existsSync(addonsDir)) {
-  process.exit(0);
+// Match runtime resolution: prefer nested installations for each add-on ID.
+const addonDirs = new Map();
+for (const root of [nestedAddonsDir, addonsRoot]) {
+  if (!fs.existsSync(root)) continue;
+  for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+    if (entry.isDirectory() && entry.name !== 'worklenz-addons' && !addonDirs.has(entry.name)) {
+      addonDirs.set(entry.name, path.join(root, entry.name));
+    }
+  }
 }
-
-const addonDirs = fs
-  .readdirSync(addonsDir, { withFileTypes: true })
-  .filter((d) => d.isDirectory())
-  .map((d) => d.name);
 
 const sdkSource = path.join(__dirname, '../src/addons/addon-sdk.ts');
 const sdkBuildFile = path.join(__dirname, '../build/addons/addon-sdk.js');
@@ -94,8 +97,8 @@ fs.writeFileSync(
   )
 );
 
-for (const addonId of addonDirs) {
-  const tsconfigPath = path.join(addonsDir, addonId, 'backend', 'tsconfig.json');
+for (const [addonId, addonDir] of addonDirs) {
+  const tsconfigPath = path.join(addonDir, 'backend', 'tsconfig.json');
   if (!fs.existsSync(tsconfigPath)) {
     continue;
   }
@@ -112,7 +115,7 @@ for (const addonId of addonDirs) {
     );
 
     // Normalize any relative addon-sdk imports in emitted dist files to @worklenz/addon-sdk
-    const distDir = path.join(addonsDir, addonId, 'backend', 'dist');
+    const distDir = path.join(addonDir, 'backend', 'dist');
     if (fs.existsSync(distDir)) {
       const walk = (dir) => {
         for (const file of fs.readdirSync(dir)) {

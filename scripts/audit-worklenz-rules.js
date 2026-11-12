@@ -15,7 +15,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
@@ -54,11 +54,8 @@ function getFilesToScan() {
     const list = [];
     const walk = (dir) => {
       if (
-        dir.includes('node_modules') ||
-        dir.includes('.git') ||
-        dir.includes('build') ||
-        dir.includes('dist') ||
-        dir.includes('coverage')
+        path.relative(ROOT_DIR, dir).split(path.sep).some(part =>
+          ['node_modules', '.git', 'build', 'dist', 'coverage'].includes(part))
       ) {
         return;
       }
@@ -77,36 +74,19 @@ function getFilesToScan() {
   }
 
   try {
-    let gitCmd = 'git status --porcelain';
-    if (stagedOnly) {
-      gitCmd = 'git diff --cached --name-only --diff-filter=ACMR';
-    } else if (diffBranch) {
-      gitCmd = `git diff ${diffBranch}...HEAD --name-only --diff-filter=ACMR`;
-    } else {
-      // Default: check modified and untracked files
-      gitCmd = 'git diff HEAD --name-only --diff-filter=ACMR';
+    let gitArgs;
+    if (stagedOnly) gitArgs = ['diff', '--cached', '--name-only', '--diff-filter=ACMR', '-z'];
+    else if (diffBranch) gitArgs = ['diff', '--name-only', '--diff-filter=ACMR', '-z', `${diffBranch}...HEAD`, '--'];
+    else gitArgs = ['diff', 'HEAD', '--name-only', '--diff-filter=ACMR', '-z'];
+    const runGit = command => execFileSync('git', command, { cwd: ROOT_DIR, encoding: 'utf-8' });
+    const files = runGit(gitArgs).split('\0').filter(Boolean);
+    if (!stagedOnly && !diffBranch) {
+      files.push(...runGit(['ls-files', '--others', '--exclude-standard', '-z']).split('\0').filter(Boolean));
     }
-
-    const output = execSync(gitCmd, { cwd: ROOT_DIR, encoding: 'utf-8' });
-    const relFiles = output
-      .split('\n')
-      .map((f) => f.trim())
-      .filter(Boolean);
-
-    if (relFiles.length === 0 && !stagedOnly && !diffBranch) {
-      // If git diff HEAD is empty, look at staged
-      const stagedOutput = execSync('git diff --cached --name-only --diff-filter=ACMR', {
-        cwd: ROOT_DIR,
-        encoding: 'utf-8',
-      });
-      const stagedFiles = stagedOutput.split('\n').map((f) => f.trim()).filter(Boolean);
-      return stagedFiles.map((f) => path.join(ROOT_DIR, f));
-    }
-
-    return relFiles.map((f) => path.join(ROOT_DIR, f));
+    return [...new Set(files)].map(file => path.join(ROOT_DIR, file));
   } catch (err) {
-    log(`${colors.yellow}Warning: Git command failed, falling back to directory scan.${colors.reset}`);
-    return [];
+    console.error('Unable to select files for audit:', err.message);
+    process.exit(1);
   }
 }
 
@@ -116,46 +96,24 @@ function checkI18n(filePath, content) {
   if (filePath.includes('.test.') || filePath.includes('.spec.')) return;
   if (!filePath.includes('worklenz-frontend') && !filePath.includes('worklenz-client-portal')) return;
 
-  const lines = content.split('\n');
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    // Match t('key') or t("key") without a second argument or without defaultValue
-    // Matches patterns like: t('something') or t("something", { count: 1 }) without defaultValue
-    const tMatches = [...line.matchAll(/\bt\(\s*['"`]([^'"`]+)['"`]\s*([,)])/g)];
-    for (const match of tMatches) {
-      const charAfter = match[2];
-      if (charAfter === ')') {
-        // Simple t('key') with no options
-        issues.i18n.push({
-          file: path.relative(ROOT_DIR, filePath),
-          line: i + 1,
-          key: match[1],
-          text: line.trim(),
-          reason: `Missing second argument with '{ defaultValue: "..." }'`,
-        });
+  const ts = require(require.resolve('typescript', { paths: [path.join(ROOT_DIR, 'worklenz-frontend')] }));
+  const source = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true,
+    filePath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const visit = node => {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 't' &&
+        node.arguments.length && ts.isStringLiteralLike(node.arguments[0])) {
+      const options = node.arguments[1];
+      const hasDefault = options && ts.isObjectLiteralExpression(options) && options.properties.some(property =>
+        property.name && (ts.isIdentifier(property.name) || ts.isStringLiteral(property.name)) && property.name.text === 'defaultValue');
+      if (!hasDefault) {
+        const line = source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1;
+        issues.i18n.push({ file: path.relative(ROOT_DIR, filePath), line, key: node.arguments[0].text,
+          text: node.getText(source).split('\n')[0], reason: "Translation call is missing defaultValue." });
       }
     }
-
-    // Check multi-line or object without defaultValue
-    if (line.includes('t(') && line.includes('{') && !line.includes('defaultValue') && !lines[i + 1]?.includes('defaultValue') && !lines[i + 2]?.includes('defaultValue')) {
-      // Check if it's an options object passed to t
-      const optMatch = line.match(/\bt\(\s*['"`]([^'"`]+)['"`]\s*,\s*\{/);
-      if (optMatch) {
-        // Inspect up to next 4 lines
-        const block = lines.slice(i, i + 5).join(' ');
-        if (!block.includes('defaultValue')) {
-          issues.i18n.push({
-            file: path.relative(ROOT_DIR, filePath),
-            line: i + 1,
-            key: optMatch[1],
-            text: line.trim(),
-            reason: `Options object provided to t() is missing 'defaultValue'`,
-          });
-        }
-      }
-    }
-  }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
 }
 
 // Check 2: Theming & Hardcoded hex colors in TSX style/attributes
@@ -185,22 +143,32 @@ function checkTheming(filePath, content) {
 
 // Check 3: Database UUID Primary Key
 function checkDatabaseMigrations(filePath, content) {
-  if (!filePath.endsWith('.sql')) return;
-  if (!filePath.includes('migration')) return;
+  if (!/\.(sql|js)$/i.test(filePath) || !filePath.includes('migration')) return;
 
-  const lines = content.split('\n');
-  const upperContent = content.toUpperCase();
-
-  if (upperContent.includes('CREATE TABLE')) {
-    // Check if table creation does not have uuid_generate_v4()
-    if (!upperContent.includes('UUID_GENERATE_V4()') && !upperContent.includes('GEN_RANDOM_UUID()')) {
-      issues.database.push({
-        file: path.relative(ROOT_DIR, filePath),
-        line: 1,
-        text: 'CREATE TABLE statement',
-        reason: 'Table created without UUID primary key defaulting to `uuid_generate_v4()`.',
-      });
+  // SQL migrations and pg-migrations embed CREATE TABLE statements in JavaScript.
+  const createTable = /\bCREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([\w."-]+)\s*\(/gi;
+  let match;
+  while ((match = createTable.exec(content))) {
+    const bodyStart = createTable.lastIndex;
+    let depth = 1;
+    let end = bodyStart;
+    while (end < content.length && depth > 0) {
+      if (content[end] === '(') depth++;
+      if (content[end] === ')') depth--;
+      end++;
     }
+    const body = content.slice(bodyStart, end - 1);
+    const columns = body.split(/,(?![^()]*\))/);
+    const tableKey = body.match(/\bPRIMARY\s+KEY\s*\(\s*"?(\w+)"?\s*\)/i)?.[1];
+    const valid = columns.some(column => {
+      const name = column.trim().match(/^"?(\w+)"?\s+/)?.[1];
+      const isKey = /\bPRIMARY\s+KEY\b/i.test(column) || (tableKey && name?.toLowerCase() === tableKey.toLowerCase());
+      return isKey && /\bUUID\b/i.test(column) && /\bDEFAULT\s+(?:uuid_generate_v4|gen_random_uuid)\s*\(\s*\)/i.test(column);
+    });
+    if (!valid) issues.database.push({ file: path.relative(ROOT_DIR, filePath),
+      line: content.slice(0, match.index).split('\n').length, text: match[0],
+      reason: `Table ${match[1]} lacks a UUID primary key with a UUID-generating default.` });
+    createTable.lastIndex = end;
   }
 }
 
@@ -213,15 +181,19 @@ function runAudit() {
   log(`Scanning ${files.length} target file(s)...\n`);
 
   for (const filePath of files) {
-    if (!fs.existsSync(filePath)) continue;
+    if (!stagedOnly && !fs.existsSync(filePath)) continue;
     stats.scannedFiles++;
     try {
-      const content = fs.readFileSync(filePath, 'utf-8');
+      const content = stagedOnly
+        ? execFileSync('git', ['show', `:${path.relative(ROOT_DIR, filePath).split(path.sep).join('/')}`], { cwd: ROOT_DIR, encoding: 'utf-8' })
+        : fs.readFileSync(filePath, 'utf-8');
       checkI18n(filePath, content);
       checkTheming(filePath, content);
       checkDatabaseMigrations(filePath, content);
     } catch (e) {
-      // Ignore unreadable or binary files
+      console.error(`Unable to read ${filePath}: ${e.message}`);
+      process.exitCode = 1;
+      stats.errors++;
     }
   }
 

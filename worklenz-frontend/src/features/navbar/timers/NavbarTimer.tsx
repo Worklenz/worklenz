@@ -168,7 +168,7 @@ const NavbarTimer: React.FC<NavbarTimerProps> = ({
                 if (remaining > 0) {
                   socket?.emit(
                     SocketEvents.TASK_TIMER_STOP.toString(),
-                    JSON.stringify({ task_id: taskId, override_seconds: remaining })
+                    JSON.stringify({ task_id: taskId, override_seconds: remaining, override_day: day })
                   );
                 } else {
                   socket?.emit(

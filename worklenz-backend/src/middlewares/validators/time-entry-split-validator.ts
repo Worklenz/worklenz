@@ -42,6 +42,7 @@ export default async function timeEntrySplitValidator(
 
   for (const [index, segment] of segments.entries()) {
     const projectViolation = await getProjectStartDateViolation({
+      taskId: req.body.new_task_id || undefined,
       workLogId: req.params.id,
       formattedStart: segment.formatted_start,
       userId: req.user?.id,

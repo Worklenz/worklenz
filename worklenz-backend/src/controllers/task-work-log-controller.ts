@@ -12,6 +12,7 @@ import HandleExceptions from "../decorators/handle-exceptions";
 import momentTime from "moment-timezone";
 import { SocketEvents } from "../socket.io/events";
 import { IO } from "../shared/io";
+import { getUsersWhoCanViewTask } from "../shared/assignee-task-scope";
 import {
   resolveTimeEntriesVisibilityScope,
   buildTimeEntriesScopePredicate,
@@ -125,16 +126,19 @@ export default class TaskWorklogController extends WorklenzControllerBase {
   // project-specific (e.g. Home's Focus Time stat spans all of a user's projects).
   private static async emitTaskTimeLogUpdated(teamId: string | undefined, taskId: string | undefined) {
     if (!teamId || !taskId) return;
-    const membersQuery = `
-      SELECT DISTINCT u.socket_id
-      FROM team_members tm
-      INNER JOIN users u ON tm.user_id = u.id
-      WHERE tm.team_id = $1
-        AND u.socket_id IS NOT NULL
-    `;
-    const membersResult = await db.query(membersQuery, [teamId]);
-    for (const member of membersResult.rows) {
-      IO.emit(SocketEvents.TASK_TIME_LOG_UPDATED, member.socket_id, { task_id: taskId });
+    try {
+      const membersResult = await db.query(`
+        SELECT DISTINCT u.id, u.socket_id
+        FROM team_members tm
+        INNER JOIN users u ON tm.user_id = u.id
+        WHERE tm.team_id = $1 AND u.socket_id IS NOT NULL
+      `, [teamId]);
+      const visible = await getUsersWhoCanViewTask(membersResult.rows.map(member => member.id), taskId);
+      for (const member of membersResult.rows) {
+        if (visible.has(member.id)) IO.emit(SocketEvents.TASK_TIME_LOG_UPDATED, member.socket_id, { task_id: taskId });
+      }
+    } catch (error) {
+      log_error(error);
     }
   }
 
@@ -170,6 +174,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     }));
 
     const client = await db.connect();
+    let released = false;
     try {
       await client.query("BEGIN");
 
@@ -222,6 +227,8 @@ export default class TaskWorklogController extends WorklenzControllerBase {
       }
 
       await client.query("COMMIT");
+      client.release();
+      released = true;
 
       for (const taskId of affectedTaskIds) {
         await this.emitTaskTimeLogUpdated(req.user?.team_id, taskId);
@@ -232,7 +239,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
       await client.query("ROLLBACK");
       throw err;
     } finally {
-      client.release();
+      if (!released) client.release();
     }
   }
 
@@ -358,6 +365,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     const targetTaskId = new_task_id || oldTaskId;
 
     const client = await db.connect();
+    let released = false;
     try {
       await client.query("BEGIN");
 
@@ -367,7 +375,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
          JOIN tasks t ON t.id = twl.task_id
          JOIN projects p ON p.id = t.project_id
          WHERE twl.id = $1::uuid
-         FOR UPDATE;`,
+         FOR UPDATE OF twl;`,
         [req.params.id]
       );
       const isTimer = Boolean(logRes.rows[0]?.logged_by_timer);
@@ -428,6 +436,8 @@ export default class TaskWorklogController extends WorklenzControllerBase {
       const [data] = result.rows;
 
       await client.query("COMMIT");
+      client.release();
+      released = true;
 
       // Notify the new (or same) task
       await this.emitTaskTimeLogUpdated(req.user?.team_id, data?.task_id);
@@ -441,7 +451,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
       await client.query("ROLLBACK");
       throw err;
     } finally {
-      client.release();
+      if (!released) client.release();
     }
   }
 
@@ -485,6 +495,14 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     return res.status(200).send(new ServerResponse(true, data));
   }
 
+  public static async splitDrawerTimeEntry(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const access = await resolveTaskWorkLogManageAccess(req.params.id, req.user);
+    if (!access?.canManage) {
+      return res.status(403).send(new ServerResponse(false, null, "You do not have permission to edit this time log."));
+    }
+    return TaskWorklogController.splitTimeEntry(req, res, access.task_id);
+  }
+
   /**
    * Time Entries page ONLY (PUT /task-time-log/entries/:id). Unlike update() — the task drawer's
    * route, which stays author-only — a log may be edited by its author OR, for owners/admins,
@@ -501,6 +519,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     const canEditOthers = isTeamOwner(req.user) || isTeamAdmin(req.user);
 
     const client = await db.connect();
+    let released = false;
     try {
       await client.query("BEGIN");
 
@@ -511,7 +530,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
         INNER JOIN projects p ON p.id = t.project_id
         WHERE twl.id = $1
           AND ${timeLogModifiableByUser(2, 3, 4)}
-        FOR UPDATE;
+        FOR UPDATE OF twl;
       `;
       const lockRes = await client.query(lockQ, [
         req.params.id,
@@ -578,6 +597,8 @@ export default class TaskWorklogController extends WorklenzControllerBase {
       const [data] = result.rows;
 
       await client.query("COMMIT");
+      client.release();
+      released = true;
 
       await this.emitTaskTimeLogUpdated(req.user?.team_id, data?.task_id);
 
@@ -586,7 +607,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
       await client.query("ROLLBACK");
       throw err;
     } finally {
-      client.release();
+      if (!released) client.release();
     }
   }
 
@@ -642,6 +663,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
   public static async splitTimeEntry(
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
+    drawerTaskId?: string,
   ): Promise<IWorkLenzResponse> {
     const { segment1, segment2 } = (req.body || {}) as {
       segment1: { seconds_spent: number; formatted_start: string; description?: string };
@@ -667,6 +689,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
 
     const canEditOthers = isTeamOwner(req.user) || isTeamAdmin(req.user);
     let taskId: string | undefined;
+    let oldTaskId: string | undefined;
 
     // Execute both writes atomically.
     const client = await db.connect();
@@ -674,12 +697,12 @@ export default class TaskWorklogController extends WorklenzControllerBase {
       await client.query("BEGIN");
 
       const lockResult = await client.query(
-        `SELECT twl.task_id, twl.user_id
+        `SELECT twl.task_id, twl.user_id, twl.logged_by_timer
          FROM task_work_log AS twl
          WHERE twl.id = $1
-           AND ${timeLogModifiableByUser(2, 3, 4)}
+           AND ${drawerTaskId ? "twl.task_id = $2" : timeLogModifiableByUser(2, 3, 4)}
          FOR UPDATE`,
-        [req.params.id, req.user?.id, canEditOthers, req.user?.team_id]
+        drawerTaskId ? [req.params.id, drawerTaskId] : [req.params.id, req.user?.id, canEditOthers, req.user?.team_id]
       );
       const originalLog = lockResult.rows[0];
       if (!originalLog) {
@@ -689,13 +712,14 @@ export default class TaskWorklogController extends WorklenzControllerBase {
         );
       }
       const { task_id: originalTaskId, user_id: originalUserId } = originalLog;
-      taskId = originalTaskId;
+      oldTaskId = originalTaskId;
+      taskId = drawerTaskId && req.body.new_task_id ? req.body.new_task_id : originalTaskId;
 
       const additions: DailyTimeEntry[] = [
         {
           start: segment1.formatted_start,
           seconds: Number(segment1.seconds_spent),
-          isTimedSession: false,
+          isTimedSession: Boolean(originalLog.logged_by_timer),
         },
         {
           start: segment2.formatted_start,
@@ -736,13 +760,15 @@ export default class TaskWorklogController extends WorklenzControllerBase {
         `UPDATE task_work_log
          SET time_spent  = $2,
              description = $3,
-             created_at  = $4
+             created_at  = $4,
+             task_id = $5
          WHERE id = $1;`,
         [
           req.params.id,
           segment1.seconds_spent,
           segment1.description ?? null,
           segment1.formatted_start,
+          taskId,
         ]
       );
 
@@ -753,7 +779,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
         [
           segment2.seconds_spent,
           segment1.description ?? null,  // carry the same description as segment 1
-          originalTaskId,
+          taskId,
           originalUserId,               // ← preserve original member's id
           segment2.formatted_start,
         ]
@@ -768,6 +794,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     }
 
     await this.emitTaskTimeLogUpdated(req.user?.team_id, taskId);
+    if (oldTaskId !== taskId) await this.emitTaskTimeLogUpdated(req.user?.team_id, oldTaskId);
 
     return res.status(200).send(new ServerResponse(true, null));
   }

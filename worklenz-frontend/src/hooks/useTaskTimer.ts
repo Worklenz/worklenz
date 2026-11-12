@@ -9,8 +9,10 @@ import { updateTaskTimeTracking } from '@/features/tasks/tasks.slice';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { selectTaskById, updateTask } from '@/features/task-management/task-management.slice';
 import { store } from '@/app/store';
+import { useTranslation } from 'react-i18next';
 
 export const useTaskTimer = (taskId: string, initialStartTime: number | null) => {
+  const { t } = useTranslation('navbar');
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
   const DEFAULT_TIME_LEFT = buildTimeString(0, 0, 0);
@@ -155,15 +157,20 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
             };
 
             Modal.confirm({
-              title: 'Daily Time Limit Exceeded',
-              content: `Total logged time cannot exceed 24 hours per day. This timer ran for ${formatSecs(elapsed)}, but you only have ${formatSecs(remaining)} remaining for ${day}.`,
-              okText: remaining > 0 ? `Log Remaining (${formatSecs(remaining)})` : 'Discard Timer',
-              cancelText: 'Keep Running',
+              title: t('timerButton.dailyLimitExceededTitle', { defaultValue: 'Daily Time Limit Exceeded' }),
+              content: t('timerButton.dailyLimitExceededDesc', {
+                defaultValue: 'Total logged time cannot exceed 24 hours per day. This timer ran for {{elapsed}}, but you only have {{remaining}} remaining for {{day}}.',
+                elapsed: formatSecs(elapsed), remaining: formatSecs(remaining), day,
+              }),
+              okText: remaining > 0
+                ? t('timerButton.logRemainingAllowance', { defaultValue: 'Log Remaining ({{remaining}})', remaining: formatSecs(remaining) })
+                : t('timerButton.discardTimer', { defaultValue: 'Discard Timer' }),
+              cancelText: t('timerButton.keepRunning', { defaultValue: 'Keep Running' }),
               onOk: () => {
                 if (remaining > 0) {
                   socket?.emit(
                     SocketEvents.TASK_TIMER_STOP.toString(),
-                    JSON.stringify({ task_id: taskId, override_seconds: remaining })
+                    JSON.stringify({ task_id: taskId, override_seconds: remaining, override_day: day })
                   );
                 } else {
                   socket?.emit(
@@ -255,7 +262,7 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
       socket.off(SocketEvents.TASK_TIMER_START.toString(), handleTimerStart);
       socket.off('timer-error', handleTimerError);
     };
-  }, [socket, taskId, dispatch, resetTimer, clearReduxTimer]);
+  }, [socket, taskId, dispatch, resetTimer, clearReduxTimer, t]);
 
   return {
     started,

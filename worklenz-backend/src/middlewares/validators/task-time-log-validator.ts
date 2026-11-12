@@ -12,6 +12,7 @@ export default async function (req: IWorkLenzRequest, res: IWorkLenzResponse, ne
 
   const { id, seconds_spent, created_at, formatted_start, new_task_id, entries } = req.body;
 
+  if (req.method === "PUT" && entries !== undefined) return res.sendStatus(400);
   if (Array.isArray(entries) && entries.length > 0) {
     // Batch creation splits a single task's time across days. Check the entire
     // batch before any database work; the route authorizes only the top-level ID.

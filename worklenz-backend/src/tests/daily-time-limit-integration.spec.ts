@@ -283,6 +283,30 @@ describe("24-Hour Daily Time Limit Integration Suite", () => {
   });
 
   describe("6. Timers & Stop Recovery", () => {
+    it("logs an overnight override on the selected day", async () => {
+      const mockSocket = {
+        request: { session: { passport: { user: { id: "00000000-0000-4000-8000-000000000001" } } } },
+        emit: jest.fn(), to: jest.fn().mockReturnValue({ emit: jest.fn() }),
+      } as any;
+      mockClient.query
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [{ start_time: new Date("2026-11-09T23:00:00Z"), time_spent: 14400, team_id: "team-1" }] })
+        .mockResolvedValueOnce({ rows: [{ timezone: "UTC" }] })
+        .mockResolvedValueOnce({ rows: [{ organization_id: "org-1", enforce_daily_time_limit: true, timezone: "UTC" }] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValue({ rows: [] });
+      mockedDb.query.mockResolvedValue({ rows: [] } as any);
+
+      await on_task_timer_stop({} as any, mockSocket, JSON.stringify({
+        task_id: "00000000-0000-4000-8000-000000000002", override_seconds: 3600, override_day: "2026-11-10",
+      }));
+
+      expect(mockClient.query).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO task_work_log"), [
+        3600, "00000000-0000-4000-8000-000000000002", "00000000-0000-4000-8000-000000000001", new Date("2026-11-10T00:00:00Z"),
+      ]);
+    });
+
     it("rejects an override longer than the elapsed timer and preserves it", async () => {
       const socketEmitMock = jest.fn();
       const mockSocket = {
@@ -385,6 +409,7 @@ describe("24-Hour Daily Time Limit Integration Suite", () => {
             },
           ],
         })
+        .mockResolvedValueOnce({ rows: [{ timezone: "UTC" }] }) // override day timezone
         // checkDailyTimeLimit queries:
         .mockResolvedValueOnce({ rows: [{ organization_id: "org-1", enforce_daily_time_limit: true, timezone: "UTC" }] })
         .mockResolvedValueOnce({ rows: [] }) // advisory lock
@@ -402,6 +427,7 @@ describe("24-Hour Daily Time Limit Integration Suite", () => {
         JSON.stringify({
           task_id: "00000000-0000-4000-8000-000000000002",
           override_seconds: 86400, // resolved to remaining allowance (24h)
+          override_day: "2026-11-10",
         })
       );
 

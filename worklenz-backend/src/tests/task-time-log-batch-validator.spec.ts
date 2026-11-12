@@ -38,4 +38,13 @@ describe("batch time log validation", () => {
     expect(getProjectStartDateViolation).toHaveBeenCalledWith(expect.objectContaining({ taskId: "task-1" }));
     expect(getBackdateViolation).toHaveBeenCalledTimes(2);
   });
+
+  it("rejects batches on updates before checking their dates", async () => {
+    const res = createMockResponse();
+    const next = jest.fn();
+    await taskTimeLogValidator(createMockRequest({ method: "PUT", body: { id: "task-1", entries: [entry] } }), res, next);
+    expect(res.sendStatus).toHaveBeenCalledWith(400);
+    expect(next).not.toHaveBeenCalled();
+    expect(getProjectStartDateViolation).not.toHaveBeenCalled();
+  });
 });
