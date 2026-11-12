@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { nanoid } from 'nanoid';
 import { useTranslation } from 'react-i18next';
 import { Button, Flex, Input, Tooltip, Typography, theme } from '@/shared/antd-imports';
+import type { InputRef } from '@/shared/antd-imports';
 import { CloseCircleOutlined, HolderOutlined } from '@/shared/antd-imports';
 import { PhaseColorCodes } from '@/shared/constants';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -12,6 +13,8 @@ import {
 } from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 import { SelectionType } from '../selection-type-column/selection-type-column';
 import SelectionColorPicker from '../SelectionColorPicker';
+
+const ADD_INPUT_FOCUS_ID = '__add_parent_option__';
 
 const splitOptionLabels = (raw: string) =>
   raw
@@ -29,6 +32,14 @@ export const NewParentFieldEditor = () => {
   const { token } = theme.useToken();
   const draft = useAppSelector(state => state.taskListCustomColumnsReducer.newParentField);
   const [draftOption, setDraftOption] = useState('');
+  const inputRefs = useRef<Record<string, InputRef | null>>({});
+  const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!pendingFocusId) return;
+    inputRefs.current[pendingFocusId]?.focus();
+    setPendingFocusId(null);
+  }, [pendingFocusId, draft?.selections]);
 
   if (!draft) return null;
 
@@ -60,14 +71,27 @@ export const NewParentFieldEditor = () => {
       ],
     });
     setDraftOption('');
+    setPendingFocusId(ADD_INPUT_FOCUS_ID);
+  };
+
+  const handleSelectionEnter = (
+    event: React.KeyboardEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    event.preventDefault();
+    if (!draft.selections[index]?.selection_name.trim()) return;
+
+    const nextSelection = draft.selections[index + 1];
+    if (nextSelection) {
+      setPendingFocusId(nextSelection.selection_id);
+    } else {
+      // Last option → move focus to the "New parent option…" placeholder.
+      setPendingFocusId(ADD_INPUT_FOCUS_ID);
+    }
   };
 
   return (
-    <div
-      style={{
-        marginBottom: 12,
-      }}
-    >
+    <div style={{ marginBottom: 12 }}>
       <Flex vertical gap={8}>
         <Typography.Text strong>
           {t('customColumns.dependentSelection.creatingNewParent', {
@@ -79,7 +103,11 @@ export const NewParentFieldEditor = () => {
           size="small"
           value={draft.name}
           onChange={event => updateDraft({ name: event.target.value })}
-          onPressEnter={event => event.preventDefault()}
+          onPressEnter={event => {
+            event.preventDefault();
+            const firstOption = draft.selections[0];
+            setPendingFocusId(firstOption?.selection_id || ADD_INPUT_FOCUS_ID);
+          }}
           placeholder={t('customColumns.dependentSelection.newParentNamePlaceholder', {
             defaultValue: 'Parent field title, e.g. Department',
           })}
@@ -95,17 +123,20 @@ export const NewParentFieldEditor = () => {
           })}
         </Typography.Text>
 
-        {draft.selections.map(selection => (
+        {draft.selections.map((selection, index) => (
           <Flex gap={8} align="center" key={selection.selection_id}>
             <HolderOutlined style={{ fontSize: 14, color: token.colorTextQuaternary }} />
             <Input
+              ref={element => {
+                inputRefs.current[selection.selection_id] = element;
+              }}
               size="small"
               style={{ flex: 1, minWidth: 0 }}
               value={selection.selection_name}
               onChange={event =>
                 updateSelection(selection.selection_id, { selection_name: event.target.value })
               }
-              onPressEnter={event => event.preventDefault()}
+              onPressEnter={event => handleSelectionEnter(event, index)}
               placeholder={t('customColumns.fieldTypeForms.selectionPlaceholder', {
                 defaultValue: 'Type a selection and press Enter',
               })}
@@ -130,6 +161,7 @@ export const NewParentFieldEditor = () => {
               <Button
                 type="text"
                 size="small"
+                htmlType="button"
                 icon={<CloseCircleOutlined />}
                 onClick={() =>
                   updateDraft({
@@ -148,6 +180,9 @@ export const NewParentFieldEditor = () => {
 
         <Flex gap={6}>
           <Input
+            ref={element => {
+              inputRefs.current[ADD_INPUT_FOCUS_ID] = element;
+            }}
             size="small"
             value={draftOption}
             onChange={event => setDraftOption(event.target.value)}
