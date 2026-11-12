@@ -810,7 +810,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   {t('customColumns.dependentSelection.newParentTogetherHint', {
                     defaultValue:
-                      'This creates a brand-new Selection field alongside this one when you save — it will also appear as its own column.',
+                      'This creates a brand-new Selection field alongside this one when you save.it will also appear as its own column.',
                   })}
                 </Typography.Text>
               ) : (
