@@ -266,7 +266,7 @@
       "newParentTogetherHint": "保存时会与此字段一起创建一个新的选择字段。它也会显示为单独的一列。",
       "newParentOnlyHint": "仅创建主选择列。稍后添加子列，并将“依赖于”设置为此字段。",
       "dependentOptions": "依赖选项",
-      "addUnderPlaceholder": "在 {{value}} 下新增选项…（可用逗号分隔）",
+      "addUnderPlaceholder": "在 {{value}} 下新增选项…（可用逗号一次添加多个）",
       "addButton": "+ 添加",
       "typeGroup": "依赖选择",
       "dependsOn": "依赖于",

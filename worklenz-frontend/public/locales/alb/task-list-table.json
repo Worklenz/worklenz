@@ -266,7 +266,7 @@
       "newParentTogetherHint": "Kjo krijon një fushë të re Përzgjedhjeje krahas kësaj kur ruani. Do të shfaqet edhe si kolonë e vet.",
       "newParentOnlyHint": "Krijon vetëm një kolonë kryesore Zgjedhje. Shtoni më vonë një kolonë fëmijë dhe vendosni Varet nga te kjo fushë.",
       "dependentOptions": "Opsione të varura",
-      "addUnderPlaceholder": "Opsion i ri nën {{value}}… (të ndara me presje)",
+      "addUnderPlaceholder": "Opsion i ri nën {{value}}… (të ndara me presje për disa)",
       "addButton": "+ Shto",
       "typeGroup": "Varet nga zgjedhja",
       "dependsOn": "Varet nga",

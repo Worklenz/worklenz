@@ -267,7 +267,7 @@
       "newParentTogetherHint": "Questo crea un nuovo campo Selezione accanto a questo al salvataggio. Apparirà anche come colonna separata.",
       "newParentOnlyHint": "Crea solo una colonna di selezione principale. Aggiungi una colonna secondaria in un secondo momento e imposta Dipende da questo campo.",
       "dependentOptions": "Opzioni dipendenti",
-      "addUnderPlaceholder": "Nuova opzione sotto {{value}}… (separate da virgola)",
+      "addUnderPlaceholder": "Nuova opzione sotto {{value}}… (separate da virgola per più opzioni)",
       "addButton": "+ Aggiungi",
       "typeGroup": "Dipende dalla selezione",
       "dependsOn": "Dipende da",

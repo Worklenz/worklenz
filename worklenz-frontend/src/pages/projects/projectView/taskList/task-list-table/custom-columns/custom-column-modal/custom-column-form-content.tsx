@@ -44,7 +44,6 @@ import {
   toApiCustomFieldType,
   toUiCustomFieldType,
 } from '@features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
-import { PhaseColorCodes } from '@/shared/constants';
 import { selectCustomColumns } from '@/features/task-management/task-management.selectors';
 import { ITaskCustomColumn } from '@/types/tasks/task.types';
 import { getEligibleParentColumns } from '@/utils/cascading-selection';
@@ -185,13 +184,9 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       dispatch(
         setNewParentField({
           name: '',
-          selections: [
-            {
-              selection_id: nanoid(),
-              selection_name: '',
-              selection_color: PhaseColorCodes[0],
-            },
-          ],
+          // Start empty like dependent option groups: add via the
+          // comma-separated input (no unused "press Enter" row).
+          selections: [],
         })
       );
     }

@@ -266,7 +266,7 @@
       "newParentTogetherHint": "Przy zapisie tworzy to nowe pole Wyboru obok tego. Pojawi się też jako osobna kolumna.",
       "newParentOnlyHint": "Tworzy tylko główną kolumnę Wyboru. Później dodaj kolumnę podrzędną i ustaw Zależy od na to pole.",
       "dependentOptions": "Opcje zależne",
-      "addUnderPlaceholder": "Nowa opcja pod {{value}}… (oddzielone przecinkami)",
+      "addUnderPlaceholder": "Nowa opcja pod {{value}}… (oddzielone przecinkami dla wielu)",
       "addButton": "+ Dodaj",
       "typeGroup": "Zależy od wyboru",
       "dependsOn": "Zależy od",

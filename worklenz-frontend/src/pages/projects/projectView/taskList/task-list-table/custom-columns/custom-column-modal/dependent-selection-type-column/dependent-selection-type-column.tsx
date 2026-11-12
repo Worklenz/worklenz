@@ -162,7 +162,6 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
         placeholder={t('customColumns.dependentSelection.optionPlaceholder', {
           defaultValue: 'Type an option and press Enter',
         })}
-        size="small"
         style={{ flex: 1, minWidth: 0 }}
         aria-label={t('customColumns.dependentSelection.optionNameLabel', {
           defaultValue: 'Option name',
@@ -255,7 +254,6 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
                         ref={element => {
                           inputRefs.current[addFocusKey] = element;
                         }}
-                        size="small"
                         value={draftValue}
                         onChange={event =>
                           setDraftByParentId(prev => ({
@@ -268,11 +266,13 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
                           handleAddSelections(parentOption, draftValue);
                         }}
                         placeholder={t('customColumns.dependentSelection.addUnderPlaceholder', {
-                          defaultValue: 'New option under {{value}}… (comma-separated)',
+                          defaultValue:
+                            'New option under {{value}}… (comma-separated for multiple)',
                           value: parentOption.selection_name,
                         })}
                         aria-label={t('customColumns.dependentSelection.addUnderPlaceholder', {
-                          defaultValue: 'New option under {{value}}… (comma-separated)',
+                          defaultValue:
+                            'New option under {{value}}… (comma-separated for multiple)',
                           value: parentOption.selection_name,
                         })}
                         style={{ flex: 1, minWidth: 0 }}

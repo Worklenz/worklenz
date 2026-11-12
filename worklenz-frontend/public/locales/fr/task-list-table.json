@@ -266,7 +266,7 @@
       "newParentTogetherHint": "Cela crée un nouveau champ Sélection à côté de celui-ci lors de l’enregistrement. Il apparaîtra aussi comme sa propre colonne.",
       "newParentOnlyHint": "Crée uniquement une colonne Sélection principale. Ajoutez ensuite une colonne enfant et définissez Dépend de sur ce champ.",
       "dependentOptions": "Options dépendantes",
-      "addUnderPlaceholder": "Nouvelle option sous {{value}}… (séparées par des virgules)",
+      "addUnderPlaceholder": "Nouvelle option sous {{value}}… (séparées par des virgules pour plusieurs)",
       "addButton": "+ Ajouter",
       "typeGroup": "Dépend de la sélection",
       "dependsOn": "Dépend de",

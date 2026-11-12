@@ -266,7 +266,7 @@
       "newParentTogetherHint": "Esto crea un nuevo campo de Selección junto a este al guardar. También aparecerá como su propia columna.",
       "newParentOnlyHint": "Crea solo una columna de Selección principal. Añade después una columna hija y establece Depende de en este campo.",
       "dependentOptions": "Opciones dependientes",
-      "addUnderPlaceholder": "Nueva opción bajo {{value}}… (separadas por comas)",
+      "addUnderPlaceholder": "Nueva opción bajo {{value}}… (separadas por comas para varias)",
       "addButton": "+ Añadir",
       "typeGroup": "Depende de la selección",
       "dependsOn": "Depende de",

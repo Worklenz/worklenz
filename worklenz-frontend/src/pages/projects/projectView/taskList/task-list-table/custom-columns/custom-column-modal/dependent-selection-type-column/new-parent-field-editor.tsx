@@ -100,7 +100,6 @@ export const NewParentFieldEditor = () => {
         </Typography.Text>
 
         <Input
-          size="small"
           value={draft.name}
           onChange={event => updateDraft({ name: event.target.value })}
           onPressEnter={event => {
@@ -130,18 +129,17 @@ export const NewParentFieldEditor = () => {
               ref={element => {
                 inputRefs.current[selection.selection_id] = element;
               }}
-              size="small"
               style={{ flex: 1, minWidth: 0 }}
               value={selection.selection_name}
               onChange={event =>
                 updateSelection(selection.selection_id, { selection_name: event.target.value })
               }
               onPressEnter={event => handleSelectionEnter(event, index)}
-              placeholder={t('customColumns.fieldTypeForms.selectionPlaceholder', {
-                defaultValue: 'Type a selection and press Enter',
+              placeholder={t('customColumns.dependentSelection.optionPlaceholder', {
+                defaultValue: 'Type an option and press Enter',
               })}
-              aria-label={t('customColumns.fieldTypeForms.selectionNameLabel', {
-                defaultValue: 'Selection name',
+              aria-label={t('customColumns.dependentSelection.optionNameLabel', {
+                defaultValue: 'Option name',
               })}
             />
             <SelectionColorPicker
@@ -183,7 +181,6 @@ export const NewParentFieldEditor = () => {
             ref={element => {
               inputRefs.current[ADD_INPUT_FOCUS_ID] = element;
             }}
-            size="small"
             value={draftOption}
             onChange={event => setDraftOption(event.target.value)}
             onPressEnter={event => {

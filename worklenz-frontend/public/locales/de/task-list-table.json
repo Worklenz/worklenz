@@ -266,7 +266,7 @@
       "newParentTogetherHint": "Dies erstellt beim Speichern ein neues Auswahlfeld neben diesem. Es erscheint auch als eigene Spalte.",
       "newParentOnlyHint": "Erstellt nur eine Haupt-Auswahlspalte. Fügen Sie später eine Kindspalte hinzu und setzen Sie Abhängig von auf dieses Feld.",
       "dependentOptions": "Abhängige Optionen",
-      "addUnderPlaceholder": "Neue Option unter {{value}}… (kommagetrennt)",
+      "addUnderPlaceholder": "Neue Option unter {{value}}… (kommagetrennt für mehrere)",
       "addButton": "+ Hinzufügen",
       "typeGroup": "Abhängig von Auswahl",
       "dependsOn": "Abhängig von",

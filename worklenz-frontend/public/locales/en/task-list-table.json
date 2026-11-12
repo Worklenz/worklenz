@@ -266,7 +266,7 @@
       "newParentIncomplete": "Give the new parent field a title and at least one option.",
       "newParentTogetherHint": "This creates a brand-new Selection field alongside this one when you save.it will also appear as its own column.",
       "dependentOptions": "Dependent options",
-      "addUnderPlaceholder": "New option under {{value}}… (comma-separated)",
+      "addUnderPlaceholder": "New option under {{value}}… (comma-separated for multiple)",
       "addButton": "+ Add",
       "none": "None",
       "title": "Options grouped by {{parent}}",
