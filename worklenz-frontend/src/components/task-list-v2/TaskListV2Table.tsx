@@ -297,6 +297,11 @@ const BacklogStickyGroup = ({
     {children}
   </div>
 );
+const BACKLOG_VIRTUOSO_COMPONENTS = {
+  Group: BacklogStickyGroup,
+  TopItemList: BacklogStickyGroup,
+};
+const DEFAULT_VIRTUOSO_COMPONENTS = {};
 const ExampleTaskRows: React.FC<{
   visibleColumns: any[];
   isDarkMode?: boolean;
@@ -2735,9 +2740,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                     groupCounts={virtuosoGroupCounts}
                     groupContent={renderGroup}
                     components={
-                      isBacklogMode
-                        ? { Group: BacklogStickyGroup, TopItemList: BacklogStickyGroup }
-                        : undefined
+                      isBacklogMode ? BACKLOG_VIRTUOSO_COMPONENTS : DEFAULT_VIRTUOSO_COMPONENTS
                     }
                     itemContent={(index, groupIndex) => {
                       const item = virtuosoItems[index];
