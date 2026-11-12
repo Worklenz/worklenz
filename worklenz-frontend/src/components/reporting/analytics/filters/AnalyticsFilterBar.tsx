@@ -238,7 +238,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
       aria-label={t('filtersTitle', { defaultValue: 'Filters' })}
       style={{ width: '100%' }}
     >
-      <Flex gap={8} wrap="wrap" align="center">
+      <Flex gap={8} wrap="wrap" align="center" justify="flex-end">
         {showDate && (
           <SingleSelectFilterPill
             label={selectedDateLabel}
@@ -321,7 +321,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
 
       <Divider style={{ margin: '12px 0' }} />
 
-      <Flex align="center">
+      <Flex align="center" justify="flex-end" style={{ width: '100%' }}>
         <Flex gap={8} align="center">
           <Button
             disabled={!hasDraftFilters}
