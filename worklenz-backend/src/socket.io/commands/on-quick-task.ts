@@ -56,7 +56,14 @@ function createGaantTask(body: any) {
   return body;
 }
 
-export async function on_quick_task(_io: Server, socket: Socket, data?: string) {
+export async function on_quick_task(_io: Server, socket: Socket, data?: string, acknowledge?: (response: unknown) => void) {
+  let hasResponded = false;
+  const respond = (response: unknown) => {
+    if (hasResponded) return;
+    hasResponded = true;
+    if (typeof acknowledge === "function") acknowledge(response);
+    else socket.emit(SocketEvents.QUICK_TASK.toString(), response);
+  };
   try {
     const body = JSON.parse(data as string);
 
@@ -78,7 +85,7 @@ export async function on_quick_task(_io: Server, socket: Socket, data?: string) 
       if (userId && body.project_id) {
         const restricted = await isTaskCreationRestricted(userId, body.project_id);
         if (restricted) {
-          socket.emit(SocketEvents.QUICK_TASK.toString(), {
+          respond({
             error: true,
             message: "Task creation is restricted. Please contact admin for access."
           });
@@ -101,7 +108,7 @@ export async function on_quick_task(_io: Server, socket: Socket, data?: string) 
 
         updatePhaseInfo(model, body);
 
-        socket.emit(SocketEvents.QUICK_TASK.toString(), model);
+        respond(model);
 
         if (body.is_dragged) {
           logStartDateChange({
@@ -147,13 +154,15 @@ export async function on_quick_task(_io: Server, socket: Socket, data?: string) 
           log_error("Error sending external notifications:", notifError);
           // Don't throw - continue even if notifications fail
         }
+      } else {
+        respond(null);
       }
     } else {
       // Empty task name, emit null to indicate no task was created
-      socket.emit(SocketEvents.QUICK_TASK.toString(), null);
+      respond(null);
     }
   } catch (error) {
     log_error(error);
-    socket.emit(SocketEvents.QUICK_TASK.toString(), null);
+    respond(null);
   }
 }
