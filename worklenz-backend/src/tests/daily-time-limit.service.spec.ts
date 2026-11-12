@@ -16,6 +16,12 @@ describe("daily time limit database check", () => {
   };
   const addition = { start: "2026-11-09T12:00:00Z", seconds: 7200, isTimedSession: false };
 
+  it("rejects an enormous proposed timer before locking or allocating it", async () => {
+    const { client, query } = makeClient([]);
+    expect(await canWriteDailyTime(client, "team", "user", [{ ...addition, seconds: 1e12, isTimedSession: true }])).toBe(false);
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+
   it("locks the member and rejects a total above 24 hours", async () => {
     const { client, query } = makeClient([existing]);
     expect(await canWriteDailyTime(client, "team", "user", [addition])).toBe(false);

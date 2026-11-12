@@ -1,6 +1,6 @@
 import { PoolClient } from "pg";
 import moment from "moment-timezone";
-import { allocateDailyTime, DailyTimeEntry, exceedsDailyTimeLimit } from "../shared/daily-time-limit";
+import { allocateDailyTime, DailyTimeEntry, MAX_CHECKED_TIMER_SECONDS } from "../shared/daily-time-limit";
 
 interface StoredEntry {
   id: string;
@@ -49,6 +49,18 @@ export async function checkDailyTimeLimit(
     };
   }
 
+  const oversizedTimer = additions.find(entry => entry.isTimedSession && entry.seconds > MAX_CHECKED_TIMER_SECONDS);
+  if (oversizedTimer) {
+    return {
+      allowed: false,
+      timezone: row.timezone,
+      organizationId: row.organization_id,
+      enforceDailyTimeLimit: true,
+      exceededDay: moment.tz(oversizedTimer.start, row.timezone).format("YYYY-MM-DD"),
+      remainingSeconds: 0,
+    };
+  }
+
   await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
     `daily-time-limit:${row.organization_id}:${userId}`,
   ]);
@@ -56,6 +68,7 @@ export async function checkDailyTimeLimit(
   // Removing an entry cannot increase a day's total. Only days touched by the
   // proposed entries need checking, even when an edit moves an existing log.
   const affectedDays = additions.flatMap(entry => Array.from(allocateDailyTime(entry, row.timezone).keys())).sort();
+  const relevantDays = new Set(affectedDays);
   if (affectedDays.length === 0) {
     return {
       allowed: true,
@@ -85,7 +98,7 @@ export async function checkDailyTimeLimit(
   const after = new Map<string, number>();
   const replaced = new Set(replacedIds);
   const add = (totals: Map<string, number>, entry: DailyTimeEntry) => {
-    for (const [date, seconds] of allocateDailyTime(entry, row.timezone)) {
+    for (const [date, seconds] of allocateDailyTime(entry, row.timezone, relevantDays)) {
       totals.set(date, (totals.get(date) || 0) + seconds);
     }
   };
@@ -194,7 +207,7 @@ export async function getDailyTimeAllowance(
       seconds: Number(log.time_spent),
       isTimedSession: log.logged_by_timer,
     };
-    for (const [day, secs] of allocateDailyTime(entry, row.timezone)) {
+    for (const [day, secs] of allocateDailyTime(entry, row.timezone, new Set([targetDay]))) {
       if (day === targetDay) {
         logged_seconds += secs;
       }

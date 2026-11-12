@@ -16,6 +16,19 @@ describe("daily time accounting", () => {
       .toEqual([["2026-03-08", 23 * 3600], ["2026-03-09", 3600]]);
   });
 
+  it("rejects enormous proposed timers without iterating through their days", () => {
+    expect(() => allocateDailyTime({ start: "2026-01-01T00:00:00Z", seconds: 1e12, isTimedSession: true }, "UTC"))
+      .toThrow("Timed session is too long");
+  });
+
+  it("calculates only relevant days for long existing timers", () => {
+    expect([...allocateDailyTime(
+      { start: "2020-01-01T00:00:00Z", seconds: 1e9, isTimedSession: true },
+      "America/New_York",
+      new Set(["2026-03-08"])
+    )]).toEqual([["2026-03-08", 23 * 3600]]);
+  });
+
   it("allows exactly 24 hours and reductions to existing excess", () => {
     const previous = new Map([["2026-11-10", 90000]]);
     expect(exceedsDailyTimeLimit(new Map(), new Map([["2026-11-10", 86400]]))).toBe(false);

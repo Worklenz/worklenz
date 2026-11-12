@@ -74,6 +74,14 @@ export async function on_task_timer_stop(_io: Server, socket: Socket, data?: str
         return;
       }
 
+      if (body.override_seconds !== undefined &&
+          (typeof body.override_seconds !== "number" || !Number.isFinite(body.override_seconds) ||
+           body.override_seconds < 1 || body.override_seconds > timerRow.time_spent)) {
+        await transactionClient.query("ROLLBACK");
+        socket.emit(SocketEvents.TASK_TIMER_STOP.toString(), null);
+        return;
+      }
+
       const secondsToLog =
         typeof body.override_seconds === "number" && body.override_seconds > 0
           ? Math.floor(body.override_seconds)

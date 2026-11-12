@@ -283,6 +283,26 @@ describe("24-Hour Daily Time Limit Integration Suite", () => {
   });
 
   describe("6. Timers & Stop Recovery", () => {
+    it("rejects an override longer than the elapsed timer and preserves it", async () => {
+      const socketEmitMock = jest.fn();
+      const mockSocket = {
+        request: { session: { passport: { user: { id: "00000000-0000-4000-8000-000000000001" } } } },
+        emit: socketEmitMock,
+      } as any;
+      mockClient.query
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [{ start_time: new Date(), time_spent: 100, team_id: "team-1" }] })
+        .mockResolvedValueOnce({ rows: [] });
+
+      await on_task_timer_stop({} as any, mockSocket, JSON.stringify({
+        task_id: "00000000-0000-4000-8000-000000000002", override_seconds: 1e12,
+      }));
+
+      expect(mockClient.query).toHaveBeenCalledWith("ROLLBACK");
+      expect(mockClient.query).not.toHaveBeenCalledWith(expect.stringContaining("INSERT INTO task_work_log"), expect.anything());
+      expect(socketEmitMock).toHaveBeenCalledWith(SocketEvents.TASK_TIMER_STOP.toString(), null);
+    });
+
     it("preserves running timer in task_timers when timer stop exceeds 24h", async () => {
       const socketEmitMock = jest.fn();
       const mockSocket = {
