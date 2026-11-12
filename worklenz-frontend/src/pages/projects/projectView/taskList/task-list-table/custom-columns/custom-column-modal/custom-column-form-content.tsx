@@ -147,7 +147,6 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
   const previousTypeValueRef = useRef<string>(originalFieldType);
   const { isHidden, toggleVisibility } = useCustomColumnVisibility();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const watchedFieldTitle = Form.useWatch('fieldTitle', mainForm) as string | undefined;
 
   const eligibleParentColumns = useMemo(
     () => getEligibleParentColumns(projectCustomColumns || [], editingColumnUuid),
@@ -856,7 +855,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
         {customFieldType === 'labels' && <LabelTypeColumn />}
         {customFieldType === 'selection' && <SelectionTypeColumn />}
         {isDependentSelectionUi && isCreatingNewParent && (
-          <NewParentFieldEditor dependentFieldTitle={watchedFieldTitle || ''} />
+          <NewParentFieldEditor />
         )}
         {isDependentSelectionUi && parentColumnId && (
           <DependentSelectionTypeColumn parentColumn={parentColumnForEditor} />

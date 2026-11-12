@@ -19,15 +19,11 @@ const splitOptionLabels = (raw: string) =>
     .map(label => label.trim())
     .filter(Boolean);
 
-interface NewParentFieldEditorProps {
-  dependentFieldTitle?: string;
-}
-
 /**
  * Inline editor for "+ Create new parent field" inside Dependent Selection setup.
  * Saved together with the dependent child column on form submit.
  */
-export const NewParentFieldEditor = ({ dependentFieldTitle = '' }: NewParentFieldEditorProps) => {
+export const NewParentFieldEditor = () => {
   const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
   const { token } = theme.useToken();
@@ -69,9 +65,6 @@ export const NewParentFieldEditor = ({ dependentFieldTitle = '' }: NewParentFiel
   return (
     <div
       style={{
-        border: `1px solid ${token.colorPrimary}`,
-        borderRadius: token.borderRadiusLG,
-        padding: 12,
         marginBottom: 12,
       }}
     >
@@ -79,16 +72,6 @@ export const NewParentFieldEditor = ({ dependentFieldTitle = '' }: NewParentFiel
         <Typography.Text strong>
           {t('customColumns.dependentSelection.creatingNewParent', {
             defaultValue: 'Creating a new field to be the parent',
-          })}
-        </Typography.Text>
-
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {t('customColumns.dependentSelection.newParentTitleHint', {
-            defaultValue:
-              'Parent field title (this is a different field from "{{name}}" above)',
-            name:
-              dependentFieldTitle ||
-              t('customColumns.modal.fieldTitle', { defaultValue: 'this field' }),
           })}
         </Typography.Text>
 
