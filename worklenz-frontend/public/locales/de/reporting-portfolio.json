@@ -19,7 +19,6 @@
   "closeSub": "Abgeschlossene Projekte",
   "closingCount": "Endbestand",
   "closingSub": "Portfoliobilanz",
-  "kpiNote": "Projekte haben kein Abschlussdatum, daher werden Anfangsbestand und Abschluss anhand der letzten Aktualisierung geschätzt.",
   "kpiNoteLabel": "So wird es berechnet",
   "projectCategory": "Projektkategorie",
   "totalProjects": "Projekte gesamt",
@@ -44,5 +43,9 @@
   "expandRow": "{{name}} erweitern",
   "collapseRow": "{{name}} reduzieren",
   "loading": "Portfolio wird geladen",
-  "endDate": "Enddatum"
+  "endDate": "Enddatum",
+  "openingTip": "Projekte, die vor diesem Zeitraum begonnen haben und zu dessen Beginn noch offen waren. Verwendet das Projektstartdatum oder das Erstellungsdatum, wenn kein Startdatum festgelegt ist.",
+  "newTip": "Projekte, deren Startdatum in diesen Zeitraum fällt. Verwendet das Erstellungsdatum, wenn kein Startdatum festgelegt ist.",
+  "closeTip": "Projekte, die jetzt abgeschlossen oder abgebrochen sind und in diesem Zeitraum zuletzt aktualisiert wurden. Projekte haben kein Abschlussdatum, daher wird die letzte Aktualisierung als Abschlussdatum verwendet.",
+  "closingTip": "Projekte, die am Ende dieses Zeitraums noch offen sind: Anfangsbestand + Neu − Abschluss."
 }
