@@ -1,5 +1,5 @@
 import React from 'react';
-import { Badge, Button, Divider, Flex, Segmented, theme } from '@/shared/antd-imports';
+import { Button, Divider, Flex, Segmented, theme } from '@/shared/antd-imports';
 import { FilterOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import {
@@ -370,21 +370,10 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
                 }
               : FILTER_TRIGGER_STYLE
           }
-          aria-label={
-            activeFilterCount > 0
-              ? `${t('filterButton', { defaultValue: 'Filter' })} (${activeFilterCount})`
-              : t('filterButton', { defaultValue: 'Filter' })
-          }
+          aria-label={t('filterButton', { defaultValue: 'Filter' })}
           aria-expanded={panelOpen}
         >
           {t('filterButton', { defaultValue: 'Filter' })}
-          {activeFilterCount > 0 && (
-            <Badge
-              count={activeFilterCount}
-              size="small"
-              style={{ marginLeft: 4, backgroundColor: token.colorPrimary }}
-            />
-          )}
         </Button>
         {panelOpen && filterContext?.actions}
       </Flex>
