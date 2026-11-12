@@ -179,43 +179,26 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
   const stashedSelectionsRef = useRef<typeof selectionsList | null>(null);
 
   /**
-   * When a Dependent Selection picks an existing parent that another dependent column already
-   * uses (e.g. the hidden column that keeps the child options saved with the parent), start from
-   * that column's grouped child options, copied with fresh ids, so parent and children load
-   * together. Existing input is only replaced when none of it belongs to the chosen parent.
+   * A parent's child options belong to one child column. When a Dependent Selection picks an
+   * existing parent, the parent options load (the editor groups by them) but the child options
+   * start empty so new children can be created under each parent option. Children that were
+   * grouped under the previously chosen parent are dropped so they do not carry over.
    */
-  const seedSelectionsFromSibling = (nextParentColumnId: string) => {
-    const nextParent = (projectCustomColumns || []).find(column => column.id === nextParentColumnId);
-    const nextParentOptionIds = new Set(
-      (nextParent?.custom_column_obj?.selectionsList || []).map(option => option.selection_id)
+  const dropChildrenOfPreviousParent = (nextParentColumnId: string) => {
+    if (!parentColumnId || parentColumnId === NEW_PARENT_COLUMN_ID) return;
+    if (parentColumnId === nextParentColumnId) return;
+    const previousParent = (projectCustomColumns || []).find(column => column.id === parentColumnId);
+    const previousParentOptionIds = new Set(
+      (previousParent?.custom_column_obj?.selectionsList || []).map(option => option.selection_id)
     );
-    if (nextParentOptionIds.size === 0) return;
-
-    const alreadyGrouped = selectionsList.some(
-      selection =>
-        !!selection.parent_selection_id && nextParentOptionIds.has(selection.parent_selection_id)
-    );
-    if (alreadyGrouped) return;
-
-    const sibling = (projectCustomColumns || []).find(
-      column =>
-        column.id !== editingColumnUuid &&
-        column.custom_column_obj?.fieldType === 'selection' &&
-        column.custom_column_obj?.parentColumnId === nextParentColumnId
-    );
-    const siblingOptions = (sibling?.custom_column_obj?.selectionsList || []).filter(
-      option => !!option.parent_selection_id && nextParentOptionIds.has(option.parent_selection_id)
-    );
-    if (siblingOptions.length === 0) return;
-
+    if (previousParentOptionIds.size === 0) return;
     dispatch(
       setSelectionsList(
-        siblingOptions.map(option => ({
-          selection_id: nanoid(),
-          selection_name: option.selection_name,
-          selection_color: option.selection_color,
-          parent_selection_id: option.parent_selection_id,
-        }))
+        selectionsList.filter(
+          selection =>
+            !selection.parent_selection_id ||
+            !previousParentOptionIds.has(selection.parent_selection_id)
+        )
       )
     );
   };
@@ -244,10 +227,10 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     } else if (!isNextNew && parentColumnId === NEW_PARENT_COLUMN_ID) {
       dispatch(setNewParentField(null));
     }
-    dispatch(setParentColumnId(nextParentColumnId));
     if (nextParentColumnId && !isNextNew) {
-      seedSelectionsFromSibling(nextParentColumnId);
+      dropChildrenOfPreviousParent(nextParentColumnId);
     }
+    dispatch(setParentColumnId(nextParentColumnId));
   };
 
   const handleFieldTypeChange = (selectedValue: CustomFieldsTypes) => {
@@ -987,7 +970,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
                       })
                     : t('customColumns.dependentSelection.newParentSingleColumnHint', {
                         defaultValue:
-                          'Saves one column with the parent options. The child options are kept with it, so a Dependent Selection you add later can pick this column as its parent and load them.',
+                          'Saves one column with the parent options. A Dependent Selection you add later can pick this column as its parent and create its own child options under each parent option.',
                       })}
                 </Typography.Text>
               ) : (

@@ -265,7 +265,7 @@
       "newParentAddPlaceholder": "New parent option… (comma-separated for multiple)",
       "newParentIncomplete": "Give the new parent field a title and at least one option.",
       "newParentTogetherHint": "This creates a brand-new Selection field alongside this one when you save.it will also appear as its own column.",
-      "newParentSingleColumnHint": "Saves one column with the parent options. The child options are kept with it, so a Dependent Selection you add later can pick this column as its parent and load them.",
+      "newParentSingleColumnHint": "Saves one column with the parent options. A Dependent Selection you add later can pick this column as its parent and create its own child options under each parent option.",
       "dependentOptions": "Dependent options",
       "addUnderPlaceholder": "New option under {{value}}… (comma-separated for multiple)",
       "addButton": "+ Add",
