@@ -1057,8 +1057,8 @@ const PlannerWorkloadView: React.FC = () => {
       <div style={{ fontSize: 12, opacity: 0.55, maxWidth: 340 }}>
         {anyFilterActive
           ? t('workloadEmptyFilteredDesc', {
-              defaultValue: 'No one matches the current filters. Try widening Project Status, Project Priority, or Utilization.',
-            })
+            defaultValue: 'No one matches the current filters. Try widening Project Status, Project Priority, or Utilization.',
+          })
           : group === 'members'
             ? t('workloadEmptyMembersDesc', { defaultValue: 'No team members to show yet.' })
             : t('workloadEmptyProjectsDesc', { defaultValue: 'No projects to show yet.' })}
@@ -1101,110 +1101,110 @@ const PlannerWorkloadView: React.FC = () => {
           flexShrink: 0,
         }}
       >
-      <Flex align="center" gap={8} wrap="wrap" style={{ padding: '10px 12px' }}>
-        {groupToggle}
-        <PlannerMultiFilterDropdown
-          label={t('allProjectStatuses', { defaultValue: 'Project Status' })}
-          options={projectStatuses.map((s: any) => ({ value: s.id, label: s.name || '' }))}
-          selected={filterStatuses}
-          onChange={setFilterStatuses}
-        />
-        <PlannerMultiFilterDropdown
-          label={t('allProjectPriorities', { defaultValue: 'Project Priority' })}
-          options={projectPriorities.map((p: any) => ({ value: p.id, label: p.name || '' }))}
-          selected={filterPriorities}
-          onChange={setFilterPriorities}
-        />
-        {group === 'members' && (
+        <Flex align="center" gap={8} wrap="wrap" style={{ padding: '10px 12px' }}>
+          {groupToggle}
           <PlannerMultiFilterDropdown
-            label={t('allUtilLevels', { defaultValue: 'Utilization' })}
-            options={UTIL_LEVELS.map(l => ({ value: l.value, label: t('util' + l.value.charAt(0).toUpperCase() + l.value.slice(1), { defaultValue: l.label }) }))}
-            selected={filterUtilLevels}
-            onChange={setFilterUtilLevels}
+            label={t('allProjectStatuses', { defaultValue: 'Project Status' })}
+            options={projectStatuses.map((s: any) => ({ value: s.id, label: s.name || '' }))}
+            selected={filterStatuses}
+            onChange={setFilterStatuses}
           />
-        )}
-
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', fontSize: 12, opacity: 0.5, marginLeft: 8 }}>
-          <span>
-            <span
-              style={{
-                display: 'inline-block',
-                width: 9,
-                height: 9,
-                borderRadius: 2,
-                background: token.colorPrimary,
-                marginRight: 4,
-              }}
+          <PlannerMultiFilterDropdown
+            label={t('allProjectPriorities', { defaultValue: 'Project Priority' })}
+            options={projectPriorities.map((p: any) => ({ value: p.id, label: p.name || '' }))}
+            selected={filterPriorities}
+            onChange={setFilterPriorities}
+          />
+          {group === 'members' && (
+            <PlannerMultiFilterDropdown
+              label={t('allUtilLevels', { defaultValue: 'Utilization' })}
+              options={UTIL_LEVELS.map(l => ({ value: l.value, label: t('util' + l.value.charAt(0).toUpperCase() + l.value.slice(1), { defaultValue: l.label }) }))}
+              selected={filterUtilLevels}
+              onChange={setFilterUtilLevels}
             />
-            {t('task', { defaultValue: 'Task' })}
-          </span>
-          <span>
-            <span
-              style={{
-                display: 'inline-block',
-                width: 9,
-                height: 9,
-                borderRadius: 2,
-                marginRight: 4,
-                background: `repeating-linear-gradient(45deg, ${token.colorPrimary}60 0 3px, ${token.colorPrimary}20 3px 6px)`,
-              }}
-            />
-            {t('projectBlock', { defaultValue: 'Project block' })}
-          </span>
-          <span>
-            <span
-              style={{
-                display: 'inline-block',
-                width: 9,
-                height: 9,
-                borderRadius: 2,
-                marginRight: 4,
-                background: 'repeating-linear-gradient(45deg, #faad14 0 2px, #faad1440 2px 4px)',
-              }}
-            />
-            {t('timeOffOrHoliday', { defaultValue: 'Time off / Holiday' })}
-          </span>
-        </div>
-      </Flex>
+          )}
 
-      <Flex
-        align="center"
-        gap={8}
-        wrap="wrap"
-        style={{ padding: '8px 12px', borderTop: `1px solid ${borderColor}` }}
-      >
-        <span style={{ fontSize: 14, fontWeight: 600, marginRight: 8 }}>{rangeLabel}</span>
-        <Button size="small" style={{ fontSize: 12, borderRadius: 7 }} onClick={() => stepAnchor(-1)} title={t('previous', { defaultValue: 'Previous' })}>
-          ‹
-        </Button>
-        <Button size="small" style={{ fontSize: 12, borderRadius: 7 }} onClick={goToToday}>
-          {t('today', { defaultValue: 'Today' })}
-        </Button>
-        <Button size="small" style={{ fontSize: 12, borderRadius: 7 }} onClick={() => stepAnchor(1)} title={t('next', { defaultValue: 'Next' })}>
-          ›
-        </Button>
-
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-          <div style={{ display: 'flex', border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 7, overflow: 'hidden' }}>
-            {(Object.entries(RANGE_CFG) as [RangeKey, typeof RANGE_CFG[RangeKey]][]).map(([k, r], idx, arr) => (
-              <button
-                key={k}
-                onClick={() => setRange(k)}
-                style={pillBtnStyle(range === k, idx === arr.length - 1, token)}
-              >
-                {t(k, { defaultValue: r.label })}
-              </button>
-            ))}
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', fontSize: 12, opacity: 0.5, marginLeft: 8 }}>
+            <span>
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: 9,
+                  height: 9,
+                  borderRadius: 2,
+                  background: token.colorPrimary,
+                  marginRight: 4,
+                }}
+              />
+              {t('task', { defaultValue: 'Task' })}
+            </span>
+            <span>
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: 9,
+                  height: 9,
+                  borderRadius: 2,
+                  marginRight: 4,
+                  background: `repeating-linear-gradient(45deg, ${token.colorPrimary}60 0 3px, ${token.colorPrimary}20 3px 6px)`,
+                }}
+              />
+              {t('projectBlock', { defaultValue: 'Project block' })}
+            </span>
+            <span>
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: 9,
+                  height: 9,
+                  borderRadius: 2,
+                  marginRight: 4,
+                  background: 'repeating-linear-gradient(45deg, #faad14 0 2px, #faad1440 2px 4px)',
+                }}
+              />
+              {t('timeOffOrHoliday', { defaultValue: 'Time off / Holiday' })}
+            </span>
           </div>
-          <Button
-            size="small"
-            shape="circle"
-            icon={<SettingOutlined />}
-            onClick={() => dispatch(toggleSettingsDrawer())}
-            title={t('workloadSettings', { defaultValue: 'Workload settings' })}
-          />
-        </div>
-      </Flex>
+        </Flex>
+
+        <Flex
+          align="center"
+          gap={8}
+          wrap="wrap"
+          style={{ padding: '8px 12px', borderTop: `1px solid ${borderColor}` }}
+        >
+          <span style={{ fontSize: 14, fontWeight: 600, marginRight: 8 }}>{rangeLabel}</span>
+          <Button size="small" style={{ fontSize: 12, borderRadius: 7 }} onClick={() => stepAnchor(-1)} title={t('previous', { defaultValue: 'Previous' })}>
+            ‹
+          </Button>
+          <Button size="small" style={{ fontSize: 12, borderRadius: 7 }} onClick={goToToday}>
+            {t('today', { defaultValue: 'Today' })}
+          </Button>
+          <Button size="small" style={{ fontSize: 12, borderRadius: 7 }} onClick={() => stepAnchor(1)} title={t('next', { defaultValue: 'Next' })}>
+            ›
+          </Button>
+
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ display: 'flex', border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 7, overflow: 'hidden' }}>
+              {(Object.entries(RANGE_CFG) as [RangeKey, typeof RANGE_CFG[RangeKey]][]).map(([k, r], idx, arr) => (
+                <button
+                  key={k}
+                  onClick={() => setRange(k)}
+                  style={pillBtnStyle(range === k, idx === arr.length - 1, token)}
+                >
+                  {t(k, { defaultValue: r.label })}
+                </button>
+              ))}
+            </div>
+            <Button
+              size="small"
+              shape="circle"
+              icon={<SettingOutlined />}
+              onClick={() => dispatch(toggleSettingsDrawer())}
+              title={t('workloadSettings', { defaultValue: 'Workload settings' })}
+            />
+          </div>
+        </Flex>
       </div>
 
       {/* ── Body — unscheduled tasks are assigned via the "+ Add" popover on a grid cell
@@ -1346,8 +1346,15 @@ const PlannerWorkloadView: React.FC = () => {
                             background: over
                               ? 'rgba(255,77,79,.06)'
                               : isFullDayTimeOff
-                                ? 'repeating-linear-gradient(45deg, rgba(250, 173, 20, 0.08) 0 4px, transparent 4px 8px)'
-                                : undefined,
+                                ? themeMode === 'dark'
+                                  ? 'repeating-linear-gradient(45deg, rgba(250, 173, 20, 0.08) 0 4px, transparent 4px 8px)'
+                                  : 'repeating-linear-gradient(45deg, rgba(250, 173, 20, 0.24) 0 4px, rgba(250, 173, 20, 0.06) 4px 8px)'
+
+                                : isFullDayTimeOff
+                                  ? themeMode === 'light'
+                                    ? 'repeating-linear-gradient(45deg, rgba(250, 173, 20, 0.08) 0 4px, transparent 4px 8px)'
+                                    : 'repeating-linear-gradient(45deg, rgba(250, 173, 20, 0.24) 0 4px, rgba(250, 173, 20, 0.06) 4px 8px)'
+                                  : undefined,
                             display: 'flex',
                             flexDirection: 'column',
                             gap: 4,
@@ -1770,9 +1777,9 @@ const WorkloadAddPopover: React.FC<{
       if (!task || task.error) {
         message.error(
           task?.message ||
-            t('taskCreationRestricted', {
-              defaultValue: 'Task creation is restricted to Admins, Team Leads, and Project Managers only. Please contact your admin for access.',
-            })
+          t('taskCreationRestricted', {
+            defaultValue: 'Task creation is restricted to Admins, Team Leads, and Project Managers only. Please contact your admin for access.',
+          })
         );
         return;
       }
@@ -1973,9 +1980,9 @@ const WorkloadAddPopover: React.FC<{
                             {hours > 0
                               ? `${Math.round(hours * 10) / 10}h`
                               : t('defaultHours', {
-                                  hours: fallbackEst,
-                                  defaultValue: `${fallbackEst}h default`,
-                                })}
+                                hours: fallbackEst,
+                                defaultValue: `${fallbackEst}h default`,
+                              })}
                           </span>
                         </div>
                       );
