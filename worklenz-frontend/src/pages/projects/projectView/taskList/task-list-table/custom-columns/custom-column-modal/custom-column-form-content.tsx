@@ -175,6 +175,23 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
   }, [isCreatingNewParent, newParentField, t]);
   const parentColumnForEditor = selectedParentColumn || draftParentColumn;
 
+  /**
+   * True when the opened column is a fresh Text column that holds no task values (for example a
+   * column just added with the header "+"). Nothing can be lost by turning it into the child
+   * column, so it keeps its name and is reused instead of being left untouched.
+   */
+  const isOpenedColumnEmptyText = (): boolean => {
+    if (!isEditMode || !editingColumnUuid || !openedColumn) return false;
+    if (originalStoredFieldType !== 'text') return false;
+    const entities = Object.values(taskEntities || {}) as Array<{
+      custom_column_values?: Record<string, unknown>;
+    }>;
+    return !entities.some(task => {
+      const taskValue = task.custom_column_values?.[openedColumn.key as string];
+      return taskValue !== undefined && taskValue !== null && taskValue !== '';
+    });
+  };
+
   // In edit mode, stash the opened column's options while drafting a new parent so Cancel /
   // switching away can restore them without touching the opened column.
   const stashedSelectionsRef = useRef<typeof selectionsList | null>(null);
@@ -289,9 +306,12 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       if (isNextNew && parentColumnId !== NEW_PARENT_COLUMN_ID) {
         stashedSelectionsRef.current = selectionsList;
         dispatch(setSelectionsList([]));
-        // The new child column needs its own title; the opened column keeps its name.
-        stashedFieldTitleRef.current = mainForm.getFieldValue('fieldTitle') ?? null;
-        mainForm.setFieldValue('fieldTitle', '');
+        // A fresh empty Text column is reused as the child and keeps its name. Any other opened
+        // column stays untouched, so its new child column needs its own title.
+        if (!isOpenedColumnEmptyText()) {
+          stashedFieldTitleRef.current = mainForm.getFieldValue('fieldTitle') ?? null;
+          mainForm.setFieldValue('fieldTitle', '');
+        }
       } else if (!isNextNew && parentColumnId === NEW_PARENT_COLUMN_ID) {
         dispatch(setSelectionsList(stashedSelectionsRef.current || []));
         stashedSelectionsRef.current = null;
@@ -601,9 +621,12 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
    *  - Parent column, titled with the "Parent field title", holds the parent options.
    *  - Child column, titled with the "Field title", holds the child options; each child option is
    *    linked to a parent option and the column points at the parent column.
-   * Both columns are always newly created. In edit mode the opened column is never changed.
+   * The parent column is always newly created. The child column is newly created too, except when
+   * the opened column is a fresh empty Text column: that column is reused as the child so it keeps
+   * the name the user gave it. Any other opened column is never changed.
    */
   const handleSaveParentAndChildColumns = async (value: any) => {
+    const reusedChildColumnUuid = isOpenedColumnEmptyText() ? editingColumnUuid : null;
     const parentName = newParentField?.name.trim() || '';
     const parentSelections = (newParentField?.selections || []).filter(
       selection => selection.selection_name.trim() !== ''
@@ -661,14 +684,22 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
         labels_list: [],
       };
 
-      const childRes = await tasksCustomColumnsService.createCustomColumn(projectId || '', {
-        name: childColumnName,
-        key: nanoid(),
-        field_type: 'selection',
-        width: 120,
-        is_visible: true,
-        configuration: childConfiguration,
-      });
+      const childRes = reusedChildColumnUuid
+        ? await tasksCustomColumnsService.updateCustomColumn(reusedChildColumnUuid, {
+            name: childColumnName,
+            field_type: 'selection',
+            width: 150,
+            is_visible: true,
+            configuration: childConfiguration,
+          })
+        : await tasksCustomColumnsService.createCustomColumn(projectId || '', {
+            name: childColumnName,
+            key: nanoid(),
+            field_type: 'selection',
+            width: 120,
+            is_visible: true,
+            configuration: childConfiguration,
+          });
       if (!childRes.done) {
         // Keep the two columns in sync: undo the parent column when the child could not be saved.
         await tasksCustomColumnsService.deleteCustomColumn(parentColumnUuid).catch(error => {
@@ -726,7 +757,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       fieldTitle:
         (typeof formValue.fieldTitle === 'string' && formValue.fieldTitle.trim()) ||
         // A new parent creates a separate child column, so never fall back to the opened name.
-        (isCreatingNewParent
+        (isCreatingNewParent && !isOpenedColumnEmptyText()
           ? ''
           : openedColumn?.name || openedColumn?.custom_column_obj?.fieldTitle) ||
         '',
