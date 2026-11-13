@@ -1,4 +1,5 @@
 {
+  "exampleTaskCreateFailed": "无法确认任务是否已创建。请先检查任务列表，再重试。",
   "apply": "应用",
   "keyColumn": "ID",
   "taskColumn": "任务",
@@ -80,6 +81,7 @@
   "addSubTaskInputPlaceholder": "输入子任务名称并按回车保存",
   "noTasksInGroup": "此组中没有任务",
   "dropTaskHere": "将任务拖到这里",
+  "dropHere": "拖放到此处",
   "openButton": "打开",
   "okButton": "确定",
   "noLabelsFound": "未找到标签",

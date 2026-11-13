@@ -55,6 +55,7 @@ const RESIZE_BASE_HOURS = 1; // chip stays at CHIP_BASE_HEIGHT for <=1h/day
 const MIN_TOTAL_MINUTES = 30; // 0.5h floor, mirrors PlannerAddTaskModal's est-hours min={0.5}
 const MAX_TOTAL_MINUTES = 24 * 60; // 24h ceiling
 const ROW_HEIGHT_FLOOR = 112; // doubled from the previous hardcoded 56
+const MONTH_TASK_BAR_HEIGHT = 18;
 const EMPTY_TASKS: any[] = []; // stable fallback so rawTasks doesn't get a new reference every render while loading
 
 const getChipHeight = (hours: number, dense: 'full' | 'compact') =>
@@ -1910,11 +1911,14 @@ const PlannerScheduleView: React.FC = () => {
                                     border: `1px solid ${color}${isSubtask ? '30' : '40'}`,
                                     borderLeft: `3px solid ${color}`,
                                     padding: cfg.dense === 'full' ? '3px 6px' : cfg.dense === 'compact' ? '2px 4px' : 0,
-                                    height: cfg.dense === 'bar' ? 8 : undefined,
+                                    height: cfg.dense === 'bar' ? MONTH_TASK_BAR_HEIGHT : undefined,
+                                    flexShrink: cfg.dense === 'bar' ? 0 : undefined,
                                     minHeight:
-                                      cfg.dense === 'full' || cfg.dense === 'compact'
-                                        ? getChipHeight(hours, cfg.dense)
-                                        : undefined,
+                                      cfg.dense === 'bar'
+                                        ? MONTH_TASK_BAR_HEIGHT
+                                        : cfg.dense === 'full' || cfg.dense === 'compact'
+                                          ? getChipHeight(hours, cfg.dense)
+                                          : undefined,
                                     overflow: 'hidden',
                                     display: cfg.dense === 'full' ? 'flex' : undefined,
                                     flexDirection: cfg.dense === 'full' ? 'column' : undefined,
