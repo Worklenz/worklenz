@@ -76,6 +76,7 @@ export const ProjectListFieldsDropdown: React.FC = () => {
   const getFieldLabel = useCallback(
     (fieldKey: string) => {
       const keyMappings: Record<string, string> = {
+        PROJECT_TYPE: 'projectType',
         CLIENT: 'client',
         PRIORITY: 'priority',
         STATUS: 'status',

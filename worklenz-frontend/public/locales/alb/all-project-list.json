@@ -1,5 +1,10 @@
 {
   "name": "Emri",
+  "projectType": "Lloji i projektit",
+  "projectTypeSoftware": "Projekt softuerik",
+  "projectTypeGeneral": "Projekt i përgjithshëm",
+  "projectTypeSoftwareTooltip": "Projekt softuerik — çështje, backlog dhe sprinte",
+  "projectTypeGeneralTooltip": "Projekt i përgjithshëm — detyra, faza dhe tabela",
   "client": "Klienti",
   "category": "Kategoria",
   "status": "Statusi",

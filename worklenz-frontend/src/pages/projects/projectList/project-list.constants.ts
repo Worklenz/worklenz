@@ -5,6 +5,7 @@ import {
   setFilteredCategories,
   setFilteredClients,
   setFilteredPriorities,
+  setFilteredProjectTypes,
   setFilteredStatuses,
 } from '@/features/projects/projectsSlice';
 import { IProjectFilter } from '@/types/project/project.types';
@@ -49,7 +50,12 @@ export const isColumnVisible = (fields: readonly ProjectListField[], key: string
 };
 
 /** Request params driven by a column filter dropdown. */
-export type ProjectFilterParam = 'statuses' | 'categories' | 'priorities' | 'clients';
+export type ProjectFilterParam =
+  | 'statuses'
+  | 'categories'
+  | 'priorities'
+  | 'clients'
+  | 'project_types';
 
 /**
  * Ant Design keys the `filters` record it hands to `Table#onChange` by each
@@ -60,6 +66,11 @@ export type ProjectFilterParam = 'statuses' | 'categories' | 'priorities' | 'cli
  * have to agree on that mapping. This table is its single source of truth.
  */
 export const FILTERABLE_COLUMNS = [
+  {
+    columnKey: ProjectListFieldKey.PROJECT_TYPE,
+    param: 'project_types',
+    setFiltered: setFilteredProjectTypes,
+  },
   {
     columnKey: ProjectListFieldKey.STATUS,
     param: 'statuses',

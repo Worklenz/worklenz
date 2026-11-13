@@ -1,5 +1,10 @@
 {
   "name": "名称",
+  "projectType": "项目类型",
+  "projectTypeSoftware": "软件项目",
+  "projectTypeGeneral": "通用项目",
+  "projectTypeSoftwareTooltip": "软件项目 — 问题、待办和冲刺",
+  "projectTypeGeneralTooltip": "通用项目 — 任务、阶段和看板",
   "client": "客户",
   "category": "类别",
   "status": "状态",

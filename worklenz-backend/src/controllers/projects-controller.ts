@@ -414,6 +414,23 @@ export default class ProjectsController extends WorklenzControllerBase {
     };
   }
 
+  private static getFilterByProjectTypeWhereClosure(
+    text: string,
+    paramOffset: number
+  ): { clause: string; params: string[] } {
+    if (!text) return { clause: "", params: [] };
+    const types = text
+      .split(" ")
+      .map(type => type.trim())
+      .filter(type => type === "software" || type === "general");
+    if (types.length === 0) return { clause: "", params: [] };
+    const { clause } = SqlHelper.buildInClause(types, paramOffset);
+    return {
+      clause: `AND COALESCE(project_type, 'general') IN (${clause})`,
+      params: types,
+    };
+  }
+
   /**
    * Validates and maps sort field
    * Maps frontend field names to safe database column names
@@ -433,6 +450,8 @@ export default class ProjectsController extends WorklenzControllerBase {
       'start_date': 'start_date',
       'end_date': 'end_date',
       'END_DATE': 'end_date',
+      'project_type': 'project_type',
+      'PROJECT_TYPE': 'project_type',
       // Sort by the status's configured display order, not its id — status_id
       // is a UUID, so ordering by the raw column would sort rows in an
       // effectively random order that happens to be stable between requests.
@@ -588,6 +607,15 @@ export default class ProjectsController extends WorklenzControllerBase {
       paramOffset += clientsResult.params.length;
     }
 
+    const projectTypesResult = this.getFilterByProjectTypeWhereClosure(
+      req.query.project_types as string,
+      paramOffset
+    );
+    if (projectTypesResult.params.length > 0) {
+      queryParams.push(...projectTypesResult.params);
+      paramOffset += projectTypesResult.params.length;
+    }
+
     // Now get search query with correct paramOffset
     const {searchQuery, searchParams, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name", false, paramOffset);
     
@@ -614,6 +642,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     const statuses = statusesResult.clause;
     const priorities = prioritiesResult.clause;
     const clients = clientsResult.clause;
+    const projectTypes = projectTypesResult.clause;
 
     const q = `
       SELECT ROW_TO_JSON(rec) AS projects
@@ -700,11 +729,11 @@ export default class ProjectsController extends WorklenzControllerBase {
                                                      AND project_id = projects.id)
                                            ELSE updated_at END) AS updated_at
                           FROM projects
-                          WHERE team_id = $1 ${categories} ${statuses} ${priorities} ${clients} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
+                          WHERE team_id = $1 ${categories} ${statuses} ${priorities} ${clients} ${projectTypes} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
                           ORDER BY ${orderByClause}
                           LIMIT $${paramOffset} OFFSET $${paramOffset + 1}) t) AS data
             FROM projects
-            WHERE team_id = $1 ${categories} ${statuses} ${priorities} ${clients} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}) rec;
+            WHERE team_id = $1 ${categories} ${statuses} ${priorities} ${clients} ${projectTypes} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}) rec;
     `;
     
     // Add pagination parameters at the end
@@ -1731,6 +1760,13 @@ export default class ProjectsController extends WorklenzControllerBase {
     const clientsInner = clientsResult.innerClause;
     paramOffset += clientsResult.params.length;
 
+    const projectTypesResult = this.getFilterByProjectTypeWhereClosure(
+      req.query.project_types as string,
+      paramOffset
+    );
+    const projectTypes = projectTypesResult.clause;
+    paramOffset += projectTypesResult.params.length;
+
     const userIdParam = paramOffset;
     paramOffset++;
     
@@ -1887,6 +1923,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                               ${statuses.replace("projects.", "p2.")}
                               ${priorities.replace("projects.", "p2.")}
                               ${clientsInner}
+                              ${projectTypes.replace("projects.", "p2.")}
                               ${isArchived.replace("projects.", "p2.")}
                               ${isFavorites.replace("projects.", "p2.")}
                               ${filterByMember.replace("projects.", "p2.")}
@@ -1896,7 +1933,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                          ) AS projects
                   FROM projects
                   ${groupJoin}
-                  WHERE projects.team_id = $${teamIdParam} ${categories} ${statuses} ${priorities} ${clients} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
+                  WHERE projects.team_id = $${teamIdParam} ${categories} ${statuses} ${priorities} ${clients} ${projectTypes} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
                   GROUP BY ${groupByFields}
                   ORDER BY ${groupOrderBy}
                   LIMIT $${sizeParam}::INTEGER OFFSET $${offsetParam}::INTEGER
@@ -1904,12 +1941,12 @@ export default class ProjectsController extends WorklenzControllerBase {
                ) AS data
         FROM projects
         ${groupJoin}
-        WHERE projects.team_id = $${teamIdParam} ${categories} ${statuses} ${priorities} ${clients} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
+        WHERE projects.team_id = $${teamIdParam} ${categories} ${statuses} ${priorities} ${clients} ${projectTypes} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
       ) rec;
     `;
 
     // Build parameter array: team_id, searchParams, categories params, statuses params,
-    // priorities params, clients params, userId, size, offset.
+    // priorities params, clients params, project_types params, userId, size, offset.
     // Order MUST match the order the paramOffset was advanced above.
     const queryParams: any[] = [
       req.user?.team_id || null,
@@ -1918,6 +1955,7 @@ export default class ProjectsController extends WorklenzControllerBase {
       ...statusesResult.params,
       ...prioritiesResult.params,
       ...clientsResult.params,
+      ...projectTypesResult.params,
       userId
     ];
     queryParams.push(size, offset);

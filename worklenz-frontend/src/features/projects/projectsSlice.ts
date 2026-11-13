@@ -30,6 +30,7 @@ export interface ProjectState {
   filteredStatuses: string[];
   filteredPriorities: string[]; // FIX #1: was missing from interface
   filteredClients: string[];
+  filteredProjectTypes: string[];
   requestParams: {
     index: number;
     size: number;
@@ -41,6 +42,7 @@ export interface ProjectState {
     categories: string | null;
     priorities: string | null; // FIX #2: was missing from interface
     clients: string | null;
+    project_types: string | null;
   };
   groupedRequestParams: {
     index: number;
@@ -54,6 +56,7 @@ export interface ProjectState {
     categories: string | null;
     priorities: string | null; // FIX #2: was missing from interface
     clients: string | null;
+    project_types: string | null;
   };
   projectManagers: IProjectManager[];
   projectManagersLoading: boolean;
@@ -88,6 +91,7 @@ const initialState: ProjectState = {
   filteredStatuses: [],
   filteredPriorities: [], // FIX #1: now properly typed
   filteredClients: [],
+  filteredProjectTypes: [],
   requestParams: {
     index: 1,
     size: DEFAULT_PAGE_SIZE,
@@ -99,6 +103,7 @@ const initialState: ProjectState = {
     categories: null,
     priorities: null,
     clients: null,
+    project_types: null,
   },
   groupedRequestParams: {
     index: 1,
@@ -112,6 +117,7 @@ const initialState: ProjectState = {
     categories: null,
     priorities: null, // FIX #2: now properly typed
     clients: null,
+    project_types: null,
   },
   projectManagers: [],
   projectManagersLoading: false,
@@ -131,6 +137,7 @@ export const fetchProjects = createAsyncThunk(
       categories: string | null;
       priorities: string | null;
       clients: string | null;
+      project_types: string | null;
     },
     { rejectWithValue }
   ) => {
@@ -145,7 +152,8 @@ export const fetchProjects = createAsyncThunk(
         params.statuses,
         params.categories,
         params.priorities,
-        params.clients
+        params.clients,
+        params.project_types
       );
       return projectsResponse.body;
     } catch (error) {
@@ -173,6 +181,7 @@ export const fetchGroupedProjects = createAsyncThunk(
       categories: string | null;
       priorities: string | null;
       clients: string | null;
+      project_types: string | null;
     },
     { rejectWithValue }
   ) => {
@@ -188,7 +197,8 @@ export const fetchGroupedProjects = createAsyncThunk(
         params.statuses,
         params.categories,
         params.priorities,
-        params.clients
+        params.clients,
+        params.project_types
       );
       return groupedProjectsResponse.body;
     } catch (error) {
@@ -307,6 +317,9 @@ const projectSlice = createSlice({
     setFilteredClients: (state, action: PayloadAction<string[]>) => {
       state.filteredClients = action.payload;
     },
+    setFilteredProjectTypes: (state, action: PayloadAction<string[]>) => {
+      state.filteredProjectTypes = action.payload;
+    },
     // FIX #2: priorities is now properly typed in the interface so it
     // will be included in the spread and never silently dropped
     setRequestParams: (state, action: PayloadAction<Partial<ProjectState['requestParams']>>) => {
@@ -408,6 +421,7 @@ export const {
   setFilteredStatuses,
   setFilteredPriorities,
   setFilteredClients,
+  setFilteredProjectTypes,
   setRequestParams,
   setGroupedRequestParams,
   setProjectMemberDefaultView,
