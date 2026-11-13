@@ -1839,7 +1839,9 @@ const PlannerScheduleView: React.FC = () => {
                             background: over
                               ? 'rgba(255,77,79,.06)'
                               : isFullDayTimeOff
-                                ? 'repeating-linear-gradient(45deg, rgba(250, 173, 20, 0.08) 0 4px, transparent 4px 8px)'
+                                ? themeMode === 'dark'
+                                  ? 'repeating-linear-gradient(45deg, rgba(250, 173, 20, 0.08) 0 4px, transparent 4px 8px)'
+                                  : 'repeating-linear-gradient(45deg, rgba(250, 173, 20, 0.24) 0 4px, rgba(250, 173, 20, 0.06) 4px 8px)'
                                 : nonWorkingDay
                                   ? token.colorFillQuaternary
                                   : undefined,
