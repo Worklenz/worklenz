@@ -58,12 +58,18 @@ export const MilestonesTab = ({ project }: MilestonesTabProps) => {
   const [completing, setCompleting] = useState<Milestone | null>(null);
   const [deleting, setDeleting] = useState<Milestone | null>(null);
 
-  const milestones = [...(query.data?.body ?? [])].sort((a, b) => a.target_date.localeCompare(b.target_date));
-  const internalCount = milestones.filter(milestone => milestone.visibility === 'internal').length;
+  const milestones = [...(query.data?.body ?? [])].sort((a, b) =>
+    (a.target_date ?? '').localeCompare(b.target_date ?? '')
+  );
+
+  const internalCount = milestones.filter(
+    milestone => milestone.visibility === 'internal'
+  ).length;
 
   const changeSource = async (next: MilestoneSource) => {
     try {
       await saveOverview({ projectId: project.id, body: { milestone_source: next } }).unwrap();
+      await query.refetch();
     } catch (error) {
       message.error(
         getPortalErrorMessage(error, t('milestones.sourceFailed', { defaultValue: 'The milestone source could not be changed.' }))
@@ -113,13 +119,13 @@ export const MilestonesTab = ({ project }: MilestonesTabProps) => {
     },
     ...(milestone.status !== 'completed'
       ? [
-          {
-            key: 'complete',
-            icon: <CheckCircleOutlined />,
-            label: t('milestones.menu.complete', { defaultValue: 'Mark complete…' }),
-            onClick: () => setCompleting(milestone),
-          },
-        ]
+        {
+          key: 'complete',
+          icon: <CheckCircleOutlined />,
+          label: t('milestones.menu.complete', { defaultValue: 'Mark complete…' }),
+          onClick: () => setCompleting(milestone),
+        },
+      ]
       : []),
     { type: 'divider' as const },
     {
@@ -176,18 +182,18 @@ export const MilestonesTab = ({ project }: MilestonesTabProps) => {
         milestone.read_only ? (
           <MilestoneStatusTag status={milestone.status} />
         ) : (
-        <Select<MilestoneStatus>
-          size="small"
-          value={milestone.status}
-          style={{ minWidth: 130 }}
-          disabled={isUpdating}
-          onChange={status => void changeStatus(milestone, status)}
-          aria-label={t('milestones.statusLabel', { name: milestone.name, defaultValue: 'Status of {{name}}' })}
-          options={STATUS_OPTIONS.map(option => ({
-            value: option.value,
-            label: tShared(option.key, { defaultValue: option.defaultValue }),
-          }))}
-        />
+          <Select<MilestoneStatus>
+            size="small"
+            value={milestone.status}
+            style={{ minWidth: 130 }}
+            disabled={isUpdating}
+            onChange={status => void changeStatus(milestone, status)}
+            aria-label={t('milestones.statusLabel', { name: milestone.name, defaultValue: 'Status of {{name}}' })}
+            options={STATUS_OPTIONS.map(option => ({
+              value: option.value,
+              label: tShared(option.key, { defaultValue: option.defaultValue }),
+            }))}
+          />
         ),
     },
     {
@@ -207,12 +213,12 @@ export const MilestonesTab = ({ project }: MilestonesTabProps) => {
         milestone.read_only ? (
           <VisibilityTag visibility="client" />
         ) : (
-        <VisibilitySwitch
-          visibility={milestone.visibility}
-          itemLabel={milestone.name}
-          disabled={isUpdating}
-          onChange={visibility => void changeVisibility(milestone, visibility)}
-        />
+          <VisibilitySwitch
+            visibility={milestone.visibility}
+            itemLabel={milestone.name}
+            disabled={isUpdating}
+            onChange={visibility => void changeVisibility(milestone, visibility)}
+          />
         ),
     },
     {
@@ -220,14 +226,14 @@ export const MilestonesTab = ({ project }: MilestonesTabProps) => {
       align: 'right',
       render: (_value, milestone) =>
         milestone.read_only ? null : (
-        <Dropdown menu={{ items: menuFor(milestone) }} trigger={['click']}>
-          <Button
-            size="small"
-            type="text"
-            icon={<MoreOutlined />}
-            aria-label={t('milestones.rowActions', { name: milestone.name, defaultValue: 'Actions for {{name}}' })}
-          />
-        </Dropdown>
+          <Dropdown menu={{ items: menuFor(milestone) }} trigger={['click']}>
+            <Button
+              size="small"
+              type="text"
+              icon={<MoreOutlined />}
+              aria-label={t('milestones.rowActions', { name: milestone.name, defaultValue: 'Actions for {{name}}' })}
+            />
+          </Dropdown>
         ),
     },
   ];
@@ -266,15 +272,15 @@ export const MilestonesTab = ({ project }: MilestonesTabProps) => {
         <Typography.Text type="secondary" style={{ fontSize: 12.5 }}>
           {isPhases
             ? t('milestones.phasesHint', {
-                defaultValue:
-                  'Showing this project’s WorkLenz phases with their real dates. Clients see these. Switch to Set manually to add your own milestones.',
-              })
+              defaultValue:
+                'Showing this project’s WorkLenz phases with their real dates. Clients see these. Switch to Set manually to add your own milestones.',
+            })
             : t('milestones.summary', {
-            shared: milestones.length - internalCount,
-            internal: internalCount,
-            defaultValue:
-              '{{shared}} shared with the client · {{internal}} internal only. Internal milestones are never counted or hinted at in the portal.',
-          })}
+              shared: milestones.length - internalCount,
+              internal: internalCount,
+              defaultValue:
+                '{{shared}} shared with the client · {{internal}} internal only. Internal milestones are never counted or hinted at in the portal.',
+            })}
         </Typography.Text>
         {!isPhases && (
           <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => setEditing(null)}>
@@ -299,11 +305,11 @@ export const MilestonesTab = ({ project }: MilestonesTabProps) => {
                 description={
                   isPhases
                     ? t('milestones.emptyPhases', {
-                        defaultValue: 'This project has no dated phases yet. Add phases with dates in the WorkLenz project.',
-                      })
+                      defaultValue: 'This project has no dated phases yet. Add phases with dates in the WorkLenz project.',
+                    })
                     : t('milestones.empty', {
-                        defaultValue: 'No milestones yet. Add one to show the client where the project is heading.',
-                      })
+                      defaultValue: 'No milestones yet. Add one to show the client where the project is heading.',
+                    })
                 }
               />
             ),
@@ -328,15 +334,15 @@ export const MilestonesTab = ({ project }: MilestonesTabProps) => {
         {deleting &&
           (deleting.visibility === 'client'
             ? t('milestones.deleteBodyShared', {
-                name: deleting.name,
-                defaultValue:
-                  '“{{name}}” disappears from the client portal immediately. Linked tasks and files are not deleted. The deletion is recorded in the audit log.',
-              })
+              name: deleting.name,
+              defaultValue:
+                '“{{name}}” disappears from the client portal immediately. Linked tasks and files are not deleted. The deletion is recorded in the audit log.',
+            })
             : t('milestones.deleteBodyInternal', {
-                name: deleting.name,
-                defaultValue:
-                  '“{{name}}” is removed. Linked tasks and files are not deleted. The deletion is recorded in the audit log.',
-              }))}
+              name: deleting.name,
+              defaultValue:
+                '“{{name}}” is removed. Linked tasks and files are not deleted. The deletion is recorded in the audit log.',
+            }))}
       </ConfirmEffectModal>
     </div>
   );
