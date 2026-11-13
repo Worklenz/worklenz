@@ -248,7 +248,6 @@
       "keyLabelPlaceholder": "ex : MK"
     },
     "dependentSelection": {
-      "parentOptionsLocked": "Impossible d’ajouter ici des options au champ parent, car d’autres champs en dépendent.",
       "newBadge": "NOUVEAU",
       "parentField": "Champ parent",
       "chooseParent": "— Choisir —",
@@ -264,8 +263,7 @@
       "newParentOptions": "Options du champ parent",
       "newParentAddPlaceholder": "Nouvelle option parent… (séparées par des virgules)",
       "newParentIncomplete": "Donnez au nouveau champ parent un titre et au moins une option.",
-      "newParentTogetherHint": "L’enregistrement crée deux colonnes : le nouveau champ parent avec ses options, et ce champ avec les options dépendantes.",
-      "fieldTitleFirstHint": "Indiquez d’abord le titre du champ. Il nomme la nouvelle colonne dépendante qui utilise le champ parent ci-dessous.",
+      "newParentTogetherHint": "Cela crée un nouveau champ Sélection à côté de celui-ci lors de l’enregistrement. Il apparaîtra aussi comme sa propre colonne.",
       "newChildTitleHint": "Nom du nouveau champ dépendant. « {{name}} » n’est pas modifié.",
       "newParentOnlyHint": "Crée uniquement une colonne Sélection principale. Ajoutez ensuite une colonne enfant et définissez Dépend de sur ce champ.",
       "dependentOptions": "Options dépendantes",

@@ -248,7 +248,6 @@
       "keyLabelPlaceholder": "ej: MK"
     },
     "dependentSelection": {
-      "parentOptionsLocked": "No se pueden añadir nuevas opciones al campo principal aquí porque otros campos dependen de él.",
       "newBadge": "NUEVO",
       "parentField": "Campo principal",
       "chooseParent": "— Elegir —",
@@ -264,8 +263,7 @@
       "newParentOptions": "Opciones del campo principal",
       "newParentAddPlaceholder": "Nueva opción principal… (separadas por comas para varias)",
       "newParentIncomplete": "Dale al nuevo campo principal un título y al menos una opción.",
-      "newParentTogetherHint": "Al guardar se crean dos columnas: el nuevo campo padre con sus opciones y este campo con las opciones dependientes.",
-      "fieldTitleFirstHint": "Primero indica el título del campo. Da nombre a la nueva columna dependiente que usa el campo padre de abajo.",
+      "newParentTogetherHint": "Esto crea un nuevo campo de Selección junto a este al guardar. También aparecerá como su propia columna.",
       "newChildTitleHint": "Nombre del nuevo campo dependiente. “{{name}}” no se modifica.",
       "newParentOnlyHint": "Crea solo una columna de Selección principal. Añade después una columna hija y establece Depende de en este campo.",
       "dependentOptions": "Opciones dependientes",

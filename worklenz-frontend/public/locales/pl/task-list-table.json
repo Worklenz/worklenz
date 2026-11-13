@@ -248,7 +248,6 @@
       "keyLabelPlaceholder": "np.: MK"
     },
     "dependentSelection": {
-      "parentOptionsLocked": "Nie można tutaj dodać nowych opcji pola nadrzędnego, ponieważ inne pola od niego zależą.",
       "newBadge": "NOWE",
       "parentField": "Pole nadrzędne",
       "chooseParent": "— Wybierz —",
@@ -264,8 +263,7 @@
       "newParentOptions": "Opcje pola nadrzędnego",
       "newParentAddPlaceholder": "Nowa opcja nadrzędna… (oddzielone przecinkami dla wielu)",
       "newParentIncomplete": "Nadaj nowemu polu nadrzędnemu tytuł i co najmniej jedną opcję.",
-      "newParentTogetherHint": "Zapis tworzy dwie kolumny: nowe pole nadrzędne z jego opcjami oraz to pole z opcjami zależnymi.",
-      "fieldTitleFirstHint": "Najpierw podaj tytuł pola. Nadaje on nazwę nowej kolumnie zależnej, która używa pola nadrzędnego poniżej.",
+      "newParentTogetherHint": "Przy zapisie tworzy to nowe pole Wyboru obok tego. Pojawi się też jako osobna kolumna.",
       "newChildTitleHint": "Nazwa nowego pola zależnego. „{{name}}” nie zostanie zmienione.",
       "newParentOnlyHint": "Tworzy tylko główną kolumnę Wyboru. Później dodaj kolumnę podrzędną i ustaw Zależy od na to pole.",
       "dependentOptions": "Opcje zależne",
