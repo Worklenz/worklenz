@@ -84,6 +84,7 @@ interface CustomColumnFormContentProps {
  */
 const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentProps) => {
   const [mainForm] = Form.useForm();
+  const watchedFieldTitle: string | undefined = Form.useWatch('fieldTitle', mainForm);
   const { t } = useTranslation('task-list-table');
   const { socket } = useSocket();
   const { token } = theme.useToken();
@@ -947,6 +948,16 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
             rules={[{ required: true, message: t('customColumns.modal.fieldTitleRequired') }]}
             required={false}
             style={{ flex: 1, minWidth: 0 }}
+            extra={
+              isCreatingNewParent && !watchedFieldTitle?.trim() ? (
+                <Typography.Text type="warning" style={{ fontSize: 12 }}>
+                  {t('customColumns.dependentSelection.fieldTitleFirstHint', {
+                    defaultValue:
+                      'First give the field title. It names the new dependent column that uses the parent field below.',
+                  })}
+                </Typography.Text>
+              ) : undefined
+            }
           >
             <Input placeholder={t('customColumns.modal.columnTitlePlaceholder')} />
           </Form.Item>
@@ -1016,15 +1027,10 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
                 </Typography.Text>
               ) : isCreatingNewParent ? (
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {originalParentColumnId
-                    ? t('customColumns.dependentSelection.newParentTogetherHint', {
-                        defaultValue:
-                          'This creates a brand-new Selection field alongside this one when you save.it will also appear as its own column.',
-                      })
-                    : t('customColumns.dependentSelection.newParentSingleColumnHint', {
-                        defaultValue:
-                          'Saves one column with the parent options. A Dependent Selection you add later can pick this column as its parent and create its own child options under each parent option.',
-                      })}
+                  {t('customColumns.dependentSelection.newParentTogetherHint', {
+                    defaultValue:
+                      'Saving creates two columns: the new parent field with its options, and this field with the dependent options.',
+                  })}
                 </Typography.Text>
               ) : (
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
