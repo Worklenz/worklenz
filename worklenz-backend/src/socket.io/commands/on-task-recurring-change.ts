@@ -1,3 +1,4 @@
+import { verifyNonGuestTaskAccessSocket } from "../authorization";
 import { Server, Socket } from "socket.io";
 import { getLoggedInUserIdFromSocket, log_error } from "../util";
 import { SocketEvents } from "../events";
@@ -7,6 +8,7 @@ import { isAssigneeScopeEditRestrictedForTask } from "../../shared/assignee-task
 
 export async function on_task_recurring_change(_io: Server, socket: Socket, data?: { task_id?: string, schedule_id?: string }) {
     if (!data?.task_id) return;
+    if (!(await verifyNonGuestTaskAccessSocket(socket, data.task_id))) return;
     try {
         const userId = getLoggedInUserIdFromSocket(socket);
 

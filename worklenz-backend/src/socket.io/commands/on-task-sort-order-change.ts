@@ -8,6 +8,7 @@ import {GroupBy} from "../../controllers/tasks-controller-base";
 import {UNMAPPED} from "../../shared/constants";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
 import { verifyNonGuestProjectAccessSocket, logUnauthorizedSocketAccess } from "../authorization";
+import { PROJECT_ROLE_PERMISSIONS } from "../../shared/organization-permissions";
 import { canUserEditTask, isAssigneeScopeEditRestrictedForTask } from "../../shared/assignee-task-scope";
 import { ISocketSession } from "../../interfaces/socket-session";
 import { IPassportSession } from "../../interfaces/passport-session";
@@ -91,7 +92,7 @@ function updateUnmappedStatus(config: Config) {
 
 export async function on_task_sort_order_change(_io: Server, socket: Socket, data: ChangeRequest) {
   try {
-    if (!(await verifyNonGuestProjectAccessSocket(socket, data.project_id))) {
+    if (!(await verifyNonGuestProjectAccessSocket(socket, data.project_id, PROJECT_ROLE_PERMISSIONS.EDIT_TASKS))) {
       logUnauthorizedSocketAccess(socket, "TASK_SORT_ORDER_CHANGE", "project", data.project_id);
       return;
     }

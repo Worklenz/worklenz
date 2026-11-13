@@ -25,6 +25,7 @@ export const useAuthStatus = () => {
           isAuthenticated: false,
           isLicenseExpired: false,
           isAdmin: false,
+          isFreePlan: false,
           isSetupComplete: false,
         };
       }
@@ -35,6 +36,7 @@ export const useAuthStatus = () => {
           isAuthenticated: false,
           isLicenseExpired: false,
           isAdmin: false,
+          isFreePlan: false,
           isSetupComplete: false,
         };
       }
@@ -75,13 +77,20 @@ export const useAuthStatus = () => {
         return false;
       };
 
-      return { isAuthenticated, isLicenseExpired: isLicenseExpired(), isAdmin, isSetupComplete };
+      return {
+        isAuthenticated,
+        isLicenseExpired: isLicenseExpired(),
+        isAdmin,
+        isFreePlan,
+        isSetupComplete,
+      };
     } catch (error) {
       console.error('Error in useAuthStatus:', error);
       return {
         isAuthenticated: false,
         isLicenseExpired: false,
         isAdmin: false,
+        isFreePlan: false,
         isSetupComplete: false,
       };
     }

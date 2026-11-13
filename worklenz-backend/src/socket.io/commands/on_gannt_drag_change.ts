@@ -5,7 +5,7 @@ import { SocketEvents } from "../events";
 import moment from "moment";
 import momentTime from "moment-timezone";
 import { getTaskDetails, logEndDateChange, logStartDateChange } from "../../services/activity-logs/activity-logs.service";
-import { logUnauthorizedSocketAccess } from "../authorization";
+import { logUnauthorizedSocketAccess, verifyNonGuestTaskAccessSocket } from "../authorization";
 import { canUserEditTask } from "../../shared/assignee-task-scope";
 import { ISocketSession } from "../../interfaces/socket-session";
 import { IPassportSession } from "../../interfaces/passport-session";
@@ -13,6 +13,7 @@ import { IPassportSession } from "../../interfaces/passport-session";
 export async function on_gannt_drag_change(_io: Server, socket: Socket, data?: string) {
   try {
     const body = JSON.parse(data as string);
+    if (!await verifyNonGuestTaskAccessSocket(socket, body.task_id)) return;
 
     // ── Access control ────────────────────────────────────────────────────────
     // User must be able to edit this task (not just view it) — mirrors

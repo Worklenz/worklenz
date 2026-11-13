@@ -2,7 +2,7 @@ import { Socket } from "socket.io";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
 import { log_error, emitToTaskVisibleProjectMembers, getLoggedInUserIdFromSocket } from "../util";
-import { logUnauthorizedSocketAccess } from "../authorization";
+import { logUnauthorizedSocketAccess, verifyNonGuestTaskAccessSocket } from "../authorization";
 import { canUserEditTask } from "../../shared/assignee-task-scope";
 import { ISocketSession } from "../../interfaces/socket-session";
 import { IPassportSession } from "../../interfaces/passport-session";
@@ -25,7 +25,7 @@ export async function on_schedule_task_drag_change(io: any, socket: Socket, data
     try {
         const { task_id, project_id, start_date, end_date } = data;
 
-        if (!task_id || !project_id) {
+        if (!task_id || !project_id || !await verifyNonGuestTaskAccessSocket(socket, task_id)) {
             return;
         }
 

@@ -8,17 +8,18 @@ import idParamValidator from "../../middlewares/validators/id-param-validator";
 import taskAttachmentsValidator from "../../middlewares/validators/task-attachments-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import verifyTaskAccess from "../../middlewares/verify-task-access";
-import {verifyNonGuestTaskAccessViaAttachment, verifyTaskAccessViaAttachment} from "../../middlewares/verify-task-access";
+import {verifyNonGuestTaskAccessViaAttachment, verifyTaskAccessViaAttachment, verifyTaskRolePermission} from "../../middlewares/verify-task-access";
+import { PROJECT_ROLE_PERMISSIONS } from "../../shared/organization-permissions";
 
 const attachmentsApiRouter = express.Router();
 
 // New presigned URL upload flow (3-step: presign → upload → confirm)
 // Put these BEFORE the generic /tasks route so they match first
-attachmentsApiRouter.post("/tasks/presign", verifyTaskAccess('body', 'task_id'), safeControllerFunction(AttachmentController.presignTaskAttachment));
-attachmentsApiRouter.post("/tasks/confirm", verifyTaskAccess('body', 'task_id'), safeControllerFunction(AttachmentController.confirmTaskAttachment));
+attachmentsApiRouter.post("/tasks/presign", verifyTaskAccess('body', 'task_id'), verifyTaskRolePermission('body', 'task_id', PROJECT_ROLE_PERMISSIONS.EDIT_TASKS), safeControllerFunction(AttachmentController.presignTaskAttachment));
+attachmentsApiRouter.post("/tasks/confirm", verifyTaskAccess('body', 'task_id'), verifyTaskRolePermission('body', 'task_id', PROJECT_ROLE_PERMISSIONS.EDIT_TASKS), safeControllerFunction(AttachmentController.confirmTaskAttachment));
 
 // Legacy base64 upload (kept for backward compatibility)
-attachmentsApiRouter.post("/tasks", taskAttachmentsValidator, verifyTaskAccess('body', 'task_id'), safeControllerFunction(AttachmentController.createTaskAttachment));
+attachmentsApiRouter.post("/tasks", taskAttachmentsValidator, verifyTaskAccess('body', 'task_id'), verifyTaskRolePermission('body', 'task_id', PROJECT_ROLE_PERMISSIONS.EDIT_TASKS), safeControllerFunction(AttachmentController.createTaskAttachment));
 
 // Avatar uploads
 attachmentsApiRouter.post("/avatar", avatarValidator, safeControllerFunction(imageToWebp), safeControllerFunction(AttachmentController.createAvatarAttachment));

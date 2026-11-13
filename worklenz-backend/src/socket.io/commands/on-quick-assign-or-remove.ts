@@ -1,3 +1,4 @@
+import { verifyNonGuestTaskAccessSocket } from "../authorization";
 import {Server, Socket} from "socket.io";
 import db from "../../config/db";
 import WorklenzControllerBase from "../../controllers/worklenz-controller-base";
@@ -60,6 +61,7 @@ export async function runAssignOrRemove(data: any, isAssignment = false) {
 export async function on_quick_assign_or_remove(_io: Server, socket: Socket, data?: string) {
   try {
     const body = JSON.parse(data as string);
+    if (!(await verifyNonGuestTaskAccessSocket(socket, body.task_id))) return;
     const isAssign = body.mode == 0;
     const userId = getLoggedInUserIdFromSocket(socket);
 

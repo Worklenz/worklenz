@@ -29,6 +29,7 @@ export interface IProjectTaskCreationContext {
   restrict_task_creation?: boolean;
   is_guest?: boolean;
   is_project_manager?: boolean;
+  task_role_permissions?: { create_tasks: boolean };
 }
 
 export const getTaskCreationPermission = ({
@@ -42,12 +43,17 @@ export const getTaskCreationPermission = ({
     restrict_task_creation?: boolean;
     is_guest?: boolean;
     is_project_manager?: boolean;
+    task_role_permissions?: { create_tasks: boolean };
   } | null;
   orgConfig?: { restrict_task_creation?: boolean } | null;
   isProjectManager?: boolean;
 }): ITaskCreationPermission => {
   // Guests can never create tasks, but this is not a "restriction" toggle.
   if (project?.is_guest) {
+    return { canCreateTask: false, isRestricted: false };
+  }
+
+  if (project?.task_role_permissions && !project.task_role_permissions.create_tasks) {
     return { canCreateTask: false, isRestricted: false };
   }
 

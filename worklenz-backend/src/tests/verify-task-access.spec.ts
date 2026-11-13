@@ -1,3 +1,8 @@
+jest.mock("../shared/project-role-permissions", () => ({
+  checkProjectRolePermission: jest.fn().mockResolvedValue({ allowed: true }),
+  checkTaskRolePermission: jest.fn().mockResolvedValue({ allowed: true }),
+}));
+
 jest.mock("../config/db", () => ({
   __esModule: true,
   default: {

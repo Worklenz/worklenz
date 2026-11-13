@@ -5,6 +5,8 @@ import {ServerResponse} from "../models/server-response";
 import db from "../config/db";
 import {log_error} from "../shared/utils";
 import {NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE} from "../shared/guest-access-sql";
+import { checkProjectRolePermission } from "../shared/project-role-permissions";
+import { PROJECT_ROLE_PERMISSIONS, ProjectRolePermission } from "../shared/organization-permissions";
 
 /**
  * Middleware to verify user has access to a project
@@ -79,6 +81,10 @@ export default function verifyProjectAccess(
       }
 
       const projectTeamId = projectTeamResult.rows[0].team_id;
+
+      if (!(await checkProjectRolePermission(userId, projectId, PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT)).allowed) {
+        return res.status(403).send(new ServerResponse(false, null, "You do not have permission to access this project"));
+      }
 
       // Check if project belongs to user's current active team
       if (projectTeamId !== teamId) {
@@ -202,7 +208,8 @@ export default function verifyProjectAccess(
  */
 export function verifyNonGuestProjectAccess(
   location: 'params' | 'body' | 'query' = 'params',
-  fieldName: string = 'id'
+  fieldName: string = 'id',
+  permission?: ProjectRolePermission
 ) {
   return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
     const userId = req.user?.id;
@@ -232,6 +239,12 @@ export function verifyNonGuestProjectAccess(
       const result = await db.query(q, [projectId, userId]);
 
       if (result.rowCount && result.rowCount > 0) {
+        if (!(await checkProjectRolePermission(userId, projectId, PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT)).allowed) {
+          return res.status(403).send(new ServerResponse(false, null, "You do not have permission to access this project"));
+        }
+        if (permission && !(await checkProjectRolePermission(userId, projectId, permission)).allowed) {
+          return res.status(403).send(new ServerResponse(false, null, "You do not have permission to perform this action"));
+        }
         return next();
       }
 

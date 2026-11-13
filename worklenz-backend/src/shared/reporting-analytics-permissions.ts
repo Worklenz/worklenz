@@ -1,10 +1,14 @@
 /**
  * Reporting & Analytics permission matrix (backend).
- * Manager maps to Team Lead. Analytics is Owner/Admin only
- * (Members, Guests, and Team Leads are denied).
+ * Manager maps to Team Lead. Report viewing follows the "View reports"
+ * organization permission (Owners always hold every org permission).
  */
 
 import { IPassportSession } from "../interfaces/passport-session";
+import {
+  hasOrganizationPermission,
+  ORGANIZATION_PERMISSIONS,
+} from "./organization-permissions";
 import { TEAM_ROLE_NAMES, getEffectiveTeamRole } from "./team-permissions";
 
 export type AnalyticsActorRole = "owner" | "admin" | "manager" | "member" | "guest";
@@ -127,7 +131,7 @@ export function getAnalyticsDashboardPermissions(
 }
 
 export async function canViewAnalyticsReports(user?: IPassportSession): Promise<boolean> {
-  return isWorkspaceAdmin(resolveAnalyticsActorRole(user));
+  return hasOrganizationPermission(user, ORGANIZATION_PERMISSIONS.VIEW_REPORTS);
 }
 
 export function canConfigureSlaPolicies(user?: IPassportSession): boolean {

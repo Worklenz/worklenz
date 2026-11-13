@@ -1,3 +1,4 @@
+import { verifyNonGuestTaskAccessSocket } from "../authorization";
 import { Server, Socket } from "socket.io";
 import { getLoggedInUserIdFromSocket, log_error, emitToTaskVisibleProjectMembers } from "../util";
 import db from "../../config/db";
@@ -12,6 +13,7 @@ export async function on_task_billable_change(_io: Server, socket: Socket, data?
         data = JSON.parse(data as string);
     };
     if (!data?.task_id || (typeof data.billable != "boolean")) return;
+    if (!(await verifyNonGuestTaskAccessSocket(socket, data.task_id))) return;
     
     try {
         const userId = getLoggedInUserIdFromSocket(socket);
