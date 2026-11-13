@@ -248,6 +248,9 @@
       "keyLabelPlaceholder": "ex : MK"
     },
     "dependentSelection": {
+      "fieldTitleFirstHint": "Saisissez d’abord le titre du champ. Il nomme la nouvelle colonne dépendante qui utilise la colonne parente ci-dessous.",
+      "newParentSingleColumnHint": "Enregistre une colonne avec les options parentes. Une sélection dépendante ajoutée ensuite peut utiliser cette colonne comme parent et créer ses propres options enfants.",
+      "parentOptionsLocked": "Impossible d’ajouter ici des options au champ parent, car d’autres champs en dépendent.",
       "parentField": "Colonne parent",
       "chooseParent": "— Choisir —",
       "chooseParentHint": "Choisissez une colonne Sélection existante ci-dessus, ou créez une nouvelle colonne parent, pour regrouper les options sous ses valeurs.",

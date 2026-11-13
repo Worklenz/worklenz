@@ -248,6 +248,9 @@
       "keyLabelPlaceholder": "p.sh.: MK"
     },
     "dependentSelection": {
+      "fieldTitleFirstHint": "Fillimisht vendosni titullin e fushës. Ai emërton kolonën e re të varur që përdor kolonën prind më poshtë.",
+      "newParentSingleColumnHint": "Ruan një kolonë me opsionet prind. Një përzgjedhje e varur e shtuar më vonë mund ta përdorë këtë kolonë si prind dhe të krijojë opsionet e veta fëmijë.",
+      "parentOptionsLocked": "Nuk mund të shtohen këtu opsione të reja për fushën prind, sepse fusha të tjera varen prej saj.",
       "parentField": "Kolona prind",
       "chooseParent": "— Zgjidh —",
       "chooseParentHint": "Zgjidhni një kolonë Përzgjedhjeje ekzistuese më sipër, ose krijoni një kolonë prind të re, për të grupuar opsionet sipas vlerave të saj.",

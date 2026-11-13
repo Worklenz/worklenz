@@ -248,6 +248,9 @@
       "keyLabelPlaceholder": "np.: MK"
     },
     "dependentSelection": {
+      "fieldTitleFirstHint": "Najpierw podaj nazwę pola. Określa ona nazwę nowej kolumny zależnej, która używa poniższej kolumny nadrzędnej.",
+      "newParentSingleColumnHint": "Zapisuje jedną kolumnę z opcjami nadrzędnymi. Dodane później pole wyboru zależnego może użyć tej kolumny jako nadrzędnej i utworzyć własne opcje podrzędne.",
+      "parentOptionsLocked": "Nie można tutaj dodać nowych opcji pola nadrzędnego, ponieważ inne pola od niego zależą.",
       "parentField": "Kolumna nadrzędna",
       "chooseParent": "— Wybierz —",
       "chooseParentHint": "Wybierz istniejącą kolumnę Wyboru powyżej lub utwórz nową kolumnę nadrzędną, aby grupować opcje według jej wartości.",

@@ -249,6 +249,8 @@
       "keyLabelPlaceholder": "ex: MK"
     },
     "dependentSelection": {
+      "newParentSingleColumnHint": "Saves one column with the parent options. A Dependent Selection you add later can pick this column as its parent and create its own child options under each parent option.",
+      "parentOptionsLocked": "New parent options cannot be added here because other fields depend on this field.",
       "parentField": "Parent column",
       "chooseParent": "— Choose —",
       "chooseParentHint": "Choose an existing Selection column above, or create a brand-new parent column, to start grouping options under its values.",

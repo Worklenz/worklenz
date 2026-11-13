@@ -248,6 +248,9 @@
       "keyLabelPlaceholder": "z. B.: MK"
     },
     "dependentSelection": {
+      "fieldTitleFirstHint": "Geben Sie zuerst den Feldtitel ein. Er benennt die neue abhängige Spalte, die die übergeordnete Spalte unten verwendet.",
+      "newParentSingleColumnHint": "Speichert eine Spalte mit den übergeordneten Optionen. Eine später hinzugefügte abhängige Auswahl kann diese Spalte als übergeordnetes Feld verwenden und eigene untergeordnete Optionen erstellen.",
+      "parentOptionsLocked": "Hier können keine neuen übergeordneten Optionen hinzugefügt werden, da andere Felder von diesem Feld abhängen.",
       "parentField": "Übergeordnete Spalte",
       "chooseParent": "— Auswählen —",
       "chooseParentHint": "Wählen Sie oben eine vorhandene Auswahlspalte oder erstellen Sie eine neue übergeordnete Spalte, um Optionen unter deren Werten zu gruppieren.",

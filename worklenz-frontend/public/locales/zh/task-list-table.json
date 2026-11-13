@@ -248,6 +248,9 @@
       "keyLabelPlaceholder": "例如：MK"
     },
     "dependentSelection": {
+      "fieldTitleFirstHint": "请先输入字段标题。该标题用于命名使用下方父列的新依赖列。",
+      "newParentSingleColumnHint": "保存包含父选项的一列。之后添加的依赖选择字段可以将此列用作父列，并为每个父选项创建自己的子选项。",
+      "parentOptionsLocked": "无法在此添加新的父字段选项，因为其他字段依赖于此字段。",
       "parentField": "父列",
       "chooseParent": "— 选择 —",
       "chooseParentHint": "在上方选择现有的选择列，或创建新的父列，以按父值分组选项。",

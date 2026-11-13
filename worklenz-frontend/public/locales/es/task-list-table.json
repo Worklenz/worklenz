@@ -248,6 +248,9 @@
       "keyLabelPlaceholder": "ej: MK"
     },
     "dependentSelection": {
+      "fieldTitleFirstHint": "Introduzca primero el título del campo. Este da nombre a la nueva columna dependiente que usa la columna principal de abajo.",
+      "newParentSingleColumnHint": "Guarda una columna con las opciones principales. Una selección dependiente añadida después puede usarla como columna principal y crear sus propias opciones secundarias.",
+      "parentOptionsLocked": "No se pueden añadir nuevas opciones al campo principal aquí porque otros campos dependen de él.",
       "parentField": "Columna principal",
       "chooseParent": "— Elegir —",
       "chooseParentHint": "Elige arriba una columna de Selección existente, o crea una nueva columna principal, para empezar a agrupar opciones bajo sus valores.",

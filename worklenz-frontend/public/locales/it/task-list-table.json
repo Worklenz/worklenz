@@ -249,6 +249,9 @@
       "keyLabelPlaceholder": "es: MK"
     },
     "dependentSelection": {
+      "fieldTitleFirstHint": "Inserisci prima il titolo del campo. Questo assegna un nome alla nuova colonna dipendente che usa la colonna principale sottostante.",
+      "newParentSingleColumnHint": "Salva una colonna con le opzioni principali. Una selezione dipendente aggiunta in seguito può usare questa colonna come principale e creare le proprie opzioni secondarie.",
+      "parentOptionsLocked": "Non è possibile aggiungere qui nuove opzioni al campo principale perché altri campi dipendono da esso.",
       "parentField": "Colonna padre",
       "chooseParent": "— Scegli —",
       "chooseParentHint": "Scegli una colonna Selezione esistente sopra, oppure crea una nuova colonna padre, per raggruppare le opzioni sotto i suoi valori.",
