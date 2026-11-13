@@ -54,6 +54,7 @@ import {
 import logger from '@/utils/errorLogger';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';
 import { ProjectRateCell } from '@/components/project-list/project-list-table/project-list-favorite/project-rate-cell';
+import { ProjectTypeCell } from '@/components/project-list/project-list-table/project-list-type/project-type-cell';
 import { ProjectListUpdatedAt } from '@/components/project-list/project-list-table/project-list-updated-at/project-list-updated';
 
 const { Title, Text } = Typography;
@@ -266,7 +267,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
     [projectListFields]
   );
 
-  // ✅ Column order: Favorite → Name → Client → Priority → Status → Tasks Progress → Category → Last Updated → Actions
+  // ✅ Column order: Favorite → Name → Project Type → Client → Priority → Status → Tasks Progress → Category → Last Updated → Actions
   // Sorting: each column below gets a `sorter`. Since every group renders its own
   // <Table> instance, AntD keeps sort state scoped to that instance automatically —
   // sorting one group's table does NOT affect sibling groups.
@@ -321,7 +322,20 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
           </div>
         ),
       },
-      // 3. Client
+      // 3. Project Type
+      {
+        title: t('projectType', { defaultValue: 'Project Type' }),
+        dataIndex: 'project_type',
+        key: 'PROJECT_TYPE',
+        width: 160,
+        sorter: (a: IProjectViewModel, b: IProjectViewModel) =>
+          (a.project_type || 'general').localeCompare(b.project_type || 'general'),
+        showSorterTooltip: false,
+        render: (_: string, record: IProjectViewModel) => (
+          <ProjectTypeCell t={t as any} record={record} />
+        ),
+      },
+      // 4. Client
       // FIX: projects with an assigned client must always sort above projects
       // without one, in BOTH ascending and descending order. AntD auto-negates
       // a plain comparator's return value on descend, which would flip that
@@ -338,7 +352,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
         showSorterTooltip: false,
         render: (text: string) => text || '—',
       },
-      // 4. Priority
+      // 5. Priority
       {
         title: t('priority', { defaultValue: 'Priority' }),
         dataIndex: 'priority_name',

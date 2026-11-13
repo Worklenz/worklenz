@@ -9,6 +9,7 @@ import { ProjectRateCell } from '@/components/project-list/project-list-table/pr
 import { ProgressListProgress } from '@/components/project-list/project-list-table/project-list-progress/progress-list-progress';
 import { ProjectListUpdatedAt } from '@/components/project-list/project-list-table/project-list-updated-at/project-list-updated';
 import { ProjectNameCell } from '@/components/project-list/project-list-table/project-name/project-name-cell';
+import { ProjectTypeCell } from '@/components/project-list/project-list-table/project-list-type/project-type-cell';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
@@ -70,6 +71,16 @@ export const useProjectListColumns = ({
         defaultSortOrder: DEFAULT_PROJECT_SORT_ORDER,
         render: (_: string, record: IProjectViewModel) => (
           <ProjectNameCell navigate={navigate} t={t} record={record} />
+        ),
+      },
+      {
+        title: t('projectType', { defaultValue: 'Project Type' }),
+        dataIndex: 'project_type',
+        key: ProjectListFieldKey.PROJECT_TYPE,
+        width: 160,
+        sorter: true,
+        render: (_: string, record: IProjectViewModel) => (
+          <ProjectTypeCell t={t} record={record} />
         ),
       },
       {

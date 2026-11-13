@@ -15,6 +15,7 @@ export interface ProjectListFieldState {
 export enum ProjectListFieldKey {
   FAVORITE = 'FAVORITE',
   NAME = 'NAME',
+  PROJECT_TYPE = 'PROJECT_TYPE',
   CLIENT = 'CLIENT',
   PRIORITY = 'PRIORITY',
   STATUS = 'STATUS',
@@ -28,11 +29,12 @@ export enum ProjectListFieldKey {
 export const DEFAULT_PROJECT_FIELDS: ProjectListField[] = [
   { key: ProjectListFieldKey.FAVORITE, name: 'Favorite', visible: true, order: 0 },
   { key: ProjectListFieldKey.NAME, name: 'Name', visible: true, order: 1 },
-  { key: ProjectListFieldKey.CLIENT, name: 'Client', visible: true, order: 2 },
-  { key: ProjectListFieldKey.PRIORITY, name: 'Priority', visible: true, order: 3 },
-  { key: ProjectListFieldKey.STATUS, name: 'Status', visible: true, order: 4 },
-  { key: ProjectListFieldKey.TASKS_PROGRESS, name: 'Tasks Progress', visible: true, order: 5 },
-  { key: ProjectListFieldKey.CATEGORY, name: 'Category', visible: true, order: 6 },
-  { key: ProjectListFieldKey.UPDATED_AT, name: 'Last Updated', visible: true, order: 7 },
-  { key: ProjectListFieldKey.END_DATE, name: 'Project End Date', visible: false, order: 8 },
+  { key: ProjectListFieldKey.PROJECT_TYPE, name: 'Project Type', visible: true, order: 2 },
+  { key: ProjectListFieldKey.CLIENT, name: 'Client', visible: true, order: 3 },
+  { key: ProjectListFieldKey.PRIORITY, name: 'Priority', visible: true, order: 4 },
+  { key: ProjectListFieldKey.STATUS, name: 'Status', visible: true, order: 5 },
+  { key: ProjectListFieldKey.TASKS_PROGRESS, name: 'Tasks Progress', visible: true, order: 6 },
+  { key: ProjectListFieldKey.CATEGORY, name: 'Category', visible: true, order: 7 },
+  { key: ProjectListFieldKey.UPDATED_AT, name: 'Last Updated', visible: true, order: 8 },
+  { key: ProjectListFieldKey.END_DATE, name: 'Project End Date', visible: false, order: 9 },
 ];

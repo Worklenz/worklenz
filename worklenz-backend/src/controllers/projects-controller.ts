@@ -433,6 +433,8 @@ export default class ProjectsController extends WorklenzControllerBase {
       'start_date': 'start_date',
       'end_date': 'end_date',
       'END_DATE': 'end_date',
+      'project_type': 'project_type',
+      'PROJECT_TYPE': 'project_type',
       // Sort by the status's configured display order, not its id — status_id
       // is a UUID, so ordering by the raw column would sort rows in an
       // effectively random order that happens to be stable between requests.
