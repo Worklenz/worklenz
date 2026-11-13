@@ -583,30 +583,15 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
   };
 
   /**
-   * True when the opened column is a fresh Text column that holds no task values (for example the
-   * "New Column" added with the header "+"). Nothing can be lost by turning it into the parent.
+   * "Create new parent field": two visible Selection columns are created together.
+   *  - Parent column, titled with the "Parent field title", holds the parent options.
+   *  - Child column, titled with the "Field title", holds the child options; each child option is
+   *    linked to a parent option and the column points at the parent column.
+   * In edit mode the opened column becomes the child column (its type/options are updated) and
+   * only the parent column is newly created.
    */
-  const isOpenedColumnEmptyText = (): boolean => {
-    if (!isEditMode || !editingColumnUuid || !openedColumn) return false;
-    if (originalStoredFieldType !== 'text') return false;
-    const entities = Object.values(taskEntities || {}) as Array<{
-      custom_column_values?: Record<string, unknown>;
-    }>;
-    return !entities.some(task => {
-      const taskValue = task.custom_column_values?.[openedColumn.key as string];
-      return taskValue !== undefined && taskValue !== null && taskValue !== '';
-    });
-  };
-
-  /**
-   * "Create new parent field": ONE visible Selection column titled with the Field title holds only
-   * the parent options; the child options are saved in a hidden child column so a Dependent
-   * Selection can take them over later. A fresh empty Text column is reused as that column; any
-   * other opened column is never changed, so a new column named after the Parent field is added.
-   */
-  const handleSaveParentWithHiddenChildren = async (value: any) => {
+  const handleSaveParentAndChildColumns = async (value: any) => {
     const isCreateMode = customColumnModalType === 'create';
-    const reuseOpenedColumn = !isCreateMode && isOpenedColumnEmptyText();
     const parentName = newParentField?.name.trim() || '';
     const parentSelections = (newParentField?.selections || []).filter(
       selection => selection.selection_name.trim() !== ''
@@ -621,14 +606,14 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       return;
     }
 
-    const usesFieldTitle = isCreateMode || reuseOpenedColumn;
-    const visibleColumnName = usesFieldTitle ? value.fieldTitle : parentName;
-    const hiddenColumnName = usesFieldTitle ? parentName : `${value.fieldTitle} (${parentName})`;
+    const childColumnName: string = value.fieldTitle;
+    const childColumnUuid = !isCreateMode ? editingColumnUuid : null;
+    let createdParentColumnUuid: string | null = null;
 
     setIsSubmitting(true);
     try {
       const parentConfiguration = {
-        field_title: visibleColumnName,
+        field_title: parentName,
         field_type: 'selection',
         parent_column_id: null,
         selections_list: parentSelections.map((selection, index) => ({
@@ -640,45 +625,55 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
         labels_list: [],
       };
 
-      const parentRes =
-        reuseOpenedColumn && editingColumnUuid
-          ? await tasksCustomColumnsService.updateCustomColumn(editingColumnUuid, {
-              name: visibleColumnName,
-              field_type: 'selection',
-              width: 150,
-              is_visible: true,
-              configuration: parentConfiguration,
-            })
-          : await tasksCustomColumnsService.createCustomColumn(projectId || '', {
-              name: visibleColumnName,
-              key: nanoid(),
-              field_type: 'selection',
-              width: 120,
-              is_visible: true,
-              configuration: parentConfiguration,
-            });
+      // 1) Parent column (always a new, visible Selection column).
+      const parentRes = await tasksCustomColumnsService.createCustomColumn(projectId || '', {
+        name: parentName,
+        key: nanoid(),
+        field_type: 'selection',
+        width: 120,
+        is_visible: true,
+        configuration: parentConfiguration,
+      });
       if (!parentRes.done || !parentRes.body?.id) {
         message.error(parentRes.message || t('customColumns.modal.createErrorMessage'));
         return;
       }
       const parentColumnUuid = parentRes.body.id as string;
+      createdParentColumnUuid = parentColumnUuid;
 
-      const childRes = await tasksCustomColumnsService.createCustomColumn(projectId || '', {
-        name: hiddenColumnName,
-        key: nanoid(),
+      // 2) Child column (visible Selection column pointing at the parent).
+      const childConfiguration = {
+        field_title: childColumnName,
         field_type: 'selection',
-        width: 120,
-        is_visible: false,
-        configuration: {
-          field_title: hiddenColumnName,
-          field_type: 'selection',
-          parent_column_id: parentColumnUuid,
-          selections_list: buildSelectionsPayload('selection', parentColumnUuid),
-          labels_list: [],
-        },
-      });
+        parent_column_id: parentColumnUuid,
+        selections_list: buildSelectionsPayload('selection', parentColumnUuid),
+        labels_list: [],
+      };
+
+      const childRes = childColumnUuid
+        ? await tasksCustomColumnsService.updateCustomColumn(childColumnUuid, {
+            name: childColumnName,
+            field_type: 'selection',
+            width: 150,
+            is_visible: true,
+            configuration: childConfiguration,
+          })
+        : await tasksCustomColumnsService.createCustomColumn(projectId || '', {
+            name: childColumnName,
+            key: nanoid(),
+            field_type: 'selection',
+            width: 120,
+            is_visible: true,
+            configuration: childConfiguration,
+          });
       if (!childRes.done) {
+        // Keep the two columns in sync: undo the parent column when the child could not be saved.
+        await tasksCustomColumnsService.deleteCustomColumn(parentColumnUuid).catch(error => {
+          logger.error('Error rolling back parent column:', error);
+        });
+        createdParentColumnUuid = null;
         message.error(childRes.message || t('customColumns.modal.createErrorMessage'));
+        return;
       }
 
       stashedSelectionsRef.current = null;
@@ -701,23 +696,22 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       }
       onDone();
     } catch (error) {
-      logger.error('Error saving parent column with hidden children:', error);
+      logger.error('Error saving parent and child columns:', error);
+      if (createdParentColumnUuid) {
+        await tasksCustomColumnsService.deleteCustomColumn(createdParentColumnUuid).catch(() => undefined);
+      }
       message.error(t('customColumns.modal.createErrorMessage'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Creating a new parent from an existing column leaves that column untouched, so its title is
-  // not edited here: only the parent field's title (which names the new column) is asked for.
   // A Selection column that other columns depend on is the parent half of a Dependent Selection,
   // so its read-only type is shown as "Dependent Selection" to avoid confusing the user.
   const readOnlyTypeKey: CustomFieldsTypes =
     originalFieldType === 'selection' && hasDependentColumns
       ? 'dependent_selection'
       : originalFieldType;
-
-  const hideFieldTitle = isEditMode && isCreatingNewParent && !isOpenedColumnEmptyText();
 
   const handleFormSubmit = async (formValue: any) => {
     if (isSubmitting) return;
@@ -769,7 +763,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
 
     try {
       if (uiFieldType === 'dependent_selection' && isCreatingNewParent) {
-        await handleSaveParentWithHiddenChildren(value);
+        await handleSaveParentAndChildColumns(value);
         return;
       }
 
@@ -917,7 +911,6 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       >
         <Flex gap={16}>
           <Form.Item
-            hidden={hideFieldTitle}
             name={'fieldTitle'}
             label={<Typography.Text>{t('customColumns.modal.fieldTitle')}</Typography.Text>}
             layout="vertical"
