@@ -248,6 +248,7 @@
       "keyLabelPlaceholder": "z. B.: MK"
     },
     "dependentSelection": {
+      "parentOptionsLocked": "Hier können keine neuen übergeordneten Optionen hinzugefügt werden, da andere Felder von diesem Feld abhängen.",
       "newBadge": "NEU",
       "parentField": "Übergeordnetes Feld",
       "chooseParent": "— Auswählen —",
@@ -263,7 +264,8 @@
       "newParentOptions": "Optionen des übergeordneten Felds",
       "newParentAddPlaceholder": "Neue übergeordnete Option… (kommagetrennt für mehrere)",
       "newParentIncomplete": "Geben Sie dem neuen übergeordneten Feld einen Titel und mindestens eine Option.",
-      "newParentTogetherHint": "Dies erstellt beim Speichern ein neues Auswahlfeld neben diesem. Es erscheint auch als eigene Spalte.",
+      "newParentTogetherHint": "Beim Speichern werden zwei Spalten erstellt: das neue übergeordnete Feld mit seinen Optionen und dieses Feld mit den abhängigen Optionen.",
+      "fieldTitleFirstHint": "Gib zuerst den Feldtitel ein. Er benennt die neue abhängige Spalte, die das untenstehende übergeordnete Feld verwendet.",
       "newChildTitleHint": "Name des neuen abhängigen Felds. „{{name}}“ wird nicht geändert.",
       "newParentOnlyHint": "Erstellt nur eine Haupt-Auswahlspalte. Fügen Sie später eine Kindspalte hinzu und setzen Sie Abhängig von auf dieses Feld.",
       "dependentOptions": "Abhängige Optionen",

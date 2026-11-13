@@ -248,6 +248,7 @@
       "keyLabelPlaceholder": "p.sh.: MK"
     },
     "dependentSelection": {
+      "parentOptionsLocked": "Nuk mund të shtohen këtu opsione të reja për fushën prind, sepse fusha të tjera varen prej saj.",
       "newBadge": "E RE",
       "parentField": "Fusha prind",
       "chooseParent": "— Zgjidh —",
@@ -263,7 +264,8 @@
       "newParentOptions": "Opsionet e fushës prind",
       "newParentAddPlaceholder": "Opsion i ri prind… (të ndara me presje për disa)",
       "newParentIncomplete": "Jepini fushës së re prind një titull dhe të paktën një opsion.",
-      "newParentTogetherHint": "Kjo krijon një fushë të re Përzgjedhjeje krahas kësaj kur ruani. Do të shfaqet edhe si kolonë e vet.",
+      "newParentTogetherHint": "Ruajtja krijon dy kolona: fushën e re prind me opsionet e saj dhe këtë fushë me opsionet e varura.",
+      "fieldTitleFirstHint": "Së pari jepni titullin e fushës. Ai emërton kolonën e re të varur që përdor fushën prind më poshtë.",
       "newChildTitleHint": "Emri i fushës së re të varur. “{{name}}” nuk ndryshohet.",
       "newParentOnlyHint": "Krijon vetëm një kolonë kryesore Zgjedhje. Shtoni më vonë një kolonë fëmijë dhe vendosni Varet nga te kjo fushë.",
       "dependentOptions": "Opsione të varura",

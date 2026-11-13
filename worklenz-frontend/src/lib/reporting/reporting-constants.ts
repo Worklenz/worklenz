@@ -32,7 +32,7 @@ const ProgressTrackingPage = lazy(
   () => import('@/pages/reporting/progress-tracking/progress-tracking-page')
 );
 const PortfolioDashboard = lazy(
-  () => import('@/pages/reporting/portfolio/portfolio-dashboard')
+  () => import('@/pages/reporting/portfolio/PortfolioDashboard')
 );
 
 // Type definition for a menu item

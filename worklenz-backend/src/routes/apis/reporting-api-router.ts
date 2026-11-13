@@ -120,6 +120,7 @@ reportingApiRouter.get("/projects/grouped",
 );
 reportingApiRouter.post("/project-timelogs", teamOwnerOrAdminValidator, safeControllerFunction(ReportingProjectsController.getProjectTimeLogs));
 
+// Project Portfolio - KPI cards and per-category breakdown for a yearly/quarterly/monthly period.
 reportingApiRouter.get("/portfolio",
   teamOwnerOrAdminValidator,
   validateEnumParam("period", ["yearly", "quarterly", "monthly"]),

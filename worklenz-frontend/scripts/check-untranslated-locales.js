@@ -211,10 +211,10 @@ const LANGUAGE_SOURCE_VALUES = {
   ]),
   // Color names that are identical in these languages.
   alb: new Set(['Magenta']),
-  de: new Set(['Portal', 'Link', 'Cyan', 'Orange', 'Magenta']),
+  de: new Set(['Portal', 'Link', 'Cyan', 'Orange', 'Magenta', 'Portfolio']),
   es: new Set(['Portal', 'Magenta']),
   pt: new Set(['Portal', 'Link', 'Magenta']),
-  pl: new Set(['Link', 'Magenta']),
+  pl: new Set(['Link', 'Magenta', 'Portfolio']),
   // Product names, technical terms and example names also used in Italian.
   it: new Set([
     'Password', 'Jane', 'Jane Doe', 'Dashboard', 'Zoom', 'Rev {{revision}}',

@@ -2,10 +2,11 @@ import db from "../config/db";
 
 /**
  * Data for Reports > Project Portfolio. Only existing project fields are used (no status history
- * exists), so the period KPIs are derived from `created_at` / `updated_at` and are approximations:
- *  - new     = created in the period
- *  - close   = now Completed/Cancelled, last updated in the period
- *  - opening = created before the period and not already closed (by `updated_at`) before it
+ * exists). A project's period position comes from its start date (`start_date`, falling back to
+ * `created_at` when unset); closing comes from its actual status, not the planned end date:
+ *  - new     = started in the period (and not already closed before it began)
+ *  - close   = now Completed/Cancelled, last updated in the period (estimated close date)
+ *  - opening = started before the period and not already closed (by `updated_at`) before it
  *  - closing = opening + new - close
  * The category table covers the projects live at any point in the period (opening + new).
  */
@@ -176,15 +177,18 @@ export function buildPortfolio(
   for (const row of rows) {
     const createdAt = toTime(row.created_at) ?? 0;
     const updatedAt = toTime(row.updated_at) ?? createdAt;
+    // Planned start date places the project in a period; projects without one use created_at.
+    const startedAt = toTime(row.start_date) ?? createdAt;
     const isClosed = CLOSED_STATUSES.includes(row.status_name);
+    const wasClosedBeforePeriod = isClosed && updatedAt < start;
 
-    const isNew = createdAt >= start && createdAt < end;
-    const isOpening = createdAt < start && !(isClosed && updatedAt < start);
+    const isNew = startedAt >= start && startedAt < end && !wasClosedBeforePeriod;
+    const isOpening = startedAt < start && !wasClosedBeforePeriod;
     const isClosedInPeriod = isClosed && updatedAt >= start && updatedAt < end;
 
     if (isNew) kpis.new += 1;
     if (isOpening) kpis.opening += 1;
-    if (isClosedInPeriod && createdAt < end) kpis.close += 1;
+    if (isClosedInPeriod && startedAt < end) kpis.close += 1;
 
     if (!isNew && !isOpening) continue;
 

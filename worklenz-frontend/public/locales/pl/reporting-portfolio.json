@@ -19,7 +19,6 @@
   "closeSub": "Zamknięte projekty",
   "closingCount": "Liczba projektów na koniec",
   "closingSub": "Saldo portfolio",
-  "kpiNote": "Projekty nie mają daty zamknięcia, dlatego wartości początkowe i zamknięte są szacowane na podstawie ostatniej aktualizacji.",
   "kpiNoteLabel": "Jak to obliczono",
   "projectCategory": "Kategoria projektu",
   "totalProjects": "Wszystkie projekty",
@@ -44,5 +43,9 @@
   "expandRow": "Rozwiń {{name}}",
   "collapseRow": "Zwiń {{name}}",
   "loading": "Ładowanie portfolio",
-  "endDate": "Data zakończenia"
+  "endDate": "Data zakończenia",
+  "openingTip": "Projekty rozpoczęte przed tym okresem, które były nadal otwarte na jego początku. Używa daty rozpoczęcia projektu lub daty utworzenia, gdy data rozpoczęcia nie jest ustawiona.",
+  "newTip": "Projekty, których data rozpoczęcia przypada na ten okres. Używa daty utworzenia, gdy data rozpoczęcia nie jest ustawiona.",
+  "closeTip": "Projekty obecnie Ukończone lub Anulowane, które były ostatnio aktualizowane w tym okresie. Projekty nie mają daty zamknięcia, więc jako datę zamknięcia przyjmuje się ostatnią aktualizację.",
+  "closingTip": "Projekty nadal otwarte na koniec tego okresu: Początkowe + Nowe − Zamknięte."
 }

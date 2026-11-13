@@ -266,15 +266,44 @@ const PortfolioSkeleton = () => {
   );
 };
 
+const OPENING_TIP = "Projects that started before this period and were still open when it began. Uses the project start date, or the created date when no start date is set.";
+const NEW_TIP = "Projects whose start date falls in this period. Uses the created date when no start date is set.";
+const CLOSE_TIP = "Projects now Completed or Cancelled that were last updated in this period. Projects have no closed date, so the last update is used as the close date.";
+const CLOSING_TIP = "Projects still open at the end of this period: Opening + New − Close.";
+
 const PortfolioKpiCards = memo(({ kpis }: { kpis: PortfolioKpis }) => {
   const { t } = useTranslation('reporting-portfolio');
   const { token } = theme.useToken();
 
   const cards = [
-    { key: 'opening', label: t('openingCount', { defaultValue: 'Opening project count' }), sub: t('openingSub', { defaultValue: 'Ongoing projects' }), value: kpis.opening },
-    { key: 'new', label: t('newCount', { defaultValue: 'New' }), sub: t('newSub', { defaultValue: 'New projects' }), value: kpis.new },
-    { key: 'close', label: t('closeCount', { defaultValue: 'Close' }), sub: t('closeSub', { defaultValue: 'Closed projects' }), value: kpis.close },
-    { key: 'closing', label: t('closingCount', { defaultValue: 'Closing project count' }), sub: t('closingSub', { defaultValue: 'Portfolio balance' }), value: kpis.closing },
+    {
+      key: 'opening',
+      label: t('openingCount', { defaultValue: 'Opening project count' }),
+      sub: t('openingSub', { defaultValue: 'Ongoing projects' }),
+      tip: t('openingTip', { defaultValue: OPENING_TIP }),
+      value: kpis.opening,
+    },
+    {
+      key: 'new',
+      label: t('newCount', { defaultValue: 'New' }),
+      sub: t('newSub', { defaultValue: 'New projects' }),
+      tip: t('newTip', { defaultValue: NEW_TIP }),
+      value: kpis.new,
+    },
+    {
+      key: 'close',
+      label: t('closeCount', { defaultValue: 'Close' }),
+      sub: t('closeSub', { defaultValue: 'Closed projects' }),
+      tip: t('closeTip', { defaultValue: CLOSE_TIP }),
+      value: kpis.close,
+    },
+    {
+      key: 'closing',
+      label: t('closingCount', { defaultValue: 'Closing project count' }),
+      sub: t('closingSub', { defaultValue: 'Portfolio balance' }),
+      tip: t('closingTip', { defaultValue: CLOSING_TIP }),
+      value: kpis.closing,
+    },
   ];
 
   return (
@@ -285,20 +314,13 @@ const PortfolioKpiCards = memo(({ kpis }: { kpis: PortfolioKpis }) => {
             <Typography.Text type="secondary" className="text-xs uppercase">
               {card.label}
             </Typography.Text>
-            {(card.key === 'close' || card.key === 'opening') && (
-              <Tooltip
-                title={t('kpiNote', {
-                  defaultValue:
-                    'Projects have no closed date, so Opening and Close are estimated from each project’s last update.',
-                })}
-              >
-                <InfoCircleOutlined
-                  tabIndex={0}
-                  aria-label={t('kpiNoteLabel', { defaultValue: 'How this is calculated' })}
-                  style={{ color: token.colorTextSecondary }}
-                />
-              </Tooltip>
-            )}
+            <Tooltip title={card.tip}>
+              <InfoCircleOutlined
+                tabIndex={0}
+                aria-label={`${card.label}: ${t('kpiNoteLabel', { defaultValue: 'How this is calculated' })}`}
+                style={{ color: token.colorTextSecondary }}
+              />
+            </Tooltip>
           </Flex>
           <div className="text-3xl font-semibold" style={{ color: token.colorText }}>
             {card.value}

@@ -8,6 +8,7 @@ import apiClient from '../api-client';
 import { API_BASE_URL } from '@/shared/constants';
 import { IAvatarAttachment } from '@/types/avatarAttachment.types';
 import { toQueryString } from '@/utils/toQueryString';
+import { setStorageUploadHeaders } from '@/api/storage-upload-headers';
 
 const rootUrl = `${API_BASE_URL}/attachments`;
 
@@ -59,7 +60,7 @@ const taskAttachmentsApiService = {
       const xhr = new XMLHttpRequest();
 
       xhr.open('PUT', uploadUrl);
-      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+      setStorageUploadHeaders(xhr, uploadUrl, file);
 
       if (onProgress) {
         xhr.upload.addEventListener('progress', event => {

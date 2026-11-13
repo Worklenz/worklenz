@@ -4,6 +4,7 @@ import { IServerResponse } from '@/types/common.types';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
 import { getUserSession } from '@/utils/session-helper';
 import { toQueryString } from '@/utils/toQueryString';
+import config from '@/config/env';
 
 const rootUrl = `${API_BASE_URL}/task-time-log`;
 
@@ -382,6 +383,6 @@ export const taskTimeLogsApiService = {
     sort_order?: 'asc' | 'desc';
   } & IScopeAwareParams) {
     const queryString = toQueryString(params);
-    window.location.href = `${import.meta.env.VITE_API_URL}${rootUrl}/export-csv${queryString}`;
+    window.location.href = `${config.apiUrl}${rootUrl}/export-csv${queryString}`;
   },
 };

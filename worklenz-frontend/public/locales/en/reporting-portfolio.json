@@ -19,7 +19,6 @@
   "closeSub": "Closed projects",
   "closingCount": "Closing project count",
   "closingSub": "Portfolio balance",
-  "kpiNote": "Projects have no closed date, so Opening and Close are estimated from each project’s last update.",
   "kpiNoteLabel": "How this is calculated",
   "projectCategory": "Project Category",
   "totalProjects": "Total Projects",
@@ -44,5 +43,9 @@
   "expandRow": "Expand {{name}}",
   "collapseRow": "Collapse {{name}}",
   "loading": "Loading portfolio",
-  "endDate": "End Date"
+  "endDate": "End Date",
+  "openingTip": "Projects that started before this period and were still open when it began. Uses the project start date, or the created date when no start date is set.",
+  "newTip": "Projects whose start date falls in this period. Uses the created date when no start date is set.",
+  "closeTip": "Projects now Completed or Cancelled that were last updated in this period. Projects have no closed date, so the last update is used as the close date.",
+  "closingTip": "Projects still open at the end of this period: Opening + New − Close."
 }

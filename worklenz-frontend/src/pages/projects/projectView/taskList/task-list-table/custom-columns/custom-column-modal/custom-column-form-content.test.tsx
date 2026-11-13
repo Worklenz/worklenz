@@ -255,3 +255,57 @@ for (const [mode, algorithm] of [
     );
   });
 }
+
+it('requires confirmation before changing a field type', async () => {
+  const confirm = vi
+    .spyOn(Modal, 'confirm')
+    .mockImplementation(() => ({ destroy: vi.fn(), update: vi.fn() }));
+  const column: ITaskCustomColumn = {
+    id: 'column',
+    key: 'column',
+    name: 'Details',
+    custom_column_obj: { fieldType: 'text' },
+  };
+  state.taskManagement.customColumns = [column];
+  Object.assign(state.taskListCustomColumnsReducer, {
+    customColumnModalType: 'edit',
+    customColumnId: 'column',
+    currentColumnData: column,
+  });
+  render(<CustomColumnFormContent projectId="project" onDone={vi.fn()} />);
+  fireEvent.mouseDown(screen.getByRole('combobox'));
+  fireEvent.click(await screen.findByText('Number'));
+  fireEvent.click(screen.getByRole('button', { name: 'customColumns.modal.updateButton' }));
+  expect(mocks.updateColumn).not.toHaveBeenCalled();
+  await waitFor(() => expect(confirm).toHaveBeenCalled());
+  const options = confirm.mock.calls[0][0];
+  await options.onOk?.(vi.fn());
+  confirm.mockRestore();
+  await waitFor(() =>
+    expect(mocks.updateColumn).toHaveBeenCalledWith(
+      'column',
+      expect.objectContaining({ field_type: 'number' })
+    )
+  );
+});
+
+it('keeps the editor open when the update API reports failure', async () => {
+  const onDone = vi.fn();
+  const column: ITaskCustomColumn = {
+    id: 'column',
+    key: 'column',
+    name: 'Details',
+    custom_column_obj: { fieldType: 'text' },
+  };
+  state.taskManagement.customColumns = [column];
+  Object.assign(state.taskListCustomColumnsReducer, {
+    customColumnModalType: 'edit',
+    customColumnId: 'column',
+    currentColumnData: column,
+  });
+  mocks.updateColumn.mockResolvedValue({ done: false, message: 'Update failed' });
+  render(<CustomColumnFormContent projectId="project" onDone={onDone} />);
+  fireEvent.click(screen.getByRole('button', { name: 'customColumns.modal.updateButton' }));
+  await waitFor(() => expect(mocks.updateColumn).toHaveBeenCalled());
+  expect(onDone).not.toHaveBeenCalled();
+});

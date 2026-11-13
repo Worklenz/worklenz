@@ -85,7 +85,7 @@ const buildParams = ({ period, year, quarter, month }: PortfolioPeriodSelection)
 
 export const buildPortfolioExportUrl = (selection: PortfolioPeriodSelection, type: PortfolioExportType) => {
   const query = new URLSearchParams({ ...buildParams(selection), type }).toString();
-  return `${import.meta.env.VITE_API_URL}${API_BASE_URL}/reporting-export/portfolio?${query}`;
+  return `${config.apiUrl}${API_BASE_URL}/reporting-export/portfolio?${query}`;
 };
 
 const portfolioApi = createApi({
