@@ -23,7 +23,7 @@ const splitOptionLabels = (raw: string) =>
     .filter(Boolean);
 
 /**
- * Inline editor for "+ Create new parent field" inside Dependent Selection setup.
+ * Inline editor for "+ Create new parent column" inside Dependent Selection setup.
  * Saved together with the dependent child column on form submit.
  */
 export const NewParentFieldEditor = () => {
@@ -94,7 +94,7 @@ export const NewParentFieldEditor = () => {
       <Flex vertical gap={8}>
         <Typography.Text strong>
           {t('customColumns.dependentSelection.creatingNewParent', {
-            defaultValue: 'Creating a new field to be the parent',
+            defaultValue: 'Creating a new column to be the parent',
           })}
         </Typography.Text>
 
@@ -107,17 +107,17 @@ export const NewParentFieldEditor = () => {
             setPendingFocusId(firstOption?.selection_id || ADD_INPUT_FOCUS_ID);
           }}
           placeholder={t('customColumns.dependentSelection.newParentNamePlaceholder', {
-            defaultValue: 'Parent field title, e.g. Department',
+            defaultValue: 'Parent column title, e.g. Department',
           })}
           aria-label={t('customColumns.dependentSelection.newParentNameLabel', {
-            defaultValue: 'Parent field title',
+            defaultValue: 'Parent column title',
           })}
           style={{ fontWeight: 600 }}
         />
 
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
           {t('customColumns.dependentSelection.newParentOptions', {
-            defaultValue: 'Parent field options',
+            defaultValue: 'Parent column options',
           })}
         </Typography.Text>
 

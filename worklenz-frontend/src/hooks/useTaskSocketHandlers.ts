@@ -1046,7 +1046,7 @@ export const useTaskSocketHandlers = () => {
           CASCADE_PARENT_VALUE_REQUIRED: tTaskList(
             'customColumns.dependentSelection.parentValueRequired',
             {
-              defaultValue: 'Select the parent field value first.',
+              defaultValue: 'Select the parent column value first.',
             }
           ),
           CASCADE_INVALID_PAIR: tTaskList('customColumns.dependentSelection.invalidPair', {
