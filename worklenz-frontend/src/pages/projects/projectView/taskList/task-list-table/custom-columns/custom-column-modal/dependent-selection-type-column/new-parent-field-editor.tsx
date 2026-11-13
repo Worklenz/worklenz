@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { nanoid } from 'nanoid';
 import { useTranslation } from 'react-i18next';
-import { Button, Flex, Input, Tooltip, Typography, theme } from '@/shared/antd-imports';
+import { Button, Flex, Input, Tooltip, Typography } from '@/shared/antd-imports';
 import type { InputRef } from '@/shared/antd-imports';
-import { CloseCircleOutlined, HolderOutlined } from '@/shared/antd-imports';
+import { CloseCircleOutlined } from '@/shared/antd-imports';
 import { PhaseColorCodes } from '@/shared/constants';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -29,7 +29,6 @@ const splitOptionLabels = (raw: string) =>
 export const NewParentFieldEditor = () => {
   const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
-  const { token } = theme.useToken();
   const draft = useAppSelector(state => state.taskListCustomColumnsReducer.newParentField);
   const [draftOption, setDraftOption] = useState('');
   const inputRefs = useRef<Record<string, InputRef | null>>({});
@@ -124,7 +123,6 @@ export const NewParentFieldEditor = () => {
 
         {draft.selections.map((selection, index) => (
           <Flex gap={8} align="center" key={selection.selection_id}>
-            <HolderOutlined style={{ fontSize: 14, color: token.colorTextQuaternary }} />
             <Input
               ref={element => {
                 inputRefs.current[selection.selection_id] = element;

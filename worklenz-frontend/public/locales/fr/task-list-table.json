@@ -266,6 +266,7 @@
       "newParentIncomplete": "Donnez au nouveau champ parent un titre et au moins une option.",
       "newParentTogetherHint": "L’enregistrement crée deux colonnes : le nouveau champ parent avec ses options, et ce champ avec les options dépendantes.",
       "fieldTitleFirstHint": "Indiquez d’abord le titre du champ. Il nomme la nouvelle colonne dépendante qui utilise le champ parent ci-dessous.",
+      "newChildTitleHint": "Nom du nouveau champ dépendant. « {{name}} » n’est pas modifié.",
       "newParentOnlyHint": "Crée uniquement une colonne Sélection principale. Ajoutez ensuite une colonne enfant et définissez Dépend de sur ce champ.",
       "dependentOptions": "Options dépendantes",
       "addUnderPlaceholder": "Nouvelle option sous {{value}}… (séparées par des virgules pour plusieurs)",

@@ -266,6 +266,7 @@
       "newParentIncomplete": "Dale al nuevo campo principal un título y al menos una opción.",
       "newParentTogetherHint": "Al guardar se crean dos columnas: el nuevo campo padre con sus opciones y este campo con las opciones dependientes.",
       "fieldTitleFirstHint": "Primero indica el título del campo. Da nombre a la nueva columna dependiente que usa el campo padre de abajo.",
+      "newChildTitleHint": "Nombre del nuevo campo dependiente. “{{name}}” no se modifica.",
       "newParentOnlyHint": "Crea solo una columna de Selección principal. Añade después una columna hija y establece Depende de en este campo.",
       "dependentOptions": "Opciones dependientes",
       "addUnderPlaceholder": "Nueva opción bajo {{value}}… (separadas por comas para varias)",

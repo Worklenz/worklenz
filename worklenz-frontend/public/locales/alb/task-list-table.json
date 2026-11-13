@@ -266,6 +266,7 @@
       "newParentIncomplete": "Jepini fushës së re prind një titull dhe të paktën një opsion.",
       "newParentTogetherHint": "Ruajtja krijon dy kolona: fushën e re prind me opsionet e saj dhe këtë fushë me opsionet e varura.",
       "fieldTitleFirstHint": "Së pari jepni titullin e fushës. Ai emërton kolonën e re të varur që përdor fushën prind më poshtë.",
+      "newChildTitleHint": "Emri i fushës së re të varur. “{{name}}” nuk ndryshohet.",
       "newParentOnlyHint": "Krijon vetëm një kolonë kryesore Zgjedhje. Shtoni më vonë një kolonë fëmijë dhe vendosni Varet nga te kjo fushë.",
       "dependentOptions": "Opsione të varura",
       "addUnderPlaceholder": "Opsion i ri nën {{value}}… (të ndara me presje për disa)",

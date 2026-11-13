@@ -267,6 +267,7 @@
       "newParentIncomplete": "Assegna un titolo e almeno un'opzione al nuovo campo principale.",
       "newParentTogetherHint": "Il salvataggio crea due colonne: il nuovo campo padre con le sue opzioni e questo campo con le opzioni dipendenti.",
       "fieldTitleFirstHint": "Inserisci prima il titolo del campo. Dà il nome alla nuova colonna dipendente che usa il campo padre qui sotto.",
+      "newChildTitleHint": "Nome del nuovo campo dipendente. “{{name}}” non viene modificato.",
       "newParentOnlyHint": "Crea solo una colonna di selezione principale. Aggiungi una colonna secondaria in un secondo momento e imposta Dipende da questo campo.",
       "dependentOptions": "Opzioni dipendenti",
       "addUnderPlaceholder": "Nuova opzione sotto {{value}}… (separate da virgola per più opzioni)",

@@ -877,6 +877,13 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
                       'First give the field title. It names the new dependent column that uses the parent field below.',
                   })}
                 </Typography.Text>
+              ) : isCreatingNewParent && isEditMode ? (
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  {t('customColumns.dependentSelection.newChildTitleHint', {
+                    defaultValue: 'Name for the new dependent field. "{{name}}" is not changed.',
+                    name: openedColumn?.name || openedColumn?.custom_column_obj?.fieldTitle || '',
+                  })}
+                </Typography.Text>
               ) : undefined
             }
           >

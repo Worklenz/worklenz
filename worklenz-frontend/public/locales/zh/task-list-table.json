@@ -266,6 +266,7 @@
       "newParentIncomplete": "请为新的父字段填写标题并至少添加一个选项。",
       "newParentTogetherHint": "保存时会创建两列：带有选项的新父字段，以及带有依赖选项的此字段。",
       "fieldTitleFirstHint": "请先填写字段标题。它将作为使用下方父字段的新依赖列的名称。",
+      "newChildTitleHint": "新依赖字段的名称。“{{name}}”不会被更改。",
       "newParentOnlyHint": "仅创建主选择列。稍后添加子列，并将“依赖于”设置为此字段。",
       "dependentOptions": "依赖选项",
       "addUnderPlaceholder": "在 {{value}} 下新增选项…（可用逗号一次添加多个）",
