@@ -165,7 +165,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       id: NEW_PARENT_COLUMN_ID,
       key: NEW_PARENT_COLUMN_ID,
       name: newParentField.name || t('customColumns.dependentSelection.newParentTitle', {
-        defaultValue: 'New parent field',
+        defaultValue: 'New parent column',
       }),
       custom_column_obj: {
         fieldType: 'selection',
@@ -485,12 +485,8 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
   };
 
   const createNewParentLabel = t('customColumns.dependentSelection.createNewParent', {
-    defaultValue: '+ Create new parent field',
+    defaultValue: '+ Create new parent column',
   });
-  const newBadgeLabel = t('customColumns.dependentSelection.newBadge', {
-    defaultValue: 'NEW',
-  });
-
   const dependentSelectionTypeLabel = t('customColumns.fieldTypes.dependent_selection', {
     defaultValue: 'Dependent Selection',
   });
@@ -518,7 +514,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     },
     {
       value: 'dependent_selection',
-      label: `${dependentSelectionTypeLabel} (${newBadgeLabel})`,
+      label: dependentSelectionTypeLabel,
     },
   ];
 
@@ -635,7 +631,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     if (!parentName || parentSelections.length === 0) {
       message.error(
         t('customColumns.dependentSelection.newParentIncomplete', {
-          defaultValue: 'Give the new parent field a title and at least one option.',
+          defaultValue: 'Give the new parent column a title and at least one option.',
         })
       );
       return;
@@ -779,7 +775,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     if (uiFieldType === 'dependent_selection' && !parentColumnId) {
       message.error(
         t('customColumns.dependentSelection.parentRequired', {
-          defaultValue: 'Choose a parent field, or create a new parent field.',
+          defaultValue: 'Choose a parent column, or create a new parent column.',
         })
       );
       return;
@@ -1001,7 +997,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
             label={
               <Typography.Text>
                 {t('customColumns.dependentSelection.parentField', {
-                  defaultValue: 'Parent field',
+                  defaultValue: 'Parent column',
                 })}
               </Typography.Text>
             }
@@ -1018,7 +1014,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   {t('customColumns.dependentSelection.chooseParentHint', {
                     defaultValue:
-                      'Choose an existing Selection field above, or create a brand-new parent field, to start grouping options under its values.',
+                      'Choose an existing Selection column above, or create a brand-new parent column, to start grouping options under its values.',
                   })}
                 </Typography.Text>
               ) : isCreatingNewParent ? (

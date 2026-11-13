@@ -12,7 +12,7 @@ import {
   theme,
 } from '@/shared/antd-imports';
 import type { InputRef } from '@/shared/antd-imports';
-import { CloseCircleOutlined, HolderOutlined, WarningOutlined } from '@/shared/antd-imports';
+import { CloseCircleOutlined, WarningOutlined } from '@/shared/antd-imports';
 import { PhaseColorCodes } from '@/shared/constants';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -131,7 +131,7 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
     return (
       <Typography.Text type="secondary">
         {t('customColumns.dependentSelection.parentMissing', {
-          defaultValue: 'The parent field could not be found. Choose another field in Type.',
+          defaultValue: 'The parent column could not be found. Choose another column in Type.',
         })}
       </Typography.Text>
     );
@@ -143,7 +143,6 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
     parentOption?: ITaskCustomColumnSelectionOption
   ) => (
     <Flex gap={8} align="center" key={selection.selection_id}>
-      <HolderOutlined style={{ fontSize: 14, color: token.colorTextQuaternary }} />
       <Input
         ref={element => {
           inputRefs.current[selection.selection_id] = element;

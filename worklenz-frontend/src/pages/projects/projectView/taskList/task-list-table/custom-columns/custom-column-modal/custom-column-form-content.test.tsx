@@ -88,7 +88,7 @@ for (const [mode, algorithm] of [
     );
 
     fireEvent.mouseDown(screen.getByRole('combobox'));
-    fireEvent.click(await screen.findByText('Dependent Selection (NEW)'));
+    fireEvent.click(await screen.findByText('Dependent Selection'));
 
     expect(mocks.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -129,7 +129,7 @@ for (const [mode, algorithm] of [
       </ConfigProvider>
     );
 
-    expect(screen.getByText('Parent field')).toBeInTheDocument();
+    expect(screen.getByText('Parent column')).toBeInTheDocument();
     expect(screen.getByTestId('dependent-selection-editor')).toBeInTheDocument();
   });
 
@@ -189,7 +189,7 @@ for (const [mode, algorithm] of [
       </ConfigProvider>
     );
     // Type is locked (read-only text), no Parent field for plain Selection parents.
-    expect(screen.queryByText('Parent field')).not.toBeInTheDocument();
+    expect(screen.queryByText('Parent column')).not.toBeInTheDocument();
   });
 
   it(`saves Dependent Selection as selection with parent_column_id in ${mode} theme`, async () => {

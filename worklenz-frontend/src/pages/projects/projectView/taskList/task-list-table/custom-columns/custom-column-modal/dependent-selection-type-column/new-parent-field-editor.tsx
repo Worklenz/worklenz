@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { nanoid } from 'nanoid';
 import { useTranslation } from 'react-i18next';
-import { Button, Flex, Input, Tooltip, Typography, theme } from '@/shared/antd-imports';
+import { Button, Flex, Input, Tooltip, Typography } from '@/shared/antd-imports';
 import type { InputRef } from '@/shared/antd-imports';
-import { CloseCircleOutlined, HolderOutlined } from '@/shared/antd-imports';
+import { CloseCircleOutlined } from '@/shared/antd-imports';
 import { PhaseColorCodes } from '@/shared/constants';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -23,13 +23,12 @@ const splitOptionLabels = (raw: string) =>
     .filter(Boolean);
 
 /**
- * Inline editor for "+ Create new parent field" inside Dependent Selection setup.
+ * Inline editor for "+ Create new parent column" inside Dependent Selection setup.
  * Saved together with the dependent child column on form submit.
  */
 export const NewParentFieldEditor = () => {
   const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
-  const { token } = theme.useToken();
   const draft = useAppSelector(state => state.taskListCustomColumnsReducer.newParentField);
   const [draftOption, setDraftOption] = useState('');
   const inputRefs = useRef<Record<string, InputRef | null>>({});
@@ -95,7 +94,7 @@ export const NewParentFieldEditor = () => {
       <Flex vertical gap={8}>
         <Typography.Text strong>
           {t('customColumns.dependentSelection.creatingNewParent', {
-            defaultValue: 'Creating a new field to be the parent',
+            defaultValue: 'Creating a new column to be the parent',
           })}
         </Typography.Text>
 
@@ -108,23 +107,22 @@ export const NewParentFieldEditor = () => {
             setPendingFocusId(firstOption?.selection_id || ADD_INPUT_FOCUS_ID);
           }}
           placeholder={t('customColumns.dependentSelection.newParentNamePlaceholder', {
-            defaultValue: 'Parent field title, e.g. Department',
+            defaultValue: 'Parent column title, e.g. Department',
           })}
           aria-label={t('customColumns.dependentSelection.newParentNameLabel', {
-            defaultValue: 'Parent field title',
+            defaultValue: 'Parent column title',
           })}
           style={{ fontWeight: 600 }}
         />
 
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
           {t('customColumns.dependentSelection.newParentOptions', {
-            defaultValue: 'Parent field options',
+            defaultValue: 'Parent column options',
           })}
         </Typography.Text>
 
         {draft.selections.map((selection, index) => (
           <Flex gap={8} align="center" key={selection.selection_id}>
-            <HolderOutlined style={{ fontSize: 14, color: token.colorTextQuaternary }} />
             <Input
               ref={element => {
                 inputRefs.current[selection.selection_id] = element;
