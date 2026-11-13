@@ -92,7 +92,7 @@ app.use(express.json({
 app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(globalRateLimiter);
-app.use(hpp());
+app.use(hpp({ whitelist: ["status"] }));
 
 // Helmet security headers
 app.use(
