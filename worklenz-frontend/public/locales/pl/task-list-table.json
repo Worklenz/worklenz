@@ -264,6 +264,7 @@
       "newParentAddPlaceholder": "Nowa opcja nadrzędna… (oddzielone przecinkami dla wielu)",
       "newParentIncomplete": "Nadaj nowemu polu nadrzędnemu tytuł i co najmniej jedną opcję.",
       "newParentTogetherHint": "Przy zapisie tworzy to nowe pole Wyboru obok tego. Pojawi się też jako osobna kolumna.",
+      "newChildTitleHint": "Nazwa nowego pola zależnego. „{{name}}” nie zostanie zmienione.",
       "newParentOnlyHint": "Tworzy tylko główną kolumnę Wyboru. Później dodaj kolumnę podrzędną i ustaw Zależy od na to pole.",
       "dependentOptions": "Opcje zależne",
       "addUnderPlaceholder": "Nowa opcja pod {{value}}… (oddzielone przecinkami dla wielu)",

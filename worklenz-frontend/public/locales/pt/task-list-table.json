@@ -264,6 +264,7 @@
       "newParentAddPlaceholder": "Nova opção principal… (separadas por vírgulas para várias)",
       "newParentIncomplete": "Dê ao novo campo principal um título e pelo menos uma opção.",
       "newParentTogetherHint": "Isto cria um novo campo de Seleção a par deste ao guardar. Também aparecerá como a sua própria coluna.",
+      "newChildTitleHint": "Nome do novo campo dependente. “{{name}}” não é alterado.",
       "newParentOnlyHint": "Cria apenas uma coluna de Seleção principal. Adicione depois uma coluna filha e defina Depende de para este campo.",
       "dependentOptions": "Opções dependentes",
       "addUnderPlaceholder": "Nova opção sob {{value}}… (separadas por vírgulas para várias)",

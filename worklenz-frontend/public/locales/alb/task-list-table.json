@@ -264,6 +264,7 @@
       "newParentAddPlaceholder": "Opsion i ri prind… (të ndara me presje për disa)",
       "newParentIncomplete": "Jepini fushës së re prind një titull dhe të paktën një opsion.",
       "newParentTogetherHint": "Kjo krijon një fushë të re Përzgjedhjeje krahas kësaj kur ruani. Do të shfaqet edhe si kolonë e vet.",
+      "newChildTitleHint": "Emri i fushës së re të varur. “{{name}}” nuk ndryshohet.",
       "newParentOnlyHint": "Krijon vetëm një kolonë kryesore Zgjedhje. Shtoni më vonë një kolonë fëmijë dhe vendosni Varet nga te kjo fushë.",
       "dependentOptions": "Opsione të varura",
       "addUnderPlaceholder": "Opsion i ri nën {{value}}… (të ndara me presje për disa)",

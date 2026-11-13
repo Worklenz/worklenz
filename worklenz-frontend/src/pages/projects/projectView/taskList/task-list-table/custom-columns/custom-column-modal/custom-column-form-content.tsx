@@ -947,6 +947,16 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
             rules={[{ required: true, message: t('customColumns.modal.fieldTitleRequired') }]}
             required={false}
             style={{ flex: 1, minWidth: 0 }}
+            extra={
+              isCreatingNewParent && isEditMode && !isOpenedColumnEmptyText() ? (
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  {t('customColumns.dependentSelection.newChildTitleHint', {
+                    defaultValue: 'Name for the new dependent field. "{{name}}" is not changed.',
+                    name: openedColumn?.name || openedColumn?.custom_column_obj?.fieldTitle || '',
+                  })}
+                </Typography.Text>
+              ) : undefined
+            }
           >
             <Input placeholder={t('customColumns.modal.columnTitlePlaceholder')} />
           </Form.Item>

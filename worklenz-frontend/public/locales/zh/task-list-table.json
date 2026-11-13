@@ -264,6 +264,7 @@
       "newParentAddPlaceholder": "新的父选项…（可用逗号一次添加多个）",
       "newParentIncomplete": "请为新的父字段填写标题并至少添加一个选项。",
       "newParentTogetherHint": "保存时会与此字段一起创建一个新的选择字段。它也会显示为单独的一列。",
+      "newChildTitleHint": "新依赖字段的名称。“{{name}}”不会被更改。",
       "newParentOnlyHint": "仅创建主选择列。稍后添加子列，并将“依赖于”设置为此字段。",
       "dependentOptions": "依赖选项",
       "addUnderPlaceholder": "在 {{value}} 下新增选项…（可用逗号一次添加多个）",
