@@ -144,14 +144,16 @@ const PortalProjectsPage = () => {
     value: item.value,
     label: t(`list.statusFilter.${item.value}`, { defaultValue: item.defaultValue }),
   }));
-  const allProjectPhases = Array.from(
-    new Set(
-      (list?.items ?? []).flatMap(p => [
-        ...(p.phases ?? []),
-        ...(p.phase ? [p.phase] : []),
-      ])
-    )
-  ).sort((a, b) => a.localeCompare(b));
+  const allProjectPhases =
+    list?.phases ??
+    Array.from(
+      new Set(
+        (list?.items ?? []).flatMap(p => [
+          ...(p.phases ?? []),
+          ...(p.phase ? [p.phase] : []),
+        ])
+      )
+    ).sort((a, b) => a.localeCompare(b));
   const phaseOptions = allProjectPhases.map(value => ({
     value,
     label: decodeHtmlEntities(value),

@@ -51,7 +51,10 @@ export interface PortalProjectsParams extends PagedParams {
   phase?: ProjectPhase | string;
 }
 
-export type PortalProjectsList = PagedList<PortalProject> & { stats: PortalProjectStats };
+export type PortalProjectsList = PagedList<PortalProject> & {
+  stats: PortalProjectStats;
+  phases?: string[];
+};
 
 export interface ProjectUpdate {
   id: string;
@@ -139,7 +142,7 @@ export interface Milestone {
   project_id: string;
   name: string;
   description: string;
-  target_date: string;
+  target_date: string | null;
   completed_at: string | null;
   status: MilestoneStatus;
   visibility: PortalVisibility;

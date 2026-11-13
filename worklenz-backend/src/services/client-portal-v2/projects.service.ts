@@ -197,13 +197,34 @@ export async function listPortalProjects(teamId: string, params: PortalProjectsP
     values
   );
 
-  const stats = await getPortalProjectStats(db, teamId);
+  const [stats, phasesResult] = await Promise.all([
+    getPortalProjectStats(db, teamId),
+    db.query(
+      `SELECT DISTINCT phase_name FROM (
+         SELECT ph.name AS phase_name
+           FROM project_phases ph
+           JOIN projects p ON p.id = ph.project_id
+          WHERE p.team_id = $1 AND ${projectOpenForPortalSql("p")}
+         UNION
+         SELECT pcs.current_phase AS phase_name
+           FROM project_client_settings pcs
+           JOIN projects p ON p.id = pcs.project_id
+          WHERE p.team_id = $1 AND ${projectOpenForPortalSql("p")}
+            AND pcs.current_phase IS NOT NULL
+       ) all_phases
+       WHERE phase_name IS NOT NULL AND TRIM(phase_name) <> ''
+       ORDER BY phase_name ASC`,
+      [teamId]
+    ),
+  ]);
+
   return {
     items: rows.rows.map(mapProjectRow),
     total: rows.rows[0]?.total_count ?? 0,
     page,
     limit,
     stats,
+    phases: phasesResult.rows.map(r => r.phase_name as string),
   };
 }
 
@@ -385,7 +406,7 @@ export async function updateProjectOverview(input: {
   await ensureProjectSettings(db, teamId, projectId);
 
   const current = await db.query(
-    `SELECT progress_source, manual_progress FROM project_client_settings WHERE project_id = $1`,
+    `SELECT current_phase, progress_source, manual_progress FROM project_client_settings WHERE project_id = $1`,
     [projectId]
   );
   const sets: string[] = [];
@@ -402,7 +423,8 @@ export async function updateProjectOverview(input: {
     set("client_status", patch.status);
   }
   if (patch.phase !== undefined) {
-    if (patch.phase !== null) {
+    const storedPhase = (current.rows[0]?.current_phase ?? null) as string | null;
+    if (patch.phase !== null && patch.phase !== storedPhase) {
       const validPhase = await db.query(
         `SELECT 1 FROM project_phases WHERE project_id = $1 AND name = $2 LIMIT 1`,
         [projectId, patch.phase]
