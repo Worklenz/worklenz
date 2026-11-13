@@ -106,6 +106,7 @@ const PlannerScheduleView: React.FC = () => {
   const leftBodyScrollRef = useRef<HTMLDivElement>(null);
   const gridWrapperRef = useRef<HTMLDivElement>(null);
   const [gridWidth, setGridWidth] = useState(0);
+  const [bodyScrollbarWidth, setBodyScrollbarWidth] = useState(0);
 
   // The member column (left) and the day grid (right) are two entirely separate,
   // non-overlapping panels — not a position:sticky column inside the horizontally
@@ -271,16 +272,17 @@ const PlannerScheduleView: React.FC = () => {
     return list;
   }, [baseDate, anchor, cfg.weeksSpan, showWeekends]);
 
-  // Measure the grid pane so day columns can stretch to fill leftover width instead of
-  // leaving a blank gap — both header and body read this same value, so they always
-  // agree on column width (unlike flex-grow, which drifted between the two panes).
+  // Measure the body scrollport so day columns fill its inner width (excluding any
+  // classic vertical scrollbar) and the header can reserve the matching right gutter.
   useEffect(() => {
-    const el = gridWrapperRef.current;
+    const el = bodyScrollRef.current;
     if (!el) return;
-    const observer = new ResizeObserver(entries => {
-      const width = entries[0]?.contentRect.width;
-      if (width) setGridWidth(width);
-    });
+    const syncMetrics = () => {
+      if (el.clientWidth) setGridWidth(el.clientWidth);
+      setBodyScrollbarWidth(Math.max(0, el.offsetWidth - el.clientWidth));
+    };
+    syncMetrics();
+    const observer = new ResizeObserver(syncMetrics);
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
@@ -1638,16 +1640,23 @@ const PlannerScheduleView: React.FC = () => {
         <div ref={gridWrapperRef} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Header */}
           <div
-            ref={headerScrollRef}
             style={{
-              overflowX: 'auto',
-              overflowY: 'hidden',
-              scrollbarWidth: 'none',
+              display: 'flex',
+              flexShrink: 0,
               background: cardBg,
               borderBottom: `1px solid ${borderColor}`,
-              flexShrink: 0,
             }}
           >
+            <div
+              ref={headerScrollRef}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                overflowX: 'auto',
+                overflowY: 'hidden',
+                scrollbarWidth: 'none',
+              }}
+            >
             {cfg.dense === 'bar' && (
               <div style={{ display: 'flex', width: days.length * colWidth, height: 24, minHeight: 24, borderBottom: `1px solid ${borderColor}` }}>
                 {monthGroups.map(g => (
@@ -1729,6 +1738,8 @@ const PlannerScheduleView: React.FC = () => {
                 );
               })}
             </div>
+            </div>
+            {bodyScrollbarWidth > 0 && <div style={{ width: bodyScrollbarWidth, flexShrink: 0 }} />}
           </div>
 
           {/* Body */}
@@ -1742,7 +1753,7 @@ const PlannerScheduleView: React.FC = () => {
                 leftBodyScrollRef.current.scrollTop = bodyScrollRef.current.scrollTop;
               }
             }}
-            style={{ flex: 1, minHeight: 0, overflow: 'auto' }}
+            style={{ flex: 1, minHeight: 0, overflow: 'auto', scrollbarGutter: 'stable' }}
           >
           <div style={{ minWidth: days.length * colWidth, minHeight: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Rows */}
@@ -1925,15 +1936,40 @@ const PlannerScheduleView: React.FC = () => {
                                   }}
                                 >
                                   {cfg.dense === 'full' && (
-                                    <>
-                                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                                        {isWorkingDay(d.date) && (
-                                          <span style={{ fontSize: 12, fontWeight: 700, color }}>
-                                            {hours.toFixed(1)}h{hours > effectiveDayCap && ' ⚠'}
-                                          </span>
-                                        )}
+                                    <div
+                                      style={{
+                                        display: 'flex',
+                                        alignItems: 'flex-start',
+                                        gap: 4,
+                                        minWidth: 0,
+                                      }}
+                                    >
+                                      {isWorkingDay(d.date) && (
                                         <span
                                           style={{
+                                            minWidth: 36,
+                                            flexShrink: 0,
+                                            fontSize: 12,
+                                            fontWeight: 700,
+                                            color,
+                                            whiteSpace: 'nowrap',
+                                          }}
+                                        >
+                                          {hours.toFixed(1)}h{hours > effectiveDayCap && ' ⚠'}
+                                        </span>
+                                      )}
+                                      <div
+                                        style={{
+                                          display: 'flex',
+                                          flexDirection: 'column',
+                                          gap: 2,
+                                          flex: '1 1 0',
+                                          minWidth: 0,
+                                        }}
+                                      >
+                                        <span
+                                          style={{
+                                            minWidth: 0,
                                             fontSize: 12,
                                             opacity: 0.5,
                                             whiteSpace: 'nowrap',
@@ -1943,20 +1979,20 @@ const PlannerScheduleView: React.FC = () => {
                                         >
                                           {t('project', { defaultValue: 'Project' })}: {decodeHtmlEntities(task.project_name)}
                                         </span>
+                                        <span
+                                          style={{
+                                            minWidth: 0,
+                                            fontSize: 12,
+                                            lineHeight: 1.3,
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                          }}
+                                        >
+                                          {taskChipLabel(task)}
+                                        </span>
                                       </div>
-                                      <div
-                                        style={{
-                                          fontSize: 12,
-                                          lineHeight: 1.3,
-                                          marginTop: 2,
-                                          whiteSpace: 'nowrap',
-                                          overflow: 'hidden',
-                                          textOverflow: 'ellipsis',
-                                        }}
-                                      >
-                                        {taskChipLabel(task)}
-                                      </div>
-                                    </>
+                                    </div>
                                   )}
                                   {cfg.dense === 'compact' && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 3, overflow: 'hidden' }}>
