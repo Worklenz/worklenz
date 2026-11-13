@@ -178,6 +178,8 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
   // In edit mode, stash the opened column's options while drafting a new parent so Cancel /
   // switching away can restore them without touching the opened column.
   const stashedSelectionsRef = useRef<typeof selectionsList | null>(null);
+  // Field title of the opened column, restored if the user stops creating a new parent.
+  const stashedFieldTitleRef = useRef<string | null>(null);
 
   // Hidden child column whose children were loaded into the form; it is removed on save once the
   // opened column takes those children over (a parent's children belong to ONE child column).
@@ -287,10 +289,17 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       if (isNextNew && parentColumnId !== NEW_PARENT_COLUMN_ID) {
         stashedSelectionsRef.current = selectionsList;
         dispatch(setSelectionsList([]));
+        // The new child column needs its own title; the opened column keeps its name.
+        stashedFieldTitleRef.current = mainForm.getFieldValue('fieldTitle') ?? null;
+        mainForm.setFieldValue('fieldTitle', '');
       } else if (!isNextNew && parentColumnId === NEW_PARENT_COLUMN_ID) {
         dispatch(setSelectionsList(stashedSelectionsRef.current || []));
         stashedSelectionsRef.current = null;
         dispatch(setNewParentField(null));
+        if (stashedFieldTitleRef.current !== null) {
+          mainForm.setFieldValue('fieldTitle', stashedFieldTitleRef.current);
+          stashedFieldTitleRef.current = null;
+        }
       }
     } else if (!isNextNew && parentColumnId === NEW_PARENT_COLUMN_ID) {
       dispatch(setNewParentField(null));
@@ -315,6 +324,10 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
         selectParentColumn(NEW_PARENT_COLUMN_ID);
       }
     } else {
+      if (stashedFieldTitleRef.current !== null) {
+        mainForm.setFieldValue('fieldTitle', stashedFieldTitleRef.current);
+        stashedFieldTitleRef.current = null;
+      }
       dispatch(setParentColumnId(null));
       dispatch(setNewParentField(null));
       stashedSelectionsRef.current = null;
@@ -326,6 +339,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
   };
 
   const resetModalData = () => {
+    stashedFieldTitleRef.current = null;
     mainForm.resetFields();
     previousTypeValueRef.current = 'text';
     dispatch(resetCustomFieldValues());
@@ -587,11 +601,9 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
    *  - Parent column, titled with the "Parent field title", holds the parent options.
    *  - Child column, titled with the "Field title", holds the child options; each child option is
    *    linked to a parent option and the column points at the parent column.
-   * In edit mode the opened column becomes the child column (its type/options are updated) and
-   * only the parent column is newly created.
+   * Both columns are always newly created. In edit mode the opened column is never changed.
    */
   const handleSaveParentAndChildColumns = async (value: any) => {
-    const isCreateMode = customColumnModalType === 'create';
     const parentName = newParentField?.name.trim() || '';
     const parentSelections = (newParentField?.selections || []).filter(
       selection => selection.selection_name.trim() !== ''
@@ -607,7 +619,6 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     }
 
     const childColumnName: string = value.fieldTitle;
-    const childColumnUuid = !isCreateMode ? editingColumnUuid : null;
     let createdParentColumnUuid: string | null = null;
 
     setIsSubmitting(true);
@@ -650,22 +661,14 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
         labels_list: [],
       };
 
-      const childRes = childColumnUuid
-        ? await tasksCustomColumnsService.updateCustomColumn(childColumnUuid, {
-            name: childColumnName,
-            field_type: 'selection',
-            width: 150,
-            is_visible: true,
-            configuration: childConfiguration,
-          })
-        : await tasksCustomColumnsService.createCustomColumn(projectId || '', {
-            name: childColumnName,
-            key: nanoid(),
-            field_type: 'selection',
-            width: 120,
-            is_visible: true,
-            configuration: childConfiguration,
-          });
+      const childRes = await tasksCustomColumnsService.createCustomColumn(projectId || '', {
+        name: childColumnName,
+        key: nanoid(),
+        field_type: 'selection',
+        width: 120,
+        is_visible: true,
+        configuration: childConfiguration,
+      });
       if (!childRes.done) {
         // Keep the two columns in sync: undo the parent column when the child could not be saved.
         await tasksCustomColumnsService.deleteCustomColumn(parentColumnUuid).catch(error => {
@@ -679,13 +682,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       stashedSelectionsRef.current = null;
       pendingChildColumnRef.current = null;
       resetModalData();
-      message.success(
-        isCreateMode
-          ? t('customColumns.modal.createSuccessMessage')
-          : t('customColumns.modal.updateSuccessMessage', {
-              defaultValue: 'Custom column updated successfully',
-            })
-      );
+      message.success(t('customColumns.modal.createSuccessMessage'));
       socket?.emit(
         SocketEvents.CUSTOM_COLUMN_CREATED.toString(),
         JSON.stringify({ project_id: projectId })
@@ -728,8 +725,10 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       ...formValue,
       fieldTitle:
         (typeof formValue.fieldTitle === 'string' && formValue.fieldTitle.trim()) ||
-        openedColumn?.name ||
-        openedColumn?.custom_column_obj?.fieldTitle ||
+        // A new parent creates a separate child column, so never fall back to the opened name.
+        (isCreatingNewParent
+          ? ''
+          : openedColumn?.name || openedColumn?.custom_column_obj?.fieldTitle) ||
         '',
       fieldType: apiFieldType,
     };
