@@ -1293,6 +1293,9 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
   ) {
     if (!project_id || !team_id) return;
 
+    // NOTE: status_category_order is a project-level column (on `projects` table, not `task_statuses`).
+    // It is never copied from templates — new projects always inherit NULL = default category order.
+    // See T1.1 migration and T1.2 resolver helper.
     try {
       let index = 0;
       for await (const status of statuses) {

@@ -8,6 +8,10 @@ import { ITeamMemberOverviewGetResponse } from '@/types/project/project-insights
 import { IProjectMembersViewModel } from '@/types/projectMember.types';
 import { IProjectManager } from '@/types/project/projectManager.types';
 import { IGroupedProjectsViewModel } from '@/types/project/groupedProjectsViewModel.types';
+import {
+  IStatusCategoryOrderResponse,
+  StatusCategoryOrder,
+} from '@/types/project/status-category-order.types';
 
 const rootUrl = `${API_BASE_URL}/projects`;
 
@@ -64,6 +68,26 @@ export const projectsApiService = {
   getProject: async (id: string): Promise<IServerResponse<IProjectViewModel>> => {
     const url = `${rootUrl}/${id}`;
     const response = await apiClient.get<IServerResponse<IProjectViewModel>>(`${url}`);
+    return response.data;
+  },
+
+  saveStatusCategoryOrder: async (
+    projectId: string,
+    categoryOrder: StatusCategoryOrder
+  ): Promise<IServerResponse<IStatusCategoryOrderResponse>> => {
+    const response = await apiClient.put<IServerResponse<IStatusCategoryOrderResponse>>(
+      `${rootUrl}/${projectId}/status-category-order`,
+      { category_order: categoryOrder }
+    );
+    return response.data;
+  },
+
+  resetStatusCategoryOrder: async (
+    projectId: string
+  ): Promise<IServerResponse<IStatusCategoryOrderResponse>> => {
+    const response = await apiClient.delete<IServerResponse<IStatusCategoryOrderResponse>>(
+      `${rootUrl}/${projectId}/status-category-order`
+    );
     return response.data;
   },
 

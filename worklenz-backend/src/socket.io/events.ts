@@ -126,4 +126,7 @@ export enum SocketEvents {
 
   // Sprint lifecycle changed; project clients should refresh their phase cache.
   PROJECT_SPRINTS_UPDATED,
+
+  // Status-category group ordering changed; project members should refresh group order.
+  PROJECT_STATUS_CATEGORY_ORDER_CHANGED,
 }

@@ -89,6 +89,7 @@ export interface TaskGroup {
   color_code_dark?: string;
   collapsed?: boolean;
   groupValue?: string;
+  category_id?: string;
   avatar_url?: string | null;
   // Add any other group properties as needed
 }

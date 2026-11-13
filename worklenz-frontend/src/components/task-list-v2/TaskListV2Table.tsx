@@ -49,7 +49,8 @@ import { setProjectContext } from '@/features/task-management/taskListFields.sli
 import {
   selectCurrentGrouping,
   selectCollapsedGroups,
-  toggleGroupCollapsed,
+  selectGroupStates,
+  setGroupCollapsed,
 } from '@/features/task-management/grouping.slice';
 import {
   selectSelectedTaskIds,
@@ -69,6 +70,7 @@ import {
   useTaskListMode,
 } from '@/features/task-management/task-list-mode-context';
 import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { selectEffectiveStatusCategoryOrder } from '@/features/project/project.slice';
 import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
 import {
   fetchTask as fetchTaskDrawer,
@@ -123,6 +125,13 @@ import { Task } from '@/types/task-management.types';
 import { SocketEvents } from '@/shared/socket-events';
 import { evt_project_task_list_visit } from '@/shared/worklenz-analytics-events';
 import DuplicateTaskModal from './components/DuplicateTaskModal';
+import {
+  filterEmptyStatusGroups,
+  getCollapsedGroupIds,
+  getDoneStatusGroupIds,
+  sortStatusGroupsByCategory,
+  sortTasksByStatusCategory,
+} from '@/utils/status-category-order';
 
 interface TaskListV2SectionProps {
   isGuest?: boolean;
@@ -150,9 +159,22 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const error = useAppSelector(selectError);
   const loadedProjectId = useAppSelector(selectLoadedProjectId);
   const currentGrouping = useAppSelector(selectCurrentGrouping);
+  const statusCategoryOrder = useAppSelector(selectEffectiveStatusCategoryOrder);
+  const statuses = useAppSelector(state => state.taskStatusReducer.status);
+  const sortField = useAppSelector(state => state.taskManagement.sortField);
+  const sortOrder = useAppSelector(state => state.taskManagement.sortOrder);
   const selectedTaskIds = useAppSelector(selectSelectedTaskIds);
   const lastSelectedTaskId = useAppSelector(selectLastSelectedTaskId);
-  const collapsedGroups = useAppSelector(selectCollapsedGroups);
+  const persistedCollapsedGroups = useAppSelector(selectCollapsedGroups);
+  const groupStates = useAppSelector(selectGroupStates);
+  const doneStatusGroupIds = useMemo(
+    () => getDoneStatusGroupIds(groups, statuses),
+    [groups, statuses]
+  );
+  const collapsedGroups = useMemo(
+    () => getCollapsedGroupIds(groups, doneStatusGroupIds, persistedCollapsedGroups, groupStates),
+    [groups, groupStates, persistedCollapsedGroups, doneStatusGroupIds]
+  );
   const isOpenDuplicateTaskModal = useAppSelector(
     state => state.taskManagement.isOpenDuplicateTaskModal
   );
@@ -748,9 +770,9 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
 
   const handleGroupCollapse = useCallback(
     (groupId: string) => {
-      dispatch(toggleGroupCollapsed(groupId));
+      dispatch(setGroupCollapsed({ groupId, collapsed: !collapsedGroups.has(groupId) }));
     },
-    [dispatch]
+    [dispatch, collapsedGroups]
   );
 
   const navigationTaskIds = useMemo(() => {
@@ -976,6 +998,15 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   // Memoized values for GroupedVirtuoso
   const virtuosoGroups = useMemo(() => {
     let currentTaskIndex = 0;
+    const taskIds = new Set(allTasks.map(task => task.id));
+
+    const categoryOrderedGroups =
+      currentGrouping === 'status'
+        ? filterEmptyStatusGroups(
+            sortStatusGroupsByCategory(groups, statuses, statusCategoryOrder),
+            taskIds
+          )
+        : groups;
 
     // Software backlog: always keep Backlog (Unmapped), even when empty; active sprint first.
     const orderedGroups =
@@ -1005,7 +1036,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
               return rank(aStatus) - rank(bStatus);
             });
           })()
-        : groups;
+        : categoryOrderedGroups;
 
     return orderedGroups.map(group => {
       const isCurrentGroupCollapsed = collapsedGroups.has(group.id);
@@ -1016,7 +1047,11 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
             .map(taskId => allTasks.find(task => task.id === taskId))
             .filter((task): task is Task => task !== undefined);
 
-      const tasksForVirtuoso = visibleTasksInGroup.map(task => ({
+      const orderedTasks =
+        currentGrouping !== 'status' && sortField === 'status'
+          ? sortTasksByStatusCategory(visibleTasksInGroup, statuses, statusCategoryOrder, sortOrder)
+          : visibleTasksInGroup;
+      const tasksForVirtuoso = orderedTasks.map(task => ({
         ...task,
         originalIndex: allTasks.indexOf(task),
       }));
@@ -1070,8 +1105,12 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   }, [
     groups,
     allTasks,
+    statuses,
+    statusCategoryOrder,
     collapsedGroups,
     currentGrouping,
+    sortField,
+    sortOrder,
     urlProjectId,
     insertAnchor,
     isBacklogMode,

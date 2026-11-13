@@ -867,6 +867,7 @@ export default class ProjectsController extends WorklenzControllerBase {
              projects.auto_assign_subtask_phase,
              (SELECT task_list_group_by FROM project_members WHERE project_id = $1 AND team_member_id = (SELECT id FROM team_members WHERE user_id = $3 AND team_id = $2 LIMIT 1)) AS task_list_group_by,
              (SELECT board_group_by FROM project_members WHERE project_id = $1 AND team_member_id = (SELECT id FROM team_members WHERE user_id = $3 AND team_id = $2 LIMIT 1)) AS board_group_by,
+             projects.status_category_order,
 
              (SELECT COALESCE(ROW_TO_JSON(pm), NULL)
                     FROM (SELECT team_member_id AS id,
@@ -976,6 +977,14 @@ export default class ProjectsController extends WorklenzControllerBase {
         if (stripped) {
           Object.assign(data, stripped);
         }
+      }
+
+      // T1.6: Include resolved category order (never return raw null — always return effective array)
+      try {
+        const { resolveProjectCategoryOrder } = await import('../shared/status-category-order');
+        data.status_category_order = await resolveProjectCategoryOrder(req.params.id);
+      } catch (_err) {
+        // If resolution fails, leave raw value in place; do not crash the response.
       }
     }
 
