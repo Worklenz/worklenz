@@ -19,10 +19,50 @@ const HTML_ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot
 /** Turns the sanitized rich-text notes HTML into plain text for a PDF <Text> node. */
 export const htmlToPlainText = (html: string | null | undefined): string => {
   if (!html) return "";
-  const withBreaks = html
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<li[^>]*>/gi, "\n• ")
-    .replace(/<\/(p|div|h[1-6]|ul|ol|li)>/gi, "\n");
+  const lists: Array<{ tag: string; nextNumber: number }> = [];
+  const structuralTags = /<(\/?)(ol|ul)\b[^>]*>|<(\/?)li\b([^>]*)>|<(\/?)p\b[^>]*>|<\/(div|h[1-6])\b[^>]*>/gi;
+  let withListMarkers = "";
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+  const addLineBreak = () => {
+    if (withListMarkers.length > 0 && !withListMarkers.endsWith("\n")) withListMarkers += "\n";
+  };
+
+  while ((match = structuralTags.exec(html)) !== null) {
+    withListMarkers += html.slice(cursor, match.index);
+    cursor = structuralTags.lastIndex;
+
+    if (match[2]) {
+      if (match[1]) lists.pop();
+      else lists.push({ tag: match[2].toLowerCase(), nextNumber: 1 });
+      continue;
+    }
+
+    if (match[4] !== undefined) {
+      if (match[3]) {
+        addLineBreak();
+        continue;
+      }
+
+      addLineBreak();
+      const listType = /\bdata-list\s*=\s*["'](ordered|bullet)["']/i.exec(match[4])?.[1]?.toLowerCase();
+      const list = lists[lists.length - 1];
+      const isOrdered = listType ? listType === "ordered" : list?.tag === "ol";
+      const indent = "  ".repeat(Math.max(0, lists.length - 1));
+      if (isOrdered) {
+        const number = list?.nextNumber ?? 1;
+        if (list) list.nextNumber += 1;
+        withListMarkers += `${indent}${number}. `;
+      } else {
+        withListMarkers += `${indent}• `;
+      }
+      continue;
+    }
+
+    if (match[5] || match[6]) addLineBreak();
+  }
+  withListMarkers += html.slice(cursor);
+  const withBreaks = withListMarkers.replace(/<br\s*\/?>/gi, "\n");
   // Repeat until stable so nested fragments like "<scr<b>ipt>" can't reassemble into a tag.
   let text = withBreaks;
   let previous: string;
