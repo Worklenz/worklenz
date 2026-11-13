@@ -475,7 +475,7 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
           onConfirm={async (destinationProjectId, confirmedDifferences, includeDependencies) => {
             setCopyToProjectLoading(true);
             try {
-              await dispatch(
+              const response = await dispatch(
                 duplicateTask({
                   taskId: task.id,
                   projectId,

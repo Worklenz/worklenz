@@ -454,20 +454,11 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
                 message: tDuplicate('copyToProject.success', {
                   defaultValue: 'Task copied successfully',
                 }),
-                btn: copiedTaskId ? (
-                  <Button
-                    size="small"
-                    type="link"
-                    style={{
-                      color: '#1677ff',
-                      opacity: 1,
-                      visibility: 'visible',
-                    }}
-                    onClick={() => navigate(`/worklenz/t/${copiedTaskId}`)}
-                  >
-                    {tDuplicate('copyToProject.openTask', { defaultValue: 'Open task' })}
-                  </Button>
-                ) : undefined,
+                openTaskLabel: tDuplicate('copyToProject.openTask', {
+                  defaultValue: 'Open task',
+                }),
+                copiedTaskId: response.body?.id,
+                onOpenTask: taskId => navigate(`/worklenz/t/${taskId}`),
               });
               setCopyToProjectOpen(false);
             }
