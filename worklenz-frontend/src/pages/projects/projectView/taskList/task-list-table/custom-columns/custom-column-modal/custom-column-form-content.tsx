@@ -84,7 +84,6 @@ interface CustomColumnFormContentProps {
  */
 const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentProps) => {
   const [mainForm] = Form.useForm();
-  const watchedFieldTitle: string | undefined = Form.useWatch('fieldTitle', mainForm);
   const { t } = useTranslation('task-list-table');
   const { socket } = useSocket();
   const { token } = theme.useToken();
@@ -175,23 +174,6 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     };
   }, [isCreatingNewParent, newParentField, t]);
   const parentColumnForEditor = selectedParentColumn || draftParentColumn;
-
-  /**
-   * True when the opened column is a fresh Text column that holds no task values (for example a
-   * column just added with the header "+"). Nothing can be lost by turning it into the child
-   * column, so it keeps its name and is reused instead of being left untouched.
-   */
-  const isOpenedColumnEmptyText = (): boolean => {
-    if (!isEditMode || !editingColumnUuid || !openedColumn) return false;
-    if (originalStoredFieldType !== 'text') return false;
-    const entities = Object.values(taskEntities || {}) as Array<{
-      custom_column_values?: Record<string, unknown>;
-    }>;
-    return !entities.some(task => {
-      const taskValue = task.custom_column_values?.[openedColumn.key as string];
-      return taskValue !== undefined && taskValue !== null && taskValue !== '';
-    });
-  };
 
   // In edit mode, stash the opened column's options while drafting a new parent so Cancel /
   // switching away can restore them without touching the opened column.
@@ -291,6 +273,23 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     }
   };
 
+  /**
+   * True when the opened column is a fresh Text column that holds no task values (for example the
+   * "New Column" added with the header "+" and just named). Nothing can be lost by turning it
+   * into the child column, so it keeps its title and is reused instead of adding another column.
+   */
+  const isOpenedColumnEmptyText = (): boolean => {
+    if (!isEditMode || !editingColumnUuid || !openedColumn) return false;
+    if (originalStoredFieldType !== 'text') return false;
+    const entities = Object.values(taskEntities || {}) as Array<{
+      custom_column_values?: Record<string, unknown>;
+    }>;
+    return !entities.some(task => {
+      const taskValue = task.custom_column_values?.[openedColumn.key as string];
+      return taskValue !== undefined && taskValue !== null && taskValue !== '';
+    });
+  };
+
   const selectParentColumn = (nextParentColumnId: string | null) => {
     const isNextNew = nextParentColumnId === NEW_PARENT_COLUMN_ID;
     if (isNextNew && !newParentField) {
@@ -307,8 +306,8 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       if (isNextNew && parentColumnId !== NEW_PARENT_COLUMN_ID) {
         stashedSelectionsRef.current = selectionsList;
         dispatch(setSelectionsList([]));
-        // A fresh empty Text column is reused as the child and keeps its name. Any other opened
-        // column stays untouched, so its new child column needs its own title.
+        // A fresh empty Text column is reused as the child and keeps its title. Any other opened
+        // column stays unchanged, so the new child column needs its own title.
         if (!isOpenedColumnEmptyText()) {
           stashedFieldTitleRef.current = mainForm.getFieldValue('fieldTitle') ?? null;
           mainForm.setFieldValue('fieldTitle', '');
@@ -622,12 +621,11 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
    *  - Parent column, titled with the "Parent field title", holds the parent options.
    *  - Child column, titled with the "Field title", holds the child options; each child option is
    *    linked to a parent option and the column points at the parent column.
-   * The parent column is always newly created. The child column is newly created too, except when
-   * the opened column is a fresh empty Text column: that column is reused as the child so it keeps
-   * the name the user gave it. Any other opened column is never changed.
+   * The parent column is always new. The child column is new too, except when the opened column is
+   * a fresh empty Text column (just added with "+"), which becomes the child and keeps its title.
+   * Any other opened column is never changed.
    */
   const handleSaveParentAndChildColumns = async (value: any) => {
-    const reusedChildColumnUuid = isOpenedColumnEmptyText() ? editingColumnUuid : null;
     const parentName = newParentField?.name.trim() || '';
     const parentSelections = (newParentField?.selections || []).filter(
       selection => selection.selection_name.trim() !== ''
@@ -643,6 +641,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     }
 
     const childColumnName: string = value.fieldTitle;
+    const reusedChildColumnUuid = isOpenedColumnEmptyText() ? editingColumnUuid : null;
     let createdParentColumnUuid: string | null = null;
 
     setIsSubmitting(true);
@@ -948,16 +947,6 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
             rules={[{ required: true, message: t('customColumns.modal.fieldTitleRequired') }]}
             required={false}
             style={{ flex: 1, minWidth: 0 }}
-            extra={
-              isCreatingNewParent && !watchedFieldTitle?.trim() ? (
-                <Typography.Text type="warning" style={{ fontSize: 12 }}>
-                  {t('customColumns.dependentSelection.fieldTitleFirstHint', {
-                    defaultValue:
-                      'First give the field title. It names the new dependent column that uses the parent field below.',
-                  })}
-                </Typography.Text>
-              ) : undefined
-            }
           >
             <Input placeholder={t('customColumns.modal.columnTitlePlaceholder')} />
           </Form.Item>
@@ -1027,10 +1016,15 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
                 </Typography.Text>
               ) : isCreatingNewParent ? (
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {t('customColumns.dependentSelection.newParentTogetherHint', {
-                    defaultValue:
-                      'Saving creates two columns: the new parent field with its options, and this field with the dependent options.',
-                  })}
+                  {originalParentColumnId
+                    ? t('customColumns.dependentSelection.newParentTogetherHint', {
+                        defaultValue:
+                          'This creates a brand-new Selection field alongside this one when you save.it will also appear as its own column.',
+                      })
+                    : t('customColumns.dependentSelection.newParentSingleColumnHint', {
+                        defaultValue:
+                          'Saves one column with the parent options. A Dependent Selection you add later can pick this column as its parent and create its own child options under each parent option.',
+                      })}
                 </Typography.Text>
               ) : (
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
