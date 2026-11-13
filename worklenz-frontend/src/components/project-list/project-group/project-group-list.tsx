@@ -328,9 +328,6 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
         dataIndex: 'project_type',
         key: 'PROJECT_TYPE',
         width: 160,
-        sorter: (a: IProjectViewModel, b: IProjectViewModel) =>
-          (a.project_type || 'general').localeCompare(b.project_type || 'general'),
-        showSorterTooltip: false,
         render: (_: string, record: IProjectViewModel) => (
           <ProjectTypeCell t={t as any} record={record} />
         ),

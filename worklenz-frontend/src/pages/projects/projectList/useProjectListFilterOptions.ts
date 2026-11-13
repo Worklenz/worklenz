@@ -61,6 +61,16 @@ export const useProjectListFilterOptions = (): ColumnFilterOptions => {
 
   return useMemo(
     () => ({
+      [ProjectListFieldKey.PROJECT_TYPE]: [
+        {
+          text: t('projectTypeSoftware', { defaultValue: 'Software Project' }),
+          value: 'software',
+        },
+        {
+          text: t('projectTypeGeneral', { defaultValue: 'General Project' }),
+          value: 'general',
+        },
+      ],
       [ProjectListFieldKey.STATUS]: toColumnFilterItems(projectStatuses),
       [ProjectListFieldKey.CATEGORY]: [
         { text: t('filter.noCategory'), value: NONE_FILTER_VALUE },

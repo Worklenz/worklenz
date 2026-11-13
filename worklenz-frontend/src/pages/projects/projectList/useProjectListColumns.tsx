@@ -78,7 +78,9 @@ export const useProjectListColumns = ({
         dataIndex: 'project_type',
         key: ProjectListFieldKey.PROJECT_TYPE,
         width: 160,
-        sorter: true,
+        filters: filterOptions[ProjectListFieldKey.PROJECT_TYPE],
+        filteredValue: filterValues[ProjectListFieldKey.PROJECT_TYPE],
+        filterMultiple: true,
         render: (_: string, record: IProjectViewModel) => (
           <ProjectTypeCell t={t} record={record} />
         ),
