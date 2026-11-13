@@ -200,5 +200,7 @@
   "noPaymentProof": "No payment proof uploaded.",
   "closeButton": "Close",
   "linkedChangeRequest": "Linked Change Request",
-  "openChangeRequest": "Open change request"
+  "openChangeRequest": "Open change request",
+  "downloadFailed": "Failed to download the PDF. Please try again.",
+  "defaultInvoiceFooter": "Thank you for your business. If you have any questions about this invoice, please contact us using the details above."
 }

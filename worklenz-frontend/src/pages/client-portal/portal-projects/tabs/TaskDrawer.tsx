@@ -29,6 +29,8 @@ export const TaskDrawer = ({ project, task, onClose }: TaskDrawerProps) => {
   const showVisibilityToast = useVisibilityToast();
 
   const [visibility, setVisibility] = useState<PortalVisibility>(task.visibility);
+  // client_title is plain text (backend trims/limits only). Do not decode entities —
+  // that would mutate literal "&amp;" into "&" on a no-op save. Decode only legacy task.title.
   const [clientTitle, setClientTitle] = useState(task.client_title);
   const [clientDescription, setClientDescription] = useState(task.client_description);
   const [fileIds, setFileIds] = useState<string[]>(task.attached_file_ids);
@@ -38,6 +40,8 @@ export const TaskDrawer = ({ project, task, onClose }: TaskDrawerProps) => {
 
   const visibleAttachments = files.filter(file => fileIds.includes(file.id) && file.visibility === 'client');
   const dash = '—';
+  const trimmedClientTitle = clientTitle.trim();
+  const displayTitle = trimmedClientTitle || decodeHtmlEntities(task.title);
 
   const save = async () => {
     try {
@@ -46,12 +50,14 @@ export const TaskDrawer = ({ project, task, onClose }: TaskDrawerProps) => {
         taskId: task.id,
         body: {
           visibility,
-          client_title: clientTitle.trim(),
+          client_title: trimmedClientTitle,
           client_description: clientDescription.trim(),
           attached_file_ids: fileIds,
         },
       }).unwrap();
-      if (visibility !== task.visibility) showVisibilityToast('task', clientTitle.trim() || decodeHtmlEntities(task.title), visibility);
+      if (visibility !== task.visibility) {
+        showVisibilityToast('task', displayTitle, visibility);
+      }
       else message.success(t('tasks.drawer.saved', { defaultValue: 'Client-facing wording and attachments saved.' }));
       onClose();
     } catch (error) {
@@ -186,7 +192,9 @@ export const TaskDrawer = ({ project, task, onClose }: TaskDrawerProps) => {
       </Typography.Text>
       {visibility === 'client' ? (
         <Card size="small" style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 600, fontSize: 13 }}>{clientTitle.trim() || decodeHtmlEntities(task.title)}</div>
+          <div style={{ fontWeight: 600, fontSize: 13 }}>
+            {displayTitle}
+          </div>
           <div style={{ fontSize: 12, color: token.colorTextSecondary, margin: '3px 0 6px' }}>
             {labels.client[task.status]}
             {task.due_date

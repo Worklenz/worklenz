@@ -67,5 +67,8 @@
   "linksPaginationSummary": "{{start}}–{{end}} of {{count}} links",
   "uploadExpired": "Upload session expired. Please try again.",
   "fileTooLargePopoverTitle": "File Too Large",
-  "fileTooLargePopoverBody": "Files larger than 25MB require the Business plan. This file is {{sizeMb}} MB. Upgrade to upload larger files."
+  "fileTooLargePopoverBody": "Files larger than 25MB require the Business plan. This file is {{sizeMb}} MB. Upgrade to upload larger files.",
+  "myTasksView": {
+    "rowsPerPage": "Rows per page:"
+  }
 }

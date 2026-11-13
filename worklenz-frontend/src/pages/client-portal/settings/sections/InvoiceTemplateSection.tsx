@@ -199,7 +199,13 @@ export const InvoiceTemplateSection: React.FC<InvoiceTemplateSectionProps> = ({ 
         <InvoicePreviewMock
           color={brandColor}
           showLogo={settings.invoice_show_logo}
-          footerMessage={settings.invoice_footer_message}
+          footerMessage={
+            settings.invoice_footer_message?.trim() ||
+            t('defaultInvoiceFooter', {
+              defaultValue:
+                'Thank you for your business. If you have any questions about this invoice, please contact us using the details above.',
+            })
+          }
         />
       </div>
     </div>

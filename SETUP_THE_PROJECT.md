@@ -4,7 +4,7 @@ Getting started with development is a breeze! Follow these steps and you'll be c
 
 ## Requirements
 
-- Node.js version v20 or newer - [Node.js](https://nodejs.org/en/download/)
+- Node.js version v22.12.0 or newer - [Node.js](https://nodejs.org/en/download/)
 - PostgreSQL version v15 or newer - [PostgreSQL](https://www.postgresql.org/download/)
 - S3-compatible storage (SeaweedFS is bundled with Docker) for file storage
 

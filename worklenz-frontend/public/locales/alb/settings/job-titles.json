@@ -5,6 +5,7 @@
   "deleteConfirmationCancel": "Anulo",
   "searchPlaceholder": "Kërko sipas emrit",
   "createJobTitleButton": "Krijo Titull Pune",
+  "createJobTitleButtonText": "Krijo një titull pune",
   "pinTooltip": "Klikoni për ta fiksuar në menynë kryesore",
   "createJobTitleDrawerTitle": "Krijo Titull Pune",
   "updateJobTitleDrawerTitle": "Përditëso Titullin e Punës",

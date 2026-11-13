@@ -199,5 +199,7 @@
   "noPaymentProof": "Nie przesłano potwierdzenia płatności.",
   "closeButton": "Zamknij",
   "linkedChangeRequest": "Połączone żądanie zmiany",
-  "openChangeRequest": "Otwórz żądanie zmiany"
+  "openChangeRequest": "Otwórz żądanie zmiany",
+  "downloadFailed": "Nie udało się pobrać pliku PDF. Spróbuj ponownie.",
+  "defaultInvoiceFooter": "Dziękujemy za współpracę. W razie pytań dotyczących tej faktury prosimy o kontakt przy użyciu danych podanych powyżej."
 }

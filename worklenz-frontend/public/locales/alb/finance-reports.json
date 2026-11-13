@@ -169,4 +169,8 @@
     },
     "empty": "Nuk ka ende histori të mjaftueshme për parashikim. Regjistro kohën dhe dërgo faturat për të krijuar një trend."
   }
+,
+  "myTasksView": {
+    "rowsPerPage": "Rreshta për faqe:"
+  }
 }

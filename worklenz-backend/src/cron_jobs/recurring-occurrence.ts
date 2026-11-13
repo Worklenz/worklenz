@@ -2,9 +2,6 @@ import moment from "moment-timezone";
 import { calculateNextEndDate } from "../shared/utils";
 import { IRecurringSchedule } from "../interfaces/recurring-tasks";
 
-// Upper bound on occurrences walked in a single call (about 10 years of a daily schedule)
-const MAX_OCCURRENCE_STEPS = 4000;
-
 export interface INextOccurrence {
   nextEndDate: moment.Moment;
   // Number of missed occurrences passed over to reach nextEndDate
@@ -33,7 +30,7 @@ export function resolveNextOccurrence(
     return { nextEndDate, skippedCount };
   }
 
-  for (let step = 0; step < MAX_OCCURRENCE_STEPS; step++) {
+  while (true) {
     const following = calculateNextEndDate(schedule, nextEndDate);
     // Stop at the first occurrence after today, or if the schedule fails to advance
     if (following.isAfter(now, "day") || !following.isAfter(nextEndDate)) break;

@@ -10,6 +10,8 @@ interface ConfirmEffectModalProps {
   confirmLabel: string;
   danger?: boolean;
   loading?: boolean;
+  /** Keeps the confirm button off while something still blocks the action (an unpaid invoice, a missing acknowledgement). */
+  confirmDisabled?: boolean;
   onConfirm: () => void;
   onClose: () => void;
 }
@@ -25,6 +27,7 @@ export const ConfirmEffectModal = ({
   confirmLabel,
   danger,
   loading,
+  confirmDisabled,
   onConfirm,
   onClose,
 }: ConfirmEffectModalProps) => {
@@ -35,7 +38,7 @@ export const ConfirmEffectModal = ({
       title={title}
       okText={confirmLabel}
       cancelText={t('cancel', { defaultValue: 'Cancel' })}
-      okButtonProps={{ danger, loading }}
+      okButtonProps={{ danger, loading, disabled: confirmDisabled }}
       onOk={onConfirm}
       onCancel={onClose}
       maskClosable={!loading}

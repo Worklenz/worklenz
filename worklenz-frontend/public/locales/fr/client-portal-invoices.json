@@ -199,5 +199,7 @@
   "noPaymentProof": "Aucun justificatif de paiement téléversé.",
   "closeButton": "Fermer",
   "linkedChangeRequest": "Demande de modification liée",
-  "openChangeRequest": "Demande de modification ouverte"
+  "openChangeRequest": "Demande de modification ouverte",
+  "downloadFailed": "Échec du téléchargement du PDF. Veuillez réessayer.",
+  "defaultInvoiceFooter": "Merci pour votre confiance. Pour toute question concernant cette facture, veuillez nous contacter à l’aide des coordonnées ci-dessus."
 }

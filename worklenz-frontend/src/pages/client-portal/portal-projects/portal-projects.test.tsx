@@ -245,4 +245,59 @@ describe('TasksTab', () => {
     expect(screen.getByText('Time estimate')).toBeInTheDocument();
     expect(screen.getByText('12 h')).toBeInTheDocument();
   });
+
+  it('round-trips a custom title that contains literal entity text when saving attachments or visibility', async () => {
+    // client_title is plain text — "&amp;" must not become "&" on a save that does not edit the title.
+    const entityTitle = 'Explain &amp;';
+    state.tasks = {
+      items: [
+        makeTask({
+          client_title: entityTitle,
+          attached_file_ids: [],
+        }),
+      ],
+      counts: { all: 1, client: 0, internal: 1 },
+      total: 1,
+    };
+    state.files = [
+      {
+        id: 'f-1',
+        project_id: 'p-1',
+        name: 'spec.pdf',
+        category: 'Deliverable',
+        visibility: 'client',
+        source: 'team',
+        uploaded_by: 'Staff',
+        uploaded_at: '2026-07-01T00:00:00.000Z',
+        size_label: '12 KB',
+        current_version: 1,
+        version_count: 1,
+      },
+    ];
+
+    inRouter(<TasksTab project={project} />);
+
+    await userEvent.click(screen.getByText('Refactor checkout flow'));
+
+    const titleInput = await screen.findByRole('textbox', { name: 'Client-facing title' });
+    expect(titleInput).toHaveValue(entityTitle);
+
+    // Change attachments and visibility without editing the title.
+    await userEvent.click(screen.getByRole('checkbox'));
+    await userEvent.click(screen.getByRole('radio', { name: 'Client visible' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() =>
+      expect(state.updateTask).toHaveBeenCalledWith({
+        projectId: 'p-1',
+        taskId: 't-1',
+        body: {
+          visibility: 'client',
+          client_title: entityTitle,
+          client_description: '',
+          attached_file_ids: ['f-1'],
+        },
+      })
+    );
+  });
 });

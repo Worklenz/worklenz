@@ -93,5 +93,8 @@
   "toolbarSelectAll": "全选",
   "toolbarClearAll": "全部清除",
   "toolbarFields": "字段",
-  "toolbarShowFields": "显示字段"
+  "toolbarShowFields": "显示字段",
+  "userDeleted": "账户已删除",
+  "userDeletedHint": "已由用户本人于 {{deleted}} 删除。可在 {{until}} 之前恢复。",
+  "userDeletedHintExpired": "已由用户本人于 {{deleted}} 删除。"
 }

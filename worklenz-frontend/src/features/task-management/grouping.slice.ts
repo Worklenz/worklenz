@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
 import { TaskGroup } from '@/types/task-management.types';
-import { RootState } from '@/app/store';
+import type { AppDispatch, RootState } from '@/app/store';
 import { selectAllTasksArray } from './task-management.selectors';
 
 export type GroupingType = 'status' | 'priority' | 'phase' | 'assignee';
@@ -79,9 +79,8 @@ const groupingSlice = createSlice({
   name: 'grouping',
   initialState,
   reducers: {
-    setCurrentGrouping: (state, action: PayloadAction<GroupingType | null>) => {
+    setCurrentGroupingState: (state, action: PayloadAction<GroupingType | null>) => {
       state.currentGrouping = action.payload;
-      saveGroupingToLocalStorage(action.payload, state.projectId);
     },
 
     // Called on project load to initialize from server value — also updates localStorage
@@ -150,7 +149,7 @@ const groupingSlice = createSlice({
 });
 
 export const {
-  setCurrentGrouping,
+  setCurrentGroupingState,
   initGroupingFromServer,
   addCustomPhase,
   removeCustomPhase,
@@ -162,6 +161,19 @@ export const {
   expandAllGroups,
   resetGrouping,
 } = groupingSlice.actions;
+
+/**
+ * Updates in-memory grouping. Skips project localStorage when a saved view is
+ * active so applying/editing a view does not overwrite the List tab preference.
+ */
+export const setCurrentGrouping =
+  (grouping: GroupingType | null) =>
+  (dispatch: AppDispatch, getState: () => RootState): void => {
+    dispatch(setCurrentGroupingState(grouping));
+    if (!getState().taskReducer.isSavedViewActive) {
+      saveGroupingToLocalStorage(grouping, getState().grouping.projectId);
+    }
+  };
 
 // Selectors
 export const selectCurrentGrouping = (state: RootState) => state.grouping.currentGrouping;

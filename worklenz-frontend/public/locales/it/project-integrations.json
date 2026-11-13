@@ -1,0 +1,55 @@
+{
+  "title": "Integrazioni",
+  "tooltip": "Gestisci le integrazioni del progetto",
+  "upgradeRequired": "Integrazioni disponibili con il piano Business",
+  "manageAll": "Gestisci tutte le integrazioni",
+  "comingSoon": "In arrivo",
+  "cancel": "Annulla",
+  "slack": {
+    "title": "Slack",
+    "description": "Ricevi aggiornamenti su attività, stati e commenti nei tuoi canali Slack",
+    "notConnected": "Connetti prima il tuo spazio di lavoro Slack nelle impostazioni",
+    "quickAddTitle": "Aggiungi Slack al progetto",
+    "currentProject": "Progetto",
+    "selectChannel": "Canale Slack",
+    "selectChannelPlaceholder": "Seleziona un canale Slack...",
+    "selectNotifications": "Tipi di notifica",
+    "selectNotificationsPlaceholder": "Seleziona i tipi di notifica...",
+    "refresh": "Aggiorna",
+    "addButton": "Aggiungi integrazione",
+    "inviteBotTip": "Suggerimento: invita prima il bot @Worklenz nel canale Slack!"
+  },
+  "teams": {
+    "title": "Microsoft Teams",
+    "description": "Pubblica aggiornamenti su attività e stati nei tuoi canali Teams"
+  },
+  "github": {
+    "title": "GitHub",
+    "description": "Monitora branch, pull request e commit nelle attività",
+    "softwareDescription": "Branch, pull request e commit su ogni attività, con aggiornamenti automatici dello stato",
+    "softwareOnly": "Progetti software",
+    "connectDescription": "Connetti GitHub per collegare repository, monitorare pull request e automatizzare lo stato delle attività"
+  },
+  "notificationTypes": {
+    "taskCreated": "Attività creata",
+    "taskAssigned": "Attività assegnata",
+    "statusChanged": "Stato modificato",
+    "taskCompleted": "Attività completata",
+    "commentAdded": "Commento aggiunto",
+    "dueDateChanged": "Scadenza modificata"
+  },
+  "validation": {
+    "selectChannel": "Seleziona un canale Slack",
+    "selectNotifications": "Seleziona almeno un tipo di notifica"
+  },
+  "messages": {
+    "integrationAdded": "Integrazione Slack aggiunta!",
+    "channelsRefreshed": "Canali aggiornati"
+  },
+  "errors": {
+    "loadChannelsFailed": "Impossibile caricare i canali",
+    "refreshChannelsFailed": "Impossibile aggiornare i canali",
+    "addIntegrationFailed": "Impossibile aggiungere l’integrazione"
+  },
+  "businessPlan": "Business"
+}

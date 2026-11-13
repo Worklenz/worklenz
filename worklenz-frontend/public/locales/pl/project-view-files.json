@@ -68,4 +68,8 @@
   "uploadExpired": "Sesja przesyłania wygasła. Spróbuj ponownie.",
   "fileTooLargePopoverTitle": "Plik jest za duży",
   "fileTooLargePopoverBody": "Pliki większe niż 25MB wymagają planu Business. Ten plik ma rozmiar {{sizeMb}} MB. Uaktualnij, aby przesyłać większe pliki."
+,
+  "myTasksView": {
+    "rowsPerPage": "Wiersze na stronę:"
+  }
 }

@@ -43,6 +43,7 @@
   "labourHoursColumn": "Godziny Pracy",
   "actions": "Działania",
   "selectJobTitle": "Wybierz Stanowisko",
+  "createJobTitleButtonText": "Utwórz stanowisko",
   "ratecardsPluralText": "Szablony arkuszy stawek",
   "deleteConfirm": "Czy jesteś pewien?",
   "yes": "Tak",

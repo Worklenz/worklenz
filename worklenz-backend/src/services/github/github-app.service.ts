@@ -16,7 +16,7 @@ export interface IGithubAppConfig {
 
 export interface IGithubInstallation {
   id: number;
-  account: { login: string; type: string; avatar_url?: string };
+  account: { id: number; login: string; type: string; avatar_url?: string };
   suspended_at?: string | null;
 }
 
@@ -201,6 +201,11 @@ export class GithubAppService {
   public static async getIssue(installationId: number, fullName: string, number: number): Promise<IGithubIssue> {
     const token = await this.getInstallationToken(installationId);
     return this.request<IGithubIssue>(`/repos/${fullName}/issues/${number}`, token);
+  }
+
+  public static async getPullRequest(installationId: number, fullName: string, number: number): Promise<unknown> {
+    const token = await this.getInstallationToken(installationId);
+    return this.request<unknown>(`/repos/${fullName}/pulls/${number}`, token);
   }
 
   /** Repository default branch plus up to 100 branch names (alphabetical). */

@@ -5,6 +5,7 @@
   "deleteConfirmationCancel": "Annuler",
   "searchPlaceholder": "Rechercher par nom",
   "createJobTitleButton": "Créer un titre de poste",
+  "createJobTitleButtonText": "Créer un intitulé de poste",
   "pinTooltip": "Cliquez pour épingler ceci dans le menu principal",
   "createJobTitleDrawerTitle": "Créer un titre de poste",
   "updateJobTitleDrawerTitle": "Mettre à jour le titre du poste",

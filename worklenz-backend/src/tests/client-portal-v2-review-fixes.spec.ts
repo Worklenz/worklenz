@@ -93,6 +93,13 @@ describe("removing or deactivating the only approver of a waiting approval", () 
   const user = { id: "alex", name: "Alex", email: "a@b.co", client_id: "client-1", organization_name: "Brandbase", role: "member", status_key: "active", has_login: true, login_id: "login-1" };
   const waiting = { id: "ap1", ref_no: "AP-000007", revision: 2 };
   const base = (orphans: unknown[]): Handler[] => [
+    // The organization row is locked first, and a write that touches no row means someone else got there first.
+    [
+      /FROM clients\s+WHERE id = \$1 AND team_id = \$2\s+FOR UPDATE/,
+      createQueryResult([{ id: "client-1", name: "Brandbase", display_name: "Brandbase", status: "active", deleted_at: null }]),
+    ],
+    [/DELETE FROM client_contacts/, createQueryResult([], 1)],
+    [/UPDATE client_contacts SET disabled_at/, createQueryResult([], 1)],
     [/JOIN client_contacts cc ON cc\.id = u\.id/, createQueryResult([user])],
     [/FROM client_portal_approvals a\s+JOIN client_portal_approval_approvers ap/, createQueryResult(orphans as any[])],
   ];

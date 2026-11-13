@@ -13,6 +13,7 @@ import {
   usePortalPaging,
 } from '@/components/client-portal/v2';
 import type { Approval } from '@/types/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { portalPaths } from '../../portal-paths';
 
 interface ApprovalsTabProps {
@@ -41,14 +42,14 @@ export const ApprovalsTab = ({ organizationId, organizationName }: ApprovalsTabP
     {
       key: 'title',
       title: t('workspace.approvals.columns.title', { defaultValue: 'Title' }),
-      dataIndex: 'title',
+      render: (_value, approval) => decodeHtmlEntities(approval.title),
     },
     {
       key: 'linked',
       title: t('workspace.approvals.columns.linked', { defaultValue: 'Linked item' }),
       render: (_value, approval) => (
         <Typography.Text type="secondary">
-          {approval.linked_item.name}
+          {decodeHtmlEntities(approval.linked_item.name)}
           {approval.linked_item.file_version ? ` · v${approval.linked_item.file_version}` : ''}
         </Typography.Text>
       ),

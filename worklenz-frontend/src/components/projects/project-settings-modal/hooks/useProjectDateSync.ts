@@ -8,13 +8,15 @@ import logger from '@/utils/errorLogger';
 import { calculateWorkingDays } from '../utils/calculate-working-days';
 
 /**
- * Keeps the start/end date fields and the derived working days in sync, both for local edits
- * (broadcast to other viewers over the socket) and for edits made elsewhere.
+ * Keeps start/end date fields and derived working days in sync for the settings form.
+ *
+ * Local picks only update the form — persistence happens when the user clicks Update
+ * (see useProjectSettingsSubmit). Socket listeners still apply remote date changes
+ * (e.g. from reporting) so an open settings form stays current.
  */
 export const useProjectDateSync = (form: FormInstance, projectId: string | null) => {
   const { socket, connected } = useSocket();
 
-  // Socket event handlers
   const handleStartDateChangeResponse = useCallback(
     (data: { project_id: string; start_date: string }) => {
       try {
@@ -34,7 +36,7 @@ export const useProjectDateSync = (form: FormInstance, projectId: string | null)
         logger.error('Error handling start date change response:', error);
       }
     },
-    [projectId, form, calculateWorkingDays]
+    [projectId, form]
   );
 
   const handleEndDateChangeResponse = useCallback(
@@ -56,7 +58,7 @@ export const useProjectDateSync = (form: FormInstance, projectId: string | null)
         logger.error('Error handling end date change response:', error);
       }
     },
-    [projectId, form, calculateWorkingDays]
+    [projectId, form]
   );
 
   useEffect(() => {
@@ -89,22 +91,11 @@ export const useProjectDateSync = (form: FormInstance, projectId: string | null)
         } else if (!date) {
           form.setFieldsValue({ working_days: 0 });
         }
-
-        if (socket && projectId) {
-          socket.emit(
-            SocketEvents.PROJECT_START_DATE_CHANGE.toString(),
-            JSON.stringify({
-              project_id: projectId,
-              start_date: date?.format('YYYY-MM-DD'),
-              time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            })
-          );
-        }
       } catch (error) {
         logger.error('Error handling start date change', error);
       }
     },
-    [form, calculateWorkingDays, socket, projectId]
+    [form]
   );
 
   const handleEndDateChange = useCallback(
@@ -119,25 +110,13 @@ export const useProjectDateSync = (form: FormInstance, projectId: string | null)
         } else if (!date) {
           form.setFieldsValue({ working_days: 0 });
         }
-
-        if (socket && projectId) {
-          socket.emit(
-            SocketEvents.PROJECT_END_DATE_CHANGE.toString(),
-            JSON.stringify({
-              project_id: projectId,
-              end_date: date?.format('YYYY-MM-DD'),
-              time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            })
-          );
-        }
       } catch (error) {
         logger.error('Error handling end date change', error);
       }
     },
-    [form, calculateWorkingDays, socket, projectId]
+    [form]
   );
 
-  // ─── Date disabling helpers ─────────────────────────────────────────────
   const disabledStartDate = useCallback(
     (current: dayjs.Dayjs) => {
       const endDate = form.getFieldValue('end_date');

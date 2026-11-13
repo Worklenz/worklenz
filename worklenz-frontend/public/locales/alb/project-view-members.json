@@ -43,5 +43,38 @@
   "changeMemberStatusConfirmation": "Jeni të sigurt që dëshironi të ndryshoni statusin e këtij anëtari?",
   "yesProceed": "Po, vazhdo",
   "cancel": "Anulo",
-  "removeFromProject": "Hiq nga Projekti"
+  "removeFromProject": "Hiq nga Projekti",
+  "guestCount": "I ftuar",
+  "guestsCountPlural": "Të ftuar",
+  "emptyGuestsText": "Nuk ka të ftuar në këtë projekt.",
+  "emptyTeamMembersText": "Nuk ka anëtarë ekipi në këtë projekt.",
+  "rowsPerPage": "Rreshta për faqe:",
+  "paginationSummary": "{{range}} nga {{total}}",
+  "tabs": {
+    "ariaLabel": "Seksionet e anëtarëve",
+    "teamMembers": "Anëtarët e ekipit",
+    "guests": "Të ftuar",
+    "clientTeam": "Ekipi i klientit"
+  },
+  "clientPortal": {
+    "title": "Ekipi i klientit",
+    "summary": "{{count}} përdorues te {{client}} mund ta hapin këtë projekt në Portalin e Klientit.",
+    "unknownClient": "Klient",
+    "viewClient": "Shiko klientin",
+    "manageAccess": "Menaxho qasjen",
+    "nameColumn": "Emri",
+    "emailColumn": "Email",
+    "roleColumn": "Roli",
+    "statusColumn": "Statusi",
+    "lastAccessColumn": "Qasja e fundit",
+    "neverAccessed": "Asnjëherë",
+    "loadFailed": "Përdoruesit e portalit të klientit nuk mund të ngarkoheshin.",
+    "retry": "Provo përsëri",
+    "tableLabel": "Përdoruesit e portalit të klientit me qasje në këtë projekt",
+    "empty": "Ende nuk ka përdorues klienti të caktuar në këtë projekt. Caktojini nga Portali i Klientit.",
+    "searchPlaceholder": "Kërko përdoruesit e klientit",
+    "searchEmpty": "Asnjë përdorues klienti nuk përputhet me kërkimin tuaj.",
+    "noClientLinked": "Ky projekt nuk është ende i lidhur me një klient. Caktoni një klient në Portalin e Klientit për të menaxhuar këtu qasjen e ekipit të klientit.",
+    "goToClientPortal": "Shko te Portali i Klientit"
+  }
 }

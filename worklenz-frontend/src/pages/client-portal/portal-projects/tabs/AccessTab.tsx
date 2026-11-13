@@ -20,6 +20,7 @@ import {
 } from '@/components/client-portal/v2';
 import type { PortalProject, ProjectAccessUser } from '@/types/client-portal/v2';
 import { PortalLoader } from '@/components/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface AccessTabProps {
   project: PortalProject;
@@ -60,7 +61,10 @@ export const AccessTab = ({ project }: AccessTabProps) => {
             onChange={setPickedOrganizationId}
             placeholder={t('access.chooseClient', { defaultValue: 'Choose a client…' })}
             aria-label={t('access.chooseClient', { defaultValue: 'Choose a client…' })}
-            options={(organizationsQuery.data?.body?.items ?? []).map(item => ({ value: item.id, label: item.name }))}
+            options={(organizationsQuery.data?.body?.items ?? []).map(item => ({
+              value: item.id,
+              label: decodeHtmlEntities(item.name),
+            }))}
           />
           <Button
             type="primary"
@@ -70,11 +74,12 @@ export const AccessTab = ({ project }: AccessTabProps) => {
               if (!pickedOrganizationId) return;
               try {
                 await linkClient({ projectId: project.id, organizationId: pickedOrganizationId }).unwrap();
-                const name = organizationsQuery.data?.body?.items.find(item => item.id === pickedOrganizationId)?.name ?? '';
+                const name =
+                  organizationsQuery.data?.body?.items.find(item => item.id === pickedOrganizationId)?.name ?? '';
                 message.success(
                   t('access.linked', {
-                    project: project.name,
-                    client: name,
+                    project: decodeHtmlEntities(project.name),
+                    client: decodeHtmlEntities(name),
                     defaultValue: '{{project}} now belongs to {{client}}. Switch the Client Portal on to share it.',
                   })
                 );
@@ -119,7 +124,7 @@ export const AccessTab = ({ project }: AccessTabProps) => {
       message.success(
         t('access.assigned', {
           name: user?.name ?? '',
-          project: project.name,
+          project: decodeHtmlEntities(project.name),
           defaultValue: '{{name}} can now open {{project}}.',
         })
       );
@@ -135,7 +140,7 @@ export const AccessTab = ({ project }: AccessTabProps) => {
       message.success(
         t('access.removed', {
           name: removing.name,
-          project: project.name,
+          project: decodeHtmlEntities(project.name),
           defaultValue: '{{name}} lost access to {{project}} immediately.',
         })
       );
@@ -205,7 +210,7 @@ export const AccessTab = ({ project }: AccessTabProps) => {
         <Typography.Text type="secondary" style={{ flex: 1, minWidth: 200, fontSize: 12.5 }}>
           {t('access.summary', {
             count: access.assigned.length,
-            client: project.organization_name ?? '',
+            client: decodeHtmlEntities(project.organization_name ?? ''),
             defaultValue: '{{count}} user(s) at {{client}} can open this project.',
           })}
         </Typography.Text>
@@ -258,7 +263,7 @@ export const AccessTab = ({ project }: AccessTabProps) => {
         {removing &&
           t('access.removeBody', {
             name: removing.name,
-            project: project.name,
+            project: decodeHtmlEntities(project.name),
             defaultValue:
               '{{name}} can no longer open {{project}}. This applies on their next request. Their history stays, and you can assign them again at any time.',
           })}

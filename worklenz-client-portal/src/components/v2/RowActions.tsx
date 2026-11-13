@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Dropdown, MoreOutlined } from '@/shared/antd-imports';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 export interface RowAction {
   key: string;
@@ -36,7 +37,7 @@ export const RowActions = ({ name, actions, onSelect }: RowActionsProps) => {
         size="small"
         icon={<MoreOutlined />}
         onClick={event => event.stopPropagation()}
-        aria-label={`${t('projects.actionsFor', { defaultValue: 'Actions for' })} ${name}`}
+        aria-label={`${t('projects.actionsFor', { defaultValue: 'Actions for' })} ${decodeHtmlEntities(name)}`}
       />
     </Dropdown>
   );

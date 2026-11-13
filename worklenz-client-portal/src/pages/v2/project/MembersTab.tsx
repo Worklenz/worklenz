@@ -6,6 +6,7 @@ import { useGetProjectMembersQuery, useSetProjectMembersMutation } from '@/store
 import { useClientAccess } from '@/hooks/useClientAccess';
 import { EmptyState, LockedNote, QueryState, StatusTag, errorMessage } from '@/components/v2';
 import type { ClientProjectV2 } from '@/types/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 /** Who of the organization can open this project. Client Admins assign and remove Members and Viewers. */
 export const MembersTab: React.FC<{ project: ClientProjectV2 }> = ({ project }) => {
@@ -56,7 +57,7 @@ export const MembersTab: React.FC<{ project: ClientProjectV2 }> = ({ project }) 
             }
             aria-label={t('members.pick', { defaultValue: 'Choose people to add' })}
             optionFilterProp="label"
-            options={candidates.map(person => ({ value: person.id, label: `${person.name} (${person.email})` }))}
+            options={candidates.map(person => ({ value: person.id, label: `${decodeHtmlEntities(person.name)} (${person.email})` }))}
           />
           <Button type="primary" icon={<UserAddOutlined />} loading={isSaving} disabled={picked.length === 0} onClick={() => void add()}>
             {t('members.add', { defaultValue: 'Add' })}
@@ -82,14 +83,14 @@ export const MembersTab: React.FC<{ project: ClientProjectV2 }> = ({ project }) 
                     ? [
                         <Popconfirm
                           key="remove"
-                          title={t('members.removeConfirm', { name: person.name, defaultValue: 'Remove {{name}} from this project?' })}
+                          title={t('members.removeConfirm', { name: decodeHtmlEntities(person.name), defaultValue: 'Remove {{name}} from this project?' })}
                           okText={t('members.remove', { defaultValue: 'Remove' })}
                           cancelText={t('common.cancel', { defaultValue: 'Cancel' })}
                           onConfirm={() =>
                             save({ remove: [person.id] }, t('members.removed', { defaultValue: 'Removed from the project.' })).catch(() => undefined)
                           }
                         >
-                          <Button size="small" danger aria-label={`${t('members.remove', { defaultValue: 'Remove' })} ${person.name}`}>
+                          <Button size="small" danger aria-label={`${t('members.remove', { defaultValue: 'Remove' })} ${decodeHtmlEntities(person.name)}`}>
                             {t('members.remove', { defaultValue: 'Remove' })}
                           </Button>
                         </Popconfirm>,
@@ -98,10 +99,10 @@ export const MembersTab: React.FC<{ project: ClientProjectV2 }> = ({ project }) 
                 }
               >
                 <List.Item.Meta
-                  avatar={<Avatar>{person.name.charAt(0).toUpperCase()}</Avatar>}
+                  avatar={<Avatar>{decodeHtmlEntities(person.name).charAt(0).toUpperCase()}</Avatar>}
                   title={
                     <Flex gap={8} align="center" wrap="wrap">
-                      <Typography.Text strong>{person.name}</Typography.Text>
+                      <Typography.Text strong>{decodeHtmlEntities(person.name)}</Typography.Text>
                       <StatusTag kind="role" status={person.role} />
                       {person.isYou && <Typography.Text type="secondary">{t('members.you', { defaultValue: '(you)' })}</Typography.Text>}
                     </Flex>

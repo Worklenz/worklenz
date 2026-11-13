@@ -19,6 +19,7 @@ import type {
   ClientProjectsPageV2,
   ClientProjectsQuery,
   ClientTaskV2,
+  ClientThreadMessageReactionV2,
   ClientThreadV2,
   MentionOptionV2,
   ClientTimezoneV2,
@@ -109,6 +110,12 @@ export const clientPortalV2Api = clientPortalApi
       requestAccountDeletion: builder.mutation<AccountDeletionResult, { confirmation: string }>({
         query: body => ({ url: '/v2/me/account-deletion', method: 'POST', body }),
         transformResponse: unwrap<AccountDeletionResult>,
+      }),
+      // A Client Member or Viewer cannot delete their own account; they ask their project team to. Asking again
+      // within a day changes nothing (`sent: false`).
+      submitAccountDeletionRequest: builder.mutation<{ sent: boolean }, void>({
+        query: () => ({ url: '/v2/me/account-deletion-request', method: 'POST', body: {} }),
+        transformResponse: unwrap<{ sent: boolean }>,
       }),
       getTimezones: builder.query<ClientTimezoneV2[], void>({
         query: () => '/v2/timezones',
@@ -260,6 +267,16 @@ export const clientPortalV2Api = clientPortalApi
         invalidatesTags: ['V2Threads'],
       }),
 
+      toggleMessageReaction: builder.mutation<ClientThreadMessageReactionV2[], { messageId: string; emoji: string }>({
+        query: ({ messageId, emoji }) => ({
+          url: `/v2/threads/messages/${messageId}/reactions`,
+          method: 'POST',
+          body: { emoji },
+        }),
+        transformResponse: unwrap<ClientThreadMessageReactionV2[]>,
+        invalidatesTags: ['V2Threads'],
+      }),
+
       getMentionOptions: builder.query<MentionOptionV2[], string>({
         query: projectId => `/v2/projects/${projectId}/mention-options`,
         transformResponse: unwrap<MentionOptionV2[]>,
@@ -350,6 +367,7 @@ export const {
   useGetMeQuery,
   useUpdateMeMutation,
   useRequestAccountDeletionMutation,
+  useSubmitAccountDeletionRequestMutation,
   useGetTimezonesQuery,
   useGetDashboardV2Query,
   useGetProjectsV2Query,
@@ -377,6 +395,7 @@ export const {
   usePostCommentMutation,
   useEditMessageMutation,
   useDeleteMessageMutation,
+  useToggleMessageReactionMutation,
   useGetNotificationsV2Query,
   useSetNotificationReadMutation,
   useMarkAllNotificationsReadV2Mutation,

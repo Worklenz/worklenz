@@ -74,7 +74,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({
   const { token: themeToken } = theme.useToken();
   const tt = React.useCallback(
     (key: string, defaultValue: string, options?: Record<string, unknown>) =>
-      t(key, { defaultValue, ...(options || {}) }),
+      t(key, { defaultValue, ...options }),
     [t]
   );
 

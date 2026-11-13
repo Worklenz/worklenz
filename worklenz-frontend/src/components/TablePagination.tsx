@@ -8,6 +8,12 @@ export interface TablePaginationProps {
   onPageChange: (page: number, pageSize: number) => void;
   pageSizeOptions?: number[];
   rowsPerPageLabel: string;
+  navigationLabel: string;
+  firstPageLabel: string;
+  previousPageLabel: string;
+  nextPageLabel: string;
+  lastPageLabel: string;
+  renderDefaultSummary: (range: string, total: number) => React.ReactNode;
   /** Given the "start-end" range text and the total count, render the summary label. */
   renderSummary?: (range: string, total: number) => React.ReactNode;
   /**
@@ -16,6 +22,7 @@ export interface TablePaginationProps {
    */
   insetStart?: number;
   insetEnd?: number;
+  disabled?: boolean;
   /**
    * How the rows-per-page choice is rendered. `select` (default) is a native <select>;
    * `dropdown` is the button + menu used by Home > My Tasks, with its "start – end of total"
@@ -40,9 +47,16 @@ const TablePagination: React.FC<TablePaginationProps> = ({
   onPageChange,
   pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
   rowsPerPageLabel,
+  navigationLabel,
+  firstPageLabel,
+  previousPageLabel,
+  nextPageLabel,
+  lastPageLabel,
+  renderDefaultSummary,
   renderSummary,
   insetStart = DEFAULT_INSET,
   insetEnd = DEFAULT_INSET,
+  disabled = false,
   variant = 'select',
 }) => {
   const { token } = theme.useToken();
@@ -80,14 +94,14 @@ const TablePagination: React.FC<TablePaginationProps> = ({
     height: 28,
     border: `1px solid ${token.colorBorder}`,
     borderRadius: 5,
-    cursor: active ? 'pointer' : 'default',
+    cursor: disabled ? 'not-allowed' : active ? 'pointer' : 'default',
     fontSize: 12,
     fontWeight: active ? 600 : 400,
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     background: active ? '#1677ff' : 'transparent',
-    color: active ? '#fff' : token.colorText,
+    color: active ? '#fff' : disabled ? token.colorTextDisabled : token.colorText,
     transition: 'all .1s',
     padding: '0 4px',
   });
@@ -97,13 +111,13 @@ const TablePagination: React.FC<TablePaginationProps> = ({
     height: 28,
     border: `1px solid ${token.colorBorder}`,
     borderRadius: 5,
-    cursor: enabled ? 'pointer' : 'not-allowed',
+    cursor: enabled && !disabled ? 'pointer' : 'not-allowed',
     fontSize: 13,
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     background: 'transparent',
-    color: enabled ? token.colorText : token.colorTextDisabled,
+    color: enabled && !disabled ? token.colorText : token.colorTextDisabled,
     transition: 'all .1s',
     padding: '0 4px',
   });
@@ -133,14 +147,17 @@ const TablePagination: React.FC<TablePaginationProps> = ({
         <span style={{ fontSize: 12, color: token.colorTextSecondary }}>{rowsPerPageLabel}</span>
         {variant === 'dropdown' ? (
           <Dropdown
+            disabled={disabled}
             trigger={['click']}
             menu={{
-              items: pageSizeOptions.map(n => ({ key: String(n), label: String(n) })),
+              items: pageSizeOptions.map(n => ({ key: String(n), label: String(n), disabled })),
               selectedKeys: [String(pageSize)],
-              onClick: info => onPageChange(1, Number(info.key)),
+              onClick: info => {
+                if (!disabled) onPageChange(1, Number(info.key));
+              },
             }}
           >
-            <Button size="small" aria-label={`${rowsPerPageLabel} ${pageSize}`}>
+            <Button size="small" aria-label={`${rowsPerPageLabel} ${pageSize}`} disabled={disabled}>
               {pageSize} <CaretDownFilled />
             </Button>
           </Dropdown>
@@ -148,6 +165,7 @@ const TablePagination: React.FC<TablePaginationProps> = ({
           <select
             aria-label={rowsPerPageLabel}
             style={selectStyle}
+            disabled={disabled}
             value={pageSize}
             onChange={e => onPageChange(1, Number(e.target.value))}
           >
@@ -159,21 +177,26 @@ const TablePagination: React.FC<TablePaginationProps> = ({
           </select>
         )}
         <span style={{ fontSize: 12, color: token.colorTextSecondary, marginLeft: 4 }}>
-          {renderSummary ? renderSummary(range, total) : `${range} of ${total}`}
+          {renderSummary ? renderSummary(range, total) : renderDefaultSummary(range, total)}
         </span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap', rowGap: 4 }}>
+      <nav
+        aria-label={navigationLabel}
+        style={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap', rowGap: 4 }}
+      >
         <button
+          aria-label={firstPageLabel}
           style={navBtnStyle(safePage > 1)}
-          disabled={safePage === 1}
+          disabled={disabled || safePage === 1}
           onClick={() => onPageChange(1, pageSize)}
         >
           «
         </button>
         <button
+          aria-label={previousPageLabel}
           style={navBtnStyle(safePage > 1)}
-          disabled={safePage === 1}
+          disabled={disabled || safePage === 1}
           onClick={() => onPageChange(Math.max(1, safePage - 1), pageSize)}
         >
           ‹
@@ -182,32 +205,40 @@ const TablePagination: React.FC<TablePaginationProps> = ({
           typeof p === 'number' ? (
             <button
               key={i}
+              aria-current={p === safePage ? 'page' : undefined}
               style={pageBtnStyle(p === safePage)}
+              disabled={disabled}
               onClick={() => onPageChange(p, pageSize)}
             >
               {p}
             </button>
           ) : (
-            <span key={i} style={{ fontSize: 12, padding: '0 4px', opacity: 0.5 }}>
+            <span
+              key={i}
+              aria-hidden="true"
+              style={{ fontSize: 12, padding: '0 4px', opacity: 0.5 }}
+            >
               …
             </span>
           )
         )}
         <button
+          aria-label={nextPageLabel}
           style={navBtnStyle(safePage < totalPages)}
-          disabled={safePage === totalPages}
+          disabled={disabled || safePage === totalPages}
           onClick={() => onPageChange(Math.min(totalPages, safePage + 1), pageSize)}
         >
           ›
         </button>
         <button
+          aria-label={lastPageLabel}
           style={navBtnStyle(safePage < totalPages)}
-          disabled={safePage === totalPages}
+          disabled={disabled || safePage === totalPages}
           onClick={() => onPageChange(totalPages, pageSize)}
         >
           »
         </button>
-      </div>
+      </nav>
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { downloadPortalPdf } from '@/utils/download-portal-pdf';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Alert,
@@ -144,7 +145,9 @@ const CreateInvoiceModal = () => {
         : [
             {
               key: newKey(),
-              description: existing.projectName || existing.request?.service?.name || '',
+              description: decodeHtmlEntities(
+                existing.projectName || existing.request?.service?.name || ''
+              ),
               quantity: 1,
               rate: existing.subtotal || existing.amount,
             },
@@ -331,7 +334,7 @@ const CreateInvoiceModal = () => {
       );
       // Create & Download hands the person the file straight away.
       if (mode === 'sent' && result.body?.id) {
-        window.open(getInvoiceDownloadUrl(result.body.id), '_blank', 'noopener,noreferrer');
+        downloadPortalPdf(getInvoiceDownloadUrl(result.body.id), 'invoice.pdf', t('downloadFailed', { defaultValue: 'Failed to download the PDF. Please try again.' }));
       }
       // Started from a change request: go back to it, where the new invoice now shows under Linked work.
       navigate(changeRequestIdParam ? portalPaths.changeRequest(changeRequestIdParam) : INVOICES_PATH);
@@ -466,7 +469,7 @@ const CreateInvoiceModal = () => {
                       {existing?.changeRequest
                         ? `${existing.changeRequest.number} - ${existing.changeRequest.title}`
                         : existing?.request
-                          ? `${existing.request.requestNumber} - ${existing.request.service?.name ?? ''}`
+                          ? `${existing.request.requestNumber} - ${decodeHtmlEntities(existing.request.service?.name ?? '')}`
                           : t('standaloneInvoice', { defaultValue: 'Standalone invoice (no change request)' })}
                     </Typography.Text>
                   </Card>

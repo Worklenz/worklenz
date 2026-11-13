@@ -35,4 +35,6 @@
   "doingText": "Robię",
   "doneText": "Gotowe",
   "customDateRangeInvalidError": "Data zakończenia nie może być wcześniejsza niż data rozpoczęcia. Wybierz prawidłowy zakres."
+,
+  "rowsPerPage": "Wierszy na stronę:"
 }

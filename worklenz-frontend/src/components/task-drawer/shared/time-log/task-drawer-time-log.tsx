@@ -16,8 +16,8 @@ import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '@/hooks/useAuth';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
-import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import { formatSecondsToTimeString } from '@/utils/time-format.utils';
+import { groupContiguousOvernightLogs } from '@/utils/timeUtils';
 
 interface TaskDrawerTimeLogProps {
   t: TFunction;
@@ -67,8 +67,9 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0, isGuest = false }: TaskDrawe
       setLoading(true);
       const res = await taskTimeLogsApiService.getByTask(selectedTaskId);
       if (res.done) {
-        buildTotalTimeText(res.body.logs);
-        setTimeLoggedList(res.body.logs);
+        const grouped = groupContiguousOvernightLogs(res.body.logs || []);
+        buildTotalTimeText(grouped);
+        setTimeLoggedList(grouped);
         setSubtasksTotalSeconds(res.body.subtasks_total_time_spent || 0);
       }
     } catch (error) {

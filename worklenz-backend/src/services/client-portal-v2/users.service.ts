@@ -14,7 +14,8 @@ import {
   withTransaction,
 } from "../client-contacts-service";
 import { AuditActor, recordAuditEvent } from "./audit.service";
-import { badRequest, conflict, notFound } from "./errors";
+import { PortalError, badRequest, conflict, notFound } from "./errors";
+import { lockOrganization } from "./organization-lock";
 import { assignContactToProject, removeContactFromProject } from "./project-core";
 import { Queryable } from "./types";
 
@@ -23,12 +24,15 @@ import { Queryable } from "./types";
  * 1791298000000_client_users_v2_roles_and_status).
  *
  * Status is derived, not stored, so reactivating a user restores exactly the status they held:
- *   Deactivated  disabled_at is set, or the login itself is inactive or deleted by its owner
+ *   Deleted      the person deleted their own account (`client_users.deleted_at`). They lose access in
+ *                the client portal, but the profile stays here until the 30-day window ends, so staff
+ *                can see what happened. Staff cannot "reactivate" it; they restore the account or remove the user.
+ *   Deactivated  disabled_at is set, or the login itself is inactive
  *   Active       linked to an active login and activated (email verified)
  *   Invited      everything else; "Invite expired" is a flag on an Invited user
  */
 
-export type ClientUserStatus = "invited" | "active" | "deactivated";
+export type ClientUserStatus = "invited" | "active" | "deactivated" | "deleted";
 
 export interface ClientUserView {
   id: string;
@@ -40,6 +44,10 @@ export interface ClientUserView {
   job_title: string | null;
   role: ClientContactRole;
   status: ClientUserStatus;
+  /** When the person deleted their own account; set only for status `deleted`. */
+  account_deleted_at: string | null;
+  /** Until when staff can restore a self-deleted account; null once the window has ended. */
+  restorable_until: string | null;
   invite_expired: boolean;
   invite_not_sent: boolean;
   new_link_requested: boolean;
@@ -51,34 +59,64 @@ export interface ClientUserView {
 
 const STATUS_SQL = `
   CASE
+    WHEN cc.client_user_id IS NOT NULL AND cu.deleted_at IS NOT NULL THEN 'deleted'
     WHEN cc.disabled_at IS NOT NULL THEN 'deactivated'
-    WHEN cc.client_user_id IS NOT NULL AND (cu.status IS DISTINCT FROM 'active' OR cu.deleted_at IS NOT NULL) THEN 'deactivated'
+    WHEN cc.client_user_id IS NOT NULL AND cu.status IS DISTINCT FROM 'active' THEN 'deactivated'
     WHEN cc.client_user_id IS NOT NULL AND cc.activated_at IS NOT NULL THEN 'active'
     ELSE 'invited'
   END
 `;
 
-/** One row per client user of a team with everything the admin console shows. Parameter $1 = team id. */
+/**
+ * One row per client user of a team with everything the admin console shows. Parameter $1 = team id.
+ *
+ * Projects match what the user can open (see CONTACT_CAN_OPEN_PROJECT_SQL): a Client Admin opens every
+ * portal-enabled project of their organization without rows in client_contact_project_access, so the
+ * Clients table and Client Users table stay aligned when projects are linked at the organization level.
+ * Members and Viewers still list only their explicit assignments (including portal-off rows staff may
+ * keep for later), matching the Assign Projects modal.
+ */
 export const USER_VIEW_SQL = `
   SELECT cc.id, cc.client_id, cc.name, cc.email, cc.phone, cc.job_title, cc.role,
          cc.email_verified_at, cc.new_link_requested_at, cc.created_at,
          COALESCE(NULLIF(TRIM(c.company_name), ''), c.name) AS organization_name,
          cu.last_login AS last_access_at,
          inv.created_at AS invited_at,
+         cu.deleted_at AS account_deleted_at,
+         (SELECT l.scheduled_deletion_date
+            FROM client_user_deletion_logs l
+           WHERE l.client_user_id = cu.id AND NOT l.deletion_completed AND l.scheduled_deletion_date > NOW()
+           ORDER BY l.requested_at DESC
+           LIMIT 1) AS restorable_until,
          (${STATUS_SQL}) AS status_key,
          (inv.id IS NOT NULL AND inv.status = 'pending' AND inv.expires_at <= NOW()) AS invitation_lapsed,
          (inv.id IS NULL) AS no_invitation,
-         COALESCE((
-           SELECT json_agg(json_build_object('id', p.id, 'name', p.name) ORDER BY p.name)
-             FROM client_contact_project_access a
-             JOIN projects p ON p.id = a.project_id AND p.client_id = cc.client_id
-            WHERE a.client_contact_id = cc.id
-         ), '[]'::json) AS projects
+         COALESCE(
+           CASE
+             WHEN cc.role = 'admin' THEN (
+               SELECT json_agg(json_build_object('id', p.id, 'name', p.name) ORDER BY p.name)
+                 FROM projects p
+                 JOIN project_client_settings pcs
+                   ON pcs.project_id = p.id AND pcs.portal_enabled IS TRUE
+                WHERE p.client_id = cc.client_id AND p.team_id = cc.team_id
+             )
+             ELSE (
+               SELECT json_agg(json_build_object('id', p.id, 'name', p.name) ORDER BY p.name)
+                 FROM client_contact_project_access a
+                 JOIN projects p ON p.id = a.project_id AND p.client_id = cc.client_id
+                WHERE a.client_contact_id = cc.id
+             )
+           END,
+           '[]'::json
+         ) AS projects
     FROM client_contacts cc
     JOIN clients c ON c.id = cc.client_id AND c.deleted_at IS NULL
     ${CONTACT_STATE_JOINS_SQL}
    WHERE cc.team_id = $1
 `;
+
+const toIsoOrNull = (value: unknown): string | null =>
+  value instanceof Date ? value.toISOString() : typeof value === "string" ? value : null;
 
 export function mapUserRow(row: any): ClientUserView {
   const status = row.status_key as ClientUserStatus;
@@ -93,6 +131,8 @@ export function mapUserRow(row: any): ClientUserView {
     job_title: row.job_title ?? null,
     role: row.role,
     status,
+    account_deleted_at: status === "deleted" ? toIsoOrNull(row.account_deleted_at) : null,
+    restorable_until: status === "deleted" ? toIsoOrNull(row.restorable_until) : null,
     invite_expired: invited && row.invitation_lapsed === true,
     invite_not_sent: invited && row.no_invitation === true,
     new_link_requested: invited && row.new_link_requested_at != null,
@@ -153,7 +193,7 @@ export async function listClientUsers(teamId: string, params: ClientUsersParams)
   const statuses = splitList(params.status);
   if (statuses.length) {
     const plainStatuses = statuses.filter(status => status !== "invite_expired");
-    if (!plainStatuses.every(status => ["invited", "active", "deactivated"].includes(status))) {
+    if (!plainStatuses.every(status => ["invited", "active", "deactivated", "deleted"].includes(status))) {
       throw badRequest("Invalid status filter");
     }
     const clauses: string[] = [];
@@ -237,6 +277,25 @@ async function getUserRef(q: Queryable, teamId: string, userId: string): Promise
 }
 
 /**
+ * The user, read after locking their organization. Changes that depend on who else is an Active Client
+ * Admin or approver take this lock first (see organization-lock.ts), then read the user again, so a
+ * concurrent removal cannot slip between the check and the write. The first read only finds the organization.
+ */
+async function loadLockedUser(
+  q: Queryable,
+  teamId: string,
+  userId: string,
+  onlyOrganizationId?: string
+): Promise<UserRef> {
+  const found = await getUserRef(q, teamId, userId);
+  // Someone from another organization is indistinguishable from someone who does not exist, and their
+  // organization is never locked on a stranger's behalf.
+  if (onlyOrganizationId && found.clientId !== onlyOrganizationId) throw notFound("User");
+  await lockOrganization(q, teamId, found.clientId);
+  return getUserRef(q, teamId, userId);
+}
+
+/**
  * Whether taking `userId` out of (or demoting) its organization's Active Client Admins would leave
  * the organization with none. An organization with no Client Admin cannot be the approver of an
  * approval, so staff must confirm before it happens.
@@ -288,8 +347,10 @@ async function assertNoOrphanedApprovals(
           SELECT 1
             FROM client_portal_approval_approvers other
             JOIN client_contacts oc ON oc.id = other.contact_id
+            JOIN client_users ou ON ou.id = oc.client_user_id
            WHERE other.approval_id = a.id AND other.contact_id <> $2
-             AND oc.disabled_at IS NULL AND oc.activated_at IS NOT NULL)`,
+             AND oc.disabled_at IS NULL AND oc.activated_at IS NOT NULL
+             AND ou.status = 'active' AND ou.deleted_at IS NULL)`,
     [teamId, user.id]
   );
   if (orphaned.rows.length === 0) return;
@@ -317,12 +378,15 @@ export interface UpdateUserInput {
   job_title?: string | null;
   role?: string;
   confirm_last_admin?: boolean;
+  confirm_pending_approvals?: boolean;
 }
 
 /**
  * Edits name, email, phone, job title and role. A role change writes `Role changed` with the from
  * and to roles and applies on the user's next authorization check, not only at next sign-in. The
  * email cannot change once the person has a login (it is their login and invitation address).
+ * Demoting a Client Admin is held to the same rules as removing one: the last Client Admin and the
+ * sole approver of an awaiting approval both need an explicit confirmation.
  */
 export async function updateClientUser(input: {
   teamId: string;
@@ -333,7 +397,7 @@ export async function updateClientUser(input: {
   const { teamId, userId, actor, patch } = input;
 
   await withTransaction(async tx => {
-    const user = await getUserRef(tx, teamId, userId);
+    const user = await loadLockedUser(tx, teamId, userId);
     const sets: string[] = [];
     const values: unknown[] = [userId, teamId];
     const set = (column: string, value: unknown) => {
@@ -369,7 +433,10 @@ export async function updateClientUser(input: {
     let roleChanged: { from: string; to: ClientContactRole } | null = null;
     if (patch.role !== undefined && patch.role !== user.role) {
       if (!isClientContactRole(patch.role)) throw badRequest("Role must be admin, member or viewer");
-      if (user.role === "admin") await assertNotLastClientAdmin(tx, teamId, user, patch.confirm_last_admin);
+      if (user.role === "admin") {
+        await assertNotLastClientAdmin(tx, teamId, user, patch.confirm_last_admin);
+        await assertNoOrphanedApprovals(tx, teamId, user, patch.confirm_pending_approvals, actor);
+      }
       set("role", patch.role);
       roleChanged = { from: user.role, to: patch.role };
     }
@@ -499,15 +566,18 @@ export async function deactivateClientUser(input: {
   confirmPendingApprovals?: boolean;
 }): Promise<ClientUserView> {
   await withTransaction(async tx => {
-    const user = await getUserRef(tx, input.teamId, input.userId);
+    const user = await loadLockedUser(tx, input.teamId, input.userId);
     if (user.status === "deactivated") return;
+    if (user.status === "deleted") throw accountDeletedConflict(user);
     await assertNotLastClientAdmin(tx, input.teamId, user, input.confirmLastAdmin);
     await assertNoOrphanedApprovals(tx, input.teamId, user, input.confirmPendingApprovals, input.actor);
 
-    await tx.query(
+    const updated = await tx.query(
       `UPDATE client_contacts SET disabled_at = COALESCE(disabled_at, NOW()), updated_at = NOW() WHERE id = $1 AND team_id = $2`,
       [input.userId, input.teamId]
     );
+    // Someone else removed the user between the read and the write: nothing to record.
+    if (updated.rowCount === 0) throw notFound("Client user");
     await recordAuditEvent(tx, {
       teamId: input.teamId,
       event: "Client deactivated",
@@ -529,11 +599,14 @@ export async function reactivateClientUser(input: {
   actor: AuditActor;
 }): Promise<ClientUserView> {
   await withTransaction(async tx => {
-    const user = await getUserRef(tx, input.teamId, input.userId);
-    await tx.query(
+    const user = await loadLockedUser(tx, input.teamId, input.userId);
+    // Clearing `disabled_at` cannot undo a deleted account; that has its own restore.
+    if (user.status === "deleted") throw accountDeletedConflict(user);
+    const updated = await tx.query(
       `UPDATE client_contacts SET disabled_at = NULL, updated_at = NOW() WHERE id = $1 AND team_id = $2`,
       [input.userId, input.teamId]
     );
+    if (updated.rowCount === 0) throw notFound("Client user");
     await recordAuditEvent(tx, {
       teamId: input.teamId,
       event: "Client activated",
@@ -548,10 +621,89 @@ export async function reactivateClientUser(input: {
   return getClientUser(db, input.teamId, input.userId);
 }
 
+const accountDeletedConflict = (user: UserRef): PortalError =>
+  conflict(
+    `${user.name} deleted their own account. Restore the account instead, or remove the user.`,
+    "ACCOUNT_DELETED"
+  );
+
+export interface RemoveContactInput {
+  teamId: string;
+  userId: string;
+  /** Who removes: staff (`side: "internal"`) or a Client Admin (`side: "client"`). */
+  actor: AuditActor;
+  confirmLastAdmin?: boolean;
+  confirmPendingApprovals?: boolean;
+  /** A Client Admin may only remove people of their own organization; anyone else answers 404. */
+  onlyOrganizationId?: string;
+  /**
+   * Refuse a user staff deactivated or that deleted their own account. A Client Admin must not undo a
+   * staff decision, and removing a self-deleted person would erase the profile staff keep during the
+   * retention window.
+   */
+  refuseStaffManaged?: boolean;
+}
+
 /**
- * Removes a user and their project assignments. Their past comments, approvals and audit events
- * stay in history because those keep a snapshot of the name instead of a hard dependency.
+ * The one way to remove a client user, for staff and for a Client Admin alike, so both are held to the
+ * same rules: the organization is locked first, the last Client Admin and the sole approver of an
+ * awaiting approval are protected, the person's link to this portal is dropped with them, and the
+ * removal is audited once, whoever got there first. Their comments, approvals and audit events stay in
+ * history because those keep a snapshot of the name instead of a hard dependency.
+ *
+ * Call inside a transaction.
  */
+export async function removeContact(tx: Queryable, input: RemoveContactInput): Promise<void> {
+  const user = await loadLockedUser(tx, input.teamId, input.userId, input.onlyOrganizationId);
+
+  if (input.refuseStaffManaged) {
+    if (user.status === "deactivated") {
+      throw conflict(
+        `${user.name}'s access was deactivated by your project team. Ask them to remove or reactivate it.`,
+        "DEACTIVATED_BY_STAFF"
+      );
+    }
+    if (user.status === "deleted") {
+      throw conflict(`${user.name} deleted their own account.`, "ACCOUNT_DELETED");
+    }
+  }
+
+  await assertNotLastClientAdmin(tx, input.teamId, user, input.confirmLastAdmin);
+  await assertNoOrphanedApprovals(tx, input.teamId, user, input.confirmPendingApprovals, input.actor);
+
+  const removed = await tx.query(`DELETE FROM client_contacts WHERE id = $1 AND team_id = $2`, [
+    input.userId,
+    input.teamId,
+  ]);
+  // Already removed by someone who got there first: no second audit entry, no second set of history notes.
+  if (removed.rowCount === 0) throw new PortalError(404, "This user has already been removed.", "ALREADY_REMOVED");
+
+  // The login and its link to this portal would otherwise outlive the contact. Drop the link when this
+  // was the person's last company user here, so every route (legacy and refresh included) stops at once.
+  if (user.loginId) {
+    await tx.query(
+      `DELETE FROM client_user_organizations cuo
+        WHERE cuo.client_user_id = $1 AND cuo.team_id = $2 AND cuo.client_id = $3
+          AND NOT EXISTS (
+            SELECT 1 FROM client_contacts cc
+             WHERE cc.client_user_id = $1 AND cc.team_id = $2 AND cc.client_id = $3)`,
+      [user.loginId, input.teamId, user.clientId]
+    );
+  }
+  await recordAuditEvent(tx, {
+    teamId: input.teamId,
+    event: "Client removed",
+    actor: input.actor,
+    clientId: user.clientId,
+    clientName: user.organizationName,
+    targetType: "client_user",
+    targetId: user.id,
+    targetLabel: `${user.name} · ${user.organizationName}`,
+    metadata: { role: user.role, removed_by: input.actor.side },
+  });
+}
+
+/** Staff removal of a client user. See `removeContact`. */
 export async function removeClientUser(input: {
   teamId: string;
   userId: string;
@@ -559,27 +711,62 @@ export async function removeClientUser(input: {
   confirmLastAdmin?: boolean;
   confirmPendingApprovals?: boolean;
 }): Promise<void> {
-  await withTransaction(async tx => {
-    const user = await getUserRef(tx, input.teamId, input.userId);
-    await assertNotLastClientAdmin(tx, input.teamId, user, input.confirmLastAdmin);
-    await assertNoOrphanedApprovals(tx, input.teamId, user, input.confirmPendingApprovals, input.actor);
+  await withTransaction(tx => removeContact(tx, input));
+}
 
-    await tx.query(`DELETE FROM client_contacts WHERE id = $1 AND team_id = $2`, [input.userId, input.teamId]);
-    // The login and its link to this portal would otherwise outlive the contact. Drop the link when this
-    // was the person's last company user here, so every route (legacy and refresh included) stops at once.
-    if (user.loginId) {
-      await tx.query(
-        `DELETE FROM client_user_organizations cuo
-          WHERE cuo.client_user_id = $1 AND cuo.team_id = $2 AND cuo.client_id = $3
-            AND NOT EXISTS (
-              SELECT 1 FROM client_contacts cc
-               WHERE cc.client_user_id = $1 AND cc.team_id = $2 AND cc.client_id = $3)`,
-        [user.loginId, input.teamId, user.clientId]
+/**
+ * Restores a client user who deleted their own account, inside the 30-day window, with their profile,
+ * role, project access and history. This reverses a decision the person made themselves, so it is meant
+ * for when they ask staff to bring the account back.
+ *
+ * The login is shared by every portal the person belongs to. Restoring it from one workspace is only
+ * allowed when this is the only workspace they are in; otherwise the person must ask Worklenz support,
+ * so one workspace can never undo a deletion that also concerns another one.
+ */
+export async function restoreClientAccount(input: {
+  teamId: string;
+  userId: string;
+  actor: AuditActor;
+}): Promise<ClientUserView> {
+  await withTransaction(async tx => {
+    const user = await loadLockedUser(tx, input.teamId, input.userId);
+    if (user.status !== "deleted" || !user.loginId) {
+      throw conflict(`${user.name} has not deleted their account.`, "NOT_DELETED");
+    }
+
+    const scheduled = await tx.query(
+      `SELECT scheduled_deletion_date
+         FROM client_user_deletion_logs
+        WHERE client_user_id = $1 AND NOT deletion_completed
+        ORDER BY requested_at DESC
+        LIMIT 1
+        FOR UPDATE`,
+      [user.loginId]
+    );
+    const window = scheduled.rows[0]?.scheduled_deletion_date as Date | undefined;
+    if (!window || window.getTime() <= Date.now()) {
+      throw new PortalError(410, "The 30-day window to restore this account has ended.", "RETENTION_EXPIRED");
+    }
+
+    const memberships = await tx.query(
+      `SELECT COUNT(DISTINCT team_id)::int AS teams FROM client_contacts WHERE client_user_id = $1`,
+      [user.loginId]
+    );
+    if ((memberships.rows[0]?.teams ?? 0) > 1) {
+      throw conflict(
+        `${user.name} also belongs to other portals, so this account can only be restored by Worklenz support.`,
+        "SHARED_LOGIN"
       );
     }
+
+    await tx.query(`UPDATE client_users SET deleted_at = NULL, updated_at = NOW() WHERE id = $1`, [user.loginId]);
+    // The log is the purge queue: a restored account must leave it, or support would still purge it.
+    await tx.query(`DELETE FROM client_user_deletion_logs WHERE client_user_id = $1 AND NOT deletion_completed`, [
+      user.loginId,
+    ]);
     await recordAuditEvent(tx, {
       teamId: input.teamId,
-      event: "Client removed",
+      event: "Client account restored",
       actor: input.actor,
       clientId: user.clientId,
       clientName: user.organizationName,
@@ -588,5 +775,5 @@ export async function removeClientUser(input: {
       targetLabel: `${user.name} · ${user.organizationName}`,
     });
   });
+  return getClientUser(db, input.teamId, input.userId);
 }
-

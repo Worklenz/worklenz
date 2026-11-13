@@ -24,7 +24,7 @@ import {
 } from '@/api/projects/projects.v1.api.service';
 
 interface ActionButtonsProps {
-  t: (key: string) => string;
+  t: (key: string, options?: { defaultValue: string }) => string;
   record: IProjectViewModel;
   dispatch: AppDispatch;
   isOwnerOrAdmin: boolean;
@@ -96,7 +96,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
 
   return (
     <Space size={4} onClick={e => e.stopPropagation()}>
-      <Tooltip 
+      <Tooltip
         title={
           isGuest
             ? t('settingsDisabledForGuest', { defaultValue: 'Settings Disabled For Guest' })

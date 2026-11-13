@@ -205,7 +205,9 @@ const publicRoutes = [...rootRoutes, ...authRoutes, notFoundRoute];
 
 // Apply combined guard to main routes that require both auth and setup completion
 const protectedMainRoutes = wrapRoutes(mainRoutes, AuthAndSetupGuard);
-const adminRoutes = wrapRoutes(reportingRoutes, AdminGuard);
+// Reporting requires auth + setup. All reporting surfaces are Owner/Admin only
+// (Members, Guests, and Team Leads are excluded; Team Leads use my-team-reports).
+const adminRoutes = wrapRoutes(reportingRoutes, AuthAndSetupGuard);
 const adminclientPortalRoutes = wrapRoutes(clientPortalRoutes, AdminGuard);
 const setupRoutes = wrapRoutes([accountSetupRoute], AuthGuard);
 

@@ -5,6 +5,7 @@
   "deleteConfirmationCancel": "Cancelar",
   "searchPlaceholder": "Pesquisar por nome",
   "createJobTitleButton": "Criar Título de Emprego",
+  "createJobTitleButtonText": "Criar um cargo",
   "pinTooltip": "Clique para fixar isso no menu principal",
   "createJobTitleDrawerTitle": "Criar Título de Emprego",
   "updateJobTitleDrawerTitle": "Atualizar Título de Emprego",
@@ -17,6 +18,9 @@
   "createJobTitleErrorMessage": "Falha ao criar título de emprego!",
   "updateJobTitleSuccessMessage": "Atualizar título de emprego com sucesso!",
   "updateJobTitleErrorMessage": "Falha ao atualizar título de emprego!",
+  "paginationTotal": "{{start}}-{{end}} de {{total}} itens",
+  "editTooltip": "Editar",
+  "deleteTooltip": "Excluir",
   "fetchJobTitleErrorMessage": "Falha ao buscar o cargo. Por favor, tente novamente.",
   "pageTitle": "Gerenciar cargos"
 }

@@ -30,8 +30,10 @@ import {
   IClientPortalSettings,
 } from '@/types/settings/client-portal-settings.types';
 import type { PortalSettingsV2 } from '@/types/client-portal/v2';
+import { validatePhoneNumber } from '@/utils/validatePhoneNumber';
 import { CompanyDetailsSection } from './sections/CompanyDetailsSection';
 import { BrandingSection } from './sections/BrandingSection';
+import { LogoCropModal } from './sections/LogoCropModal';
 import { InvoiceTemplateSection } from './sections/InvoiceTemplateSection';
 import { SharingVisibilitySection } from './sections/SharingVisibilitySection';
 import { ClientRolesSection } from './sections/ClientRolesSection';
@@ -80,10 +82,10 @@ const PERMISSION_SWITCHES: ((settings: PortalSettingsV2) => boolean)[] = [
 const ClientPortalSettings = () => {
   const { t } = useTranslation('client-portal-settings');
   const { t: tV2 } = useTranslation('client-portal-v2-settings');
-  const authService = useAuthService();
-  const canBrand = canUseFeature(authService.getCurrentSession(), 'client_portal_branding');
   const { token } = theme.useToken();
   const { trackMixpanelEvent } = useMixpanelTracking();
+  const currentSession = useAuthService().getCurrentSession();
+  const canBrand = canUseFeature(currentSession, 'client_portal_branding');
 
   const [section, setSection] = useState<SectionKey>('company');
   const [loading, setLoading] = useState(true);
@@ -100,6 +102,8 @@ const ClientPortalSettings = () => {
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [pendingLogoUrl, setPendingLogoUrl] = useState<string | null>(null);
   const [pendingLogoRemoval, setPendingLogoRemoval] = useState(false);
+  const [cropRawSrc, setCropRawSrc] = useState<string | null>(null);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
 
   // v2 settings: the server copy comes from RTK Query, and `draftV2` holds the user's edits.
   // `null` means "no edits yet", so a background refetch can never overwrite typed changes.
@@ -204,10 +208,45 @@ const ClientPortalSettings = () => {
       message.error(t('logoFileTooLargeError', { defaultValue: 'Logo must be smaller than 2MB.' }));
       return;
     }
-    if (pendingLogoUrl) URL.revokeObjectURL(pendingLogoUrl);
-    setPendingLogoFile(file);
-    setPendingLogoUrl(URL.createObjectURL(file));
-    setPendingLogoRemoval(false);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropRawSrc(reader.result as string);
+      setIsCropModalOpen(true);
+    };
+    reader.onerror = () => {
+      message.error(t('logoUploadFailedError', { defaultValue: 'Failed to upload logo.' }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropDone = async (croppedBase64: string) => {
+    try {
+      const res = await fetch(croppedBase64);
+      const blob = await res.blob();
+      const croppedFile = new File([blob], 'logo-cropped.png', { type: 'image/png' });
+
+      if (croppedFile.size / 1024 / 1024 >= 2) {
+        message.error(t('logoFileTooLargeError', { defaultValue: 'Logo must be smaller than 2MB.' }));
+        setIsCropModalOpen(false);
+        setCropRawSrc(null);
+        return;
+      }
+
+      if (pendingLogoUrl) URL.revokeObjectURL(pendingLogoUrl);
+      setPendingLogoFile(croppedFile);
+      setPendingLogoUrl(URL.createObjectURL(croppedFile));
+      setPendingLogoRemoval(false);
+      setIsCropModalOpen(false);
+      setCropRawSrc(null);
+    } catch (err) {
+      console.error('Failed to process cropped logo', err);
+      message.error(t('logoUploadFailedError', { defaultValue: 'Failed to upload logo.' }));
+    }
+  };
+
+  const handleCropCancel = () => {
+    setIsCropModalOpen(false);
+    setCropRawSrc(null);
   };
 
   const handleStageLogoRemoval = () => {
@@ -235,9 +274,11 @@ const ClientPortalSettings = () => {
       if (response.done) {
         setCustomLogo(null);
         setIsLogoSynced(true);
+        message.success(t('settingsSavedText', { defaultValue: 'Settings saved successfully' }));
       }
     } catch (error) {
       console.error('Failed to reset to organization logo:', error);
+      message.error(t('settingsSaveFailedError', { defaultValue: 'Failed to save settings.' }));
     } finally {
       setSaving(false);
     }
@@ -248,6 +289,8 @@ const ClientPortalSettings = () => {
     setPendingLogoFile(null);
     setPendingLogoUrl(null);
     setPendingLogoRemoval(false);
+    setCropRawSrc(null);
+    setIsCropModalOpen(false);
   };
 
   const hasLegacyChanges = useMemo(
@@ -340,6 +383,17 @@ const ClientPortalSettings = () => {
   };
 
   const handleSaveChanges = async () => {
+    if (hasLegacyChanges && settings.contact_phone && !validatePhoneNumber(settings.contact_phone)) {
+      setSection('company');
+      message.error(
+        t('invalidPhoneNumberFormat', {
+          defaultValue:
+            'Invalid phone number format. Use international format (e.g., +1-234-567-8900)',
+        })
+      );
+      return;
+    }
+
     try {
       setSaving(true);
       if (hasLegacyChanges && !(await saveLegacySettings())) return;
@@ -536,6 +590,14 @@ const ClientPortalSettings = () => {
           )}
         </div>
       </div>
+
+      <LogoCropModal
+        open={isCropModalOpen}
+        imageSrc={cropRawSrc}
+        aspect={1}
+        onCancel={handleCropCancel}
+        onCropComplete={handleCropDone}
+      />
     </div>
   );
 };

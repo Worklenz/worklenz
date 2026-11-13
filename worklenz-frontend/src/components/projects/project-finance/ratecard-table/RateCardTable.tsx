@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Avatar,
   Button,
@@ -10,6 +10,8 @@ import {
   Flex,
   InputRef,
   DeleteOutlined,
+  PlusOutlined,
+  theme,
 } from '@/shared/antd-imports';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +19,8 @@ import CustomAvatar from '@/components/CustomAvatar';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { JobRoleType, RatecardType } from '@/types/project/ratecard.types';
+import { IJobTitle } from '@/types/job.types';
+import CreateJobTitleModal from '@/components/common/create-job-title-modal/CreateJobTitleModal';
 import {
   assignMemberToRateCardRole,
   deleteProjectRateCardRoleById,
@@ -56,11 +60,23 @@ const RateCardTable: React.FC = () => {
   const { project } = useAppSelector(state => state.projectReducer);
   const hasEditPermission = canEditRateCard(currentSession, project);
   const canAddMembers = canAddMembersToRateCard(currentSession, project);
+  const canCreateJobTitle = useMemo(() => {
+    const role = currentSession?.role_name?.toLowerCase();
+    return Boolean(
+      currentSession?.owner ||
+      currentSession?.is_admin ||
+      role === 'owner' ||
+      role === 'admin'
+    );
+  }, [currentSession]);
 
   // Local state for editing
+  const { token } = theme.useToken();
   const [roles, setRoles] = useState<JobRoleType[]>(rolesRedux);
   const [addingRow, setAddingRow] = useState<boolean>(false);
   const [jobTitles, setJobTitles] = useState<RatecardType[]>([]);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [jobTitleSearchText, setJobTitleSearchText] = useState('');
   const [members, setMembers] = useState<IProjectMemberViewModel[]>([]);
   const [isLoadingMembers, setIsLoading] = useState(false);
   const [focusRateIndex, setFocusRateIndex] = useState<number | null>(null);
@@ -150,8 +166,11 @@ const RateCardTable: React.FC = () => {
   };
 
   // In handleSelectJobTitle, after successful insert, update the rate if needed
-  const handleSelectJobTitle = async (jobTitleId: string) => {
-    const jobTitle = jobTitles.find(jt => jt.id === jobTitleId);
+  const handleSelectJobTitle = async (
+    jobTitleId: string,
+    knownJobTitle?: RatecardType | IJobTitle
+  ) => {
+    const jobTitle = knownJobTitle || jobTitles.find(jt => jt.id === jobTitleId);
     if (!jobTitle || !projectId) return;
     if (roles.some(r => r.job_title_id === jobTitleId)) return;
 
@@ -271,15 +290,51 @@ const RateCardTable: React.FC = () => {
               showSearch
               autoFocus
               placeholder={t('selectJobTitle')}
-              style={{ minWidth: 150 }}
+              style={{ width: 200, minWidth: 200 }}
               value={record.job_title_id || undefined}
-              onChange={handleSelectJobTitle}
-              onBlur={() => setAddingRow(false)}
-              filterOption={(input, option) =>
-                ((option?.children as unknown as string) || '')
+              onChange={val => handleSelectJobTitle(val)}
+              onSearch={val => setJobTitleSearchText(val)}
+              onBlur={() => {
+                if (!isCreateModalOpen) {
+                  setAddingRow(false);
+                }
+              }}
+              filterOption={(input, option: any) =>
+                String(option?.children || '')
                   .toLowerCase()
                   .includes(input.toLowerCase())
               }
+              popupRender={menu => (
+                <div>
+                  {canCreateJobTitle && (
+                    <div
+                      style={{
+                        padding: '4px 8px',
+                        borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                      }}
+                    >
+                      <Button
+                        type="text"
+                        icon={<PlusOutlined />}
+                        style={{
+                          width: '100%',
+                          textAlign: 'left',
+                          display: 'flex',
+                          alignItems: 'center',
+                          color: token.colorPrimary,
+                          fontWeight: 500,
+                          height: 32,
+                        }}
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => setIsCreateModalOpen(true)}
+                      >
+                        {t('createJobTitleButtonText', { defaultValue: 'Create a Job Title' })}
+                      </Button>
+                    </div>
+                  )}
+                  {menu}
+                </div>
+              )}
             >
               {jobTitles
                 .filter(jt => !roles.some(role => role.job_title_id === jt.id))
@@ -384,44 +439,59 @@ const RateCardTable: React.FC = () => {
     },
   ];
 
-  return (
-    <Table
-      dataSource={
-        addingRow
-          ? [
-              ...roles,
-              {
-                job_title_id: '',
-                jobtitle: '',
-                rate: 0,
-                members: [],
-              },
-            ]
-          : roles
-      }
-      columns={columns}
-      rowKey={(record, idx) => record.id || record.job_title_id || String(idx)}
-      pagination={false}
-      loading={isLoading || isLoadingMembers}
-      footer={() => (
-        <Flex gap={0}>
-          {hasEditPermission && (
-            <Button type="dashed" onClick={handleAddRole} style={{ width: 'fit-content' }}>
-              {t('addRoleButton')}
-            </Button>
+    return (
+      <>
+        <Table
+          dataSource={
+            addingRow
+              ? [
+                  ...roles,
+                  {
+                    job_title_id: '',
+                    jobtitle: '',
+                    rate: 0,
+                    members: [],
+                  },
+                ]
+              : roles
+          }
+          columns={columns}
+          rowKey={(record, idx) => record.id || record.job_title_id || String(idx)}
+          pagination={false}
+          loading={isLoading || isLoadingMembers}
+          footer={() => (
+            <Flex gap={0}>
+              {hasEditPermission && (
+                <Button type="dashed" onClick={handleAddRole} style={{ width: 'fit-content' }}>
+                  {t('addRoleButton')}
+                </Button>
+              )}
+            </Flex>
           )}
-          {/* <Button
-            type="primary"
-            icon={<SaveOutlined />}
-            onClick={handleSaveAll}
-            disabled={roles.length === 0}
-          >
-            {t('saveButton') || 'Save'}
-          </Button> */}
-        </Flex>
-      )}
-    />
-  );
+        />
+        <CreateJobTitleModal
+          open={isCreateModalOpen && canCreateJobTitle}
+          initialName={jobTitleSearchText}
+          onClose={() => {
+            setIsCreateModalOpen(false);
+            setJobTitleSearchText('');
+          }}
+          onCancel={() => {
+            setAddingRow(false);
+          }}
+          onSuccess={async (newJobTitle: IJobTitle) => {
+            if (!newJobTitle?.id) return;
+            setJobTitles(prev => {
+              if (prev.some(j => j.id === newJobTitle.id)) return prev;
+              return [...prev, newJobTitle as RatecardType];
+            });
+            setIsCreateModalOpen(false);
+            setJobTitleSearchText('');
+            await handleSelectJobTitle(newJobTitle.id, newJobTitle);
+          }}
+        />
+      </>
+    );
 };
 
 export default RateCardTable;

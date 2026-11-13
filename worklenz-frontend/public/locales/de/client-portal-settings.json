@@ -93,6 +93,14 @@
   "invalidLogoFileTypeError": "Bitte wählen Sie eine Bilddatei aus.",
   "logoFileTooLargeError": "Das Logo darf höchstens 2 MB groß sein.",
   "logoUploadFailedError": "Logo konnte nicht hochgeladen werden.",
+  "cropLogoModalTitle": "Logo zuschneiden",
+  "cropApplyButton": "Zuschnitt anwenden",
+  "cropZoomLabel": "Zoomstufe",
+  "cropInstructionText": "Ecken oder Seiten zum Anpassen ziehen · Zum Neupositionieren verschieben",
+  "cropInstructionLockedText": "Zum Neupositionieren verschieben",
+  "cropAspectLabel": "Seitenverhältnis",
+  "cropAspectSquare": "1:1 Quadratisch",
+  "cropAspect250x100": "250x100",
   "portalLogoLabel": "Portal-Logo",
   "portalTitleLabel": "Portal-Titel",
   "portalTitlePlaceholder": "z.B. Acme Kunden-Hub",
@@ -200,5 +208,6 @@
     "defaultStatusesLabel": "Standardstatus",
     "defaultStatusesHint": "Diese existieren immer und können nicht entfernt werden.",
     "customStatusesLabel": "Benutzerdefinierte Status"
-  }
+  },
+  "defaultInvoiceFooter": "Vielen Dank für Ihr Vertrauen. Bei Fragen zu dieser Rechnung kontaktieren Sie uns bitte über die oben genannten Angaben."
 }

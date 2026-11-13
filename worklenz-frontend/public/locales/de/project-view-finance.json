@@ -43,6 +43,7 @@
   "labourHoursColumn": "Arbeitszeiten",
   "actions": "Aktionen",
   "selectJobTitle": "Wählen Sie Berufsbezeichnung",
+  "createJobTitleButtonText": "Berufsbezeichnung erstellen",
   "ratecardsPluralText": "Preislistenvorlagen",
   "deleteConfirm": "Bist du sicher ?",
   "yes": "Ja",

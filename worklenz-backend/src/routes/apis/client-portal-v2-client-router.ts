@@ -27,8 +27,10 @@ router.put("/me/notification-prefs", handle(ClientPortalV2Controller.updateNotif
 router.get("/me/dashboard-layout", handle(ClientPortalV2Controller.dashboardLayout));
 router.put("/me/dashboard-layout", handle(ClientPortalV2Controller.saveDashboardLayout));
 router.delete("/me/dashboard-layout", handle(ClientPortalV2Controller.resetDashboardLayout));
-// Danger zone: soft-deletes the signed-in person's whole login (every portal they belong to).
+// Danger zone: a Client Admin soft-deletes their own login (every portal they belong to); anyone else asks
+// their team to do it.
 router.post("/me/account-deletion", handle(ClientPortalV2Controller.requestAccountDeletion));
+router.post("/me/account-deletion-request", handle(ClientPortalV2Controller.submitAccountDeletionRequest));
 router.get("/timezones", handle(ClientPortalV2Controller.timezones));
 
 router.get("/dashboard", handle(ClientPortalV2Controller.dashboard));
@@ -71,6 +73,7 @@ router.get("/threads", handle(ClientPortalV2Controller.threads));
 router.post("/threads/comments", requireClientCapability("comment"), handle(ClientPortalV2Controller.comment));
 router.patch("/threads/messages/:messageId", requireClientCapability("comment"), handle(ClientPortalV2Controller.editMessage));
 router.delete("/threads/messages/:messageId", requireClientCapability("comment"), handle(ClientPortalV2Controller.deleteMessage));
+router.post("/threads/messages/:messageId/reactions", requireClientCapability("comment"), handle(ClientPortalV2Controller.toggleReaction));
 router.get("/threads/:threadId", handle(ClientPortalV2Controller.thread));
 router.post("/threads/:threadId/read", handle(ClientPortalV2Controller.markThreadRead));
 

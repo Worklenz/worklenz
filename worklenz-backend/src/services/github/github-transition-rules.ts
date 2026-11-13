@@ -4,8 +4,10 @@ export type GithubTransitionEvent = "branch_created" | "pr_opened" | "pr_merged"
 export type GithubStatusMap = Partial<Record<GithubTransitionEvent, string | null>>;
 
 export interface ITaskGitState {
-  /** Pull requests that reference the issue with a closing keyword. */
-  closingPullRequests: Array<{ merged: boolean }>;
+  /** Pull requests linked to the issue that have been merged. */
+  mergedPullRequests?: number;
+  /** Pull requests that reference the issue with a closing keyword (legacy). */
+  closingPullRequests?: Array<{ merged: boolean }>;
   /** Open, non-draft pull requests (closing or not). */
   openPullRequests: number;
   /** Open draft pull requests. */
@@ -27,11 +29,16 @@ export const GITHUB_TRANSITION_EVENTS = Object.keys(EVENT_RANK) as GithubTransit
  * than from the webhook that happened to arrive, so out-of-order deliveries converge.
  */
 export function resolveReachedEvent(state: ITaskGitState): GithubTransitionEvent | null {
-  if (state.closingPullRequests.length > 0 && state.closingPullRequests.every(pr => pr.merged)) {
-    return "pr_merged";
-  }
+  const mergedCount =
+    state.mergedPullRequests ??
+    (state.closingPullRequests?.length
+      ? state.closingPullRequests.filter(pr => pr.merged).length
+      : 0);
+
   if (state.openPullRequests > 0) return "pr_opened";
-  if (state.activeBranches > 0 || state.draftPullRequests > 0) return "branch_created";
+  if (state.draftPullRequests > 0) return "branch_created";
+  if (mergedCount > 0) return "pr_merged";
+  if (state.activeBranches > 0) return "branch_created";
   return null;
 }
 

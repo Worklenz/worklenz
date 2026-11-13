@@ -21,6 +21,7 @@ import { hasTeamAdminPrivileges, normalizeTeamRoleName, TEAM_ROLE_NAMES } from "
 import { getProjectAccessForRequest } from "../shared/project-access";
 import { IO } from "../shared/io";
 import { SocketEvents } from "../socket.io/events";
+import { emitProjectPermissionChanged } from "../shared/pm-lifecycle";
 import { AUDIT_EVENT_TYPE } from "../shared/audit-log-constants";
 import { logAuditEvent, resolveOrganizationIdForUserId } from "../services/audit-log.service";
 import {
@@ -282,6 +283,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
 
     // Check if user already exists in the team
     const userExists = await ProjectMembersController.checkIfUserAlreadyExistsInTeam(teamId, req.body.email);
+    const ownerUserExists = await ProjectMembersController.checkIfUserAlreadyExists(req.user?.owner_id as string, req.body.email);
 
     // If user exists in the team, check if they're already in the project
     if (userExists && req.body.project_id) {
@@ -289,9 +291,9 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       const teamMemberQuery = `
         SELECT team_member_id, name, email, user_id
         FROM team_member_info_view
-        WHERE email = $1 AND team_id = $2
+        WHERE LOWER(email) = LOWER($1::TEXT) AND team_id = $2::UUID
       `;
-      const teamMemberResult = await db.query(teamMemberQuery, [req.body.email, req.user?.team_id]);
+      const teamMemberResult = await db.query(teamMemberQuery, [req.body.email.trim(), teamId]);
 
       if (teamMemberResult.rows.length > 0) {
         const teamMemberInfo = teamMemberResult.rows[0];
@@ -440,7 +442,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       // Skip limit checks if team_member_limit_override is enabled
       if (subscriptionData.team_member_limit_override !== true) {
         // Check Business plan limits first - Business plans override AppSumo lifetime limits
-        if (!userExists && !subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status !== "trialing") {
+        if (!ownerUserExists && !subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status !== "trialing") {
           // if (subscriptionData.subscription_status === "active") {
           //   const response = await updateUsers(subscriptionData.subscription_id, (subscriptionData.quantity + 1));
           //   if (!response.body.subscription_id) return res.status(200).send(new ServerResponse(false, null, response.message || "Unable to add user! Please check your subscription."));
@@ -475,7 +477,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
 
         // Check AppSumo lifetime limits - only applies if not on Business plan
         const isBusinessPlan = planLiftsLtdMemberLimit(subscriptionData);
-        if (!userExists && subscriptionData.is_ltd && subscriptionData.current_count && !isBusinessPlan && (parseInt(subscriptionData.current_count) + 1 > parseInt(subscriptionData.ltd_users))) {
+        if (!ownerUserExists && subscriptionData.is_ltd && subscriptionData.current_count && !isBusinessPlan && (parseInt(subscriptionData.current_count) + 1 > parseInt(subscriptionData.ltd_users))) {
           const ltdLimit = parseInt(subscriptionData.ltd_users);
           const obj = {
             error_code: 'SEAT_LIMIT_EXCEEDED',
@@ -642,11 +644,21 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     }
 
     if (response?.project_id) {
-      const socket = IO.getSocketById(req.user?.socket_id as string);
-      if (socket) {
-        socket.emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
-        socket.to(response.project_id).emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
+      if (response.member_user_id) {
+        emitProjectPermissionChanged({
+          project_id: response.project_id,
+          reason: "member_removed",
+          affected_user_ids: [response.member_user_id],
+        });
       }
+      const event = SocketEvents.PROJECT_UPDATES_AVAILABLE.toString();
+      const senderSocketId = req.user?.socket_id as string | undefined;
+      if (senderSocketId) {
+        IO.getSocketById(senderSocketId)?.emit(event);
+      }
+      IO.emitToProjectRoom(response.project_id, event, undefined, {
+        excludeSocketId: senderSocketId,
+      });
     }
 
     return res.status(200).send(new ServerResponse(true, result.rows));

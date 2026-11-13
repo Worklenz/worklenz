@@ -47,7 +47,7 @@ export async function on_task_assignees_change(
       if (restricted) {
         socket.emit(SocketEvents.TASK_ASSIGNEES_CHANGE.toString(), {
           error: true,
-          message: "Task assignment is restricted to Admins and Team Leads only."
+          message: "Task assignment is restricted to Admins, Team Leads, and Project Managers only."
         });
         return;
       }

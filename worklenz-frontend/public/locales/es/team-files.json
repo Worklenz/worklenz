@@ -62,5 +62,6 @@
   "linkDescription": "Descripción",
   "linkDescriptionPlaceholder": "Descripción opcional",
   "save": "Guardar",
+  "rowsPerPage": "Filas por página:",
   "noTaskName": "--"
 }

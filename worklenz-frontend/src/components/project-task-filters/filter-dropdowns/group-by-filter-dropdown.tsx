@@ -12,6 +12,7 @@ import { setBoardGroupBy, setCurrentBoardGroup } from '@/features/board/board-sl
 import { useAuthService } from '@/hooks/useAuth';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 import { getSoftwareProjectLabels, isSoftwareProjectType } from '@/lib/project/software-project';
+import { isListTabKey } from '@/features/projects/singleProject/saved-views/saved-view-config';
 
 const GroupByFilterDropdown = () => {
   const { t } = useTranslation('task-list-filters');
@@ -25,7 +26,7 @@ const GroupByFilterDropdown = () => {
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
 
   const tab = searchParams.get('tab');
-  const projectView = tab === 'tasks-list' ? 'list' : 'kanban';
+  const projectView = isListTabKey(tab) ? 'list' : 'kanban';
 
   const currentGroup = projectView === 'list' ? groupBy : boardGroupBy;
   const softwareLabels = getSoftwareProjectLabels(project?.project_type);

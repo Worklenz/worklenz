@@ -234,6 +234,21 @@ export const taskTimeLogsApiService = {
     return response.data;
   },
 
+  /**
+   * Time Entries page ONLY. Atomically turns one time log into an overnight pair:
+   * updates `segment1` (the day-1 portion with the existing id) and inserts `segment2`
+   * (the day-2 portion) with the ORIGINAL log's `user_id` — not the editing admin's id —
+   * so ownership is preserved when an admin splits another member's entry.
+   */
+  splitEntry: async (
+    id: string,
+    segment1: { seconds_spent: number; formatted_start: string; description?: string },
+    segment2: { seconds_spent: number; formatted_start: string }
+  ): Promise<IServerResponse<null>> => {
+    const response = await apiClient.post(`${rootUrl}/entries/${id}/split`, { segment1, segment2 });
+    return response.data;
+  },
+
   getRunningTimers: async (): Promise<IServerResponse<IRunningTimer[]>> => {
     const response = await apiClient.get(`${rootUrl}/running-timers`);
     return response.data;

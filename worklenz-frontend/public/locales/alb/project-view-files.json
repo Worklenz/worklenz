@@ -68,4 +68,8 @@
   "uploadExpired": "Sesioni i ngarkimit skadoi. Ju lutemi provoni përsëri.",
   "fileTooLargePopoverTitle": "Skedari shumë i madh",
   "fileTooLargePopoverBody": "Skedarët më të mëdhenj se 25 MB kërkojnë planin e biznesit. Ky skedar është {{sizeMb}} MB. Përmirëso për të ngarkuar skedarë më të mëdhenj."
+,
+  "myTasksView": {
+    "rowsPerPage": "Rreshta për faqe:"
+  }
 }

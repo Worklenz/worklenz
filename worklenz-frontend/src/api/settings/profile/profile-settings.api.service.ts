@@ -104,7 +104,8 @@ export const profileSettingsApiService = {
   ): Promise<IServerResponse<IClientPortalSettings>> => {
     const response = await apiClient.put<IServerResponse<IClientPortalSettings>>(
       `${rootUrl}/client-portal`,
-      body
+      body,
+      { headers: { 'X-Silent-Request': '1' } }
     );
     return response.data;
   },
@@ -114,7 +115,8 @@ export const profileSettingsApiService = {
   ): Promise<IServerResponse<{ logo_url: string }>> => {
     const response = await apiClient.post<IServerResponse<{ logo_url: string }>>(
       `${rootUrl}/client-portal/upload-logo`,
-      { logoData }
+      { logoData },
+      { headers: { 'X-Silent-Request': '1' } }
     );
     return response.data;
   },

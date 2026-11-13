@@ -169,4 +169,8 @@
     },
     "empty": "Pas encore assez d’histoire pour faire des prévisions. Enregistrez le temps et envoyez des factures pour créer une tendance."
   }
+,
+  "myTasksView": {
+    "rowsPerPage": "Lignes par page :"
+  }
 }

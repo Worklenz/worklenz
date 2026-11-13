@@ -93,6 +93,14 @@
   "invalidLogoFileTypeError": "Seleccione un archivo de imagen.",
   "logoFileTooLargeError": "El logotipo debe ser menor de 2MB.",
   "logoUploadFailedError": "No se pudo subir el logotipo.",
+  "cropLogoModalTitle": "Recortar logo",
+  "cropApplyButton": "Aplicar recorte",
+  "cropZoomLabel": "Nivel de zoom",
+  "cropInstructionText": "Arrastra esquinas o lados para redimensionar · Mueve para reposicionar",
+  "cropInstructionLockedText": "Mueve para reposicionar",
+  "cropAspectLabel": "Relación de aspecto",
+  "cropAspectSquare": "1:1 Cuadrado",
+  "cropAspect250x100": "250x100",
   "portalLogoLabel": "Logotipo del Portal",
   "portalTitleLabel": "Título del Portal",
   "portalTitlePlaceholder": "ej., Centro de Clientes Acme",
@@ -200,5 +208,6 @@
     "defaultStatusesLabel": "Estados predeterminados",
     "defaultStatusesHint": "Estos siempre existen y no se pueden eliminar.",
     "customStatusesLabel": "Estados personalizados"
-  }
+  },
+  "defaultInvoiceFooter": "Gracias por su confianza. Si tiene alguna pregunta sobre esta factura, contáctenos con los datos indicados arriba."
 }

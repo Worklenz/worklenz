@@ -35,4 +35,6 @@
   "doingText": "进行中",
   "doneText": "已完成",
   "customDateRangeInvalidError": "结束日期不能早于开始日期。请选择有效的日期范围。"
+,
+  "rowsPerPage": "每页行数："
 }

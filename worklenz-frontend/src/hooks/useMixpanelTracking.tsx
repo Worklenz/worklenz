@@ -93,7 +93,7 @@ export const useMixpanelTracking = () => {
       try {
         const currentUser = auth.getCurrentSession();
         const props = {
-          ...(properties || {}),
+          ...properties,
           ...(currentUser?.user_no ? { id: currentUser.user_no } : {}),
         };
 

@@ -23,6 +23,7 @@ import {
   Table,
   TableProps,
   Tag,
+  theme,
   Tooltip,
   Typography,
 } from '@/shared/antd-imports';
@@ -37,6 +38,7 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import UpdateMemberDrawer from '@/components/settings/update-member-drawer';
 import { BulkAssignManagerDrawer } from '@/components/settings/bulk-assign-manager-drawer';
+import { BulkAssignOrganizationDrawer } from '@/components/settings/bulk-assign-organization-drawer';
 import TimeOffCalendar from '@/components/schedule/task-timeline/TimeOffCalendar';
 import {
   toggleInviteMemberDrawer,
@@ -158,6 +160,7 @@ const writeTeamMembersSortPreference = (field: string, order: string): void => {
 };
 
 const TeamMembersSettings = () => {
+  const { token } = theme.useToken();
   const { t } = useTranslation('settings/team-members');
   const { t: tCommon } = useTranslation('common');
   const dispatch = useAppDispatch();
@@ -177,6 +180,17 @@ const TeamMembersSettings = () => {
   const [selectedMemberName, setSelectedMemberName] = useState<string | null>(null);
   const [selectedMembers, setSelectedMembers] = useState<ITeamMemberViewModel[]>([]);
   const [isBulkAssignDrawerVisible, setBulkAssignDrawerVisible] = useState(false);
+
+  const [
+    isBulkAssignPracticeDrawerVisible,
+    setIsBulkAssignPracticeDrawerVisible,
+  ] = useState(false);
+
+  const [
+    isBulkAssignDepartmentDrawerVisible,
+    setIsBulkAssignDepartmentDrawerVisible,
+  ] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
   const [isSeatLimitPopoverOpen, setIsSeatLimitPopoverOpen] = useState(false);
   const [timeOffModalVisible, setTimeOffModalVisible] = useState(false);
@@ -277,7 +291,7 @@ const TeamMembersSettings = () => {
                 email: email.trim(),
                 project_id: inviteData.projectId,
                 role_name: inviteData.access === 'team-lead' ? 'TEAM_LEAD' :
-                          inviteData.access === 'admin' ? 'ADMIN' : 'MEMBER',
+                  inviteData.access === 'admin' ? 'ADMIN' : 'MEMBER',
                 is_admin: inviteData.access === 'admin',
                 access_level: inviteData.access === 'guest' ? 'GUEST' : undefined,
               })
@@ -375,10 +389,10 @@ const TeamMembersSettings = () => {
         const data = prevModel.data?.map(member =>
           member.id === memberId
             ? ({
-                ...member,
-                reports_to_member_id: teamLeadId,
-                current_team_lead_name: teamLeadName,
-              } as ITeamMemberViewModel)
+              ...member,
+              reports_to_member_id: teamLeadId,
+              current_team_lead_name: teamLeadName,
+            } as ITeamMemberViewModel)
             : member
         );
         return {
@@ -409,6 +423,14 @@ const TeamMembersSettings = () => {
 
   const handleBulkAssignManager = () => {
     setBulkAssignDrawerVisible(true);
+  };
+
+  const handleBulkAssignPractice = () => {
+    setIsBulkAssignPracticeDrawerVisible(true);
+  };
+
+  const handleBulkAssignDepartment = () => {
+    setIsBulkAssignDepartmentDrawerVisible(true);
   };
 
   const handleMemberSelection = (
@@ -563,7 +585,7 @@ const TeamMembersSettings = () => {
       const isOwnerEditingOwnDetails = effectiveRole === ROLE_NAMES.OWNER && isCurrentUser;
       // Admin cannot manage team owners, but owner can manage non-owners
       const isTargetOwner = record.role_name?.toLowerCase() === 'owner';
-      
+
       // Edit: Admin can't edit owners, but owners can edit themselves and others (except owners)
       const canEdit = isOwnerEditingOwnDetails || (canManage && !isTargetOwner);
 
@@ -914,15 +936,15 @@ const TeamMembersSettings = () => {
         style={{ width: '100%' }}
         title={
           <Flex justify="space-between" align="center">
-              <Typography.Title level={4} style={{ margin: 0 }}>
-                {model.total}{' '}
-                {t('membersCount', {
-                  count: model.total,
-                  defaultValue: 'Members',
-                  defaultValue_one: 'Member',
-                  defaultValue_other: 'Members',
-                })}
-              </Typography.Title>
+            <Typography.Title level={4} style={{ margin: 0 }}>
+              {model.total}{' '}
+              {t('membersCount', {
+                count: model.total,
+                defaultValue: 'Members',
+                defaultValue_one: 'Member',
+                defaultValue_other: 'Members',
+              })}
+            </Typography.Title>
             <Flex
               gap={8}
               align="center"
@@ -933,18 +955,18 @@ const TeamMembersSettings = () => {
                 <Typography.Text type="secondary" style={{ fontSize: 13 }}>
                   {totalAvailableSeats && totalAvailableSeats > 0
                     ? t('seatUsageWithLimitText', {
-                        defaultValue: '{{used}} of {{total}} seats used',
-                        used: Math.min(totalUsedSeats, totalAvailableSeats),
-                        total: totalAvailableSeats,
-                      })
+                      defaultValue: '{{used}} of {{total}} seats used',
+                      used: Math.min(totalUsedSeats, totalAvailableSeats),
+                      total: totalAvailableSeats,
+                    })
                     : totalUsedSeats >= 0
                       ? t('seatUsageText', {
-                          defaultValue: '{{used}} seats used',
-                          used: totalUsedSeats,
-                        })
+                        defaultValue: '{{used}} seats used',
+                        used: totalUsedSeats,
+                      })
                       : t('seatUsageLoading', {
-                          defaultValue: 'Loading seat usage...',
-                        })}
+                        defaultValue: 'Loading seat usage...',
+                      })}
                 </Typography.Text>
                 {isSeatUsageOverLimit && (
                   <Tooltip
@@ -1035,9 +1057,9 @@ const TeamMembersSettings = () => {
                   title={
                     isInviteRestricted
                       ? tCommon('license-expired-subtitle', {
-                          defaultValue:
-                            'Your Worklenz subscription has ended. Please renew to continue enjoying all features.',
-                        })
+                        defaultValue:
+                          'Your Worklenz subscription has ended. Please renew to continue enjoying all features.',
+                      })
                       : ''
                   }
                 >
@@ -1106,6 +1128,7 @@ const TeamMembersSettings = () => {
         />
       </Card>
 
+
       {isPrivilegedUser && selectedMembers.length > 0 && (
         <div
           style={{
@@ -1115,35 +1138,63 @@ const TeamMembersSettings = () => {
             zIndex: 1000,
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
             borderRadius: '8px',
+            background: token.colorBgContainer,
+            padding: '8px',
           }}
         >
-          <Button
-            type="primary"
-            size="large"
-            icon={<UsergroupAddOutlined />}
-            onClick={handleBulkAssignManager}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              paddingLeft: '16px',
-              paddingRight: '16px',
-              height: '48px',
-              fontSize: '14px',
-              fontWeight: 500,
-            }}
-          >
-            {t('bulk_assign_team_lead', { defaultValue: 'Assign Team Lead' })} ({selectedMembers.length})
-          </Button>
+          <Flex gap={8} wrap="wrap" align="center">
+            <Button
+              type="primary"
+              size="large"
+              icon={<UsergroupAddOutlined />}
+              onClick={handleBulkAssignManager}
+            >
+              {t('bulk_assign_team_lead', {
+                defaultValue: 'Assign Team Lead',
+              })} ({selectedMembers.length})
+            </Button>
+
+            <Button
+              type="primary"
+              size="large"
+              onClick={handleBulkAssignPractice}
+            >
+              {t('assign_practice')} ({selectedMembers.length})
+            </Button>
+
+            <Button
+              type="primary"
+              size="large"
+              onClick={handleBulkAssignDepartment}
+            >
+              {t('assign_department')} ({selectedMembers.length})
+            </Button>
+          </Flex>
         </div>
       )}
 
+
+      <BulkAssignOrganizationDrawer
+        open={isBulkAssignPracticeDrawerVisible}
+        onClose={() => setIsBulkAssignPracticeDrawerVisible(false)}
+        selectedMembers={selectedMembers}
+        assignmentType="practice"
+        onAssignmentComplete={handleBulkAssignComplete}
+      />
       <BulkAssignManagerDrawer
         open={isBulkAssignDrawerVisible}
         onClose={() => setBulkAssignDrawerVisible(false)}
         selectedMembers={selectedMembers}
         onAssignmentComplete={handleBulkAssignComplete}
       />
+      <BulkAssignOrganizationDrawer
+        open={isBulkAssignDepartmentDrawerVisible}
+        onClose={() => setIsBulkAssignDepartmentDrawerVisible(false)}
+        selectedMembers={selectedMembers}
+        assignmentType="department"
+        onAssignmentComplete={handleBulkAssignComplete}
+      />
+
       {createPortal(
         <UpdateMemberDrawer
           selectedMemberId={selectedMemberId}
@@ -1166,8 +1217,8 @@ const TeamMembersSettings = () => {
           timeOffTargetMember
             ? [timeOffTargetMember]
             : (model.data || [])
-                .filter(m => Boolean(m.id))
-                .map(m => ({ id: m.id!, name: m.name || '', email: m.email }))
+              .filter(m => Boolean(m.id))
+              .map(m => ({ id: m.id!, name: m.name || '', email: m.email }))
         }
         visible={timeOffModalVisible}
         onClose={() => {

@@ -22,6 +22,7 @@
   "tasks": "tarefas",
   "startDate": "Data de Início",
   "endDate": "Data de Fim",
+  "endDateBeforeStartDate": "A data de término não pode ser anterior à data de início",
   "hoursPerDay": "Horas Por Dia",
   "totalHours": "Horas Totais",
   "deleteButton": "Excluir",

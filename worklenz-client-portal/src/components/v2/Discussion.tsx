@@ -3,7 +3,12 @@ import { Button, Flex, Tag, Typography, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useClientAccess } from '@/hooks/useClientAccess';
+import { useMessage } from '@/hooks/useMessage';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import type { ClientThreadMessageV2 } from '@/types/v2';
+import { useToggleMessageReactionMutation } from '@/store/api-v2';
+import { MessageReactions } from '@/pages/v2/discussions/MessageReactions';
+import { errorMessage } from './index';
 import { LockedNote } from './LockedNote';
 import { RichTextField } from './RichTextField';
 import { RichTextView } from './RichTextView';
@@ -21,7 +26,17 @@ export const MessageList = ({ messages, bubbles = false, emptyText }: MessageLis
   const { t } = useTranslation();
   const { token } = theme.useToken();
   const { dateTime } = useFormatters();
-  const { me } = useClientAccess();
+  const { me, can } = useClientAccess();
+  const [toggleReaction] = useToggleMessageReactionMutation();
+
+  const toast = useMessage();
+  const handleToggleReaction = async (messageId: string, emoji: string) => {
+    try {
+      await toggleReaction({ messageId, emoji }).unwrap();
+    } catch (error) {
+      void toast.error(errorMessage(error) ?? t('discussions.reactFailed', { defaultValue: 'Failed to update reaction' }));
+    }
+  };
 
   if (messages.length === 0) {
     return emptyText ? (
@@ -34,7 +49,7 @@ export const MessageList = ({ messages, bubbles = false, emptyText }: MessageLis
   return (
     <div>
       {messages.map(message => {
-        const mine = bubbles && message.author === me?.name;
+        const mine = bubbles && decodeHtmlEntities(message.author) === decodeHtmlEntities(me?.name);
         return (
           <Flex
             key={message.id}
@@ -43,7 +58,7 @@ export const MessageList = ({ messages, bubbles = false, emptyText }: MessageLis
             style={{ marginBottom: 12 }}
           >
             <Typography.Text style={{ fontSize: token.fontSizeSM }} strong>
-              {message.author}
+              {decodeHtmlEntities(message.author)}
               {message.side === 'internal' && (
                 <Tag color="blue" style={{ marginInlineStart: 6 }}>
                   {t('discussions.team', { defaultValue: 'Team' })}
@@ -65,6 +80,16 @@ export const MessageList = ({ messages, bubbles = false, emptyText }: MessageLis
             >
               <RichTextView value={message.text} />
             </div>
+            {!message.deleted && (
+              <MessageReactions
+                messageId={message.id}
+                reactions={message.reactions}
+                canReact={can.comment}
+                onToggleReaction={handleToggleReaction}
+                align={mine ? 'flex-end' : 'flex-start'}
+              />
+            )}
+
           </Flex>
         );
       })}

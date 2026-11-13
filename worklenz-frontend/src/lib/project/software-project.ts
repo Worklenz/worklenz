@@ -6,6 +6,15 @@ export const isSoftwareProjectType = (
 ): boolean => projectType === 'software';
 
 /**
+ * @deprecated Software backlog is fully interactive with or without sprints.
+ * Kept for call-site compatibility; always returns false.
+ */
+export const isSoftwareSprintSetupRequired = (
+  _projectType?: ProjectType | string | null,
+  _sprintCount = 0
+): boolean => false;
+
+/**
  * Tab a project opens on from project lists. Software projects land on the
  * Backlog unless the member pinned the Board.
  */

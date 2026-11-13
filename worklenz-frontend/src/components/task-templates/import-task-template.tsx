@@ -26,6 +26,7 @@ import { taskTemplatesApiService } from '@/api/task-templates/task-templates.api
 import logger from '@/utils/errorLogger';
 import { setImportTaskTemplateDrawerOpen } from '@/features/project/project.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
+import { isListTabKey } from '@/features/projects/singleProject/saved-views/saved-view-config';
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
 import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 
@@ -163,7 +164,7 @@ const ImportTaskTemplate = () => {
         if (tab === 'board') {
           dispatch(fetchEnhancedKanbanGroups(projectId));
         }
-        if (tab === 'tasks-list') {
+        if (isListTabKey(tab)) {
           dispatch(fetchTasksV3(projectId));
         }
         dispatch(setImportTaskTemplateDrawerOpen(false));

@@ -1,8 +1,9 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import dayjs from 'dayjs';
 import {
   Button,
   ConfigProvider,
+  ExpandAltOutlined,
   Flex,
   PaginationProps,
   Table,
@@ -10,7 +11,6 @@ import {
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
-import { ExpandAltOutlined } from '@/shared/antd-imports';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -75,8 +75,13 @@ const ReportingOverviewProjectsTable = ({
     total: 0,
   });
 
-  const [order, setOrder] = useState<'asc' | 'desc'>('asc');
+  const [order, setOrder] = useState<'asc' | 'desc' | ''>('asc');
   const [field, setField] = useState<string>('name');
+  const latestRequestId = useRef(0);
+  const getColumnSortOrder = (sortField: string): 'ascend' | 'descend' | null => {
+    if (field !== sortField || !order) return null;
+    return order === 'asc' ? 'ascend' : 'descend';
+  };
 
   const handleHealthChangeResponse = useCallback(
     (data: { id: string; health_id: string; color_code: string; name: string }) => {
@@ -204,7 +209,7 @@ const ReportingOverviewProjectsTable = ({
         fixed: 'left',
         width: 300,
         sorter: true,
-        defaultSortOrder: order === 'asc' ? 'ascend' : 'descend',
+        sortOrder: getColumnSortOrder('name'),
         onCell: record => ({
           onClick: () => handleDrawerOpen(record as IRPTProject),
         }),
@@ -260,8 +265,10 @@ const ReportingOverviewProjectsTable = ({
       },
       {
         key: 'status',
-        dataIndex: 'status_id',
-        defaultSortOrder: order === 'asc' ? 'ascend' : 'descend',
+        // `dataIndex` doubles as the server-side sort key (sent as `field`).
+        // The API maps `status_name` to the custom project-status workflow order.
+        dataIndex: 'status_name',
+        sortOrder: getColumnSortOrder('status_name'),
         title: <CustomTableTitle title={t('statusColumn')} />,
         render: (_, record: IRPTProject) => (
           <ProjectStatusCell currentStatus={record.status_id} projectId={record.id} />
@@ -298,7 +305,7 @@ const ReportingOverviewProjectsTable = ({
       {
         key: 'projectHealth',
         dataIndex: 'project_health',
-        defaultSortOrder: order === 'asc' ? 'ascend' : 'descend',
+        sortOrder: getColumnSortOrder('project_health'),
         title: <CustomTableTitle title={t('projectHealthColumn')} />,
         sorter: true,
         render: (_, record: IRPTProject) => (
@@ -316,6 +323,7 @@ const ReportingOverviewProjectsTable = ({
         title: <CustomTableTitle title={t('categoryColumn')} />,
         dataIndex: 'category_name',
         sorter: true,
+        sortOrder: getColumnSortOrder('category_name'),
         render: (_, record: IRPTProject) => (
           <ProjectCategoryCell
             projectId={record.id}
@@ -336,7 +344,7 @@ const ReportingOverviewProjectsTable = ({
       {
         key: 'client',
         dataIndex: 'client',
-        defaultSortOrder: order === 'asc' ? 'ascend' : 'descend',
+        sortOrder: getColumnSortOrder('client'),
         title: <CustomTableTitle title={t('clientColumn')} />,
         render: (_, record: IRPTProject) =>
           record?.client ? <ProjectClientCell client={record.client} /> : '-',
@@ -346,7 +354,7 @@ const ReportingOverviewProjectsTable = ({
       {
         key: 'team',
         dataIndex: 'team_name',
-        defaultSortOrder: order === 'asc' ? 'ascend' : 'descend',
+        sortOrder: getColumnSortOrder('team_name'),
         title: <CustomTableTitle title={t('teamColumn')} />,
         render: (_, record: IRPTProject) =>
           record.team_name ? <ProjectTeamCell team={record.team_name} /> : '-',
@@ -361,15 +369,34 @@ const ReportingOverviewProjectsTable = ({
         width: 200,
       },
     ],
-    [t, order]
+    [t, order, field]
   );
 
   // ✅ FIX 1: Renamed parameter from `pagination` to `newPagination` to avoid
   // shadowing the state variable, and merged all updates into a single
   // setPagination call so pageSize and current are never lost.
-  const handleTableChange = (newPagination: PaginationProps, filters: any, sorter: any) => {
-    if (sorter.order) setOrder(sorter.order);
-    if (sorter.field) setField(sorter.field);
+  const handleTableChange = (
+    newPagination: PaginationProps,
+    filters: any,
+    sorter: any,
+    extra: { action: string }
+  ) => {
+    if (extra.action === 'sort') {
+      const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
+      if (!activeSorter?.order) {
+        // A third click clears the sort; fall back to the default (normal state)
+        setField('name');
+        setOrder('');
+      } else {
+        const sortField = (Array.isArray(activeSorter.field)
+          ? activeSorter.field[0]
+          : activeSorter.field) as string;
+        setField(sortField || 'name');
+        setOrder(activeSorter.order === 'descend' ? 'desc' : 'asc');
+      }
+      setPagination(prev => ({ ...prev, current: 1 }));
+      return;
+    }
     setPagination(prev => ({
       ...prev,
       current: newPagination.current ?? prev.current,
@@ -378,8 +405,12 @@ const ReportingOverviewProjectsTable = ({
   };
 
   useEffect(() => {
-    if (projectStatuses.length === 0 && !projectStatusesLoading) dispatch(fetchProjectStatuses());
-    if (projectHealths.length === 0 && !projectHealthsLoading) dispatch(fetchProjectHealth());
+    if (projectStatuses.length === 0 && !projectStatusesLoading) {
+      void dispatch(fetchProjectStatuses());
+    }
+    if (projectHealths.length === 0 && !projectHealthsLoading) {
+      void dispatch(fetchProjectHealth());
+    }
   }, []);
 
   useEffect(() => {
@@ -420,6 +451,7 @@ const ReportingOverviewProjectsTable = ({
   // FIX 2: Wrap in useCallback so the effect dependency is stable and correct.
   // All values read inside are listed as deps, so the closure is never stale.
   const fetchOverviewProjects = useCallback(async () => {
+    const requestId = ++latestRequestId.current;
     setIsLoading(true);
     try {
       const params = {
@@ -433,14 +465,17 @@ const ReportingOverviewProjectsTable = ({
         archived: includeArchivedProjects,
       };
       const response = await reportingApiService.getOverviewProjects(params);
+      if (requestId !== latestRequestId.current) return;
       if (response.done) {
         setProjectList(response.body.projects || []);
         setPagination(prev => ({ ...prev, total: response.body.total }));
       }
     } catch (error) {
-      logger.error('fetchOverviewProjects', error);
+      if (requestId === latestRequestId.current) {
+        logger.error('fetchOverviewProjects', error);
+      }
     } finally {
-      setIsLoading(false);
+      if (requestId === latestRequestId.current) setIsLoading(false);
     }
   }, [teamsId, pagination.current, pagination.pageSize, searchQuery, order, field, includeArchivedProjects]);
 
@@ -448,7 +483,10 @@ const ReportingOverviewProjectsTable = ({
   // It changes whenever page, pageSize, search, sort, or archived changes —
   // so the API is always called with the correct values.
   useEffect(() => {
-    fetchOverviewProjects();
+    void fetchOverviewProjects();
+    return () => {
+      latestRequestId.current += 1;
+    };
   }, [fetchOverviewProjects]);
 
   return (

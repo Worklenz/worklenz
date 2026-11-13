@@ -5,6 +5,7 @@
   "createTask": "Crear tarea",
   "createIssue": "Crear problema",
   "createIssueTooltip": "Crear una nueva edición",
+  "createIssueRequiresSprintTooltip": "Crea primero un sprint para empezar a añadir issues",
   "settings": "Configuración",
   "subscribe": "Suscribirse",
   "unsubscribe": "Desuscribirse",

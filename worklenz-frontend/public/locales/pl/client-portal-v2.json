@@ -93,5 +93,8 @@
   "toolbarSelectAll": "Wybierz wszystko",
   "toolbarClearAll": "Wyczyść wszystko",
   "toolbarFields": "Pola",
-  "toolbarShowFields": "Pokaż pola"
+  "toolbarShowFields": "Pokaż pola",
+  "userDeleted": "Konto usunięte",
+  "userDeletedHint": "Usunięte przez użytkownika dnia {{deleted}}. Można je przywrócić do {{until}}.",
+  "userDeletedHintExpired": "Usunięte przez użytkownika dnia {{deleted}}."
 }

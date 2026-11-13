@@ -68,4 +68,8 @@
   "uploadExpired": "上传会话已过期。请再试一次。",
   "fileTooLargePopoverTitle": "文件太大",
   "fileTooLargePopoverBody": "大于 25MB 的文件需要商业计划。该文件大小为 {{sizeMb}} MB。升级以上传更大的文件。"
+,
+  "myTasksView": {
+    "rowsPerPage": "每页行数："
+  }
 }

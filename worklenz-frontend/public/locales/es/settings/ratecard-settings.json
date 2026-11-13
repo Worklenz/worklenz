@@ -42,6 +42,7 @@
   "jobRolesTitle": "Roles de trabajo",
   "noJobTitlesMessage": "Por favor, cree primero títulos de trabajo en la configuración antes de agregar roles a las rate cards.",
   "createNewJobTitle": "Crear nuevo título de trabajo",
+  "createJobTitleButtonText": "Crear un puesto de trabajo",
   "jobTitleNamePlaceholder": "Ingrese el nombre del título de trabajo",
   "jobTitleNameRequired": "El nombre del título de trabajo es obligatorio",
   "jobTitleCreatedSuccess": "Título de trabajo creado con éxito",

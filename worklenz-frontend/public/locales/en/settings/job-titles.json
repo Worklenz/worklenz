@@ -5,6 +5,7 @@
   "deleteConfirmationCancel": "Cancel",
   "searchPlaceholder": "Search by name",
   "createJobTitleButton": "Create Job Title",
+  "createJobTitleButtonText": "Create a Job Title",
   "pinTooltip": "Click to pin this into the main menu",
   "createJobTitleDrawerTitle": "Create Job Title",
   "updateJobTitleDrawerTitle": "Update Job Title",

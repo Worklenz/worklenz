@@ -6,6 +6,7 @@
     "approverPlaceholder": "Select an approver…",
     "drafted": "{{ref}} 保存为草稿。客户端还看不到它。",
     "dueDate": "截止日期（可选）",
+    "dueDatePlaceholder": "选择截止日期",
     "existingHint": "只能链接客户端可见的文件、里程碑和任务。记录准确的文件版本。",
     "existingItem": "现有项目",
     "failed": "无法保存批准请求。",

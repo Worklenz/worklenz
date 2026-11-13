@@ -81,4 +81,8 @@
   "loadMoreProjectsButton": "Ngarko {{remaining}} projekte të tjera",
   "loadingText": "Duke ngarkuar...",
   "showingProjectsText": "Duke shfaqur {{shown}} nga {{total}} projekte"
+,
+  "myTasksView": {
+    "rowsPerPage": "Rreshta për faqe:"
+  }
 }

@@ -43,6 +43,7 @@
   "labourHoursColumn": "Labour Hours",
   "actions": "Actions",
   "selectJobTitle": "Select Job Title",
+  "createJobTitleButtonText": "Create a Job Title",
   "ratecardsPluralText": "Rate Card Templates",
   "deleteConfirm": "Are you sure ?",
   "yes": "Yes",

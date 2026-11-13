@@ -8,6 +8,7 @@ import type { Thread, ThreadContextType } from '@/types/client-portal/v2';
 import { AttachButton, AttachmentChips } from './AttachmentPicker';
 import { RichMessageEditor, type RichMessageChange } from './RichMessageEditor';
 import { useMessageAttachments } from './useMessageAttachments';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const MAX_MESSAGE_LENGTH = 4000;
 
@@ -61,7 +62,7 @@ export const NewDiscussionModal = ({
     () =>
       (projectsQuery.data?.body?.items ?? [])
         .filter(project => !restrictToProjectIds || restrictToProjectIds.includes(project.id))
-        .map(project => ({ value: project.id, label: project.name })),
+        .map(project => ({ value: project.id, label: decodeHtmlEntities(project.name) })),
     [projectsQuery.data, restrictToProjectIds]
   );
   const contextOptions = optionsQuery.data?.body?.context;

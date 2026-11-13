@@ -6,6 +6,8 @@ export const PROJECT_SETTINGS_SECTIONS = [
   'budget',
   'statuses',
   'phases',
+  /** Software projects: sprint planning section in SoftwareProjectSettingsModal. */
+  'sprints',
   'customColumns',
   'integrations',
   'taskExport',

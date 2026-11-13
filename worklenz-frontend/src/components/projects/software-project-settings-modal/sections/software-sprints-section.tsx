@@ -87,7 +87,11 @@ export const SoftwareSprintsSection = ({ projectId, disabled }: SoftwareSprintsS
     () =>
       phaseList
         .filter(sprint => sprint.sprint_status !== 'completed')
-        .sort(compareByStartDate),
+        .sort((a, b) => {
+          if (a.sprint_status === 'active' && b.sprint_status !== 'active') return -1;
+          if (b.sprint_status === 'active' && a.sprint_status !== 'active') return 1;
+          return compareByStartDate(a, b);
+        }),
     [phaseList]
   );
   const completedSprints = useMemo(

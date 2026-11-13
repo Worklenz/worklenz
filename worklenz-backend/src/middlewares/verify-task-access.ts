@@ -212,7 +212,7 @@ export default function verifyTaskAccess(
 
       if (!taskLookup.rowCount) {
         return res.status(403).send(
-          new ServerResponse(false, null, "You do not have permission to access this task")
+          new ServerResponse(false, { code: 'TASK_NOT_FOUND' }, "You do not have permission to access this task")
         );
       }
 

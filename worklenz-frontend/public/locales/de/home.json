@@ -100,7 +100,7 @@
     "noUnassignedTasks": "Keine nicht zugewiesenen Aufgaben gefunden",
     "pickUnassignedTaskRequired": "Bitte wählen Sie eine nicht zugewiesene Aufgabe",
     "taskCreationRestrictedTitle": "Aufgabenerstellung eingeschränkt",
-    "taskCreationRestricted": "Die Aufgabenerstellung ist nur für Administratoren und Teamleiter erlaubt. Wenden Sie sich an Ihren Administrator.",
+    "taskCreationRestricted": "Die Aufgabenerstellung ist nur für Administratoren, Teamleiter und Projektmanager erlaubt. Wenden Sie sich an Ihren Administrator.",
     "assignees": "Zugewiesene",
     "searchMembers": "Nach Name oder E-Mail suchen…",
     "noMembersFound": "Keine Mitglieder gefunden",
@@ -254,7 +254,9 @@
     "weekdaySat": "Sa",
     "weekdaySun": "So",
     "createdTimeColumn": "Erstellte Zeit",
-    "minutesPlaceholder": "0"
+    "minutesPlaceholder": "0",
+    "totalDurationBadge": "Gesamt: {{duration}}",
+    "overnightSplitBreakdown": "({{day1Duration}} am {{day1Date}}, {{day2Duration}} am {{day2Date}})"
   },
   "expenses": {
     "emptyTitle": "Noch keine Ausgaben erfasst",

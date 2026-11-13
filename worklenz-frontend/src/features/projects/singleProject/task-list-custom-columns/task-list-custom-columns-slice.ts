@@ -18,6 +18,13 @@ export type CustomFieldNumberTypes = 'formatted' | 'unformatted' | 'percentage' 
 
 export type ExpressionType = 'add' | 'substract' | 'divide' | 'multiply';
 
+export const NEW_PARENT_COLUMN_ID = '__new_parent__';
+
+export interface INewParentFieldDraft {
+  name: string;
+  selections: SelectionType[];
+}
+
 type TaskListCustomColumnsState = {
   isCustomColumnModalOpen: boolean;
   customColumnModalType: 'create' | 'edit';
@@ -40,6 +47,10 @@ type TaskListCustomColumnsState = {
   secondNumericColumn: CustomTableColumnsType | null;
   labelsList: LabelType[];
   selectionsList: SelectionType[];
+  // Selection field whose value scopes this Selection field's options (cascading field).
+  // NEW_PARENT_COLUMN_ID means save creates only `newParentField` as a standalone parent column.
+  parentColumnId: string | null;
+  newParentField: INewParentFieldDraft | null;
   hiddenCustomColumnIds: string[]; // IDs of custom columns the user has hidden
 };
 
@@ -49,7 +60,7 @@ const initialState: TaskListCustomColumnsState = {
   customColumnId: null,
   customColumnModalProjectId: null,
   currentColumnData: null,
-  canChangeColumnType: false,
+  canChangeColumnType: true,
 
   customFieldType: 'text',
   customFieldNumberType: 'formatted',
@@ -62,6 +73,8 @@ const initialState: TaskListCustomColumnsState = {
   secondNumericColumn: null,
   labelsList: [],
   selectionsList: [],
+  parentColumnId: null,
+  newParentField: null,
   hiddenCustomColumnIds: [], // empty = all custom columns visible by default
 };
 
@@ -85,7 +98,7 @@ const taskListCustomColumnsSlice = createSlice({
       state.customColumnModalType = action.payload.modalType;
       state.customColumnId = action.payload.columnId;
       state.currentColumnData = action.payload.columnData || null;
-      state.canChangeColumnType = action.payload.canChangeColumnType ?? false;
+      state.canChangeColumnType = action.payload.canChangeColumnType ?? true;
       if ('projectId' in action.payload) {
         state.customColumnModalProjectId = action.payload.projectId ?? null;
       }
@@ -120,6 +133,12 @@ const taskListCustomColumnsSlice = createSlice({
     setSelectionsList: (state, action: PayloadAction<SelectionType[]>) => {
       state.selectionsList = action.payload;
     },
+    setParentColumnId: (state, action: PayloadAction<string | null>) => {
+      state.parentColumnId = action.payload;
+    },
+    setNewParentField: (state, action: PayloadAction<INewParentFieldDraft | null>) => {
+      state.newParentField = action.payload;
+    },
     // Toggles a single custom column hidden/visible by its ID
     toggleCustomColumnVisibility: (state, action: PayloadAction<string>) => {
       const id = action.payload;
@@ -146,6 +165,8 @@ const taskListCustomColumnsSlice = createSlice({
       state.secondNumericColumn = initialState.secondNumericColumn;
       state.labelsList = initialState.labelsList;
       state.selectionsList = initialState.selectionsList;
+      state.parentColumnId = initialState.parentColumnId;
+      state.newParentField = initialState.newParentField;
       state.currentColumnData = initialState.currentColumnData;
       state.canChangeColumnType = initialState.canChangeColumnType;
     },
@@ -165,6 +186,8 @@ export const {
   setSecondNumericColumn,
   setLabelsList,
   setSelectionsList,
+  setParentColumnId,
+  setNewParentField,
   toggleCustomColumnVisibility,
   setHiddenCustomColumnIds,
   resetCustomFieldValues,

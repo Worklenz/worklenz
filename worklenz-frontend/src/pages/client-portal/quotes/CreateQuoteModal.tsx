@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { downloadPortalPdf } from '@/utils/download-portal-pdf';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Button,
@@ -256,7 +257,7 @@ const CreateQuoteModal = () => {
       message.success(t('createQuoteSuccessMessage', { defaultValue: 'Quote created successfully' }));
       // Create & Download hands the person the file straight away.
       if (mode === 'sent' && result.body?.id) {
-        window.open(getQuoteDownloadUrl(result.body.id), '_blank', 'noopener,noreferrer');
+        downloadPortalPdf(getQuoteDownloadUrl(result.body.id), 'quote.pdf', t('downloadFailed', { defaultValue: 'Failed to download the PDF. Please try again.' }));
       }
       // Started from a change request: go back to it, where the new quote now shows under Linked work.
       navigate(changeRequestIdParam ? portalPaths.changeRequest(changeRequestIdParam) : QUOTES_PATH);

@@ -93,5 +93,8 @@
   "toolbarSelectAll": "Selecionar tudo",
   "toolbarClearAll": "Limpar tudo",
   "toolbarFields": "Campos",
-  "toolbarShowFields": "Mostrar campos"
+  "toolbarShowFields": "Mostrar campos",
+  "userDeleted": "Conta excluída",
+  "userDeletedHint": "Excluída pelo próprio usuário em {{deleted}}. Pode ser restaurada até {{until}}.",
+  "userDeletedHintExpired": "Excluída pelo próprio usuário em {{deleted}}."
 }

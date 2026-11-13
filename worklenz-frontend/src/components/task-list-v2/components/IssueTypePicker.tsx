@@ -1,10 +1,12 @@
 import React, { memo, useMemo } from 'react';
+import { useStore } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { Dropdown, message } from '@/shared/antd-imports';
 
-import { softwareIssuesApiService } from '@/api/software-issues/software-issues.api.service';
 import { IssueTypeBadge, getIssueTypeLabel } from '@/components/projects/software/issue-type-badge';
-import { useOptimisticTaskUpdate } from '@/hooks/useOptimisticTaskUpdate';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { saveIssueTypeForTask } from '@/lib/project/issue-type-update';
+import type { RootState } from '@/app/store';
 import { Task } from '@/types/task-management.types';
 import { IssueType } from '@/types/project/softwareIssue.types';
 
@@ -18,7 +20,8 @@ interface IssueTypePickerProps {
 export const IssueTypePicker: React.FC<IssueTypePickerProps> = memo(
   ({ task, projectId, disabled = false }) => {
     const { t } = useTranslation('project-view');
-    const updateTaskOptimistically = useOptimisticTaskUpdate();
+    const dispatch = useAppDispatch();
+    const store = useStore<RootState>();
     const currentType: IssueType = task.issue_type ?? 'task';
 
     const items = useMemo(
@@ -37,12 +40,20 @@ export const IssueTypePicker: React.FC<IssueTypePickerProps> = memo(
 
     const handleChange = async (nextType: IssueType) => {
       if (nextType === currentType) return;
-      const isSaved = await updateTaskOptimistically(task.id, 'issue_type', nextType, () =>
-        softwareIssuesApiService.updateType(projectId, task.id, nextType)
-      );
+
+      const isSaved = await saveIssueTypeForTask({
+        taskId: task.id,
+        projectId,
+        nextType,
+        previousType: currentType,
+        dispatch,
+        store,
+      });
       if (!isSaved) {
         message.error(
-          t('issueTypeSaveError', { defaultValue: 'Could not change the issue type. Please try again.' })
+          t('issueTypeSaveError', {
+            defaultValue: 'Could not change the issue type. Please try again.',
+          })
         );
       }
     };

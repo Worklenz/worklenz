@@ -43,6 +43,7 @@
   "labourHoursColumn": "Orari i Punës",
   "actions": "Veprimet",
   "selectJobTitle": "Zgjidhni titullin e punës",
+  "createJobTitleButtonText": "Krijo një titull pune",
   "ratecardsPluralText": "Modelet e kartës së vlerësimit",
   "deleteConfirm": "je i sigurt ?",
   "yes": "Po",

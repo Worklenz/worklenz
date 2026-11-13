@@ -12,6 +12,7 @@ import {
   usePortalPaging,
 } from '@/components/client-portal/v2';
 import type { ChangeRequest } from '@/types/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { portalPaths } from '../../portal-paths';
 
 interface ChangeRequestsTabProps {
@@ -40,7 +41,7 @@ export const ChangeRequestsTab = ({ organizationId, organizationName }: ChangeRe
     {
       key: 'title',
       title: t('workspace.changeRequests.columns.title', { defaultValue: 'Title' }),
-      dataIndex: 'title',
+      render: (_value, request) => decodeHtmlEntities(request.title),
     },
     {
       key: 'priority',

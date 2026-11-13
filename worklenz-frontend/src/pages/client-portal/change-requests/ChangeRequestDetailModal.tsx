@@ -44,6 +44,7 @@ import { ChangeRequestStepper } from './ChangeRequestStepper';
 import { ConvertToWorkModal } from './ConvertToWorkModal';
 import { isBillable, isTerminal } from './cr-helpers';
 import { PortalLoader } from '@/components/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { RichTextField } from '../shared/rich-text/RichTextField';
 import { RichTextView } from '../shared/rich-text/RichTextView';
 
@@ -582,14 +583,14 @@ export const ChangeRequestDetailModal = () => {
           request ? (
             <div>
               <Flex align="center" gap={10} wrap="wrap">
-                {request.cr_no} · {request.title}
+                {request.cr_no} · {decodeHtmlEntities(request.title)}
                 <ChangeRequestStatusTag status={request.status} />
                 <PriorityTag priority={request.priority} />
               </Flex>
               <Typography.Text type="secondary" style={{ fontSize: 12, fontWeight: 400 }}>
                 {t('detail.subtitle', {
-                  client: request.organization_name,
-                  project: request.project_name,
+                  client: decodeHtmlEntities(request.organization_name),
+                  project: decodeHtmlEntities(request.project_name),
                   name: request.requester_name,
                   date: formatPortalDate(request.submitted_at, i18n.language) ?? '',
                   defaultValue: '{{client}} · {{project}} · Submitted by {{name}} on {{date}}',

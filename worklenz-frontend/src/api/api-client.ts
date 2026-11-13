@@ -199,7 +199,15 @@ apiClient.interceptors.response.use(
       }
     }
 
-    if (response.data) {
+    // Blob/arraybuffer downloads (CSV/Excel exports) are not ServerResponse JSON —
+    // skip alert parsing so we don't mis-read Blob fields or break follow-up exports.
+    const responseType = response.config?.responseType;
+    const isBinaryDownload =
+      responseType === 'blob' ||
+      responseType === 'arraybuffer' ||
+      (typeof Blob !== 'undefined' && response.data instanceof Blob);
+
+    if (response.data && !isBinaryDownload) {
       const { title, message, auth_error, done } = response.data;
 
       // Don't show alerts for CSRF token rotation responses (they're just metadata)
@@ -216,7 +224,7 @@ apiClient.interceptors.response.use(
         return response;
       }
 
-      if (!isCsrfTokenResponse && message && message.charAt(0) !== '$') {
+      if (!isCsrfTokenResponse && message && typeof message === 'string' && message.charAt(0) !== '$') {
         // For retried requests, only show success messages, not errors
         // (errors were already handled in the error interceptor)
         if (isRetry && !done) {
@@ -384,9 +392,10 @@ apiClient.interceptors.response.use(
       const errorData = error.response.data as any;
       const errorMessage = errorData?.message || 'Access denied';
 
-      // Check if this is a project access error - don't show alert, let component handle it
+      // Check if this is a project or task drawer access error - don't show alert, let component handle it
       if (
         errorMessage.toLowerCase().includes('project') ||
+        errorData?.body?.code === 'TASK_NOT_FOUND' ||
         errorData?.body?.requiresTeamSwitch ||
         errorData?.body?.code === 'TASK_ASSIGNEE_RESTRICTED' ||
         errorData?.body?.code === 'TASK_ASSIGNEE_READONLY'

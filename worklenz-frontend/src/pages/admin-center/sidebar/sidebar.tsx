@@ -33,8 +33,7 @@ const AdminCenterSidebar: React.FC = () => {
     return true;
   });
 
-  const items: MenuItem[] = [
-    ...menuItems.map(item => ({
+  const items: MenuItem[] = menuItems.map(item => ({
       key: item.key,
       label: (
         <Flex gap={8} justify="space-between" className="admin-center-sidebar-button">
@@ -47,8 +46,7 @@ const AdminCenterSidebar: React.FC = () => {
           <RightOutlined style={{ fontSize: 12, fontWeight: 'bold' }} />
         </Flex>
       ),
-    })),
-  ];
+    }));
 
   return (
     <ConfigProvider

@@ -164,8 +164,7 @@ export const useTaskRowColumns = ({
       width: string,
       isSticky?: boolean,
       index?: number,
-      currentBg?: string,
-      rowBackgrounds?: any
+      currentBg?: string
     ) => {
       // Calculate left position for sticky columns - must account for ALL previous columns
       let leftPosition = 0; // Start at 0 to cover the row's left padding
@@ -182,7 +181,9 @@ export const useTaskRowColumns = ({
             position: 'sticky' as const,
             left: leftPosition,
             zIndex: 5, // Lower than header but above regular content
-            backgroundColor: currentBg || (isDarkMode ? (isSubtask ? '#141414' : '#1e1e1e') : '#ffffff'), // Use dynamic background or fallback
+            backgroundColor: currentBg || 'var(--tl-sticky-cell-bg)',
+            transition:
+              'background-color 200ms cubic-bezier(0.4, 0, 0.2, 1), border-color 200ms cubic-bezier(0.4, 0, 0.2, 1)',
             width: width,
             height: '100%', // Fill the row height
             display: 'flex', // Use flex to contain child
@@ -437,17 +438,14 @@ export const useTaskRowColumns = ({
       // Wrap content with sticky positioning if needed
       const content = renderColumnContent();
       if (isSticky) {
-        const hoverBg = rowBackgrounds?.hover || (isDarkMode ? '#2a2a2a' : '#f9fafb');
         return (
           <div
             data-column-id={columnId}
             style={{
               ...wrapperStyle,
               width: `var(--col-width-${columnId})`,
-              // @ts-ignore - CSS custom property
-              '--hover-bg': hoverBg,
             }}
-            className="border-r border-gray-200 dark:border-gray-700 overflow-hidden sticky-column-hover hover:bg-[var(--hover-bg)]"
+            className="border-r border-gray-200 dark:border-gray-700 overflow-hidden sticky-column-hover"
           >
             {content}
           </div>

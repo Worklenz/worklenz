@@ -22,6 +22,7 @@
   "tasks": "detyra",
   "startDate": "Data e Fillimit",
   "endDate": "Data e Përfundimit",
+  "endDateBeforeStartDate": "Data e përfundimit nuk mund të jetë para datës së fillimit",
   "hoursPerDay": "Orë Në Ditë",
   "totalHours": "Orë Totale",
   "deleteButton": "Fshi",

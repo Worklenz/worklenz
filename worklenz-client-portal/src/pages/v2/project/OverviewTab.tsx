@@ -23,6 +23,7 @@ import { useGetThreadsQuery } from '@/store/api-v2';
 import { useFormatters } from '@/hooks/useFormatters';
 import { ActionRow, KeyValueList, RichTextView, StatusTag } from '@/components/v2';
 import type { ClientProjectV2 } from '@/types/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const PROJECT_PHASES = ['Discovery', 'Design', 'Development', 'UAT', 'Deployment'] as const;
 
@@ -88,19 +89,19 @@ export const OverviewTab: React.FC<{ project: ClientProjectV2 }> = ({ project })
               [t('projects.start', { defaultValue: 'Start' }), date(project.start_date)],
               [t('projects.expectedCompletion', { defaultValue: 'Expected completion' }), date(project.expected_completion)],
               [t('projects.status', { defaultValue: 'Status' }), <StatusTag key="s" kind="project" status={project.status} />],
-              [t('projects.currentPhase', { defaultValue: 'Current phase' }), project.phase ?? '—'],
+              [t('projects.currentPhase', { defaultValue: 'Current phase' }), decodeHtmlEntities(project.phase ?? undefined) || '—'],
             ]}
           />
         </Card>
         <Card title={t('projects.contact', { defaultValue: 'Project contact' })} style={{ marginBottom: 16 }}>
           {project.primary_contact ? (
             <Flex gap={12} align="center">
-              <Avatar style={{ backgroundColor: project.color ?? token.colorPrimary }}>{project.primary_contact[0]}</Avatar>
+              <Avatar style={{ backgroundColor: project.color ?? token.colorPrimary }}>{decodeHtmlEntities(project.primary_contact)[0]}</Avatar>
               <div>
-                <Typography.Text strong style={{ display: 'block' }}>{project.primary_contact}</Typography.Text>
+                <Typography.Text strong style={{ display: 'block' }}>{decodeHtmlEntities(project.primary_contact)}</Typography.Text>
                 {project.contact_title && (
                   <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }}>
-                    {project.contact_title}
+                    {decodeHtmlEntities(project.contact_title)}
                   </Typography.Text>
                 )}
                 {project.contact_email && <a href={`mailto:${project.contact_email}`}>{project.contact_email}</a>}

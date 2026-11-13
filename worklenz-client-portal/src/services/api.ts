@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { ApiResponse, ClientUser, ClientToken, SignInCodeRequested } from '@/types';
+import { getAccessRemovedReason, isAccessRevokedBody, signalAccessRemoved } from '@/utils/accessRemoved';
 
 class ClientPortalAPI {
   private api: AxiosInstance;
@@ -45,23 +46,34 @@ class ClientPortalAPI {
         }
 
         // Skip token refresh for the sign-in endpoints: they are called without a session
-        const isAuthEndpoint = originalRequest.url?.includes('/auth/otp/');
-        
+        const url: string = originalRequest.url ?? '';
+        const isAuthEndpoint = url.includes('/auth/otp/');
+        const isRefreshEndpoint = url.includes('/auth/refresh');
+        const isLogoutEndpoint = url.includes('/auth/logout');
+
         // Check if this is a 403 error due to client deactivation
         const errorMessage = error.response?.data?.message || '';
-        const isDeactivated = error.response?.status === 403 && 
-          (errorMessage.toLowerCase().includes('deactivated') || 
-           errorMessage.toLowerCase().includes('portal access is disabled'));
-        
-        // If client is deactivated, immediately clear token and trigger logout
-        if (isDeactivated) {
+        const isDeactivated =
+          error.response?.status === 403 &&
+          (errorMessage.toLowerCase().includes('deactivated') ||
+            errorMessage.toLowerCase().includes('portal access is disabled'));
+
+        // The server says access was revoked (removed, deactivated, account deleted, organization gone).
+        // Refreshing the token cannot help, so end the session now and say why. A logout that is itself
+        // refused is the same answer to the same session: there is nothing left to tell anyone.
+        if (!isAuthEndpoint && (isAccessRevokedBody(error.response?.data) || isDeactivated)) {
           this.clearToken();
           localStorage.removeItem('clientTokenExpiry');
-          // Trigger a custom event that the app can listen to for logout
-          window.dispatchEvent(new CustomEvent('client-deactivated'));
+          if (!isLogoutEndpoint) signalAccessRemoved(getAccessRemovedReason(error.response?.data));
           return Promise.reject(error);
         }
-        
+
+        // A refresh that fails must never wait on itself. Retrying it would reuse the refresh already in
+        // flight (this very request), so the original call, and every screen waiting on it, would hang.
+        if (isRefreshEndpoint || isLogoutEndpoint) {
+          return Promise.reject(error);
+        }
+
         if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry && !isAuthEndpoint) {
           originalRequest._retry = true;
 
@@ -181,6 +193,11 @@ class ClientPortalAPI {
       } as any);
       return response.data;
     } catch (error: any) {
+      // A person whose access was ended while they were away should be told why, not dropped on the
+      // sign-in page where a code that never arrives looks like a fault.
+      if (isAccessRevokedBody(error.response?.data)) {
+        signalAccessRemoved(getAccessRemovedReason(error.response?.data));
+      }
       // If it's a 401 or 403, return a structured error instead of throwing
       if (error.response?.status === 401 || error.response?.status === 403) {
         return {

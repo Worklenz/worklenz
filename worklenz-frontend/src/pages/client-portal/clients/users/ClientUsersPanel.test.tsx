@@ -25,6 +25,7 @@ const state = vi.hoisted(() => ({
   deactivate: vi.fn(),
   reactivate: vi.fn(),
   remove: vi.fn(),
+  restoreAccount: vi.fn(),
   messageSuccess: vi.fn(),
   messageError: vi.fn(),
   messageInfo: vi.fn(),
@@ -48,6 +49,7 @@ vi.mock('@/api/client-portal/portal-access-api', () => ({
   useDeactivatePortalUserMutation: () => [trigger(state.deactivate), { isLoading: false }],
   useReactivatePortalUserMutation: () => [trigger(state.reactivate), { isLoading: false }],
   useRemovePortalUserMutation: () => [trigger(state.remove), { isLoading: false }],
+  useRestorePortalAccountMutation: () => [trigger(state.restoreAccount), { isLoading: false }],
   useUpdatePortalClientUserMutation: () => [trigger(vi.fn()), { isLoading: false }],
   useAssignPortalUserProjectsMutation: () => [trigger(vi.fn()), { isLoading: false }],
 }));
@@ -64,6 +66,12 @@ vi.mock('@/shared/antd-imports', async importOriginal => {
   };
 });
 
+// ProseMirror needs a real layout engine; the message dialog is not under test here.
+vi.mock('../../discussions/RichMessageEditor', async () => {
+  const { RichMessageEditorStub } = await import('../../discussions/richMessageEditorStub');
+  return { RichMessageEditor: RichMessageEditorStub };
+});
+
 import type { ClientUser } from '@/types/client-portal/v2';
 import { ClientUsersPanel } from './ClientUsersPanel';
 
@@ -77,6 +85,8 @@ const makeUser = (overrides: Partial<ClientUser> = {}): ClientUser => ({
   job_title: null,
   role: 'admin',
   status: 'active',
+  account_deleted_at: null,
+  restorable_until: null,
   invite_expired: false,
   invite_not_sent: false,
   new_link_requested: false,
@@ -113,6 +123,7 @@ beforeEach(() => {
   state.resend.mockResolvedValue({ body: { email: 'jamie@brandbase.example', link: null, emailSent: true } });
   state.deactivate.mockResolvedValue({ body: {} });
   state.remove.mockResolvedValue({ body: null });
+  state.restoreAccount.mockResolvedValue({ body: {} });
 });
 
 describe('ClientUsersPanel', () => {
@@ -245,6 +256,92 @@ describe('ClientUsersPanel', () => {
     await waitFor(() =>
       expect(state.deactivate).toHaveBeenLastCalledWith({ userId: 'u1', confirmLastAdmin: true })
     );
+  });
+
+  describe('a person who deleted their own account', () => {
+    const deletedUser = (overrides: Partial<ClientUser> = {}) =>
+      makeUser({
+        id: 'u9',
+        name: 'Riley Park',
+        email: 'riley@brandbase.example',
+        status: 'deleted',
+        account_deleted_at: '2026-10-01T10:00:00.000Z',
+        restorable_until: '2026-10-31T10:00:00.000Z',
+        ...overrides,
+      });
+
+    it('stays in the list with its own status, not as Deactivated', () => {
+      state.usersResult = listOf([deletedUser()]);
+      render(<ClientUsersPanel />);
+
+      const riley = screen.getByText('Riley Park').closest('tr') as HTMLElement;
+      expect(within(riley).getByText('Account deleted')).toBeInTheDocument();
+      expect(within(riley).queryByText('Deactivated')).not.toBeInTheDocument();
+      // The profile is still readable: staff see who it was and what they had.
+      expect(within(riley).getByText('riley@brandbase.example')).toBeInTheDocument();
+    });
+
+    it('offers View, Restore and Remove only: Reactivate would not bring the account back', async () => {
+      state.usersResult = listOf([deletedUser()]);
+      render(<ClientUsersPanel />);
+
+      const riley = screen.getByText('Riley Park').closest('tr') as HTMLElement;
+      await userEvent.click(within(riley).getByRole('button', { name: 'Actions for Riley Park' }));
+
+      expect(await screen.findByText('Restore account')).toBeInTheDocument();
+      expect(screen.getByText('View profile')).toBeInTheDocument();
+      expect(screen.getByText('Remove user')).toBeInTheDocument();
+      expect(screen.queryByText('Reactivate user')).not.toBeInTheDocument();
+      expect(screen.queryByText('Deactivate user')).not.toBeInTheDocument();
+      expect(screen.queryByText('Create sign-in link')).not.toBeInTheDocument();
+      expect(screen.queryByText('Message')).not.toBeInTheDocument();
+    });
+
+    it('does not offer a restore once the 30-day window has ended', async () => {
+      state.usersResult = listOf([deletedUser({ restorable_until: null })]);
+      render(<ClientUsersPanel />);
+
+      const riley = screen.getByText('Riley Park').closest('tr') as HTMLElement;
+      await userEvent.click(within(riley).getByRole('button', { name: 'Actions for Riley Park' }));
+      await screen.findByText('Remove user');
+      expect(screen.queryByText('Restore account')).not.toBeInTheDocument();
+    });
+
+    it('asks before restoring, and says it reverses their own decision', async () => {
+      state.usersResult = listOf([deletedUser()]);
+      render(<ClientUsersPanel />);
+
+      const riley = screen.getByText('Riley Park').closest('tr') as HTMLElement;
+      await userEvent.click(within(riley).getByRole('button', { name: 'Actions for Riley Park' }));
+      await userEvent.click(await screen.findByText('Restore account'));
+
+      expect(await screen.findByText('Restore this account?')).toBeInTheDocument();
+      expect(screen.getByText(/Only restore it if they asked you to/)).toBeInTheDocument();
+      expect(state.restoreAccount).not.toHaveBeenCalled();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Restore account' }));
+      await waitFor(() => expect(state.restoreAccount).toHaveBeenCalledWith('u9'));
+      await waitFor(() =>
+        expect(state.messageSuccess).toHaveBeenCalledWith('Riley Park’s account was restored. They can sign in again.')
+      );
+    });
+
+    it('shows the server’s reason when the restore is refused', async () => {
+      state.restoreAccount.mockRejectedValueOnce({
+        data: { message: 'The 30-day window to restore this account has ended.', body: { code: 'RETENTION_EXPIRED' } },
+      });
+      state.usersResult = listOf([deletedUser()]);
+      render(<ClientUsersPanel />);
+
+      const riley = screen.getByText('Riley Park').closest('tr') as HTMLElement;
+      await userEvent.click(within(riley).getByRole('button', { name: 'Actions for Riley Park' }));
+      await userEvent.click(await screen.findByText('Restore account'));
+      await userEvent.click(await screen.findByRole('button', { name: 'Restore account' }));
+
+      await waitFor(() =>
+        expect(state.messageError).toHaveBeenCalledWith('The 30-day window to restore this account has ended.')
+      );
+    });
   });
 
   it('offers Message only for an active user', async () => {

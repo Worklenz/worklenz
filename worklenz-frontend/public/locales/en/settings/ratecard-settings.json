@@ -42,6 +42,7 @@
   "jobRolesTitle": "Job Roles",
   "noJobTitlesMessage": "Please create job titles first in the Job Titles settings before adding roles to rate cards.",
   "createNewJobTitle": "Create New Job Title",
+  "createJobTitleButtonText": "Create a Job Title",
   "jobTitleNamePlaceholder": "Enter job title name",
   "jobTitleNameRequired": "Job title name is required",
   "jobTitleCreatedSuccess": "Job title created successfully",

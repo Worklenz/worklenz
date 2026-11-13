@@ -5,6 +5,13 @@ import { getPortalCounts } from "../../../services/client-portal-v2/counts.servi
 import { badRequest } from "../../../services/client-portal-v2/errors";
 import { addClient } from "../../../services/client-portal-v2/onboard.service";
 import {
+  deactivateOrganization,
+  deleteOrganization,
+  getDeletePreview,
+  reactivateOrganization,
+  restoreOrganization,
+} from "../../../services/client-portal-v2/organization-lifecycle.service";
+import {
   getOrganizationOverview,
   getOrganizationStats,
   listOrganizations,
@@ -24,6 +31,7 @@ import {
   reactivateClientUser,
   removeClientUser,
   resendClientInvitation,
+  restoreClientAccount,
   updateClientUser,
 } from "../../../services/client-portal-v2/users.service";
 import { asNumber, asString, bodyOf, ok, portalHandler, staffContext, uuidParam } from "./portal-http";
@@ -73,10 +81,72 @@ export default class PortalAccessController {
       sort: asString(req.query.sort),
       order: asString(req.query.order),
       access: asString(req.query.access),
+      deleted: asString(req.query.deleted) === "true",
       page: asNumber(req.query.page),
       limit: asNumber(req.query.limit),
     });
     ok(res, { ...list, stats: await getOrganizationStats(db, teamId) });
+  });
+
+  /** GET /portal/v2/organizations/:organizationId/delete-preview - what deleting would affect or be blocked by. */
+  static deletePreview = portalHandler("Failed to prepare the delete", async (req, res) => {
+    const { teamId } = staffContext(req);
+    ok(res, await getDeletePreview(db, teamId, uuidParam(req, "organizationId")));
+  });
+
+  /**
+   * DELETE /portal/v2/organizations/:organizationId - soft delete, restorable for 30 days.
+   * body: { confirm_pending_approvals?, confirm_open_change_requests? }
+   */
+  static deleteOrganization = portalHandler("Failed to delete the client", async (req, res) => {
+    const { teamId, actor } = staffContext(req);
+    const body = bodyOf(req);
+    ok(
+      res,
+      await deleteOrganization({
+        teamId,
+        organizationId: uuidParam(req, "organizationId"),
+        actor,
+        confirmPendingApprovals: body.confirm_pending_approvals === true,
+        confirmOpenChangeRequests: body.confirm_open_change_requests === true,
+      }),
+      "Client deleted. Its users can no longer sign in."
+    );
+  });
+
+  /** POST /portal/v2/organizations/:organizationId/restore  body: { new_name? } */
+  static restoreOrganization = portalHandler("Failed to restore the client", async (req, res) => {
+    const { teamId, actor } = staffContext(req);
+    ok(
+      res,
+      await restoreOrganization({
+        teamId,
+        organizationId: uuidParam(req, "organizationId"),
+        actor,
+        newName: asString(bodyOf(req).new_name),
+      }),
+      "Client restored"
+    );
+  });
+
+  /** POST /portal/v2/organizations/:organizationId/deactivate */
+  static deactivateOrganization = portalHandler("Failed to deactivate the client", async (req, res) => {
+    const { teamId, actor } = staffContext(req);
+    ok(
+      res,
+      await deactivateOrganization({ teamId, organizationId: uuidParam(req, "organizationId"), actor }),
+      "Client deactivated. Its users can no longer sign in."
+    );
+  });
+
+  /** POST /portal/v2/organizations/:organizationId/reactivate */
+  static reactivateOrganization = portalHandler("Failed to reactivate the client", async (req, res) => {
+    const { teamId, actor } = staffContext(req);
+    ok(
+      res,
+      await reactivateOrganization({ teamId, organizationId: uuidParam(req, "organizationId"), actor }),
+      "Client reactivated"
+    );
   });
 
   /** GET /portal/v2/organizations/:organizationId/overview - counts plus "Needs attention". */
@@ -126,6 +196,7 @@ export default class PortalAccessController {
           job_title: body.job_title === null ? null : asString(body.job_title),
           role: asString(body.role),
           confirm_last_admin: body.confirm_last_admin === true,
+          confirm_pending_approvals: body.confirm_pending_approvals === true,
         },
       }),
       "Saved. A role change applies on the user's next authorization check."
@@ -179,6 +250,12 @@ export default class PortalAccessController {
   static reactivate = portalHandler("Failed to reactivate the client user", async (req, res) => {
     const { teamId, actor } = staffContext(req);
     ok(res, await reactivateClientUser({ teamId, userId: uuidParam(req, "userId"), actor }), "Reactivated");
+  });
+
+  /** POST /portal/v2/client-users/:userId/restore-account - a person who deleted their own account, inside the 30-day window. */
+  static restoreAccount = portalHandler("Failed to restore the account", async (req, res) => {
+    const { teamId, actor } = staffContext(req);
+    ok(res, await restoreClientAccount({ teamId, userId: uuidParam(req, "userId"), actor }), "Account restored");
   });
 
   /** DELETE /portal/v2/client-users/:userId - their comments and approvals stay in history. */

@@ -36,6 +36,7 @@ import {
 import type { ColumnField, FilterGroup, RowAction } from '@/components/v2';
 import type { ClientChangeRequestV2 } from '@/types/v2';
 import { NewChangeRequestModal } from '@/components/v2/NewChangeRequestModal';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { ChangeRequestDetail } from './change-requests/ChangeRequestDetail';
 
 const OPEN_STATUSES = ['submitted', 'under_review', 'more_info'];
@@ -80,8 +81,8 @@ const ChangeRequestList: React.FC<{ openId?: string }> = ({ openId }) => {
         (priorityFilter.length === 0 || priorityFilter.includes(request.priority)) &&
         (projectFilter.length === 0 || projectFilter.includes(request.project_id)) &&
         (needle === '' ||
-          [request.title, request.cr_no, request.requester_name, request.project_name].some(value =>
-            value.toLowerCase().includes(needle)
+          [decodeHtmlEntities(request.title), request.cr_no, request.requester_name, request.project_name].some(
+            value => value.toLowerCase().includes(needle)
           ))
     );
   }, [requests, searchText, statusFilter, priorityFilter, projectFilter]);
@@ -125,7 +126,7 @@ const ChangeRequestList: React.FC<{ openId?: string }> = ({ openId }) => {
       title: t('changeRequests.request', { defaultValue: 'Request' }),
       key: 'request',
       ...sorting.columnProps('request'),
-      render: (_: unknown, request) => <Typography.Text strong>{request.title}</Typography.Text>,
+      render: (_: unknown, request) => <Typography.Text strong>{decodeHtmlEntities(request.title)}</Typography.Text>,
     },
     {
       title: t('changeRequests.requester', { defaultValue: 'Requested by' }),

@@ -15,6 +15,7 @@ import {
   Typography,
 } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
+import TablePagination from '@/components/TablePagination';
 import dayjs from 'dayjs';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import {
@@ -233,17 +234,7 @@ export const FinanceInvoicesPage = () => {
           columns={columns}
           dataSource={rows}
           loading={loading}
-          pagination={{
-            current: page,
-            pageSize,
-            total,
-            showSizeChanger: true,
-            pageSizeOptions: [10, 20, 50, 100],
-            onChange: (nextPage, nextSize) => {
-              setPage(nextPage);
-              setPageSize(nextSize);
-            },
-          }}
+          pagination={false}
           locale={{
             emptyText: (
               <Empty
@@ -254,6 +245,26 @@ export const FinanceInvoicesPage = () => {
             ),
           }}
           scroll={{ x: 1100 }}
+        />
+
+        <TablePagination
+          navigationLabel={t('common:paginationNavigation')}
+          firstPageLabel={t('common:firstPage')}
+          previousPageLabel={t('common:previousPage')}
+          nextPageLabel={t('common:nextPage')}
+          lastPageLabel={t('common:lastPage')}
+          renderDefaultSummary={(range, total) => t('common:paginationSummary', { range, total })}
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={(nextPage, nextPageSize) => {
+            setPage(nextPage);
+            setPageSize(nextPageSize);
+          }}
+          rowsPerPageLabel={t('myTasksView.rowsPerPage', {
+            defaultValue: 'Rows per page',
+          })}
+          variant="dropdown"
         />
       </Card>
     </Flex>

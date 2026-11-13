@@ -43,6 +43,7 @@
   "labourHoursColumn": "Horas Laborales",
   "actions": "Acciones",
   "selectJobTitle": "Seleccione el puesto de trabajo",
+  "createJobTitleButtonText": "Crear un puesto de trabajo",
   "ratecardsPluralText": "Plantillas de hojas de tarifas",
   "deleteConfirm": "Está seguro ?",
   "yes": "Sí",

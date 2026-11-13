@@ -113,5 +113,6 @@
   "deleteQuoteSuccess": "报价单删除成功",
   "deleteQuoteError": "删除报价单失败",
   "linkedChangeRequest": "链接的变更请求",
-  "openChangeRequest": "打开变更请求"
+  "openChangeRequest": "打开变更请求",
+  "downloadFailed": "下载 PDF 失败，请重试。"
 }

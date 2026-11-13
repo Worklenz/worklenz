@@ -74,7 +74,7 @@ interface ITaskAssignee {
 
 const TaskListBulkActionsBar = () => {
   const dispatch = useAppDispatch();
-  const { t } = useTranslation('tasks/task-table-bulk-actions');
+  const { t, i18n } = useTranslation('tasks/task-table-bulk-actions');
   const { trackMixpanelEvent } = useMixpanelTracking();
 
   // Add permission hooks near other hooks
@@ -271,7 +271,9 @@ const TaskListBulkActionsBar = () => {
                 : '{{parentCount}} tasks {{action}}d.',
             parentCount: selectedParentTasksCount,
             subtaskCount: selectedSubtasksCount,
-            action: actionKey,
+            action: i18n.resolvedLanguage?.startsWith('it')
+              ? t(actionKey, { defaultValue: archived ? 'Unarchive' : 'Archive' })
+              : actionKey,
           })
         );
         trackMixpanelEvent(evt_project_task_list_bulk_archive);

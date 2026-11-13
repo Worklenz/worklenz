@@ -8,10 +8,12 @@ import http, {IncomingHttpHeaders} from "http";
 
 import app, { startBackgroundWorkers } from "../app";
 import {register} from "../socket.io";
+import {on_login} from "../socket.io/commands/on-connect";
 import {IO} from "../shared/io";
 import sessionMiddleware from "../middlewares/session-middleware";
 import {getLoggedInUserIdFromSocket} from "../socket.io/util";
 import {startCronJobs} from "../cron_jobs";
+import { startAddonJobs } from "../addons/load-addons";
 import {startRecurringTasksJob} from "../cron_jobs/recurring-tasks";
 import {startProjectFilesCleanupJob} from "../cron_jobs/project-files-cleanup-job";
 import {startSprintAutoScheduleJob} from "../cron_jobs/sprint-auto-schedule-job";
@@ -19,6 +21,7 @@ import {startTaskExportCleanupJob} from "../cron_jobs/task-export-cleanup-job";
 import {startAuditLogExportCleanupJob} from "../cron_jobs/audit-log-export-cleanup-job";
 import {startAuditLogRetentionJob} from "../cron_jobs/audit-log-retention-job";
 import {startSeatReconciliationJob} from "../cron_jobs/seat-reconciliation-job";
+import {startCfdDailySnapshotJob} from "../cron_jobs/cfd-daily-snapshot-job";
 import FileConstants from "../shared/file-constants";
 import {initRedis} from "../redis/client";
 import DbTaskStatusChangeListener from "../pg_notify_listeners/db-task-status-changed";
@@ -82,6 +85,13 @@ io.engine.on("initial_headers", (headers: IncomingHttpHeaders) => {
 });
 
 io.on("connection", (socket: Socket) => {
+  // Bind users.socket_id from the authenticated session immediately so
+  // real-time broadcasts (and REST→room fan-out) work even if the client
+  // misses re-emitting LOGIN after a silent reconnect.
+  const userId = getLoggedInUserIdFromSocket(socket);
+  if (userId) {
+    void on_login(io, socket, userId);
+  }
   register(io, socket);
 });
 
@@ -121,7 +131,10 @@ function onListening() {
     ? `pipe ${addr}`
     : `port ${addr.port}`;
 
-  process.env.ENABLE_EMAIL_CRONJOBS === "true" && startCronJobs();
+  if (process.env.ENABLE_EMAIL_CRONJOBS === "true") {
+    startCronJobs();
+    startAddonJobs();
+  }
   startBackgroundWorkers();
   process.env.ENABLE_RECURRING_JOBS === "true" && startRecurringTasksJob();
   startProjectFilesCleanupJob();
@@ -130,6 +143,7 @@ function onListening() {
   startAuditLogExportCleanupJob();
   startAuditLogRetentionJob();
   startSeatReconciliationJob();
+  startCfdDailySnapshotJob();
   if (getDeploymentMode() === "cloud" && !isPaddleServiceConfigured()) {
     console.error("[config] The license manager URL is not set (PRODUCTION_SERVER_URL or UAT_SERVER_URL); Paddle checkout will fail.");
   }

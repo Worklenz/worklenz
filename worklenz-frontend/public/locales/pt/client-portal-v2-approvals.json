@@ -6,6 +6,7 @@
     "approverPlaceholder": "Select an approver…",
     "drafted": "{{ref}} salvo como rascunho. O cliente ainda não pode ver.",
     "dueDate": "Data de vencimento (opcional)",
+    "dueDatePlaceholder": "Selecionar data de vencimento",
     "existingHint": "Somente arquivos, marcos e tarefas visíveis ao cliente podem ser vinculados. A versão exata do arquivo é registrada.",
     "existingItem": "Item existente",
     "failed": "A solicitação de aprovação não pôde ser salva.",

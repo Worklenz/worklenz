@@ -18,6 +18,9 @@ const CustomAvatarGroup = ({ task, sectionId }: CustomAvatarGroupProps) => {
       style={{
         borderRadius: 4,
         cursor: 'pointer',
+        minWidth: 0,
+        maxWidth: '100%',
+        flexShrink: 1,
       }}
     >
       <Avatars members={task?.names || []} />

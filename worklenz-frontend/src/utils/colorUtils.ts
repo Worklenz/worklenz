@@ -13,24 +13,62 @@ export const toSolidTagColor = (color?: string): string | undefined => {
 
 /**
  * Calculate the contrast color (black or white) for a given background color
- * @param hexColor - Hex color code (e.g., '#FF5733' or 'FF5733')
- * @returns '#000000' for light backgrounds, '#FFFFFF' for dark backgrounds
+ * @param hexColor - Hex color code (e.g., '#FF5733', '#F53', or '#FF573369')
+ * @param backgroundColor - Optional solid surface behind a translucent color
+ * @returns The foreground color with the higher WCAG contrast ratio
  */
-export function getContrastColor(hexColor: string): string {
-  // Remove # if present
-  const color = hexColor.replace('#', '');
+export function getContrastColor(hexColor: string, backgroundColor?: string): string {
+  const color = hexColor.trim().replace(/^#/, '');
+  const expandedColor =
+    color.length === 3
+      ? color
+          .split('')
+          .map(channel => `${channel}${channel}`)
+          .join('')
+      : color.length === 8
+        ? color.slice(0, 6)
+        : color;
 
-  // Convert to RGB
-  const r = parseInt(color.substring(0, 2), 16);
-  const g = parseInt(color.substring(2, 4), 16);
-  const b = parseInt(color.substring(4, 6), 16);
+  if (!/^[0-9a-f]{6}$/i.test(expandedColor)) {
+    return '#FFFFFF';
+  }
 
-  // Calculate luminance using the relative luminance formula
-  // https://www.w3.org/TR/WCAG20/#relativeluminancedef
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  let [red, green, blue] = [0, 2, 4].map(offset =>
+    parseInt(expandedColor.substring(offset, offset + 2), 16)
+  );
+  if (color.length === 8 && backgroundColor) {
+    const backdrop = backgroundColor.trim().replace(/^#/, '');
+    const expandedBackdrop =
+      backdrop.length === 3
+        ? backdrop
+            .split('')
+            .map(channel => `${channel}${channel}`)
+            .join('')
+        : backdrop.slice(0, 6);
 
-  // Return black for light backgrounds, white for dark backgrounds
-  return luminance > 0.5 ? '#000000' : '#FFFFFF';
+    if (/^[0-9a-f]{6}$/i.test(expandedBackdrop)) {
+      const alpha = parseInt(color.substring(6, 8), 16) / 255;
+      const [backdropRed, backdropGreen, backdropBlue] = [0, 2, 4].map(offset =>
+        parseInt(expandedBackdrop.substring(offset, offset + 2), 16)
+      );
+      red = Math.round(red * alpha + backdropRed * (1 - alpha));
+      green = Math.round(green * alpha + backdropGreen * (1 - alpha));
+      blue = Math.round(blue * alpha + backdropBlue * (1 - alpha));
+    }
+  }
+
+  const linearizeChannel = (value: number): number => {
+    const channel = value / 255;
+    return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance =
+    0.2126 * linearizeChannel(red) +
+    0.7152 * linearizeChannel(green) +
+    0.0722 * linearizeChannel(blue);
+  const blackContrast = (luminance + 0.05) / 0.05;
+  const whiteContrast = 1.05 / (luminance + 0.05);
+
+  return blackContrast >= whiteContrast ? '#000000' : '#FFFFFF';
 }
 
 /**

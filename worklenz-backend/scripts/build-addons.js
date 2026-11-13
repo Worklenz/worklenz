@@ -6,7 +6,8 @@ const fs = require('fs');
 const path = require('path');
 
 const repoRoot = path.resolve(__dirname, '../..');
-const addonsDir = path.join(repoRoot, 'addons');
+const nestedAddonsDir = path.join(repoRoot, 'addons', 'worklenz-addons');
+const addonsDir = fs.existsSync(nestedAddonsDir) ? nestedAddonsDir : path.join(repoRoot, 'addons');
 
 if (!fs.existsSync(addonsDir)) {
   process.exit(0);

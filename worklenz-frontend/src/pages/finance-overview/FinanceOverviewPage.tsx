@@ -36,6 +36,7 @@ import { IFinanceOverviewProject } from '@/api/finance-overview/finance-overview
 import { financeOverviewApiService } from '@/api/finance-overview/finance-overview.api.service';
 import { currencyRatesApiService } from '@/api/settings/currency-rates/currency-rates.api.service';
 import { decodeHtmlEntities } from '@/utils/html-entities';
+import TablePagination from '@/components/TablePagination';
 
 const { Text } = Typography;
 
@@ -105,6 +106,8 @@ const FinanceOverviewPage = () => {
     const orgConfig = useAppSelector(s => s.orgConfigReducer);
     const [searchText, setSearchText] = useState('');
     const [exporting, setExporting] = useState(false);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     // ── Base currency & exchange rates ────────────────────────────────────
     const baseCurrency = orgConfig.base_currency || 'USD';
@@ -237,6 +240,11 @@ const FinanceOverviewPage = () => {
             (p.client_name?.toLowerCase().includes(lower) ?? false)
         );
     }, [projects, searchText]);
+
+    const paginatedProjects = useMemo(() => {
+        const start = (page - 1) * pageSize;
+        return filteredProjects.slice(start, start + pageSize);
+    }, [filteredProjects, page, pageSize]);
 
     // ── Export ────────────────────────────────────────────────────────────
     const handleExport = async () => {
@@ -495,7 +503,10 @@ const FinanceOverviewPage = () => {
                                 }
                                 placeholder={t('table.searchPlaceholder')}
                                 value={searchText}
-                                onChange={e => setSearchText(e.target.value)}
+                                onChange={e => {
+                                    setSearchText(e.target.value);
+                                    setPage(1);
+                                }}
                                 allowClear
                                 style={{
                                     width: 280,
@@ -510,21 +521,38 @@ const FinanceOverviewPage = () => {
                     >
                         <Table<IFinanceOverviewProject>
                             rowKey="id"
-                            dataSource={filteredProjects}
+                            dataSource={paginatedProjects}
                             columns={columns}
                             loading={loading}
                             size="small"
                             onRow={record => ({
-                                onClick: () => navigate(`/worklenz/projects/${record.id}?tab=finance`),
+                                onClick: () =>
+                                    navigate(`/worklenz/projects/${record.id}?tab=finance`),
                                 style: { cursor: 'pointer' },
                             })}
-                            pagination={{
-                                defaultPageSize: 10,
-                                pageSizeOptions: ['10', '20', '50', '100'],
-                                showSizeChanger: true,
-                                showTotal: (total, range) => `${range[0]}–${range[1]} of ${total}`,
-                            }}
+                            pagination={false}
                             scroll={{ x: 900 }}
+                        />
+                        <TablePagination
+                            navigationLabel={t('common:paginationNavigation')}
+                            firstPageLabel={t('common:firstPage')}
+                            previousPageLabel={t('common:previousPage')}
+                            nextPageLabel={t('common:nextPage')}
+                            lastPageLabel={t('common:lastPage')}
+                            renderDefaultSummary={(range, total) =>
+                              t('common:paginationSummary', { range, total })
+                            }
+                            page={page}
+                            pageSize={pageSize}
+                            total={filteredProjects.length}
+                            onPageChange={(nextPage, nextPageSize) => {
+                                setPage(nextPage);
+                                setPageSize(nextPageSize);
+                            }}
+                            rowsPerPageLabel={t('myTasksView.rowsPerPage', {
+                                defaultValue: 'Rows per page',
+                            })}
+                            variant="dropdown"
                         />
                     </Card>
                 </Col>

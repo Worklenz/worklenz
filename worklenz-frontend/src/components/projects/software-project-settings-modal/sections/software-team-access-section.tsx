@@ -110,18 +110,38 @@ export const SoftwareTeamAccessSection = ({
         </SettingRow>
         <SettingRow
           label={t('softwareSettings.restrictCreation', {
-            defaultValue: 'Only Admins and Team Leads can create and assign work items',
+            defaultValue:
+              'Only Admins, Team Leads, and Project Managers can create and assign work items',
           })}
           description={t('softwareSettings.restrictCreationHelp', {
             defaultValue: 'Members can still update the work items assigned to them.',
           })}
-          isLast={!canManageVisibility}
         >
           <Form.Item name="restrict_task_creation" valuePropName="checked" noStyle>
             <Switch
               disabled={disabled || !hasBusinessAccess}
               aria-label={t('softwareSettings.restrictCreation', {
-                defaultValue: 'Only Admins and Team Leads can create and assign work items',
+                defaultValue:
+                  'Only Admins, Team Leads, and Project Managers can create and assign work items',
+              })}
+            />
+          </Form.Item>
+        </SettingRow>
+        <SettingRow
+          label={t('membersCanViewClientTeam', {
+            defaultValue: "Allow members to view Client's team",
+          })}
+          description={t('membersCanViewClientTeamTooltip', {
+            defaultValue:
+              "When enabled, normal project members can see the Client's team tab on the Members page. Owners, Admins, Team Leads, and Project Managers always see it.",
+          })}
+          isLast={!canManageVisibility}
+        >
+          <Form.Item name="members_can_view_client_team" valuePropName="checked" noStyle>
+            <Switch
+              disabled={disabled}
+              aria-label={t('membersCanViewClientTeam', {
+                defaultValue: "Allow members to view Client's team",
               })}
             />
           </Form.Item>
@@ -154,7 +174,7 @@ export const SoftwareTeamAccessSection = ({
             className="mt-3"
             message={t('restrictTaskCreationBusinessPlanDescription', {
               defaultValue:
-                'Restricting task creation to Admins and Team Leads is available on Business and Enterprise plans.',
+                'Restricting task creation to Admins, Team Leads, and Project Managers is available on Business and Enterprise plans.',
             })}
             action={upgradeAction}
           />

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { resolveTaskProgress } from './task-progress';
-import taskManagementReducer, { setTaskLatestComment } from './task-management.slice';
+import taskManagementReducer, {
+  convertTaskToSubtask,
+  fetchSubTasks,
+  setTaskLatestComment,
+} from './task-management.slice';
 
 describe('resolveTaskProgress', () => {
   it('preserves the backend ratio instead of recalculating from completed subtasks', () => {
@@ -90,5 +94,62 @@ describe('setTaskLatestComment', () => {
     );
 
     expect(next.entities['missing']).toBeUndefined();
+  });
+});
+
+describe('convertTaskToSubtask vs stale fetchSubTasks.fulfilled', () => {
+  const baseTask = (id: string, overrides: Record<string, unknown> = {}) =>
+    ({
+      id,
+      title: id,
+      name: id,
+      status: 'todo',
+      priority: 'low',
+      progress: 0,
+      ...overrides,
+    }) as never;
+
+  it('replaces destination sub_tasks and drops an optimistic move when a pre-move GET fulfills', () => {
+    const base = taskManagementReducer(undefined, { type: '@@INIT' });
+    const seeded = {
+      ...base,
+      entities: {
+        'parent-old': baseTask('parent-old', {
+          sub_tasks: [baseTask('sub-a', { parent_task_id: 'parent-old', is_sub_task: true })],
+          sub_tasks_count: 1,
+          show_sub_tasks: true,
+        }),
+        'parent-new': baseTask('parent-new', {
+          sub_tasks: [baseTask('other', { parent_task_id: 'parent-new', is_sub_task: true })],
+          sub_tasks_count: 1,
+          show_sub_tasks: true,
+        }),
+        'sub-a': baseTask('sub-a', { parent_task_id: 'parent-old', is_sub_task: true }),
+        other: baseTask('other', { parent_task_id: 'parent-new', is_sub_task: true }),
+      },
+      ids: ['parent-old', 'parent-new', 'sub-a', 'other'],
+    } as unknown as ReturnType<typeof taskManagementReducer>;
+
+    const afterOptimistic = taskManagementReducer(
+      seeded,
+      convertTaskToSubtask({ taskId: 'sub-a', parentTaskId: 'parent-new' })
+    );
+    expect(afterOptimistic.entities['parent-new']?.sub_tasks?.map(s => s.id)).toContain('sub-a');
+
+    // Stale destination GET (started before move committed) returns old children only.
+    const afterStaleGet = taskManagementReducer(
+      afterOptimistic,
+      fetchSubTasks.fulfilled(
+        {
+          parentTaskId: 'parent-new',
+          subtasks: [{ id: 'other', name: 'other', title: 'other' }],
+        } as never,
+        'req-1',
+        { taskId: 'parent-new', projectId: 'proj' }
+      )
+    );
+
+    expect(afterStaleGet.entities['parent-new']?.sub_tasks?.map(s => s.id)).toEqual(['other']);
+    expect(afterStaleGet.entities['parent-new']?.sub_tasks?.map(s => s.id)).not.toContain('sub-a');
   });
 });

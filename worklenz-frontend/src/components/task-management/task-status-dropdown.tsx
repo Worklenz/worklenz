@@ -13,6 +13,7 @@ import {
   moveTaskBetweenGroups,
 } from '@/features/task-management/task-management.slice';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
+import { getContrastColor } from '@/utils/colorUtils';
 import alertService from '@/services/alerts/alertService';
 
 interface TaskStatusDropdownProps {
@@ -213,6 +214,7 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
   const statusColor = currentStatus
     ? getStatusColor(currentStatus)
     : getStatusColor({ name: typeof task.status === 'string' ? task.status : '' });
+  const statusTextColor = getContrastColor(statusColor);
   const isInline = variant === 'inline';
 
   return (
@@ -243,7 +245,7 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
           ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
         `
         }
-        style={isInline ? undefined : { backgroundColor: statusColor, color: 'white' }}
+        style={isInline ? undefined : { backgroundColor: statusColor, color: statusTextColor }}
       >
         {isInline && (
           <span

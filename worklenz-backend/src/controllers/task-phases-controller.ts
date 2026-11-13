@@ -6,7 +6,9 @@ import {ServerResponse} from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import {TASK_STATUS_COLOR_ALPHA} from "../shared/constants";
+import {IO} from "../shared/io";
 import {isValidUuid} from "../shared/validation-helpers";
+import {SocketEvents} from "../socket.io/events";
 import {
   completeSprintRecord,
   getSprintLengthDays,
@@ -145,7 +147,14 @@ export default class TaskPhasesController extends WorklenzControllerBase {
           AND pp.sprint_status = 'active'
       ) sprint_metrics ON TRUE
       WHERE pp.project_id = $1
-      ORDER BY pp.sort_index DESC;
+      ORDER BY
+        CASE COALESCE(pp.sprint_status, 'planned')
+          WHEN 'active' THEN 0
+          WHEN 'planned' THEN 1
+          WHEN 'completed' THEN 2
+          ELSE 3
+        END,
+        pp.sort_index DESC;
     `;
     const result = await db.query(q, [req.query.id]);
 
@@ -429,6 +438,7 @@ export default class TaskPhasesController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null, result.error));
     }
 
+    IO.emitToProjectRoom(req.query.id as string, SocketEvents.PROJECT_SPRINTS_UPDATED);
     const data = result.data;
     data.color_code = data.color_code + TASK_STATUS_COLOR_ALPHA;
     return res.status(200).send(new ServerResponse(true, data));
@@ -454,13 +464,14 @@ export default class TaskPhasesController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null, result.error));
     }
 
-    const {phase, archivedCount, movedCount} = result.data;
+    const {phase, archivedCount, movedCount, plannedLengthDays} = result.data;
 
     const startedSprint = await tryStartNextSprintAfterCompletion(
-      projectId, destinationPhaseId, getSprintLengthDays(phase)
+      projectId, destinationPhaseId, plannedLengthDays ?? getSprintLengthDays(phase)
     );
     if (startedSprint) startedSprint.color_code = startedSprint.color_code + TASK_STATUS_COLOR_ALPHA;
 
+    IO.emitToProjectRoom(projectId, SocketEvents.PROJECT_SPRINTS_UPDATED);
     phase.color_code = phase.color_code + TASK_STATUS_COLOR_ALPHA;
     return res.status(200).send(
       new ServerResponse(true, {

@@ -10,6 +10,7 @@ import {
 import { getSignInCodeKey } from "../../shared/jwt-secret";
 import TokenService from "../token-service";
 import { PortalError, badRequest } from "./errors";
+import { ACCESS_LOSS_MESSAGES, AccessLossReason } from "./subject";
 import { Queryable } from "./types";
 
 /**
@@ -120,6 +121,70 @@ export async function findSignInTargets(q: Queryable, email: string): Promise<Si
 }
 
 /**
+ * Why an address that has been added to a portal still cannot sign in, most informative first. Empty when
+ * the address is unknown (or is fine). Never used to answer a typed address on screen: only the person
+ * who can read that mailbox, or a person holding a private invitation link, is told.
+ */
+export async function findSignInBlockReasons(q: Queryable, email: string): Promise<AccessLossReason[]> {
+  const result = await q.query(
+    `SELECT cc.disabled_at,
+            c.status AS client_status, c.deleted_at AS client_deleted_at,
+            COALESCE((SELECT cpa.is_active FROM client_portal_access cpa WHERE cpa.client_id = c.id LIMIT 1), TRUE) AS portal_active,
+            EXISTS (SELECT 1 FROM client_users du WHERE LOWER(du.email) = LOWER(cc.email) AND du.deleted_at IS NOT NULL) AS login_deleted
+       FROM client_contacts cc
+       JOIN clients c ON c.id = cc.client_id
+      WHERE LOWER(cc.email) = $1`,
+    [email]
+  );
+
+  const reasons = new Set<AccessLossReason>();
+  for (const row of result.rows) {
+    const organizationBlocked =
+      row.client_deleted_at || row.client_status === "inactive" || row.portal_active === false;
+    if (row.login_deleted) reasons.add("account_deleted");
+    else if (row.disabled_at) reasons.add("access_disabled");
+    else if (organizationBlocked) reasons.add("organization_unavailable");
+  }
+  return (["account_deleted", "access_disabled", "organization_unavailable"] as const).filter(reason =>
+    reasons.has(reason)
+  );
+}
+
+const REASON_NOTICE_LINES: Record<AccessLossReason, string> = {
+  account_deleted:
+    "The account for this address was deleted. If that was a mistake, contact a Client Admin of your organization or your project team: a deleted account can be restored for 30 days.",
+  access_disabled:
+    "Your access was deactivated. Contact a Client Admin of your organization or your project team.",
+  organization_unavailable:
+    "The portal for your organization is no longer available. Contact your project team.",
+  access_removed: "Your access was removed. Contact a Client Admin of your organization or your project team.",
+};
+
+/**
+ * Sent instead of a code to an address that is in a portal but cannot sign in, so the person is told why
+ * without anyone being able to find out who is a client by typing addresses. Like the code email it is a
+ * fixed template that names no company, team or person.
+ */
+async function sendUnavailableEmail(email: string, reasons: AccessLossReason[]): Promise<boolean> {
+  const items = reasons.map(reason => `<li style="margin:0 0 8px">${REASON_NOTICE_LINES[reason]}</li>`).join("");
+  const html = `
+    <div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#1f1f1f">
+      <h2 style="margin:0 0 16px;font-size:20px">You can't sign in right now</h2>
+      <p style="margin:0 0 16px;font-size:14px;line-height:1.5">
+        Someone asked to sign in to a Worklenz client portal with this email address, but access is not available:
+      </p>
+      <ul style="margin:0 0 16px;padding-left:20px;font-size:14px;line-height:1.5">${items}</ul>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#595959">
+        If you did not try to sign in, you can ignore this email.
+      </p>
+    </div>`;
+
+  const result = await sendEmailEnhanced(new EmailRequest([email], "You can't sign in to your client portal right now", html));
+  if (!result.success) console.error("Failed to send the client sign-in unavailable notice:", result.error);
+  return result.success;
+}
+
+/**
  * The sign-in email is a fixed template. Nothing a workspace owner controls (team name, contact name) is
  * put in it: the message is sent from Worklenz's own sender to an address the requester only has to type,
  * so a custom name would let it be used as a branded phishing or spam relay.
@@ -215,12 +280,28 @@ export async function requestSignInCode(input: {
     }
 
     const targets = await findSignInTargets(tx, email);
+
+    // Why this address cannot sign in. Looked up for every address that has no target, known or not, so
+    // the work done (and the answer on screen) does not depend on whether the address belongs to a client.
+    const blocked = targets.length === 0 ? await findSignInBlockReasons(tx, email) : [];
+
     if (input.inviteToken && targets.length === 0) {
-      throw new PortalError(
-        403,
-        "Your access is not available right now. Please contact your project team.",
-        "ACCESS_UNAVAILABLE"
+      // Holding the private invitation link proves they were invited, so they may be told why.
+      const reason: AccessLossReason = blocked[0] ?? "access_removed";
+      throw new PortalError(403, ACCESS_LOSS_MESSAGES[reason], "ACCESS_UNAVAILABLE", { reason });
+    }
+
+    // At most one "you can't sign in" email per address per day. The unusable code rows below are the
+    // record of earlier requests that had no access.
+    let notice: AccessLossReason[] | null = null;
+    if (blocked.length > 0) {
+      const earlier = await tx.query(
+        `SELECT 1 FROM client_login_codes
+          WHERE email = $1 AND code_hash = $2 AND created_at > NOW() - INTERVAL '24 hours'
+          LIMIT 1`,
+        [email, UNUSABLE_HASH]
       );
+      if (earlier.rows.length === 0) notice = blocked;
     }
 
     const code = generateCode();
@@ -234,8 +315,16 @@ export async function requestSignInCode(input: {
     return {
       result,
       send: targets.length ? { code } : null,
+      notice,
     };
   });
+
+  // Off the request path, like the code email, so how long the answer takes does not give the address away.
+  if (outcome.notice) {
+    void sendUnavailableEmail(email, outcome.notice).catch(error =>
+      console.error("Failed to send the client sign-in unavailable notice:", error)
+    );
+  }
 
   if (outcome.send) {
     const { code } = outcome.send;

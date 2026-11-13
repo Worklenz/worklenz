@@ -67,6 +67,7 @@ export const ProjectViewBacklog = () => {
   const canManageSprints = (isOwnerOrAdmin || isProjectManager) && !isGuest;
   const { createSprint } = useSprintActions(projectId);
   const [isCreatingSprint, setIsCreatingSprint] = useState(false);
+  const hasNoSprints = phaseList.length === 0;
   const [isEpicsDrawerOpen, setIsEpicsDrawerOpen] = useState(false);
   const [isPointScaleOpen, setIsPointScaleOpen] = useState(false);
   const epics = useAppSelector(state => state.epicsReducer.epics);
@@ -137,10 +138,16 @@ export const ProjectViewBacklog = () => {
   }, [dispatch, projectId]);
 
   // Every open sprint is listed above the Backlog (no sprint) section.
+  // Active sprint stays first so it appears at the top of the backlog list.
   const backlogPhaseFilter = useMemo(() => {
-    const openSprintIds = phaseList
+    const openSprintIds = [...phaseList]
       .filter(phase => phase.id && phase.sprint_status !== 'completed')
-      .map(phase => phase.id);
+      .sort((a, b) => {
+        if (a.sprint_status === 'active' && b.sprint_status !== 'active') return -1;
+        if (b.sprint_status === 'active' && a.sprint_status !== 'active') return 1;
+        return (b.sort_index ?? 0) - (a.sort_index ?? 0);
+      })
+      .map(phase => phase.id as string);
     return [...openSprintIds, UNMAPPED_PHASE_ID];
   }, [phaseList]);
 
@@ -204,12 +211,17 @@ export const ProjectViewBacklog = () => {
             {t('pointScaleButton', { defaultValue: 'Point scale' })}
           </Button>
         )}
-        <Button size="small" icon={<ThunderboltOutlined />} onClick={() => setIsEpicsDrawerOpen(true)}>
+        <Button
+          size="small"
+          icon={<ThunderboltOutlined />}
+          onClick={() => setIsEpicsDrawerOpen(true)}
+        >
           {t('epicsTitle', { defaultValue: 'Epics' })}
         </Button>
         {canManageSprints && (
           <Button
             size="small"
+            type={hasNoSprints ? 'primary' : 'default'}
             icon={<PlusOutlined />}
             loading={isCreatingSprint}
             onClick={handleCreateSprint}

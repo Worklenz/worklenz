@@ -25,11 +25,15 @@ function simulateDatabase(outcome: "success" | "active" | "missing" | "conflict"
     if (sql === "BEGIN") pendingDates = { ...savedDates };
     else if (sql === "COMMIT") savedDates = { ...pendingDates };
     else if (sql === "ROLLBACK") pendingDates = { ...savedDates };
-    else if (sql.includes("SELECT id\n")) {
-      return { rows: outcome === "empty" ? [] : [{ id: "next-sprint" }] };
+    else if (sql.includes("SELECT id") && sql.includes("sprint_status = 'planned'")) {
+      return { rows: outcome === "empty" ? [] : [{ id: "next-sprint", start_date: "2026-11-01" }] };
+    } else if (sql.includes("SELECT FLOOR(EXTRACT(EPOCH")) {
+      return { rows: [{ days: -18 }] };
     } else if (sql.includes("SET start_date = CASE")) {
       pendingDates = { ...shiftedDates };
       return { rows: [], rowCount: 1 };
+    } else if (sql.includes("SET start_date = start_date + $3::INT")) {
+      return { rows: [], rowCount: 0 };
     } else if (sql.includes("SELECT id, name")) {
       return { rows: outcome === "active" ? [{ id: "other-sprint", name: "Current sprint" }] : [] };
     } else if (sql.includes("SET sprint_status = 'active'")) {
@@ -37,6 +41,8 @@ function simulateDatabase(outcome: "success" | "active" | "missing" | "conflict"
         throw Object.assign(new Error("Another sprint won the concurrent start"), { code: "23505" });
       }
       return { rows: outcome === "missing" ? [] : [{ id: "next-sprint", sprint_status: "active", ...pendingDates }] };
+    } else if (sql.includes("FROM project_phases") && sql.includes("sprint_status = 'planned'")) {
+      return { rows: [] };
     } else throw new Error(`Unexpected query: ${sql}`);
     return { rows: [] };
   });

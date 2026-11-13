@@ -10,6 +10,7 @@ import { useFormatters } from '@/hooks/useFormatters';
 import { useFileAccess } from '@/hooks/useFileActions';
 import { CommentComposer, EmptyState, MessageList, QueryState, RichTextView, StatusTag, UnavailableBanner } from '@/components/v2';
 import type { ClientProjectV2, ClientTaskV2 } from '@/types/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 /** Read-only table of the tasks the team shared, with a detail drawer. `?task=` opens one. */
 export const TasksTab: React.FC<{ project: ClientProjectV2 }> = ({ project }) => {
@@ -43,7 +44,7 @@ export const TasksTab: React.FC<{ project: ClientProjectV2 }> = ({ project }) =>
       dataIndex: 'title',
       render: (title: string, task) => (
         <Button type="link" style={{ padding: 0, fontWeight: 600, height: 'auto', whiteSpace: 'normal', textAlign: 'start' }} onClick={() => setOpenId(task.id)}>
-          {title}
+          {decodeHtmlEntities(title)}
         </Button>
       ),
     },
@@ -117,7 +118,7 @@ const TaskDrawer = ({ task, projectId, onClose }: { task: ClientTaskV2 | undefin
       open={Boolean(task)}
       onClose={onClose}
       width={460}
-      title={task?.title}
+      title={decodeHtmlEntities(task?.title)}
       destroyOnClose
     >
       {task && (

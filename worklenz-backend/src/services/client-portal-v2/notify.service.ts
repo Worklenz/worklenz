@@ -244,10 +244,10 @@ export async function notifyClientUsers(input: ClientNotificationInput): Promise
           AND cc.activated_at IS NOT NULL
           AND ($3::uuid IS NULL OR ${CONTACT_CAN_OPEN_PROJECT_SQL("cc.id", "$3")})
           AND ($4::uuid[] IS NULL OR cc.id = ANY($4::uuid[]))
-          -- A person can switch an event's email off in Account > Notifications (in-app stays on).
-          AND NOT EXISTS (
+          -- Email is disabled by default for clients; a client must explicitly enable it in Settings > Notifications.
+          AND EXISTS (
                 SELECT 1 FROM client_contact_notification_prefs np
-                 WHERE np.contact_id = cc.id AND np.event_type = $5 AND np.email IS FALSE)`,
+                 WHERE np.contact_id = cc.id AND np.event_type = $5 AND np.email IS TRUE)`,
       [input.clientId, input.teamId, input.projectId ?? null, input.onlyContactIds ?? null, input.emailEvent]
     );
 

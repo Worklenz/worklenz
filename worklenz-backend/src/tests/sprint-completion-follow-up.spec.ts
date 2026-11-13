@@ -42,6 +42,7 @@ it("returns the successfully started next sprint", async () => {
   query.mockResolvedValueOnce({ rows: [{ auto_start_complete_sprints: true }] } as never);
   clientQuery.mockResolvedValueOnce({})
     .mockResolvedValueOnce({ rows: [{ id: "next-sprint" }] })
+    .mockResolvedValueOnce({ rows: [{ days: 0 }] })
     .mockResolvedValueOnce({ rows: [] })
     .mockResolvedValueOnce({ rows: [] })
     .mockResolvedValueOnce({ rows: [{ id: "next-sprint", sprint_status: "active" }] })

@@ -113,5 +113,6 @@
   "deleteQuoteSuccess": "Presupuesto eliminado correctamente",
   "deleteQuoteError": "No se pudo eliminar el presupuesto",
   "linkedChangeRequest": "Solicitud de cambio vinculada",
-  "openChangeRequest": "Abrir solicitud de cambio"
+  "openChangeRequest": "Abrir solicitud de cambio",
+  "downloadFailed": "No se pudo descargar el PDF. Inténtalo de nuevo."
 }

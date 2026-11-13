@@ -108,7 +108,13 @@
     "messagesLabel": "Messages",
     "notFound": "Discussão não encontrada",
     "onlyTeamSees": "apenas sua equipe vê isso",
-    "pick": "Selecione uma discussão ou inicie uma nova."
+    "pick": "Selecione uma discussão ou inicie uma nova.",
+    "addReaction": "Adicionar reação",
+    "reactionsLabel": "Reações",
+    "reactedTooltip": "Clique para remover a sua reação",
+    "notReactedTooltip": "Clique para reagir com {{emoji}}",
+    "reactFailed": "Não foi possível atualizar a reação.",
+    "team": "Equipe"
   },
   "retry": "Tentar novamente",
   "rowsPerPage": "Linhas por página:"

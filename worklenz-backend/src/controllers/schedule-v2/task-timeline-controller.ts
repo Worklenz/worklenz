@@ -114,7 +114,7 @@ export default class TaskTimelineController extends WorklenzControllerBase {
             const clientNames = clientName.split(',').filter(name => name.trim());
             if (clientNames.length > 0) {
                 const placeholders = clientNames.map(() => `$${paramIndex++}`).join(',');
-                whereClause += ` AND p.client_id IN (SELECT id FROM clients WHERE name IN (${placeholders}))`;
+                whereClause += ` AND p.client_id IN (SELECT id FROM clients WHERE deleted_at IS NULL AND name IN (${placeholders}))`;
                 params.push(...clientNames);
             }
         }

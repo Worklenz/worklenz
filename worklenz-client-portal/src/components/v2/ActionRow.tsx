@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Flex, Typography, theme } from '@/shared/antd-imports';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface ActionRowProps {
   icon?: ReactNode;
@@ -11,6 +12,9 @@ interface ActionRowProps {
   /** Accessible name when the visible title is not enough. */
   label?: string;
 }
+
+const decodeDisplayNode = (node: ReactNode): ReactNode =>
+  typeof node === 'string' ? decodeHtmlEntities(node) : node;
 
 /** A clickable row inside a card: used for "needs your action", milestones, quick links, activity. */
 export const ActionRow = ({ icon, title, subtitle, right, onClick, label }: ActionRowProps) => {
@@ -47,11 +51,11 @@ export const ActionRow = ({ icon, title, subtitle, right, onClick, label }: Acti
       )}
       <div style={{ flex: '1 1 180px', minWidth: 0 }}>
         <Typography.Text strong style={{ display: 'block' }}>
-          {title}
+          {decodeDisplayNode(title)}
         </Typography.Text>
         {subtitle && (
           <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-            {subtitle}
+            {decodeDisplayNode(subtitle)}
           </Typography.Text>
         )}
       </div>

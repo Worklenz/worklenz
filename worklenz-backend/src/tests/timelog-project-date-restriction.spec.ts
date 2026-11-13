@@ -111,6 +111,27 @@ describe("getProjectStartDateViolation", () => {
     expect(result).toBeNull();
   });
 
+  it("can enforce the project start date for a new split segment on the original date", async () => {
+    mockedDb.query.mockResolvedValueOnce({
+      rows: [
+        {
+          created_at: "2026-10-05T08:00:00Z",
+          task_id: "11111111-1111-4111-8111-111111111111",
+          project_start_date: "2026-10-10T00:00:00Z",
+          timezone: "UTC",
+        },
+      ],
+    } as never);
+
+    const result = await getProjectStartDateViolation({
+      taskId: "11111111-1111-4111-8111-111111111111",
+      workLogId: "22222222-2222-4222-8222-222222222222",
+      formattedStart: "2026-10-05T12:00:00Z",
+      allowUnchangedDate: false,
+    });
+    expect(result).toBe("Time cannot be logged before the project start date (Oct 10, 2026).");
+  });
+
   it("in edit mode: blocks moving date to another date before project start date", async () => {
     mockedDb.query.mockResolvedValueOnce({
       rows: [

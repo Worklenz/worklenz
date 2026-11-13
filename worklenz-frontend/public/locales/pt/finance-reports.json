@@ -169,4 +169,8 @@
     },
     "empty": "Ainda não há histórico suficiente para prever. Registe tempo e envie faturas para criar uma tendência."
   }
+,
+  "myTasksView": {
+    "rowsPerPage": "Linhas por página:"
+  }
 }

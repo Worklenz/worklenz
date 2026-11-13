@@ -170,15 +170,16 @@ export default class TasksController extends TasksControllerBase {
   }
 
   private static notifyProjectUpdates(socketId: string, projectId: string, notifySender = true) {
-    // Emit to the sender's socket directly
-    const socket = IO.getSocketById(socketId);
-    if (notifySender) {
-      socket?.emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
+    const event = SocketEvents.PROJECT_UPDATES_AVAILABLE.toString();
+    // Room fan-out must not depend on resolving the sender socket — after a
+    // reconnect users.socket_id / session socket_id can be stale while peers
+    // are still correctly joined to the project room.
+    if (notifySender && socketId) {
+      IO.getSocketById(socketId)?.emit(event);
     }
-    // Also broadcast to others in the project room
-    socket
-      ?.to(projectId)
-      .emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
+    IO.emitToProjectRoom(projectId, event, undefined, {
+      excludeSocketId: socketId || undefined,
+    });
   }
 
   public static async uploadAttachment(
@@ -894,6 +895,12 @@ export default class TasksController extends TasksControllerBase {
 
     await insertToActivityLogs(activityLog);
 
+    TasksController.notifyProjectUpdates(
+      req.user?.socket_id as string,
+      taskDetails.project_id,
+      false,
+    );
+
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
@@ -1076,6 +1083,7 @@ export default class TasksController extends TasksControllerBase {
     TasksController.notifyProjectUpdates(
       req.user?.socket_id as string,
       req.query.project as string,
+      false,
     );
 
     return res
@@ -1185,6 +1193,7 @@ export default class TasksController extends TasksControllerBase {
     TasksController.notifyProjectUpdates(
       req.user?.socket_id as string,
       req.query.project as string,
+      false,
     );
     return res.status(200).send(new ServerResponse(true, { deleted_tasks: taskIds }));
   }

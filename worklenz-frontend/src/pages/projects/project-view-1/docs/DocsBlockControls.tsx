@@ -89,6 +89,9 @@ export const DocsBlockControls = ({ editor, containerRef, commands }: DocsBlockC
     const dropTarget = (event: DragEvent) => fromElement(event.target) ?? nearestBlock(event.clientY);
     let frame = 0;
     let activeQueued = false;
+    // The selection survives a blur. Follow the pointer instead, or a later
+    // transaction pins the controls to the section that last had the caret.
+    let hoveredBlock: DocsBlockTarget | null = null;
     const schedule = () => {
       if (frame) return;
       frame = requestAnimationFrame(() => {
@@ -100,13 +103,19 @@ export const DocsBlockControls = ({ editor, containerRef, commands }: DocsBlockC
         }
       });
     };
-    // Pointer moves over the same element are ignored; transactions, resizes and
-    // observer callbacks read layout at most once per frame.
-    let lastHover: EventTarget | null = null;
+    const blockAtPointer = (event: PointerEvent) =>
+      fromElement(event.target) ?? nearestBlock(event.clientY);
     const hover = (event: PointerEvent) => {
-      if (event.target === lastHover) return;
-      lastHover = event.target;
-      if (!isMenuOpen.current) publish(fromElement(event.target));
+      if (isMenuOpen.current) return;
+      const block = blockAtPointer(event);
+      hoveredBlock = block;
+      if (block) publish(block);
+    };
+    const leave = (event: PointerEvent) => {
+      const next = event.relatedTarget;
+      if (next instanceof Node && container.contains(next)) return;
+      if (isMenuOpen.current) return;
+      hoveredBlock = null;
     };
     const queueActive = () => {
       activeQueued = true;
@@ -115,18 +124,34 @@ export const DocsBlockControls = ({ editor, containerRef, commands }: DocsBlockC
     const keyboardMenu = (event: KeyboardEvent) => {
       if (event.key !== 'F10' || !event.shiftKey || event.isComposing) return;
       event.preventDefault();
-      active();
+      hoveredBlock = null;
+      if (editor.isFocused) publish(findDocumentBlock(editor));
       const handle = container.querySelector<HTMLButtonElement>('.docs-drag-handle');
       handle?.focus();
       handle?.click();
     };
     const active = () => {
       const previous = anchorRef.current;
-      publish(
-        isMenuOpen.current && previous
-          ? findDocumentBlock(editor, previous.id, previous.position)
-          : findDocumentBlock(editor)
-      );
+      if (isMenuOpen.current && previous) {
+        publish(findDocumentBlock(editor, previous.id, previous.position));
+        return;
+      }
+      if (hoveredBlock) {
+        const next = findDocumentBlock(editor, hoveredBlock.id, hoveredBlock.position);
+        if (next) {
+          hoveredBlock = next;
+          publish(next);
+          return;
+        }
+        hoveredBlock = null;
+      }
+      // No block under the pointer: follow the caret, including Shift+F10.
+      // A hovered block stays put across blur, resize, and selection transactions.
+      publish(findDocumentBlock(editor));
+    };
+    const onBlur = () => {
+      if (hoveredBlock || isMenuOpen.current) return;
+      activeQueued = false;
     };
     refreshAnchorRef.current = active;
     // The indicator lives outside the contenteditable so ProseMirror's DOM observer
@@ -191,12 +216,14 @@ export const DocsBlockControls = ({ editor, containerRef, commands }: DocsBlockC
       clearDrop();
     };
     container.addEventListener('pointermove', hover);
+    container.addEventListener('pointerleave', leave);
     editor.view.dom.addEventListener('keydown', keyboardMenu);
     container.addEventListener('dragover', dragOver, true);
     // Capture before ProseMirror's generic HTML drop handler.
     container.addEventListener('drop', drop, true);
     container.addEventListener('dragend', clearDrop);
     editor.on('focus', active);
+    editor.on('blur', onBlur);
     editor.on('selectionUpdate', active);
     editor.on('transaction', queueActive);
     window.addEventListener('resize', queueActive);
@@ -205,11 +232,13 @@ export const DocsBlockControls = ({ editor, containerRef, commands }: DocsBlockC
     active();
     return () => {
       container.removeEventListener('pointermove', hover);
+      container.removeEventListener('pointerleave', leave);
       editor.view.dom.removeEventListener('keydown', keyboardMenu);
       container.removeEventListener('dragover', dragOver, true);
       container.removeEventListener('drop', drop, true);
       container.removeEventListener('dragend', clearDrop);
       editor.off('focus', active);
+      editor.off('blur', onBlur);
       editor.off('selectionUpdate', active);
       editor.off('transaction', queueActive);
       window.removeEventListener('resize', queueActive);

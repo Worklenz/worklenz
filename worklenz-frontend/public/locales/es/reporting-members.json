@@ -35,4 +35,6 @@
   "doingText": "Haciendo",
   "doneText": "Hecho",
   "customDateRangeInvalidError": "La fecha de finalización no puede ser anterior a la fecha de inicio. Selecciona un rango válido."
+,
+  "rowsPerPage": "Filas por página:"
 }

@@ -1,0 +1,201 @@
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { SmileOutlined } from '@ant-design/icons';
+import { Button, Flex, Popover, Tooltip, message, theme } from '@/shared/antd-imports';
+import { useToggleThreadMessageReactionMutation } from '@/api/client-portal/portal-workflow-api';
+import type { ThreadReaction } from '@/types/client-portal/v2';
+
+export const POPULAR_REACTION_EMOJIS = ['👍', '❤️', '😄', '🎉', '🚀', '👀', '🔥', '👏', '💯', '🙏'] as const;
+
+export interface ThreadMessageReactionsProps {
+  messageId: string;
+  threadId?: string;
+  reactions?: ThreadReaction[];
+  canReact?: boolean;
+  align?: 'flex-start' | 'flex-end';
+}
+
+export const ThreadMessageReactions: React.FC<ThreadMessageReactionsProps> = ({
+  messageId,
+  threadId,
+  reactions = [],
+  canReact = true,
+  align = 'flex-start',
+}) => {
+  const { t } = useTranslation('client-portal-v2-discussions');
+  const { token } = theme.useToken();
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const [toggleReaction] = useToggleThreadMessageReactionMutation();
+
+  const handleToggle = async (emoji: string) => {
+    if (isPending) return;
+    setIsPending(true);
+    try {
+      await toggleReaction({ messageId, emoji, threadId }).unwrap();
+    } catch {
+      message.error(t('thread.reactFailed', { defaultValue: 'Could not update reaction.' }));
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  const handleSelectEmoji = (emoji: string) => {
+    setPopoverOpen(false);
+    void handleToggle(emoji);
+  };
+
+  const pickerContent = (
+    <Flex gap={6} wrap="wrap" style={{ maxWidth: 220, padding: 2 }}>
+      {POPULAR_REACTION_EMOJIS.map(emoji => (
+        <button
+          key={emoji}
+          type="button"
+          onClick={() => handleSelectEmoji(emoji)}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            fontSize: 20,
+            cursor: 'pointer',
+            padding: '4px 6px',
+            borderRadius: token.borderRadiusSM,
+            lineHeight: 1,
+            transition: 'background 150ms ease, transform 100ms ease',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = token.colorFillTertiary;
+            e.currentTarget.style.transform = 'scale(1.2)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+          aria-label={emoji}
+        >
+          {emoji}
+        </button>
+      ))}
+    </Flex>
+  );
+
+  const hasReactions = reactions.length > 0;
+
+  if (!hasReactions && !canReact) {
+    return null;
+  }
+
+  return (
+    <Flex
+      align="center"
+      gap={4}
+      wrap="wrap"
+      justify={align}
+      role="group"
+      aria-label={t('thread.reactionsLabel', { defaultValue: 'Reactions' })}
+      style={{ marginTop: 4 }}
+    >
+      {reactions.map(reaction => {
+        const isReacted = reaction.has_reacted === true;
+        const usersList = reaction.users ?? [];
+        const tooltipContent = (
+          <div style={{ fontSize: 12 }}>
+            <div style={{ fontWeight: 600, marginBottom: 2 }}>
+              {isReacted
+                ? t('thread.reactedTooltip', { defaultValue: 'Click to remove your reaction' })
+                : canReact
+                  ? t('thread.notReactedTooltip', {
+                      defaultValue: 'Click to react with {{emoji}}',
+                      emoji: reaction.emoji,
+                    })
+                  : ''}
+            </div>
+            {usersList.map((u, i) => (
+              <div key={`${u.id}-${i}`}>
+                {u.name}
+                {u.side === 'internal' && (
+                  <span style={{ opacity: 0.75, marginInlineStart: 4 }}>
+                    ({t('thread.team', { defaultValue: 'Team' })})
+                  </span>
+                )}
+                {u.side === 'client' && (
+                  <span style={{ opacity: 0.75, marginInlineStart: 4 }}>
+                    ({t('thread.clientTag', { defaultValue: 'Client' })})
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+
+        return (
+          <Tooltip key={reaction.emoji} title={tooltipContent} mouseEnterDelay={0.3}>
+            <button
+              type="button"
+              onClick={() => canReact && !isPending && void handleToggle(reaction.emoji)}
+              disabled={!canReact || isPending}
+              aria-pressed={isReacted}
+              aria-label={`${reaction.emoji} ${reaction.count}`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '2px 8px',
+                borderRadius: 12,
+                fontSize: 12,
+                cursor: canReact ? 'pointer' : 'default',
+                transition: 'all 150ms ease',
+                border: `1px solid ${isReacted ? token.colorPrimaryBorder : token.colorBorderSecondary}`,
+                background: isReacted ? token.colorPrimaryBg : token.colorFillQuaternary,
+                color: isReacted ? token.colorPrimary : token.colorText,
+                fontWeight: isReacted ? 600 : 400,
+              }}
+              onMouseEnter={e => {
+                if (!canReact) return;
+                e.currentTarget.style.background = isReacted
+                  ? token.colorPrimaryBgHover
+                  : token.colorFillTertiary;
+              }}
+              onMouseLeave={e => {
+                if (!canReact) return;
+                e.currentTarget.style.background = isReacted
+                  ? token.colorPrimaryBg
+                  : token.colorFillQuaternary;
+              }}
+            >
+              <span>{reaction.emoji}</span>
+              <span style={{ fontSize: 11 }}>{reaction.count}</span>
+            </button>
+          </Tooltip>
+        );
+      })}
+
+      {canReact && (
+        <Popover
+          content={pickerContent}
+          trigger="click"
+          open={popoverOpen}
+          onOpenChange={setPopoverOpen}
+          placement="top"
+        >
+          <Tooltip title={t('thread.addReaction', { defaultValue: 'Add reaction' })}>
+            <Button
+              type="text"
+              size="small"
+              disabled={isPending}
+              icon={<SmileOutlined style={{ fontSize: 13, color: token.colorTextSecondary }} />}
+              aria-label={t('thread.addReaction', { defaultValue: 'Add reaction' })}
+              style={{
+                padding: '2px 6px',
+                height: 24,
+                borderRadius: 12,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            />
+          </Tooltip>
+        </Popover>
+      )}
+    </Flex>
+  );
+};

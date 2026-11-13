@@ -6,6 +6,7 @@ import idParamValidator from "../../middlewares/validators/id-param-validator";
 import taskTimeLogValidator from "../../middlewares/validators/task-time-log-validator";
 import timeEntriesPreferenceValidator from "../../middlewares/validators/time-entries-preference-validator";
 import timeEntryUpdateValidator from "../../middlewares/validators/time-entry-update-validator";
+import timeEntrySplitValidator from "../../middlewares/validators/time-entry-split-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import verifyTaskAccess, {verifyTaskAccessViaWorkLog} from "../../middlewares/verify-task-access";
 import verifyNonGuestTimeEntriesAccess from "../../middlewares/verify-non-guest-time-entries-access";
@@ -25,6 +26,17 @@ taskWorkLogApiRouter.put("/:id", taskTimeLogValidator, idParamValidator, verifyT
 // members' entries (see TaskWorklogController.updateTimeEntry). The task drawer keeps using the
 // author-only `PUT|DELETE /:id` routes below, which are intentionally unchanged.
 taskWorkLogApiRouter.put("/entries/:id", verifyNonGuestTimeEntriesAccess, idParamValidator, timeEntryUpdateValidator, verifyTaskAccessViaWorkLog('params', 'id'), safeControllerFunction(TaskWorklogController.updateTimeEntry));
+// Atomic split: turns one log into an overnight pair, preserving the original member's user_id
+// on the inserted segment. Must be declared BEFORE DELETE /entries/:id so "split" isn't captured
+// as a work-log id parameter.
+taskWorkLogApiRouter.post(
+  "/entries/:id/split",
+  verifyNonGuestTimeEntriesAccess,
+  idParamValidator,
+  verifyTaskAccessViaWorkLog('params', 'id'),
+  timeEntrySplitValidator,
+  safeControllerFunction(TaskWorklogController.splitTimeEntry)
+);
 taskWorkLogApiRouter.delete("/entries/:id", verifyNonGuestTimeEntriesAccess, idParamValidator, verifyTaskAccessViaWorkLog('params', 'id'), safeControllerFunction(TaskWorklogController.deleteTimeEntry));
 
 taskWorkLogApiRouter.delete("/:id", idParamValidator, verifyTaskAccessViaWorkLog('params', 'id'), safeControllerFunction(TaskWorklogController.deleteById));

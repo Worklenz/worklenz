@@ -1,4 +1,4 @@
-import { Button, Checkbox, Col, Drawer, Form, Input, InputNumber, Row } from '@/shared/antd-imports';
+import { Button, Checkbox, Col, Drawer, Form, Input, InputNumber, Row, theme } from '@/shared/antd-imports';
 import React, { useEffect, useRef } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import {
@@ -21,6 +21,7 @@ const ScheduleSettingsDrawer: React.FC = () => {
   const dispatch = useAppDispatch();
   const [form] = Form.useForm();
   const { t } = useTranslation('schedule');
+  const { token } = theme.useToken();
 
   const { workingDays, workingHours, defaultEstimateHours, loading } = useAppSelector(state => state.scheduleReducer);
   const { date, type } = useAppSelector(state => state.scheduleReducer);
@@ -136,7 +137,7 @@ const ScheduleSettingsDrawer: React.FC = () => {
               max={24}
               type="number"
               suffix={
-                <span style={{ color: 'rgba(0, 0, 0, 0.46)' }}>
+                <span style={{ color: token.colorTextSecondary }}>
                   {t('hours', { defaultValue: 'hours' })}
                 </span>
               }

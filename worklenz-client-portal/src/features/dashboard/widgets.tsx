@@ -6,6 +6,7 @@ import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveCo
 import { useClientAccess } from '@/hooks/useClientAccess';
 import { useFormatters } from '@/hooks/useFormatters';
 import { ActionRow, DueTag, StatTile, StatusTag } from '@/components/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { targetPath } from '@/utils/targets';
 import type { ClientActivityV2, ClientDashboardV2, ClientProjectV2, DashboardWidgetType, ProjectCardField, ProjectsWidgetSettings } from '@/types/v2';
 
@@ -254,10 +255,13 @@ export const ProjectCard = ({ project, fields, compact = false, nextMilestone, o
   const { date } = useFormatters();
   const { token } = theme.useToken();
   const has = (field: ProjectCardField) => fields.includes(field);
+  const projectName = decodeHtmlEntities(project.name);
+  const decodedMilestone = nextMilestone ? decodeHtmlEntities(nextMilestone) : undefined;
+  const decodedPhase = project.phase ? decodeHtmlEntities(project.phase) : undefined;
 
   const rows: Array<[string, React.ReactNode]> = [];
-  if (has('phase')) rows.push([t('dashboard.currentPhase', { defaultValue: 'Current phase' }), project.phase ?? '—']);
-  if (has('nextMilestone')) rows.push([t('dashboard.nextMilestoneLabel', { defaultValue: 'Next milestone' }), nextMilestone ?? '—']);
+  if (has('phase')) rows.push([t('dashboard.currentPhase', { defaultValue: 'Current phase' }), decodedPhase ?? '—']);
+  if (has('nextMilestone')) rows.push([t('dashboard.nextMilestoneLabel', { defaultValue: 'Next milestone' }), decodedMilestone ?? '—']);
   if (has('expectedCompletion')) rows.push([t('dashboard.expectedCompletion', { defaultValue: 'Expected completion' }), date(project.expected_completion)]);
   if (has('openItems')) {
     rows.push([
@@ -279,12 +283,12 @@ export const ProjectCard = ({ project, fields, compact = false, nextMilestone, o
       onClick={onOpen}
       role="link"
       tabIndex={0}
-      aria-label={project.name}
+      aria-label={projectName}
       onKeyDown={event => event.key === 'Enter' && onOpen()}
       style={{ height: '100%' }}
     >
       <Flex justify="space-between" align="flex-start" gap={8}>
-        <Typography.Text strong>{project.name}</Typography.Text>
+        <Typography.Text strong>{projectName}</Typography.Text>
         {has('status') && <StatusTag kind="project" status={project.status} />}
       </Flex>
       {has('progress') && <Progress percent={project.progress} strokeColor={project.color ?? undefined} style={{ margin: compact ? '4px 0' : '12px 0' }} />}
@@ -345,7 +349,11 @@ const ProjectsByStatusChart = ({ projects }: { projects: ClientProjectV2[] }) =>
 const ProjectProgressChart = ({ projects }: { projects: ClientProjectV2[] }) => {
   const { t } = useTranslation();
   const { token } = theme.useToken();
-  const rows = projects.map(project => ({ name: project.name, progress: project.progress, color: project.color ?? token.colorPrimary }));
+  const rows = projects.map(project => ({
+    name: decodeHtmlEntities(project.name),
+    progress: project.progress,
+    color: project.color ?? token.colorPrimary,
+  }));
   return (
     <ChartCard title={t('dashboard.widgets.projectProgress', { defaultValue: 'Project progress' })} empty={rows.length === 0}>
       <BarChart data={rows} layout="vertical" margin={{ left: 8, right: 16 }}>
@@ -367,7 +375,11 @@ const OpenItemsChart = ({ projects }: { projects: ClientProjectV2[] }) => {
   const { t } = useTranslation();
   const { token } = theme.useToken();
   const rows = projects
-    .map(project => ({ name: project.name, approvals: project.open_approvals ?? 0, changeRequests: project.open_change_requests ?? 0 }))
+    .map(project => ({
+      name: decodeHtmlEntities(project.name),
+      approvals: project.open_approvals ?? 0,
+      changeRequests: project.open_change_requests ?? 0,
+    }))
     .filter(row => row.approvals + row.changeRequests > 0);
   return (
     <ChartCard title={t('dashboard.widgets.openItems', { defaultValue: 'Open items by project' })} empty={rows.length === 0}>

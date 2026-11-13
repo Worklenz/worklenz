@@ -64,7 +64,7 @@ describe("client-auth-middleware", () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it("returns 404 if client record does not exist in DB", async () => {
+    it("ends the session (403 ACCESS_REVOKED, not a 404) if the client record no longer exists", async () => {
       const req = createMockRequest({
         headers: { "x-client-token": "valid-token" },
       });
@@ -83,8 +83,33 @@ describe("client-auth-middleware", () => {
 
       await authenticateClient(req, res, next);
 
-      expect(res.statusCode).toBe(404);
-      expect(res.body.message).toContain("Client not found");
+      expect(res.statusCode).toBe(403);
+      expect(res.body.body).toEqual({ code: "ACCESS_REVOKED", reason: "organization_unavailable" });
+      expect(res.body.message).toContain("no longer available");
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it("ends the session the same way if the client was deleted", async () => {
+      const req = createMockRequest({ headers: { "x-client-token": "valid-token" } });
+      const res = createMockResponse();
+      const next = jest.fn();
+
+      mockedTokenService.verifyClientToken.mockReturnValue({
+        clientId: "client-123",
+        organizationId: "org-456",
+        email: "client@test.com",
+        permissions: [],
+        type: "client",
+      });
+
+      mockedDb.query.mockResolvedValueOnce(
+        createQueryResult([{ client_status: "active", client_deleted_at: new Date(), portal_access_active: true }])
+      );
+
+      await authenticateClient(req, res, next);
+
+      expect(res.statusCode).toBe(403);
+      expect(res.body.body).toMatchObject({ code: "ACCESS_REVOKED", reason: "organization_unavailable" });
       expect(next).not.toHaveBeenCalled();
     });
 

@@ -43,6 +43,12 @@ describe('operator signup domain policy', () => {
     expect(await isSignupEmailDomainBlocked('user@example.com')).toBe(true);
     expect(signupEmailDomainPolicy.isBlocked).toHaveBeenCalledWith('user@example.com');
   });
+  it.each(['missing-at', '@example.com', 'user@', 'user@%invalid'])('still applies the private policy for invalid domain input %s', async email => {
+    jest.mocked(signupEmailDomainPolicy.isBlocked).mockResolvedValue(true);
+    expect(await isSignupEmailDomainBlocked(email)).toBe(true);
+    expect(query).not.toHaveBeenCalled();
+    expect(signupEmailDomainPolicy.isBlocked).toHaveBeenCalledWith(email);
+  });
   it('allows normal signup with an empty blocklist', async () => {
     expect(await isSignupEmailDomainBlocked('user@example.com')).toBe(false);
   });

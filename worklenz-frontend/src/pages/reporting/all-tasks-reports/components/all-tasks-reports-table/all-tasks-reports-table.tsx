@@ -7,7 +7,6 @@ import {
   Flex,
   Badge,
   Tooltip,
-  Pagination,
   Empty,
   Spin,
 } from '@/shared/antd-imports';
@@ -43,6 +42,7 @@ import { setProjectId } from '@/features/project/project.slice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { useAllTasksReportsFilterOptions } from '../../hooks/useAllTasksReportsFilterOptions';
 import './all-tasks-reports-table.css';
+import TablePagination from '@/components/TablePagination';
 
 const TaskDrawer = React.lazy(() => import('@components/task-drawer/task-drawer'));
 
@@ -145,13 +145,6 @@ const AllTasksReportsTable = () => {
     }
   };
 
-  const handlePaginationChange = (page: number, size: number) => {
-    dispatch(setIndex(page));
-    if (size !== pageSize) {
-      dispatch(setPageSize(size));
-    }
-    dispatch(fetchAllTasks());
-  };
 
   const allColumns: TableColumnsType<IProjectTask> = useMemo(
     () => [
@@ -565,25 +558,30 @@ const AllTasksReportsTable = () => {
         className="all-tasks-table"
       />
 
-      <Flex justify="flex-end">
-        <Pagination
-          current={index}
-          pageSize={pageSize}
-          total={total}
-          showSizeChanger
-          showQuickJumper
-          pageSizeOptions={['10', '20', '50', '100']}
-          onChange={handlePaginationChange}
-          showTotal={(total, range) =>
-            t('showingResults', {
-              from: range[0],
-              to: range[1],
-              total,
-              defaultValue: `Showing ${range[0]}-${range[1]} of ${total} tasks`,
-            })
+      <TablePagination
+        navigationLabel={t('common:paginationNavigation')}
+        firstPageLabel={t('common:firstPage')}
+        previousPageLabel={t('common:previousPage')}
+        nextPageLabel={t('common:nextPage')}
+        lastPageLabel={t('common:lastPage')}
+        renderDefaultSummary={(range, total) => t('common:paginationSummary', { range, total })}
+        page={index}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={(nextPage, nextPageSize) => {
+          dispatch(setIndex(nextPage));
+
+          if (nextPageSize !== pageSize) {
+            dispatch(setPageSize(nextPageSize));
           }
-        />
-      </Flex>
+
+          dispatch(fetchAllTasks());
+        }}
+        rowsPerPageLabel={t('rowsPerPage', {
+          defaultValue: 'Rows per page',
+        })}
+        variant="dropdown"
+      />
 
       <Suspense fallback={<Spin size="small" />}>
         <TaskDrawer />

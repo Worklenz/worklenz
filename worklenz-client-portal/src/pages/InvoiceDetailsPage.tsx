@@ -20,6 +20,7 @@ import {
 import { useNavigate, useParams } from "react-router-dom";
 import clientPortalAPI from "@/services/api";
 import { stripHtml } from "@/utils/escapeHtml";
+import { decodeHtmlEntities } from "@/utils/html-entities";
 import { InvoiceDetails } from "@/types";
 import type { UploadFile } from "antd/es/upload/interface";
 
@@ -273,9 +274,9 @@ const InvoiceDetailsPage: React.FC = () => {
             <Col span={12}>
               <Text type="secondary">Billed to</Text>
               <div style={{ marginTop: 4 }}>
-                <Text strong>{invoice.client?.name || "Client"}</Text>
+                <Text strong>{decodeHtmlEntities(invoice.client?.name) || "Client"}</Text>
                 <br />
-                <Text>{invoice.client?.companyName}</Text>
+                <Text>{decodeHtmlEntities(invoice.client?.companyName)}</Text>
                 <br />
                 <Text>{invoice.client?.email}</Text>
               </div>
@@ -319,7 +320,7 @@ const InvoiceDetailsPage: React.FC = () => {
               <Col span={24}>
                 <Text type="secondary">Service</Text>
                 <br />
-                <Text strong>{invoice.request.service?.name || "N/A"}</Text>
+                <Text strong>{decodeHtmlEntities(invoice.request.service?.name) || "N/A"}</Text>
                 <br />
                 <Text>
                   {stripHtmlTags(invoice.request.service?.description || "")}

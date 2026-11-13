@@ -23,6 +23,7 @@ import { useFormatters } from '@/hooks/useFormatters';
 import { FILE_CATEGORIES, useFileAccess, useUploadFile } from '@/hooks/useFileActions';
 import { EmptyState, FieldsButton, KeyValueList, LockedNote, QueryState, UnavailableBanner, errorMessage, useColumnVisibility } from '@/components/v2';
 import type { ColumnField } from '@/components/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import type { ClientFileV2, ClientProjectV2 } from '@/types/v2';
 
 const HIGHLIGHT_MS = 3500;
@@ -63,12 +64,18 @@ export const FilesTab: React.FC<{ project: ClientProjectV2; autoOpenUpload?: boo
       render: (name: string) => (
         <Flex gap={8} align="center">
           <FileTextOutlined aria-hidden />
-          <Typography.Text strong>{name}</Typography.Text>
+          <Typography.Text strong>{decodeHtmlEntities(name)}</Typography.Text>
         </Flex>
       ),
     },
     { title: t('files.size', { defaultValue: 'Size' }), key: 'size', dataIndex: 'size_label', responsive: ['sm'] },
-    { title: t('files.category', { defaultValue: 'Category' }), key: 'category', dataIndex: 'category', responsive: ['md'] },
+    {
+      title: t('files.category', { defaultValue: 'Category' }),
+      key: 'category',
+      dataIndex: 'category',
+      responsive: ['md'],
+      render: (category: string) => decodeHtmlEntities(category),
+    },
     {
       title: t('files.version', { defaultValue: 'Version' }),
       key: 'version',
@@ -113,7 +120,7 @@ export const FilesTab: React.FC<{ project: ClientProjectV2; autoOpenUpload?: boo
           <Button
             size="small"
             icon={<DownloadOutlined />}
-            aria-label={`${t('files.download', { defaultValue: 'Download' })} ${file.name}`}
+            aria-label={`${t('files.download', { defaultValue: 'Download' })} ${decodeHtmlEntities(file.name)}`}
             onClick={() => void openFile(file, 'download', file.version)}
           />
         </Flex>
@@ -138,7 +145,7 @@ export const FilesTab: React.FC<{ project: ClientProjectV2; autoOpenUpload?: boo
         <Flex gap={6} wrap="wrap">
           {['all', ...categories].map(item => (
             <Tag.CheckableTag key={item} checked={category === item} onChange={() => setCategory(item)}>
-              {item === 'all' ? t('files.all', { count: files.length, defaultValue: 'All ({{count}})' }) : item}
+              {item === 'all' ? t('files.all', { count: files.length, defaultValue: 'All ({{count}})' }) : decodeHtmlEntities(item)}
             </Tag.CheckableTag>
           ))}
         </Flex>
@@ -177,7 +184,7 @@ export const FilesTab: React.FC<{ project: ClientProjectV2; autoOpenUpload?: boo
       <Modal
         open={Boolean(preview)}
         onCancel={() => setPreview(null)}
-        title={preview?.name}
+        title={decodeHtmlEntities(preview?.name)}
         width={560}
         footer={[
           <Button key="close" onClick={() => setPreview(null)}>

@@ -18,10 +18,10 @@ export default defineConfig(({ command, mode }) => {
     // **Esbuild optimization: fast multi-threaded JS transform and debug stripping**
     esbuild: isProduction
       ? {
-          drop: ['debugger'],
-          pure: ['console.log', 'console.info', 'console.debug'],
-          legalComments: 'none',
-        }
+        drop: ['debugger'],
+        pure: ['console.log', 'console.info', 'console.debug'],
+        legalComments: 'none',
+      }
       : undefined,
 
     // **Plugins**
@@ -32,11 +32,11 @@ export default defineConfig(({ command, mode }) => {
       // sentryVitePlugin returns an array of plugins, so we spread it
       ...(isProduction && hasSentryToken
         ? sentryVitePlugin({
-            org: env.VITE_SENTRY_ORG,
-            project: env.VITE_SENTRY_PROJECT,
-            authToken: env.VITE_SENTRY_AUTH_TOKEN,
-            telemetry: false,
-          })
+          org: env.VITE_SENTRY_ORG,
+          project: env.VITE_SENTRY_PROJECT,
+          authToken: env.VITE_SENTRY_AUTH_TOKEN,
+          telemetry: false,
+        })
         : []),
       // Custom plugin to generate version.json for reliable update detection
       {
@@ -142,12 +142,18 @@ export default defineConfig(({ command, mode }) => {
       // Example: VITE_ALLOWED_HOSTS=host1.example.com,host2.example.com
       allowedHosts: process.env.VITE_ALLOWED_HOSTS
         ? process.env.VITE_ALLOWED_HOSTS.split(',')
-            .map(host => host.trim())
-            .filter(Boolean)
+          .map(host => host.trim())
+          .filter(Boolean)
         : [],
       // **Proxy API requests to backend server**
       proxy: {
         '/api': {
+          target: process.env.VITE_API_URL || 'http://localhost:3000',
+          changeOrigin: true,
+          secure: false,
+        },
+
+        '/storage': {
           target: process.env.VITE_API_URL || 'http://localhost:3000',
           changeOrigin: true,
           secure: false,

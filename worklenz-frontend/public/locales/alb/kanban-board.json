@@ -57,6 +57,7 @@
   "newIssueNamePlaceholder": "Shkruani një titull problemi",
   "loadingFilters": "Duke ngarkuar filtra...",
   "failedToUpdateColumnOrder": "Dështoi përditësimi i rendit të kolonave",
+  "projectIdRequired": "ID-ja e projektit është e detyrueshme",
   "failedToUpdatePhaseOrder": "Dështoi përditësimi i rendit të fazave",
   "pleaseTryAgain": "Ju lutemi provoni përsëri",
   "taskNotCompleted": "Detyra nuk është përfunduar",

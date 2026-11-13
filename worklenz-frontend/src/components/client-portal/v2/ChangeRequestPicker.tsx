@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Alert, Card, Select, theme } from '@/shared/antd-imports';
 import type { BillableChangeRequest } from '@/types/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface ChangeRequestPickerProps {
   /** Approved, In Progress and Completed requests: the only ones a quote or invoice can start from. */
@@ -37,7 +38,7 @@ export const ChangeRequestPicker = ({ changeRequests, isLoading, value, onChange
           value: item.id,
           label: t('changeRequestPicker.option', {
             number: item.cr_no,
-            title: item.title,
+            title: decodeHtmlEntities(item.title),
             defaultValue: '{{number}} - {{title}}',
           }),
         }))}

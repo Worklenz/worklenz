@@ -46,4 +46,6 @@
   "updatedBy": "przez {{name}}",
   "editConfidence": "Ustaw pewność dostarczenia dla {{project}}",
   "readOnlyConfidence": "Pewność dostawy dla {{project}}"
+,
+  "rowsPerPage": "Wierszy na stronę:"
 }

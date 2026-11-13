@@ -303,6 +303,69 @@ ol.ql-nested-list {
   margin-bottom: 0 !important;
 }
 
+.description-editor-shell .ql-editor .mentions {
+  font-weight: 500;
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin: 0 1px;
+  background-color: #f0f2f5;
+  color: #1890ff;
+  border: 1px solid #1890ff;
+}
+
+.description-editor-shell.is-dark .ql-editor .mentions {
+  background-color: #1f3344;
+  color: #69b1ff;
+  border-color: #69b1ff;
+}
+
+.description-mention-suggestions {
+  position: fixed;
+  z-index: 1100;
+  width: 280px;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  padding: 4px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+}
+
+.description-mention-suggestions.is-dark {
+  border-color: #434343;
+  background: #1f1f1f;
+  color: #f0f0f0;
+}
+
+.description-editor-shell .description-mention-suggestion {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 4px;
+  padding: 7px 10px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.description-editor-shell .description-mention-suggestion:hover,
+.description-editor-shell .description-mention-suggestion.is-selected {
+  background: #f0f2f5;
+}
+
+.description-mention-suggestions.is-dark .description-mention-suggestion:hover,
+.description-mention-suggestions.is-dark .description-mention-suggestion.is-selected {
+  background: #303030;
+}
+
+.description-mention-suggestion-message {
+  padding: 7px 10px;
+  color: #8c8c8c;
+  font-size: 13px;
+}
+
 /* ── Fix list indentation inside editor mode ── */
 
 /* Quill indent levels inside editor */

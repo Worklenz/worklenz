@@ -26,7 +26,7 @@ const useTaskDrawerUrlSync = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const params = useParams();
   const dispatch = useAppDispatch();
-  const { showTaskDrawer, selectedTaskId, taskAccessFrom } = useAppSelector(
+  const { showTaskDrawer, selectedTaskId, taskAccessFrom, lastDeletedTaskId } = useAppSelector(
     state => state.taskDrawerReducer
   );
   const { projectId } = useAppSelector(state => state.projectReducer);
@@ -72,6 +72,10 @@ const useTaskDrawerUrlSync = () => {
     if (shouldIgnoreUrlChange.current || isClosingDrawer.current) return;
 
     const taskIdFromUrl = searchParams.get('task');
+    if (taskIdFromUrl && taskIdFromUrl === lastDeletedTaskId) {
+      clearTaskFromUrl();
+      return;
+    }
     const projectIdFromUrl = searchParams.get('task_project');
     const accessFrom = parseAccessFrom(searchParams.get('from'));
     const resolvedProjectId = projectId || projectIdFromUrl || routeProjectId;
@@ -109,7 +113,7 @@ const useTaskDrawerUrlSync = () => {
       );
     }
 
-  }, [searchParams, showTaskDrawer, projectId, routeProjectId, selectedTaskId, dispatch]);
+  }, [searchParams, showTaskDrawer, projectId, routeProjectId, selectedTaskId, dispatch, lastDeletedTaskId, clearTaskFromUrl]);
 
   // Update URL when task drawer state changes
   useEffect(() => {

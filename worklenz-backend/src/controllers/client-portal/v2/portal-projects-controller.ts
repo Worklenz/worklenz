@@ -33,6 +33,8 @@ import {
   updateProjectOverview,
 } from "../../../services/client-portal-v2/projects.service";
 import { listPortalTasks, updatePortalTask } from "../../../services/client-portal-v2/tasks.service";
+import { getProjectAccessForRequest } from "../../../shared/project-access";
+import { TEAM_ROLE_NAMES } from "../../../shared/team-permissions";
 import { asNumber, asString, bodyOf, ok, portalHandler, staffContext, uuidParam } from "./portal-http";
 
 /**
@@ -117,7 +119,14 @@ export default class PortalProjectsController {
   /** GET /portal/v2/projects/:projectId/access */
   static access = portalHandler("Failed to load the client access", async (req, res) => {
     const { teamId } = staffContext(req);
-    ok(res, await getProjectAccess(db, teamId, uuidParam(req, "projectId")));
+    const projectId = uuidParam(req, "projectId");
+    const view = await getProjectAccess(db, teamId, projectId);
+
+    // Assignment lists stay Owner/Admin-only; other eligible viewers get assigned users only.
+    const access = await getProjectAccessForRequest(req, projectId);
+    const canManageAssignments =
+      access.teamRole === TEAM_ROLE_NAMES.OWNER || access.teamRole === TEAM_ROLE_NAMES.ADMIN;
+    ok(res, canManageAssignments ? view : { ...view, assignable: [] });
   });
 
   /** POST /portal/v2/projects/:projectId/access  body: { user_id } */

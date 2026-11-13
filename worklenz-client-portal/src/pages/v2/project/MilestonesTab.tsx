@@ -6,6 +6,7 @@ import { useGetApprovalsQuery, useGetMilestonesQuery } from '@/store/api-v2';
 import { useFormatters } from '@/hooks/useFormatters';
 import { ActionRow, EmptyState, QueryState, RichTextView, StatusTag, UnavailableBanner } from '@/components/v2';
 import type { ClientMilestoneV2, ClientProjectV2, MilestoneStatus } from '@/types/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 /** Vertical timeline of the milestones the team shared. `?ms=` opens one; a missing one shows a banner. */
 export const MilestonesTab: React.FC<{ project: ClientProjectV2 }> = ({ project }) => {
@@ -101,7 +102,7 @@ const MilestoneRow = ({ milestone, project, isLast, isOpen, onToggle, approvals 
           style={{ cursor: 'pointer' }}
         >
           <Flex gap={10} align="center" wrap="wrap">
-            <Typography.Text strong>{milestone.name}</Typography.Text>
+            <Typography.Text strong>{decodeHtmlEntities(milestone.name)}</Typography.Text>
             <StatusTag kind="milestone" status={milestone.status} />
           </Flex>
           <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM, marginTop: 2 }}>
@@ -140,7 +141,7 @@ const MilestoneRow = ({ milestone, project, isLast, isOpen, onToggle, approvals 
                   <ActionRow
                     key={task.id}
                     icon={<CheckSquareOutlined />}
-                    title={<span style={{ fontWeight: 400 }}>{task.title}</span>}
+                    title={<span style={{ fontWeight: 400 }}>{decodeHtmlEntities(task.title)}</span>}
                     onClick={() => navigate(`/projects/${project.id}/tasks?task=${encodeURIComponent(task.id)}`)}
                   />
                 ))}
@@ -148,7 +149,7 @@ const MilestoneRow = ({ milestone, project, isLast, isOpen, onToggle, approvals 
                   <ActionRow
                     key={file.id}
                     icon={<FileTextOutlined />}
-                    title={<span style={{ fontWeight: 400 }}>{file.name}</span>}
+                    title={<span style={{ fontWeight: 400 }}>{decodeHtmlEntities(file.name)}</span>}
                     onClick={() => navigate(`/projects/${project.id}/files?file=${encodeURIComponent(file.id)}`)}
                   />
                 ))}
@@ -158,7 +159,7 @@ const MilestoneRow = ({ milestone, project, isLast, isOpen, onToggle, approvals 
               <ActionRow
                 key={approval.id}
                 icon={<AuditOutlined />}
-                title={<span style={{ fontWeight: 400 }}>{`${approval.ref_no} · ${approval.title}`}</span>}
+                title={<span style={{ fontWeight: 400 }}>{`${approval.ref_no} · ${decodeHtmlEntities(approval.title)}`}</span>}
                 onClick={() => navigate(`/approvals/${approval.id}`)}
                 right={<StatusTag kind="approval" status={approval.status} />}
               />

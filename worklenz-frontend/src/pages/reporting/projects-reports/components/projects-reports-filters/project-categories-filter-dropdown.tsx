@@ -27,7 +27,13 @@ import { useTranslation } from 'react-i18next';
 
 const NO_CATEGORY_ID = '__no_category__';
 
-const ProjectCategoriesFilterDropdown = () => {
+interface ProjectCategoriesFilterDropdownProps {
+  inline?: boolean;
+}
+
+const ProjectCategoriesFilterDropdown = ({
+  inline = false,
+}: ProjectCategoriesFilterDropdownProps) => {
   const { t } = useTranslation('reporting-projects-filters');
   const dispatch = useAppDispatch();
 
@@ -147,6 +153,10 @@ const ProjectCategoriesFilterDropdown = () => {
       </Flex>
     </Card>
   );
+
+  if (inline) {
+  return projectCategoryDropdownContent;
+}
 
   return (
     <Dropdown

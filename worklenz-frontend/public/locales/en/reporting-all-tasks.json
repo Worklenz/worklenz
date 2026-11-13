@@ -152,5 +152,6 @@
   "clientFilter": "Client",
   "searchLabels": "Search labels...",
   "noLabels": "No labels found",
-  "labelFilter": "Labels"
+  "labelFilter": "Labels",
+  "rowsPerPage": "Rows per page:"
 }

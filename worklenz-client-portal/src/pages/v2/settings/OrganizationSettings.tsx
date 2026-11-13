@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, Descriptions, Skeleton } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useClientAccess } from '@/hooks/useClientAccess';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 /** Which organization this portal belongs to and who manages it. People live under Members. */
 const OrganizationSettings: React.FC = () => {
@@ -14,11 +15,11 @@ const OrganizationSettings: React.FC = () => {
     <Card title={t('settings.nav.organization', { defaultValue: 'Organization' })}>
       <Descriptions column={1} size="small" bordered>
         <Descriptions.Item label={t('settings.organization.name', { defaultValue: 'Organization' })}>
-          {me.organizationName}
+          {decodeHtmlEntities(me.organizationName)}
         </Descriptions.Item>
         {me.operatorName && (
           <Descriptions.Item label={t('settings.organization.managedBy', { defaultValue: 'Managed by' })}>
-            {me.operatorName}
+            {decodeHtmlEntities(me.operatorName)}
           </Descriptions.Item>
         )}
       </Descriptions>

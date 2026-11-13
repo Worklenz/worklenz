@@ -773,6 +773,14 @@ const getIoFromSocketOrServer = (ioOrSocket: Server | Socket): Server | null => 
   return (ioOrSocket as Socket).nsp?.server || null;
 };
 
+/** Resolve the authenticated user id from a connected socket's session. */
+const getUserIdFromConnectedClient = (client: {
+  id: string;
+  request?: { session?: { passport?: { user?: { id?: string } } } };
+}): string | null => {
+  return client.request?.session?.passport?.user?.id || null;
+};
+
 /**
  * Emit a task event only to project-room members who are allowed to see the task.
  * When the project setting is OFF, falls back to a normal room broadcast.
@@ -808,22 +816,38 @@ export const emitToTaskVisibleProjectMembers = async (
     }
 
     const clients = await io.in(projectId).fetchSockets();
-    const socketIds = clients.map((client) => client.id);
-    if (!socketIds.length) return;
+    if (!clients.length) return;
 
-    const usersResult = await db.query(
-      `
-      SELECT u.id, u.socket_id
-      FROM users u
-      WHERE u.socket_id = ANY($1::text[]);
-      `,
-      [socketIds]
-    );
-
+    // Prefer live session identity over users.socket_id. After a silent reconnect
+    // the DB column can be NULL/stale while the socket is still authenticated and
+    // correctly joined to the project room — looking up by socket_id alone would
+    // silently drop those peers from real-time updates.
     const userBySocketId = new Map<string, string>();
-    for (const row of usersResult.rows) {
-      if (row.socket_id) {
-        userBySocketId.set(row.socket_id, row.id);
+    for (const client of clients) {
+      const sessionUserId = getUserIdFromConnectedClient(client);
+      if (sessionUserId) {
+        userBySocketId.set(client.id, sessionUserId);
+      }
+    }
+
+    const missingSocketIds = clients
+      .map((client) => client.id)
+      .filter((id) => !userBySocketId.has(id));
+
+    if (missingSocketIds.length) {
+      const usersResult = await db.query(
+        `
+        SELECT u.id, u.socket_id
+        FROM users u
+        WHERE u.socket_id = ANY($1::text[]);
+        `,
+        [missingSocketIds]
+      );
+
+      for (const row of usersResult.rows) {
+        if (row.socket_id && row.id) {
+          userBySocketId.set(row.socket_id, row.id);
+        }
       }
     }
 

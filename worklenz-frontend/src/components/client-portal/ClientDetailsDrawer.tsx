@@ -15,9 +15,10 @@ import {
 } from '@/shared/antd-imports';
 import {
   UserOutlined,
-  EditOutlined,
+  CheckCircleOutlined,
   DeleteOutlined,
   MoreOutlined,
+  StopOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../hooks/useAppSelector';
@@ -26,7 +27,6 @@ import { toggleClientDetailsDrawer } from '../../features/clients-portal/clients
 import {
   UpdateClientRequest,
   useLazyGetClientDetailsQuery,
-  useDeactivateClientMutation,
   useUpdateClientMutation,
 } from '../../api/client-portal/client-portal-api';
 import { useEffect } from 'react';
@@ -34,7 +34,7 @@ import PhoneInput from '@/components/PhoneInput/PhoneInput';
 import { validatePhoneNumber } from '@/utils/validatePhoneNumber';
 import { getCountries } from 'libphonenumber-js';
 import type { CountryCode } from 'libphonenumber-js';
-import { PortalLoadingOverlay } from '@/components/client-portal/v2';
+import { PortalLoadingOverlay, useClientOrganizationActions } from '@/components/client-portal/v2';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { Title, Text } = Typography;
@@ -81,6 +81,8 @@ const getDefaultPhoneCountry = (
 
 const ClientDetailsDrawer = () => {
   const { t } = useTranslation('client-portal-clients');
+  // The deactivate / delete actions and their dialogs are shared with the Clients list and the workspace.
+  const { t: tOrg } = useTranslation('client-portal-v2-clients');
   const dispatch = useAppDispatch();
 
   const { isClientDetailsDrawerOpen, selectedClientId } = useAppSelector(
@@ -99,7 +101,6 @@ const ClientDetailsDrawer = () => {
 
   const client = clientDetails?.body;
 
-  const [deactivateClient, { isLoading: isDeactivating }] = useDeactivateClientMutation();
   const [updateClient, { isLoading: isUpdating }] = useUpdateClientMutation();
 
   const [form] = Form.useForm();
@@ -169,43 +170,28 @@ const ClientDetailsDrawer = () => {
         );
       }
 
-      message.success(t('updateClientSuccessMessage') || 'Client updated successfully');
+      message.success(t('updateClientSuccessMessage', { defaultValue: 'Client updated successfully' }));
       window.setTimeout(() => {
         handleClose();
       }, 600);
     } catch (error: any) {
       message.error(
-        error?.data?.message || t('updateClientErrorMessage') || 'Failed to update client'
+        error?.data?.message || t('updateClientErrorMessage', { defaultValue: 'Failed to update client' })
       );
     }
   };
 
-  const handleDeactivateClient = async () => {
-    if (!selectedClientId) return;
-    try {
-      await deactivateClient(selectedClientId).unwrap();
-      message.success(t('deactivateClientSuccessMessage') || 'Client deactivated successfully');
-      fetchClientDetails(selectedClientId, false);
-      handleClose();
-    } catch (error: any) {
-      message.error(
-        error?.data?.message || t('deactivateClientErrorMessage') || 'Failed to deactivate client'
-      );
-    }
+  const refreshClientDetails = () => {
+    if (selectedClientId) fetchClientDetails(selectedClientId, false);
   };
 
-  const handleActivateClient = async () => {
-    if (!selectedClientId) return;
-    try {
-      await updateClient({ id: selectedClientId, data: { status: 'active' } }).unwrap();
-      message.success(t('activateClientSuccessMessage') || 'Client activated successfully');
-      fetchClientDetails(selectedClientId, false);
-    } catch (error: any) {
-      message.error(
-        error?.data?.message || t('activateClientErrorMessage') || 'Failed to activate client'
-      );
-    }
-  };
+  // Deactivate, reactivate and delete confirm first and use the v2 endpoints (the old menu items here acted at
+  // once). Deleting closes this modal: the client is gone from the list and can only be restored from there.
+  const { actions: organizationActions, modals: organizationModals } = useClientOrganizationActions({
+    onDeactivated: refreshClientDetails,
+    onReactivated: refreshClientDetails,
+    onDeleted: handleClose,
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -220,29 +206,40 @@ const ClientDetailsDrawer = () => {
     }
   };
 
-  const moreMenuItems =
-    client?.status === 'inactive'
-      ? [
+  const organizationTarget =
+    client && selectedClientId
+      ? { id: selectedClientId, name: client.company_name?.trim() || client.name }
+      : null;
+
+  const moreMenuItems = organizationTarget
+    ? [
+        client?.status === 'inactive'
+          ? {
+              key: 'reactivate',
+              icon: <CheckCircleOutlined />,
+              label: tOrg('orgActions.menu.reactivate', { defaultValue: 'Reactivate client' }),
+              onClick: () => organizationActions.onReactivate(organizationTarget),
+            }
+          : {
+              key: 'deactivate',
+              icon: <StopOutlined />,
+              label: tOrg('orgActions.menu.deactivate', { defaultValue: 'Deactivate client' }),
+              onClick: () => organizationActions.onDeactivate(organizationTarget),
+            },
         {
-          key: 'activate',
-          label: t('activateButton') || 'Activate Client',
-          icon: <EditOutlined />,
-          onClick: handleActivateClient,
+          key: 'delete',
+          danger: true,
+          icon: <DeleteOutlined />,
+          label: tOrg('orgActions.menu.delete', { defaultValue: 'Delete client' }),
+          onClick: () => organizationActions.onDelete(organizationTarget),
         },
       ]
-      : [
-        {
-          key: 'deactivate',
-          label: t('deactivateButton') || 'Deactivate Client',
-          icon: <DeleteOutlined />,
-          danger: true,
-          onClick: handleDeactivateClient,
-        },
-      ];
+    : [];
 
   if (!selectedClientId || !isClientDetailsDrawerOpen) return null;
 
   return (
+    <>
     <Modal
       open={isClientDetailsDrawerOpen}
       onCancel={handleClose}
@@ -265,7 +262,7 @@ const ClientDetailsDrawer = () => {
             />
             <div>
               <Title level={4} style={{ margin: 0, lineHeight: 1.3 }}>
-                {decodeHtmlEntities(client?.name) || t('loadingText') || 'Loading…'}
+                {decodeHtmlEntities(client?.name) || t('loadingText', { defaultValue: 'Loading…' })}
               </Title>
               <Flex gap={8} align="center" style={{ marginTop: 2 }}>
                 <Text type="secondary" style={{ fontSize: 13 }}>
@@ -287,7 +284,8 @@ const ClientDetailsDrawer = () => {
             <Button
               type="text"
               icon={<MoreOutlined />}
-              loading={isDeactivating}
+              disabled={!organizationTarget}
+              aria-label={tOrg('workspace.header.actionsLabel', { defaultValue: 'Client actions' })}
               onClick={e => e.stopPropagation()}
             />
           </Dropdown>
@@ -296,7 +294,7 @@ const ClientDetailsDrawer = () => {
       footer={
         <Flex justify="flex-end">
           <Button type="primary" onClick={() => form.submit()} loading={isUpdating}>
-            {t('updateButton') || 'Save Changes'}
+            {t('updateButton', { defaultValue: 'Save Changes' })}
           </Button>
         </Flex>
       }
@@ -304,7 +302,7 @@ const ClientDetailsDrawer = () => {
       <PortalLoadingOverlay loading={isLoadingClient}>
         {clientError && (
           <Alert
-            message={t('errorTitle') || 'Error'}
+            message={t('errorTitle', { defaultValue: 'Error' })}
             description="Failed to fetch client details"
             type="error"
             showIcon
@@ -347,10 +345,10 @@ const ClientDetailsDrawer = () => {
             <Col span={12}>
               <Form.Item
                 name="email"
-                label={t('emailLabel') || 'Email'}
+                label={t('emailLabel', { defaultValue: 'Email' })}
                 rules={[
-                  { required: true, message: t('emailRequired') || 'Please enter email' },
-                  { type: 'email', message: t('emailInvalid') || 'Enter a valid email' },
+                  { required: true, message: t('emailRequired', { defaultValue: 'Please enter email' }) },
+                  { type: 'email', message: t('emailInvalid', { defaultValue: 'Enter a valid email' }) },
                 ]}
               >
                 <Input placeholder="Enter email address" />
@@ -376,7 +374,7 @@ const ClientDetailsDrawer = () => {
             <Col span={12}>
               <Form.Item
                 name="phone"
-                label={t('phoneLabel') || 'Phone'}
+                label={t('phoneLabel', { defaultValue: 'Phone' })}
                 rules={[
                   {
                     validator: (_, value) => {
@@ -428,18 +426,18 @@ const ClientDetailsDrawer = () => {
             </Col>
           </Row>
 
-          <Form.Item name="address_line_1" label={t('addressLine1Label') || 'Street Address'}>
+          <Form.Item name="address_line_1" label={t('addressLine1Label', { defaultValue: 'Street Address' })}>
             <Input placeholder="Enter street address" />
           </Form.Item>
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="city" label={t('cityLabel') || 'City'}>
+              <Form.Item name="city" label={t('cityLabel', { defaultValue: 'City' })}>
                 <Input placeholder="City" />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="state" label={t('stateLabel') || 'State / Province'}>
+              <Form.Item name="state" label={t('stateLabel', { defaultValue: 'State / Province' })}>
                 <Input placeholder="State / Province" />
               </Form.Item>
             </Col>
@@ -447,12 +445,12 @@ const ClientDetailsDrawer = () => {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="zip_code" label={t('zipCodeLabel') || 'Zip / Postal Code'}>
+              <Form.Item name="zip_code" label={t('zipCodeLabel', { defaultValue: 'Zip / Postal Code' })}>
                 <Input placeholder="Zip code" />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="country" label={t('countryLabel') || 'Country'}>
+              <Form.Item name="country" label={t('countryLabel', { defaultValue: 'Country' })}>
                 <Input placeholder="Country" />
               </Form.Item>
             </Col>
@@ -461,6 +459,8 @@ const ClientDetailsDrawer = () => {
 
       </PortalLoadingOverlay>
     </Modal>
+    {organizationModals}
+    </>
   );
 };
 

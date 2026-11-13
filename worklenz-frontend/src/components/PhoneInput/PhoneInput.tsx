@@ -30,6 +30,8 @@ interface PhoneInputProps {
   disabled?: boolean;
   defaultCountry?: CountryCode;
   style?: React.CSSProperties;
+  'aria-describedby'?: string;
+  'aria-invalid'?: boolean | 'true' | 'false';
 }
 
 // Country names mapping for better UX
@@ -182,6 +184,8 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   disabled = false,
   defaultCountry = 'US',
   style,
+  'aria-describedby': ariaDescribedBy,
+  'aria-invalid': ariaInvalid,
 }) => {
   const [selectedCountry, setSelectedCountry] = useState<CountryCode>(defaultCountry);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -316,6 +320,8 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
         inputMode="numeric"
         pattern="[0-9]*"
         style={{ width: '60%' }}
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={ariaInvalid}
       />
     </Input.Group>
   );

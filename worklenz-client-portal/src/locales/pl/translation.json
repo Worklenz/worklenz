@@ -419,7 +419,12 @@
       "file": "Plik",
       "approval": "Zatwierdzenie",
       "change_request": "Wniosek o zmianę"
-    }
+    },
+    "addReaction": "Dodaj reakcję",
+    "reactionsLabel": "Reakcje",
+    "reactedTooltip": "Kliknij, aby usunąć swoją reakcję",
+    "notReactedTooltip": "Kliknij, aby zareagować: {{emoji}}",
+    "reactFailed": "Nie udało się zaktualizować reakcji"
   },
   "locked": {
     "reply": "Obserwatorzy klienta mogą czytać dyskusje, ale nie mogą odpowiadać.",

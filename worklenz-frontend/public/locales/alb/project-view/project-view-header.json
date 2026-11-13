@@ -5,6 +5,7 @@
   "createTask": "Krijo detyrë",
   "createIssue": "Krijo çështje",
   "createIssueTooltip": "Krijo një çështje të re",
+  "createIssueRequiresSprintTooltip": "Krijo fillimisht një sprint për të filluar shtimin e çështjeve",
   "settings": "Cilësimet",
   "subscribe": "Abonohu",
   "unsubscribe": "Çabonohu",

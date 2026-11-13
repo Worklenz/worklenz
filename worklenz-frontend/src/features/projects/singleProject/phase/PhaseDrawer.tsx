@@ -38,6 +38,7 @@ import logger from '@/utils/errorLogger';
 import { fetchTaskGroups } from '@/features/tasks/tasks.slice';
 import { updatePhaseLabel } from '@/features/project/project.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
+import { isListTabKey } from '@/features/projects/singleProject/saved-views/saved-view-config';
 import { fetchBoardTaskGroups } from '@/features/board/board-slice';
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
 
@@ -72,7 +73,7 @@ const PhaseDrawer = () => {
   );
 
   const refreshTasks = async () => {
-    if (tab === 'tasks-list') {
+    if (isListTabKey(tab)) {
       await dispatch(fetchTasksV3(projectId || ''));
       await dispatch(fetchTaskGroups(projectId || ''));
     } else if (tab === 'board') {

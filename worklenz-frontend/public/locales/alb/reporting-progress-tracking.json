@@ -46,4 +46,6 @@
   "updatedBy": "nga {{name}}",
   "editConfidence": "Cakto besimin e dorëzimit për {{project}}",
   "readOnlyConfidence": "Besueshmëria e dorëzimit për {{project}}"
+,
+  "rowsPerPage": "Rreshta për faqe:"
 }

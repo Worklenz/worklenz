@@ -48,6 +48,7 @@ import {
   resolveBillableChangeRequest,
 } from "../../services/client-portal-v2/change-request-billing";
 import { PortalError } from "../../services/client-portal-v2/errors";
+import { buildInvoicePdf } from "../../shared/pdf";
 
 export default class ClientPortalInvoicesController extends ClientPortalControllerBase {
 
@@ -628,7 +629,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           .json(new ServerResponse(false, null, "Invalid client ID"));
       }
       const clientResult = await db.query(
-        `SELECT c.id, c.name, ${CLIENT_SNAPSHOT_SELECT} FROM clients c WHERE c.id = $1 AND c.team_id = $2`,
+        `SELECT c.id, c.name, ${CLIENT_SNAPSHOT_SELECT} FROM clients c WHERE c.id = $1 AND c.team_id = $2 AND c.deleted_at IS NULL`,
         [clientIdInput, organizationId]
       );
       if (clientResult.rows.length === 0) {
@@ -1351,32 +1352,8 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         },
       };
 
-      // Generate PDF using puppeteer
-      const puppeteer = require('puppeteer');
-      const { InvoiceTemplateGenerator } = require('../../shared/invoice-template-generator');
-
       try {
-        const html = InvoiceTemplateGenerator.generateInvoiceHTML(invoiceData);
-        const browser = await puppeteer.launch({
-          headless: true,
-          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-        });
-
-        const page = await browser.newPage();
-        await page.setContent(html, { waitUntil: 'networkidle0' });
-
-        const pdfBuffer = await page.pdf({
-          format: 'A4',
-          printBackground: true,
-          margin: {
-            top: '20mm',
-            right: '20mm',
-            bottom: '20mm',
-            left: '20mm',
-          },
-        });
-
-        await browser.close();
+        const pdfBuffer = await buildInvoicePdf(invoiceData, 'invoice');
 
         // Set response headers for PDF download
         res.setHeader('Content-Type', 'application/pdf');

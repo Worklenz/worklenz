@@ -57,4 +57,8 @@
     "estHours": "估计工时",
     "searchPlaceholder": "搜索项目"
   }
+,
+  "myTasksView": {
+    "rowsPerPage": "每页行数："
+  }
 }

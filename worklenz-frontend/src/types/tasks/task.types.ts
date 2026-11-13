@@ -14,6 +14,8 @@ export interface ITaskCustomColumnSelectionOption {
   selection_id: string;
   selection_name: string;
   selection_color: string;
+  /** For a dependent Selection field: the parent option this option is grouped under. */
+  parent_selection_id?: string | null;
 }
 
 export interface ITaskCustomColumnLabelOption {
@@ -33,6 +35,9 @@ export interface ITaskCustomColumnConfig {
   expression?: string | null;
   firstNumericColumnKey?: string | null;
   secondNumericColumnKey?: string | null;
+  /** Set when this Selection field's options depend on another Selection field. */
+  parentColumnId?: string | null;
+  parentColumnKey?: string | null;
   selectionsList?: ITaskCustomColumnSelectionOption[];
   labelsList?: ITaskCustomColumnLabelOption[];
 }

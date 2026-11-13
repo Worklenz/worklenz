@@ -35,4 +35,6 @@
   "doingText": "Faire",
   "doneText": "Terminé",
   "customDateRangeInvalidError": "La date de fin ne peut pas être antérieure à la date de début. Veuillez sélectionner une plage valide."
+,
+  "rowsPerPage": "Lignes par page :"
 }

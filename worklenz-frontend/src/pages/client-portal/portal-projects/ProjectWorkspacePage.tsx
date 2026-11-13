@@ -122,7 +122,9 @@ const ProjectWorkspacePage = () => {
           <Flex align="center" gap={8} wrap="wrap" style={{ fontSize: 12, color: token.colorTextSecondary }}>
             <span>{t('workspace.clientLabel', { defaultValue: 'Client:' })}</span>
             {project.organization_id ? (
-              <Link to={clientWorkspacePath(project.organization_id)}>{project.organization_name}</Link>
+              <Link to={clientWorkspacePath(project.organization_id)}>
+                {decodeHtmlEntities(project.organization_name)}
+              </Link>
             ) : (
               <span>{t('workspace.noClient', { defaultValue: 'No client assigned' })}</span>
             )}

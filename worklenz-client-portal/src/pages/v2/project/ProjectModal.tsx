@@ -6,6 +6,7 @@ import { useClientAccess } from '@/hooks/useClientAccess';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useResponsive } from '@/hooks/useResponsive';
 import { ProjectName, QueryState, StatusTag, useRoleLabel } from '@/components/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { MODAL_TABS, toModalTab, type ProjectModalIntent, type ProjectModalTab, type ProjectTab } from '@/utils/targets';
 import { TAB_LABELS } from './tabLabels';
 import { DiscussionsView } from '../discussions/DiscussionsView';
@@ -56,7 +57,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ projectId, tab, inte
           <div>
             <Flex justify="space-between" align="center" wrap="wrap" gap={8} style={{ marginBottom: 8 }}>
               <Typography.Text type="secondary">
-                {[project.phase, t('projects.expectedOn', { date: date(project.expected_completion), defaultValue: 'Expected completion {{date}}' })]
+                {[decodeHtmlEntities(project.phase ?? undefined) || null, t('projects.expectedOn', { date: date(project.expected_completion), defaultValue: 'Expected completion {{date}}' })]
                   .filter(Boolean)
                   .join(' · ')}
               </Typography.Text>

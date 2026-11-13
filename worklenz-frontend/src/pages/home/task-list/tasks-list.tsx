@@ -102,7 +102,7 @@ const TasksList: React.FC = React.memo(() => {
       dispatch(setShowTaskDrawer(true));
       dispatch(setHomeTasksConfig({ ...homeTasksConfig, selected_task_id: task.id || '' }));
     },
-    [dispatch, setSelectedTaskId, setShowTaskDrawer, fetchTask, homeTasksConfig]
+    [dispatch, setSelectedTaskId, fetchTask, homeTasksConfig]
   );
 
   const refetch = useCallback(() => {

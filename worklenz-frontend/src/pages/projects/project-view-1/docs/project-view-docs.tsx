@@ -24,12 +24,14 @@ import DocsSidebar from './docs-sidebar';
 import { mentionStore } from './mention-store';
 import { useDocsFavorites } from './use-docs-favorites';
 import { useDocsAutosave } from './use-docs-autosave';
+import { useDocsSearchReplace } from './docs-search-guard';
 
 const ProjectViewDocs = () => {
   const { t } = useTranslation('project-view-docs');
   const { token } = theme.useToken();
   const { projectId = '' } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
+  const replaceDocsSearch = useDocsSearchReplace(setSearchParams);
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
   const refreshTimestamp = useAppSelector(state => state.projectReducer.refreshTimestamp);
@@ -121,9 +123,9 @@ const ProjectViewDocs = () => {
       next.set('tab', 'docs');
       if (documentId) next.set('doc', documentId);
       else next.delete('doc');
-      setSearchParams(next, { replace: true });
+      replaceDocsSearch(next);
     },
-    [searchParams, setSearchParams]
+    [searchParams, replaceDocsSearch]
   );
 
   const openDocument = useCallback(
@@ -179,7 +181,7 @@ const ProjectViewDocs = () => {
           const next = new URLSearchParams(searchParamsRef.current);
           next.set('tab', 'docs');
           next.set('doc', documentResponse.body.id);
-          setSearchParams(next, { replace: true });
+          replaceDocsSearch(next);
         }
       }
     } catch {
@@ -187,7 +189,7 @@ const ProjectViewDocs = () => {
     } finally {
       setListLoading(false);
     }
-  }, [applyDocument, projectId, setSearchParams]);
+  }, [applyDocument, projectId, replaceDocsSearch]);
 
   useEffect(() => {
     void loadPages();

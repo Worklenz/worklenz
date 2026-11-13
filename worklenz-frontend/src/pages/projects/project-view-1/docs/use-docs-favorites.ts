@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { projectDocumentsApiService } from '@/api/projects/docs/project-documents.api.service';
+import { teamDocumentsApiService } from '@/api/projects/docs/team-documents.api.service';
 
 /** Favorites are private server state; failures roll back only the affected page. */
-export const useDocsFavorites = (projectId: string) => {
+export const useDocsFavorites = (projectId: string, scope: 'project' | 'team' = 'project') => {
   const [ids, setIds] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -20,8 +21,11 @@ export const useDocsFavorites = (projectId: string) => {
     setPending(new Set());
     setLoading(true);
     setHasError(false);
-    void projectDocumentsApiService
-      .favorites(projectId)
+    const request =
+      scope === 'team'
+        ? teamDocumentsApiService.favorites()
+        : projectDocumentsApiService.favorites(projectId);
+    void request
       .then(response => {
         if (generation.current !== current) return;
         if (!response.done) throw new Error('Favorites unavailable');
@@ -36,7 +40,7 @@ export const useDocsFavorites = (projectId: string) => {
     return () => {
       ++generation.current;
     };
-  }, [projectId, reload]);
+  }, [projectId, reload, scope]);
 
   const toggle = useCallback(
     async (id: string) => {

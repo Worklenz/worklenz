@@ -12,6 +12,7 @@ import { ITaskStatus } from '@/types/tasks/taskStatus.types';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 
 import { Task } from '@/types/task-management.types';
+import { IssueType } from '@/types/project/softwareIssue.types';
 
 const normalizeAssigneeNames = (
   assignees?: IProjectTask['assignees'] | string[] | null,
@@ -339,6 +340,12 @@ const taskDrawerSlice = createSlice({
         state.taskFormViewModel.task.is_blocked = is_blocked;
       }
     },
+    setTaskIssueType: (state, action: PayloadAction<{ id: string; issue_type: IssueType }>) => {
+      const { issue_type, id: taskId } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
+        state.taskFormViewModel.task.issue_type = issue_type;
+      }
+    },
     setTaskLabels: (state, action: PayloadAction<ILabelsChangeResponse>) => {
       if (!action.payload) return;
       const { all_labels, id: taskId } = action.payload;
@@ -590,6 +597,7 @@ export const {
   setTaskEpic,
   setTaskRelease,
   setTaskBlocked,
+  setTaskIssueType,
   setTaskLabels,
   setTaskSubscribers,
   setTimeLogEditing,

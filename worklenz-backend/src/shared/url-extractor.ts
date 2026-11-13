@@ -46,17 +46,40 @@ function stripHtml(html: string): string {
 // /[.,;:!?)]+$/ backtracks polynomially on a URL ending in many such chars.
 const TRAILING_PUNCTUATION = new Set([".", ",", ";", ":", "!", "?", ")"]);
 
+/**
+ * Trims trailing sentence punctuation characters from an extracted URL.
+ *
+ * @param url - The raw URL string
+ * @returns The URL with trailing punctuation removed
+ */
 function trimTrailingPunctuation(url: string): string {
   let end = url.length;
   while (end > 0 && TRAILING_PUNCTUATION.has(url[end - 1])) end--;
   return url.slice(0, end);
 }
 
+function cleanUrl(url: string): string {
+  return trimTrailingPunctuation(url.replace(/&amp;/gi, "&"));
+}
+
 export function extractUrls(html: string): string[] {
+  if (!html) return [];
+  const hrefUrls: string[] = [];
+  const hrefRegex = /href=["'](https?:\/\/[^\s"'>]+)["']/gi;
+  let match: RegExpExecArray | null;
+  while ((match = hrefRegex.exec(html)) !== null) {
+    hrefUrls.push(match[1].replace(/&amp;/gi, "&"));
+  }
+
   const text = stripHtml(html);
   const matches = text.match(URL_REGEX);
-  if (!matches) return [];
-  return [...new Set(matches.map(trimTrailingPunctuation))];
+  const textUrls = matches ? matches.map(cleanUrl) : [];
+
+  // Autolinked text usually equals its href; skip text URLs that match an href once trimmed.
+  const extraTextUrls = textUrls.filter(
+    url => !hrefUrls.some(href => trimTrailingPunctuation(href) === url)
+  );
+  return [...new Set([...hrefUrls, ...extraTextUrls])];
 }
 
 export async function syncTaskDescriptionLinks(

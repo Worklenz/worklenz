@@ -5,6 +5,7 @@
   "createTask": "创建任务",
   "createIssue": "创建问题",
   "createIssueTooltip": "创建一个新问题",
+  "createIssueRequiresSprintTooltip": "请先创建冲刺后再添加工作项",
   "settings": "设置",
   "subscribe": "订阅",
   "unsubscribe": "取消订阅",

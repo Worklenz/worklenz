@@ -39,4 +39,6 @@
   "doingText": "Tun",
   "doneText": "Erledigt",
   "customDateRangeInvalidError": "Das Enddatum darf nicht vor dem Startdatum liegen. Bitte wählen Sie einen gültigen Zeitraum."
+,
+  "rowsPerPage": "Zeilen pro Seite:"
 }

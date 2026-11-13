@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
@@ -33,6 +33,8 @@ import {
 import { FinanceKpiCard } from './FinanceKpiCard';
 import { fmtHours, fmtMoney, getRangeDates } from './finance-report-utils';
 import { useFinanceReportFetch } from './useFinanceReportFetch';
+import TablePagination from '@/components/TablePagination';
+import { useTaskNameRealtimeSync } from '@/hooks/useTaskNameRealtimeSync';
 
 const { Text, Title } = Typography;
 
@@ -57,7 +59,16 @@ export const FinanceBillableTimePage = () => {
     });
   }, [page, pageSize, preset]);
 
-  const entries: IFinanceBillableEntry[] = data?.entries ?? [];
+  const [entries, setEntries] = useState<IFinanceBillableEntry[]>([]);
+
+  useEffect(() => {
+    setEntries(data?.entries ?? []);
+  }, [data?.entries]);
+
+  useTaskNameRealtimeSync({
+    items: entries,
+    setItems: setEntries,
+  });
   const total = data?.total ?? 0;
   const summary = data?.summary ?? {
     logged_hours: 0,
@@ -122,17 +133,17 @@ export const FinanceBillableTimePage = () => {
         render: (value: string, record) => {
           const taskName = decodeHtmlEntities(value);
           return (
-          <Button
-            type="link"
-            style={{ padding: 0, height: 'auto' }}
-            onClick={() => handleTaskClick(record.task_id, record.project_id)}
-          >
-            <Tooltip title={taskName}>
-              <Text ellipsis style={{ maxWidth: 180 }}>
-                {taskName}
-              </Text>
-            </Tooltip>
-          </Button>
+            <Button
+              type="link"
+              style={{ padding: 0, height: 'auto' }}
+              onClick={() => handleTaskClick(record.task_id, record.project_id)}
+            >
+              <Tooltip title={taskName}>
+                <Text ellipsis style={{ maxWidth: 180 }}>
+                  {taskName}
+                </Text>
+              </Tooltip>
+            </Button>
           );
         },
       },
@@ -276,17 +287,7 @@ export const FinanceBillableTimePage = () => {
           columns={columns}
           dataSource={entries}
           loading={loading}
-          pagination={{
-            current: page,
-            pageSize,
-            total,
-            showSizeChanger: true,
-            pageSizeOptions: [10, 20, 50, 100],
-            onChange: (nextPage, nextSize) => {
-              setPage(nextPage);
-              setPageSize(nextSize);
-            },
-          }}
+          pagination={false}
           locale={{
             emptyText: (
               <Empty
@@ -297,6 +298,26 @@ export const FinanceBillableTimePage = () => {
             ),
           }}
           scroll={{ x: 1000 }}
+        />
+
+        <TablePagination
+          navigationLabel={t('common:paginationNavigation')}
+          firstPageLabel={t('common:firstPage')}
+          previousPageLabel={t('common:previousPage')}
+          nextPageLabel={t('common:nextPage')}
+          lastPageLabel={t('common:lastPage')}
+          renderDefaultSummary={(range, total) => t('common:paginationSummary', { range, total })}
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={(nextPage, nextPageSize) => {
+            setPage(nextPage);
+            setPageSize(nextPageSize);
+          }}
+          rowsPerPageLabel={t('myTasksView.rowsPerPage', {
+            defaultValue: 'Rows per page',
+          })}
+          variant="dropdown"
         />
       </Card>
     </Flex>

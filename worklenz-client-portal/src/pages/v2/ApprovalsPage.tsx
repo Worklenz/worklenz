@@ -27,6 +27,7 @@ import type { ColumnField, FilterGroup, RowAction } from '@/components/v2';
 import type { ClientApprovalV2 } from '@/types/v2';
 import PillToggle from '@/components/PillToggle';
 import { PORTAL_CONTROL_HEIGHT } from '@/config/theme.config';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { ApprovalDetail } from './approvals/ApprovalDetail';
 
 const LINK_TYPE_LABELS: Record<string, string> = {
@@ -92,9 +93,12 @@ const ApprovalsList: React.FC<{ openId?: string }> = ({ openId }) => {
         (projectFilter.length === 0 || projectFilter.includes(approval.project_id)) &&
         (statusFilter.length === 0 || statusFilter.includes(approval.status)) &&
         (needle === '' ||
-          [approval.title, approval.ref_no, approval.project_name, approval.linked_item.name].some(value =>
-            value.toLowerCase().includes(needle)
-          ))
+          [
+            decodeHtmlEntities(approval.title),
+            approval.ref_no,
+            approval.project_name,
+            decodeHtmlEntities(approval.linked_item.name),
+          ].some(value => value.toLowerCase().includes(needle)))
     );
   }, [tabRows, searchText, projectFilter, statusFilter]);
 
@@ -142,7 +146,7 @@ const ApprovalsList: React.FC<{ openId?: string }> = ({ openId }) => {
       title: t('approvals.approval', { defaultValue: 'Approval' }),
       key: 'approval',
       ...sorting.columnProps('approval'),
-      render: (_: unknown, approval) => <Typography.Text strong>{approval.title}</Typography.Text>,
+      render: (_: unknown, approval) => <Typography.Text strong>{decodeHtmlEntities(approval.title)}</Typography.Text>,
     },
     {
       title: t('approvals.revisionColumn', { defaultValue: 'Revision' }),
@@ -164,7 +168,7 @@ const ApprovalsList: React.FC<{ openId?: string }> = ({ openId }) => {
       key: 'linked',
       responsive: ['lg'],
       ...sorting.columnProps('linked'),
-      render: (_: unknown, approval) => approval.linked_item.name,
+      render: (_: unknown, approval) => decodeHtmlEntities(approval.linked_item.name),
     },
     {
       title: t('approvals.linkedType', { defaultValue: 'Item type' }),
@@ -281,7 +285,7 @@ const ApprovalsList: React.FC<{ openId?: string }> = ({ openId }) => {
   const projectOptions = useMemo(
     () =>
       Array.from(new Map(approvals.map(approval => [approval.project_id, approval.project_name])))
-        .map(([value, label]) => ({ value, label }))
+        .map(([value, label]) => ({ value, label: decodeHtmlEntities(label) }))
         .sort((a, b) => a.label.localeCompare(b.label)),
     [approvals]
   );

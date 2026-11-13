@@ -11,6 +11,7 @@ import {
   postClientComment,
   editClientMessage,
   deleteClientMessage,
+  toggleClientMessageReaction,
   presignClientUpload,
   replyToChangeRequest,
   submitChangeRequest,
@@ -33,7 +34,10 @@ import {
   getClientThread,
   markClientThreadRead,
 } from "../../../services/client-portal-v2/client-detail.service";
-import { requestAccountDeletion } from "../../../services/client-portal-v2/client-account-deletion.service";
+import {
+  requestAccountDeletion,
+  submitAccountDeletionRequest,
+} from "../../../services/client-portal-v2/client-account-deletion.service";
 import {
   getDashboardLayout,
   resetDashboardLayout,
@@ -110,9 +114,14 @@ export default class ClientPortalV2Controller {
     send(res, await updateClientMe(db, subject, bodyOf(req)), "Saved");
   });
 
-  /** POST /me/account-deletion - soft-deletes the signed-in person's login; support purges it after 30 days. */
+  /** POST /me/account-deletion - a Client Admin soft-deletes their own login; it is purged after 30 days. */
   static requestAccountDeletion = clientHandler("Failed to delete your account", async (req, subject, res) => {
     send(res, await requestAccountDeletion(subject, bodyOf(req)), "Account deletion request submitted");
+  });
+
+  /** POST /me/account-deletion-request - a Member or Viewer asks their team to delete their account. */
+  static submitAccountDeletionRequest = clientHandler("Failed to send your request", async (_req, subject, res) => {
+    send(res, await submitAccountDeletionRequest(subject), "Your request was sent");
   });
 
   static timezones = clientHandler("Failed to load the time zones", async (_req, _subject, res) => {
@@ -340,5 +349,10 @@ export default class ClientPortalV2Controller {
 
   static deleteMessage = clientHandler("Failed to delete your message", async (req, subject, res) => {
     send(res, await deleteClientMessage(subject, uuid(req, "messageId")), "Message deleted");
+  });
+
+  static toggleReaction = clientHandler("Failed to update reaction", async (req, subject, res) => {
+    const body = bodyOf(req);
+    send(res, await toggleClientMessageReaction(subject, uuid(req, "messageId"), body.emoji));
   });
 }

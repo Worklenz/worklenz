@@ -56,5 +56,7 @@
   "deleteSuccess": "评论删除成功",
   "deleteError": "删除评论失败",
   "editSuccess": "评论更新成功",
-  "editError": "无法编辑评论"
+  "editError": "无法编辑评论",
+  "writeComment": "写评论...",
+  "pressCmdEnterToSubmit": "按 Ctrl+Enter（或 Cmd+Enter）提交"
 }

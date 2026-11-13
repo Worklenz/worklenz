@@ -158,9 +158,14 @@
 /* Hover toolbar - floating popup above the message bubble */
 .chat-msg-toolbar {
   position: absolute;
-  top: 0px;
-  transform: translateY(-100%);
-  display: flex;
+  top: -14px;
+  transform: translateY(0);
+  display: inline-flex !important;
+  flex-direction: row !important;
+  width: max-content !important;
+  max-width: none !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
   opacity: 0;
   visibility: hidden;
   transition:
@@ -171,11 +176,13 @@
 }
 
 .chat-msg-row.mine .chat-msg-toolbar {
-  right: 0;
+  right: 8px;
+  left: auto;
 }
 
 .chat-msg-row.theirs .chat-msg-toolbar {
-  left: 0;
+  left: 8px;
+  right: auto;
 }
 
 .chat-msg-wrapper:hover .chat-msg-toolbar {
@@ -186,10 +193,15 @@
 }
 
 .chat-msg-actions {
-  display: flex;
-  align-items: center;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  width: max-content !important;
+  max-width: none !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
   gap: 2px;
-  padding: 6px 10px;
+  padding: 4px 8px;
   border-radius: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }

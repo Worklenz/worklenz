@@ -24,6 +24,7 @@ import { ITaskViewModel } from '@/types/tasks/task.types';
 import { ITaskAssigneesUpdateResponse } from '@/types/tasks/task-assignee-update-response';
 import { setTaskAssignee } from '@/features/task-drawer/task-drawer.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
+import { isListTabKey } from '@/features/projects/singleProject/saved-views/saved-view-config';
 import { updateTaskAssignees as updateBoardTaskAssignees } from '@/features/board/board-slice';
 import { updateTaskAssignees as updateTasksListTaskAssignees } from '@/features/tasks/tasks.slice';
 import { updateEnhancedKanbanTaskAssignees } from '@/features/enhanced-kanban/enhanced-kanban.slice';
@@ -112,7 +113,7 @@ const TaskDrawerAssigneeSelector = ({ task }: TaskDrawerAssigneeSelectorProps) =
           }
 
           dispatch(setTaskAssignee(data));
-          if (tab === 'tasks-list') {
+          if (isListTabKey(tab)) {
             dispatch(updateTasksListTaskAssignees(data));
           }
           if (tab === 'board') {

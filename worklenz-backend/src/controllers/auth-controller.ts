@@ -524,6 +524,7 @@ export default class AuthController extends WorklenzControllerBase {
         process.env.GOOGLE_CLIENT_ID, // Web client ID
         process.env.GOOGLE_ANDROID_CLIENT_ID, // Android client ID
         process.env.GOOGLE_IOS_CLIENT_ID, // iOS client ID
+        process.env.GOOGLE_DESKTOP_CLIENT_ID, // Desktop client ID
       ].filter(Boolean); // Remove undefined values
 
       if (!allowedClientIds.includes(profile.aud)) {

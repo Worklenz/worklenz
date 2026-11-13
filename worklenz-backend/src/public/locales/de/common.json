@@ -23,5 +23,22 @@
   "business-trial-then-plan": "Danach fahren Sie mit {{plan}} fort",
   "licennse-expired-contacting-support": "Support kontaktieren...",
   "loadingData": "Daten werden geladen...",
-  "refreshingData": "Daten werden aktualisiert..."
+  "refreshingData": "Daten werden aktualisiert...",
+  "addComment": "Kommentar hinzufügen...",
+  "peopleYouCanMention": "Personen, die Sie erwähnen können",
+  "noMatchingPeople": "Keine passenden Personen",
+  "formatting": "Formatierung",
+  "bold": "Fett",
+  "italic": "Kursiv",
+  "strikethrough": "Durchgestrichen",
+  "codeBlock": "Codeblock",
+  "quoteBlock": "Zitatblock",
+  "checklist": "Checkliste",
+  "numberedList": "Nummerierte Liste",
+  "unorderedList": "Aufzählungsliste",
+  "linkAddress": "Link-URL",
+  "linkPlaceholder": "https://beispiel.de",
+  "apply": "Anwenden",
+  "link": "Link",
+  "textColor": "Textfarbe"
 }

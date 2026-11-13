@@ -58,7 +58,7 @@ async function assertClientNameFree(q: Queryable, teamId: string, name: string) 
   }
 
   const existing = await q.query(
-    `SELECT id FROM clients WHERE team_id = $1 AND lower(name) = lower($2) LIMIT 1`,
+    `SELECT id FROM clients WHERE team_id = $1 AND lower(name) = lower($2) AND deleted_at IS NULL LIMIT 1`,
     [teamId, name]
   );
   if (existing.rows.length > 0) {
@@ -131,7 +131,7 @@ export async function addContactToCompany(q: Queryable, input: CompanyUserInput)
   const firstName = input.firstName?.trim();
   if (!firstName) throw new ContactServiceError("MISSING_FIELDS", "First name is required");
 
-  const company = await q.query(`SELECT id FROM clients WHERE id = $1 AND team_id = $2`, [
+  const company = await q.query(`SELECT id FROM clients WHERE id = $1 AND team_id = $2 AND deleted_at IS NULL`, [
     input.clientId,
     input.teamId,
   ]);
@@ -300,7 +300,7 @@ export function prepareImportRows(rows: ImportRowInput[], lookups: ImportLookups
 async function loadImportLookups(q: Queryable, teamId: string): Promise<ImportLookups> {
   const [emails, clients] = await Promise.all([
     q.query(`SELECT lower(email) AS email FROM client_contacts WHERE team_id = $1`, [teamId]),
-    q.query(`SELECT id, name, company_name FROM clients WHERE team_id = $1`, [teamId]),
+    q.query(`SELECT id, name, company_name FROM clients WHERE team_id = $1 AND deleted_at IS NULL`, [teamId]),
   ]);
 
   const existingClients = new Map<string, string>();

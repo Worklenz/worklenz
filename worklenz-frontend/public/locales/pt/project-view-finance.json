@@ -43,6 +43,7 @@
   "labourHoursColumn": "Horas de Trabalho",
   "actions": "Ações",
   "selectJobTitle": "Selecionar Cargo",
+  "createJobTitleButtonText": "Criar um cargo",
   "ratecardsPluralText": "Modelos de Tabela de Preços",
   "deleteConfirm": "Tem certeza?",
   "yes": "Sim",

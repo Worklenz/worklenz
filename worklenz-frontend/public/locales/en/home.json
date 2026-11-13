@@ -100,7 +100,7 @@
     "noUnassignedTasks": "No unassigned tasks found",
     "pickUnassignedTaskRequired": "Please select an unassigned task",
     "taskCreationRestrictedTitle": "Task Creation Restricted",
-    "taskCreationRestricted": "Task creation is restricted to Admins and Team Leads only. Please contact your administrator.",
+    "taskCreationRestricted": "Task creation is restricted to Admins, Team Leads, and Project Managers only. Please contact your administrator.",
     "assignees": "Assignees",
     "searchMembers": "Search by name or email…",
     "noMembersFound": "No members found",
@@ -254,7 +254,9 @@
     "weekdaySat": "Sat",
     "weekdaySun": "Sun",
     "createdTimeColumn": "Created Time",
-    "minutesPlaceholder": "0"
+    "minutesPlaceholder": "0",
+    "totalDurationBadge": "Total: {{duration}}",
+    "overnightSplitBreakdown": "({{day1Duration}} on {{day1Date}}, {{day2Duration}} on {{day2Date}})"
   },
   "expenses": {
     "emptyTitle": "No expenses logged yet",

@@ -6,6 +6,7 @@
     "approverPlaceholder": "Select approvers…",
     "drafted": "{{ref}} saved as a draft. The client cannot see it yet.",
     "dueDate": "Due date (optional)",
+    "dueDatePlaceholder": "Select due date",
     "existingHint": "Only Client Visible files, milestones and tasks can be linked. The exact file version is recorded.",
     "existingItem": "Existing item",
     "failed": "The approval request could not be saved.",

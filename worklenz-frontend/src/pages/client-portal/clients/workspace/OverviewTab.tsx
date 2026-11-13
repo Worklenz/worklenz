@@ -15,6 +15,7 @@ import type { ClientWorkspaceOverview, NeedsAttentionItem } from '@/types/client
 import { portalPaths } from '../../portal-paths';
 import type { WorkspaceTab } from './workspace-helpers';
 import { PortalLoader } from '@/components/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface OverviewTabProps {
   overview: ClientWorkspaceOverview;
@@ -60,11 +61,11 @@ export const OverviewTab = ({ overview, organizationId, onOpenTab }: OverviewTab
         return {
           text: item.flag
             ? t('overview.attention.inviteExpiredAsked', {
-                name: item.label,
+                name: decodeHtmlEntities(item.label),
                 defaultValue: '{{name}}’s invitation expired and they asked for a new link',
               })
             : t('overview.attention.inviteExpired', {
-                name: item.label,
+                name: decodeHtmlEntities(item.label),
                 defaultValue: '{{name}}’s invitation expired',
               }),
           sub: null,
@@ -72,7 +73,7 @@ export const OverviewTab = ({ overview, organizationId, onOpenTab }: OverviewTab
       case 'approval_awaiting':
         return {
           text: t('overview.attention.approvalAwaiting', {
-            title: item.label,
+            title: decodeHtmlEntities(item.label),
             approver: item.detail ?? t('overview.attention.theClient', { defaultValue: 'the client' }),
             defaultValue: '“{{title}}” is waiting for {{approver}}',
           }),
@@ -81,7 +82,7 @@ export const OverviewTab = ({ overview, organizationId, onOpenTab }: OverviewTab
       case 'change_request_review':
         return {
           text: t('overview.attention.changeRequestReview', {
-            title: item.label,
+            title: decodeHtmlEntities(item.label),
             defaultValue: '“{{title}}” needs your review',
           }),
           sub: item.detail,
@@ -89,7 +90,7 @@ export const OverviewTab = ({ overview, organizationId, onOpenTab }: OverviewTab
       default:
         return {
           text: t('overview.attention.unreadMessage', { defaultValue: 'Unread client message' }),
-          sub: [item.detail, item.label].filter(Boolean).join(' · ') || null,
+          sub: [item.detail, decodeHtmlEntities(item.label)].filter(Boolean).join(' · ') || null,
         };
     }
   };
@@ -131,7 +132,7 @@ export const OverviewTab = ({ overview, organizationId, onOpenTab }: OverviewTab
         {attention.length === 0 ? (
           <Typography.Text type="secondary">
             {t('overview.attention.empty', {
-              name: overview.organization.name,
+              name: decodeHtmlEntities(overview.organization.name),
               defaultValue: 'Nothing is waiting on you for {{name}}.',
             })}
           </Typography.Text>

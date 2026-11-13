@@ -19,6 +19,8 @@
   "viewOnBoard": "Voir à bord",
   "completeSprint": "Sprint complet",
   "startSprint": "Démarrer le sprint",
+  "createSprint": "Créer un sprint",
+  "sprintSetupRequiredHint": "Créez un sprint pour déverrouiller le backlog et commencer à ajouter des issues.",
   "editSprint": "Modifier le sprint",
   "noTasksInGroupDescription": "Ajoutez une tâche pour commencer",
   "addFirstTask": "Ajoutez votre première tâche",
@@ -42,6 +44,12 @@
   "inProgress": "Faire",
   "done": "Terminé",
   "defaultTaskName": "Tâche sans titre",
+  "editSprintName": "Cliquez pour renommer",
+  "editSprintDates": "Cliquez pour modifier les dates",
+  "addDates": "Ajouter des dates",
+  "sprintUpdated": "Sprint mis à jour",
+  "sprintUpdateError": "Impossible de mettre à jour le sprint",
+  "sprintNameRequired": "Le nom du sprint est obligatoire",
   "indicators": {
     "tooltips": {
       "subtasks": "sous-tâche {{count}}",

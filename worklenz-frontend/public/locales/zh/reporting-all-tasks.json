@@ -153,4 +153,6 @@
   "searchLabels": "搜索标签...",
   "noLabels": "未找到标签",
   "labelFilter": "标签"
+,
+  "rowsPerPage": "每页行数："
 }

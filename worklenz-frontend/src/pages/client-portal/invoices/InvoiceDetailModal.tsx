@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import DOMPurify from 'dompurify';
 import { useTranslation } from 'react-i18next';
+import { downloadPortalPdf } from '@/utils/download-portal-pdf';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Button,
@@ -145,7 +146,7 @@ const InvoiceDetailModal = () => {
   };
 
   const handleDownload = () => {
-    if (invoiceId) window.open(getInvoiceDownloadUrl(invoiceId), '_blank', 'noopener,noreferrer');
+    if (invoiceId) downloadPortalPdf(getInvoiceDownloadUrl(invoiceId), 'invoice.pdf', t('downloadFailed', { defaultValue: 'Failed to download the PDF. Please try again.' }));
   };
 
   const field = (label: string, value: React.ReactNode) => (
@@ -316,7 +317,10 @@ const InvoiceDetailModal = () => {
                       {decodeHtmlEntities(invoice.client?.name) || '-'}
                     </Flex>
                   )}
-                  {field(t('companyName', { defaultValue: 'Company' }), invoice.client?.companyName || '-')}
+                  {field(
+                    t('companyName', { defaultValue: 'Company' }),
+                    decodeHtmlEntities(invoice.client?.companyName) || '-'
+                  )}
                   {field(t('email', { defaultValue: 'Email' }), invoice.client?.email || '-')}
                 </div>
               </Card>
@@ -344,7 +348,10 @@ const InvoiceDetailModal = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 12 }}>
                   {/* A standalone invoice has no request; these read "-" rather than erroring. */}
                   {field(t('requestNumber', { defaultValue: 'Request Number' }), invoice.request?.requestNumber || '-')}
-                  {field(t('serviceName', { defaultValue: 'Service' }), invoice.request?.service?.name || invoice.projectName || '-')}
+                  {field(
+                    t('serviceName', { defaultValue: 'Service' }),
+                    decodeHtmlEntities(invoice.request?.service?.name || invoice.projectName) || '-'
+                  )}
                 </div>
                 <div className="invoices-detail-label" style={{ color: token.colorTextSecondary }}>
                   {t('serviceDescription', { defaultValue: 'Service Description' })}

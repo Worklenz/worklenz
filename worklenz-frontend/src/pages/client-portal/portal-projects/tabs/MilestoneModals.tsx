@@ -11,6 +11,7 @@ import {
   useUpdateMilestoneMutation,
 } from '@/api/client-portal/portal-projects-api';
 import { VisibilityTag, formatPortalDate } from '@/components/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import type {
   Milestone,
   MilestoneStatus,
@@ -206,7 +207,10 @@ export const MilestoneModal = ({ project, editing, onClose }: MilestoneModalProp
                   onChange={() => setForm({ ...form, task_ids: flip(form.task_ids, task.id) })}
                 />
                 <span style={{ flex: 1, minWidth: 0 }}>
-                  {t('milestones.linkTask', { title: task.title, defaultValue: 'Task: {{title}}' })}
+                  {t('milestones.linkTask', {
+                    title: decodeHtmlEntities(task.title),
+                    defaultValue: 'Task: {{title}}',
+                  })}
                 </span>
                 <VisibilityTag visibility={task.visibility} />
               </Flex>

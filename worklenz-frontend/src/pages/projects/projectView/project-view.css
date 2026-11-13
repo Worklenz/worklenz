@@ -5,24 +5,35 @@
   width: 8px;
 }
 
+.project-view-tabs .ant-tabs-tab-btn,
+.project-view-tabs .ant-tabs-ink-bar {
+  transition:
+    color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* Light mode - selected tab header bold */
-[data-theme="light"] .project-view-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+[data-theme="light"] .project-view-tabs .ant-tabs-tab-active .ant-tabs-tab-btn,
+html.light .project-view-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
   font-weight: 700;
   color: #000000 !important;
 }
 
 /* Dark mode - selected tab header bold and white */
-[data-theme="dark"] .project-view-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+[data-theme="dark"] .project-view-tabs .ant-tabs-tab-active .ant-tabs-tab-btn,
+html.dark .project-view-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
   font-weight: 900;
   color: #ffffff;
 }
 
 /* Light mode - selected tab underline black */
-[data-theme="light"] .project-view-tabs .ant-tabs-ink-bar {
+[data-theme="light"] .project-view-tabs .ant-tabs-ink-bar,
+html.light .project-view-tabs .ant-tabs-ink-bar {
   background-color: #000000 !important;
 }
 
 /* Dark mode - selected tab underline white */
-[data-theme="dark"] .project-view-tabs .ant-tabs-ink-bar {
+[data-theme="dark"] .project-view-tabs .ant-tabs-ink-bar,
+html.dark .project-view-tabs .ant-tabs-ink-bar {
   background-color: #ffffff;
 }

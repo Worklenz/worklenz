@@ -8,6 +8,13 @@ describe("I18nHelper and Backend i18n", () => {
   });
 
   describe("Notifications Translation", () => {
+    it("should translate notification messages in Italian", () => {
+      const text = I18nHelper.translate("notifications.taskAssigned", "it", {
+        reporter: "Alice",
+        task: "Design System",
+      });
+      expect(text).toBe("<b>Alice</b> ti ha assegnato a <b>Design System</b>");
+    });
     it("should translate notification message in English", () => {
       const text = I18nHelper.translate(
         "notifications.taskAssigned",

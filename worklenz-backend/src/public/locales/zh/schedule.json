@@ -22,6 +22,7 @@
   "tasks": "任务",
   "startDate": "开始日期",
   "endDate": "结束日期",
+  "endDateBeforeStartDate": "结束日期不能早于开始日期",
   "hoursPerDay": "每天小时数",
   "totalHours": "总小时数",
   "deleteButton": "删除",

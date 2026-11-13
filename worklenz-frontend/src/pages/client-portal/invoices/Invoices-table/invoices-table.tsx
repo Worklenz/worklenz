@@ -24,6 +24,7 @@ import {
 } from '@ant-design/icons';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { downloadPortalPdf } from '@/utils/download-portal-pdf';
 import { Link, useNavigate } from 'react-router-dom';
 import TablePagination from '@/components/TablePagination';
 import {
@@ -419,7 +420,7 @@ export const InvoicesTable = ({ clientId, embedded = false }: InvoicesTableProps
       key: 'download',
       label: t('downloadInvoiceMenuItem', { defaultValue: 'Download Invoice' }),
       icon: <DownloadOutlined />,
-      onClick: () => window.open(getInvoiceDownloadUrl(invoice.id), '_blank', 'noopener,noreferrer'),
+      onClick: () => downloadPortalPdf(getInvoiceDownloadUrl(invoice.id), 'invoice.pdf', t('downloadFailed', { defaultValue: 'Failed to download the PDF. Please try again.' })),
     },
     {
       key: 'duplicate',
@@ -486,7 +487,9 @@ export const InvoicesTable = ({ clientId, embedded = false }: InvoicesTableProps
       title: t('serviceColumn', { defaultValue: 'Service' }),
       render: (_v, record: ClientPortalInvoice) => (
         <div>
-          <Text type="secondary">{record.projectName || record.serviceName || '-'}</Text>
+          <Text type="secondary">
+            {decodeHtmlEntities(record.projectName || record.serviceName) || '-'}
+          </Text>
           {record.changeRequestNumber && (
             <div>
               <Text style={{ fontSize: 12 }}>{record.changeRequestNumber}</Text>
@@ -644,12 +647,12 @@ export const InvoicesTable = ({ clientId, embedded = false }: InvoicesTableProps
           <Text type="secondary">
             {hasActiveFilters
               ? t('noInvoicesMatchingFilters', {
-                  defaultValue: 'No invoices match the current filters.',
-                })
+                defaultValue: 'No invoices match the current filters.',
+              })
               : t('noInvoicesDescription', {
-                  defaultValue:
-                    "You haven't created any invoices yet. Create your first invoice to start billing clients.",
-                })}
+                defaultValue:
+                  "You haven't created any invoices yet. Create your first invoice to start billing clients.",
+              })}
           </Text>
         </Flex>
       }
@@ -806,20 +809,20 @@ export const InvoicesTable = ({ clientId, embedded = false }: InvoicesTableProps
       >
         {showsTable ? (
           <PortalLoadingOverlay loading={isFetching}>
-          <Table
-            columns={columns}
-            dataSource={invoices}
-            rowKey="id"
-            size="middle"
-            sticky
-            pagination={false}
-            onChange={handleTableChange}
-            scroll={embedded ? { x: 'max-content' } : { x: 'max-content', y: tableScrollY }}
-            onRow={record => ({
-              onClick: () => navigate(`/worklenz/client-portal/invoices/${record.id}`),
-              style: { cursor: 'pointer' },
-            })}
-          />
+            <Table
+              columns={columns}
+              dataSource={invoices}
+              rowKey="id"
+              size="middle"
+              sticky
+              pagination={false}
+              onChange={handleTableChange}
+              scroll={embedded ? { x: 'max-content' } : { x: 'max-content', y: tableScrollY }}
+              onRow={record => ({
+                onClick: () => navigate(`/worklenz/client-portal/invoices/${record.id}`),
+                style: { cursor: 'pointer' },
+              })}
+            />
           </PortalLoadingOverlay>
         ) : (
           renderEmptyState()
@@ -827,14 +830,23 @@ export const InvoicesTable = ({ clientId, embedded = false }: InvoicesTableProps
 
         <div ref={paginationRef}>
           <TablePagination
+            navigationLabel={t('common:paginationNavigation')}
+            firstPageLabel={t('common:firstPage')}
+            previousPageLabel={t('common:previousPage')}
+            nextPageLabel={t('common:nextPage')}
+            lastPageLabel={t('common:lastPage')}
+            renderDefaultSummary={(range, total) =>
+              t('common:paginationSummary', { range, total })
+            }
             page={page}
             pageSize={limit}
             total={totalInvoices}
             pageSizeOptions={PAGE_SIZE_OPTIONS}
+            variant="dropdown"
             onPageChange={handlePaginationChange}
             rowsPerPageLabel={t('rowsPerPageLabel', { defaultValue: 'Rows per page:' })}
             renderSummary={(range, total) => {
-              const [from, to] = range.split('-');
+              const [from, to] = range.split(/\s*[-–]\s*/);
               return t('paginationSummary', {
                 from,
                 to,

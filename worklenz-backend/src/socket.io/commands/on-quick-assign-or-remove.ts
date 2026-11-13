@@ -67,7 +67,7 @@ export async function on_quick_assign_or_remove(_io: Server, socket: Socket, dat
     if (isAssign && await isTaskCreationRestrictedForTask(userId, body.task_id)) {
       socket.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), {
         error: true,
-        message: "Task assignment is restricted to Admins and Team Leads only."
+        message: "Task assignment is restricted to Admins, Team Leads, and Project Managers only."
       });
       return;
     }

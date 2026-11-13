@@ -27,7 +27,7 @@ import localLoginStrategy from "../passport/passport-strategies/passport-local-l
 import TeamMembersController from "../controllers/team-members-controller";
 import ProjectsController from "../controllers/projects-controller";
 import ProjectMembersController from "../controllers/project-members-controller";
-import AdminCenterController from "../controllers/admin-center-controller";
+import AdminCenterOrganizationController from "../controllers/admin-center/admin-center-organization-controller";
 import AuditLogController from "../controllers/audit-log-controller";
 import AuditLogExportController from "../controllers/audit-log-export-controller";
 import AuditLogRetentionController from "../controllers/audit-log-retention-controller";
@@ -456,7 +456,7 @@ describeWithDb("audit log acceptance against Postgres (task 8)", () => {
 
       const previousContact = (await query("SELECT contact_number FROM organizations WHERE id = $1", [fixture.orgId])).rows[0]
         .contact_number;
-      await call(AdminCenterController.updateOwnerContactNumber as Handler, {
+      await call(AdminCenterOrganizationController.updateOwnerContactNumber as Handler, {
         user: owner,
         body: { contact_number: "0771234567" },
       });
@@ -502,13 +502,13 @@ describeWithDb("audit log acceptance against Postgres (task 8)", () => {
 
       const previousName = (await query("SELECT organization_name FROM organizations WHERE id = $1", [fixture.orgId])).rows[0]
         .organization_name;
-      await call(AdminCenterController.updateOrganizationName as Handler, { user: owner, body: { name: "QA Renamed Workspace" } });
+      await call(AdminCenterOrganizationController.updateOrganizationName as Handler, { user: owner, body: { name: "QA Renamed Workspace" } });
       const [renamed] = await newEvents("workspace_renamed");
       expect(renamed).toMatchObject({ old_value: previousName, new_value: "QA Renamed Workspace", actor_user_id: owner.id });
     });
 
     it("shows the new entries in the Audit Log API with the actor and summary counts", async () => {
-      await call(AdminCenterController.updateOrganizationName as Handler, { user: owner, body: { name: "QA Listed Workspace" } });
+      await call(AdminCenterOrganizationController.updateOrganizationName as Handler, { user: owner, body: { name: "QA Listed Workspace" } });
 
       const list = await call(AuditLogController.getAuditEvents as Handler, { user: admin.session, query: { size: "5" } });
       expect(list.body.done).toBe(true);
@@ -797,7 +797,7 @@ describeWithDb("audit log acceptance against Postgres (task 8)", () => {
     });
 
     it("writes old → new values into the exported Details column", async () => {
-      await call(AdminCenterController.updateOrganizationName as Handler, { user: owner, body: { name: "QA Export Workspace" } });
+      await call(AdminCenterOrganizationController.updateOrganizationName as Handler, { user: owner, body: { name: "QA Export Workspace" } });
       const rows = parseCsvRows(await exportCsv(owner, { search: "QA Export Workspace" }));
       expect(rows[0][4]).toMatch(/→ QA Export Workspace\)$/);
     });
@@ -899,7 +899,7 @@ describeWithDb("audit log acceptance against Postgres (task 8)", () => {
       const before = await taskActivityLog();
       const activityCountBefore = (await query("SELECT COUNT(*)::INT AS n FROM task_activity_logs WHERE team_id = $1", [fixture.teamId])).rows[0].n;
 
-      await call(AdminCenterController.updateOrganizationName as Handler, { user: owner, body: { name: "QA Regression Workspace" } });
+      await call(AdminCenterOrganizationController.updateOrganizationName as Handler, { user: owner, body: { name: "QA Regression Workspace" } });
       await call(AuditLogRetentionController.update as Handler, { user: owner, body: { retention_months: 24 } });
       await call(TeamMembersController.update as Handler, {
         user: owner,

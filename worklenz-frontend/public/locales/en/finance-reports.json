@@ -168,5 +168,8 @@
       "projected": "Projected"
     },
     "empty": "Not enough history to forecast yet. Log time and send invoices to build a trend."
+  },
+  "myTasksView": {
+    "rowsPerPage": "Rows per page:"
   }
 }

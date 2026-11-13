@@ -105,6 +105,21 @@ describe('Change requests list', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Submit request' }));
     await waitFor(() => expect(screen.getByTestId('location').textContent).toMatch(/^\/change-requests\/cr/));
   });
+
+  it('keeps typed fields and the attachment after upload confirms (projects list refetch)', async () => {
+    renderPortal(<ChangeRequestsPage />, { path: '/change-requests', route: '/change-requests' });
+    await userEvent.click(await screen.findByRole('button', { name: /New change request/ }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.type(within(dialog).getByPlaceholderText('A short summary of the change'), 'Keep my title');
+    const file = new File(['hello'], 'brief.pdf', { type: 'application/pdf' });
+    await userEvent.upload(within(dialog).getByTestId('cr-attachment-input'), file);
+    expect(await within(dialog).findByText('brief.pdf')).toBeInTheDocument();
+    // confirmUpload invalidates V2Projects; a buggy reset effect would clear the form here.
+    await waitFor(() => {
+      expect(within(dialog).getByDisplayValue('Keep my title')).toBeInTheDocument();
+      expect(within(dialog).getByText('brief.pdf')).toBeInTheDocument();
+    });
+  });
 });
 
 describe('Change request detail', () => {

@@ -13,6 +13,9 @@ interface CompanyDetailsSectionProps {
 
 export const CompanyDetailsSection: React.FC<CompanyDetailsSectionProps> = ({ settings, onChange }) => {
   const { t } = useTranslation('client-portal-settings');
+  const isPhoneInvalid = Boolean(
+    settings.contact_phone && !validatePhoneNumber(settings.contact_phone)
+  );
 
   return (
     <SectionCard
@@ -44,22 +47,24 @@ export const CompanyDetailsSection: React.FC<CompanyDetailsSectionProps> = ({ se
           <Col xs={24} sm={12}>
             <Form.Item
               label={t('contactPhoneLabel', { defaultValue: 'Contact Phone' })}
-              rules={[
-                {
-                  validator: (_, value) => {
-                    if (!value || value.trim() === '') return Promise.resolve();
-                    if (validatePhoneNumber(value)) return Promise.resolve();
-                    return Promise.reject(
-                      new Error(t('invalidPhoneNumberFormat', { defaultValue: 'Invalid phone number format' }))
-                    );
-                  },
-                },
-              ]}
+              validateStatus={isPhoneInvalid ? 'error' : undefined}
+              help={
+                isPhoneInvalid ? (
+                  <span id="contact-phone-error">
+                    {t('invalidPhoneNumberFormat', {
+                      defaultValue:
+                        'Invalid phone number format. Use international format (e.g., +1-234-567-8900)',
+                    })}
+                  </span>
+                ) : undefined
+              }
             >
               <PhoneInput
                 placeholder={t('contactPhonePlaceholder', { defaultValue: 'Enter contact phone' })}
                 value={settings.contact_phone || ''}
                 onChange={value => onChange({ contact_phone: value })}
+                aria-invalid={isPhoneInvalid}
+                aria-describedby={isPhoneInvalid ? 'contact-phone-error' : undefined}
               />
             </Form.Item>
           </Col>

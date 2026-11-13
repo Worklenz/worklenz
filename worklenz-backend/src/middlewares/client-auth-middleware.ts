@@ -3,7 +3,12 @@ import { ServerResponse } from "../models/server-response";
 import TokenService from "../services/token-service";
 import { getLoginAccessState } from "../services/client-contacts-service";
 import db from "../config/db";
-import { loadClientSubject } from "../services/client-portal-v2/subject";
+import {
+  ACCESS_LOSS_MESSAGES,
+  AccessLossReason,
+  explainAccessLoss,
+  loadClientSubject,
+} from "../services/client-portal-v2/subject";
 
 export interface AuthenticatedClientRequest extends Request {
   clientId?: string;
@@ -14,6 +19,10 @@ export interface AuthenticatedClientRequest extends Request {
   clientEmail?: string;
   availableOrganizations?: any[];
 }
+
+/** ACCESS_REVOKED with a coarse `reason`; the body never names a company, a team or another person. */
+const revoked = (res: Response, status: number, reason: AccessLossReason, message: string) =>
+  res.status(status).json(new ServerResponse(false, { code: "ACCESS_REVOKED", reason }, message));
 
 export const authenticateClient = async (
   req: AuthenticatedClientRequest,
@@ -92,8 +101,9 @@ export const authenticateClient = async (
 
     // Check if client is active and has portal access
     const clientCheckQuery = `
-      SELECT 
+      SELECT
         c.status as client_status,
+        c.deleted_at as client_deleted_at,
         COALESCE(cpa.is_active, true) as portal_access_active
       FROM clients c
       LEFT JOIN client_portal_access cpa ON c.id = cpa.client_id
@@ -103,26 +113,23 @@ export const authenticateClient = async (
     
     const clientCheckResult = await db.query(clientCheckQuery, [tokenPayload.clientId]);
     
-    if (clientCheckResult.rows.length === 0) {
-      return res.status(404).json(
-        new ServerResponse(false, null, "Client not found")
-      );
+    // A client that no longer exists, was deleted, was deactivated or has portal access switched off all end
+    // the session the same way. A missing row is ACCESS_REVOKED too (not a 404): the app treats a 404 as
+    // "not found", which would leave a signed-in person on a broken page instead of telling them.
+    if (clientCheckResult.rows.length === 0 || clientCheckResult.rows[0].client_deleted_at) {
+      return revoked(res, 403, "organization_unavailable", ACCESS_LOSS_MESSAGES.organization_unavailable);
     }
 
     const clientData = clientCheckResult.rows[0];
-    
+
     // Block access if client is inactive
     if (clientData.client_status === 'inactive') {
-      return res.status(403).json(
-        new ServerResponse(false, { code: "ACCESS_REVOKED" }, "Client account is deactivated. Please contact your administrator.")
-      );
+      return revoked(res, 403, "organization_unavailable", "Client account is deactivated. Please contact your project team.");
     }
 
     // Block access if portal access is explicitly disabled
     if (clientData.portal_access_active === false) {
-      return res.status(403).json(
-        new ServerResponse(false, { code: "ACCESS_REVOKED" }, "Portal access is disabled for this client. Please contact your administrator.")
-      );
+      return revoked(res, 403, "organization_unavailable", "Portal access is disabled for this client. Please contact your project team.");
     }
 
     // Get client permissions
@@ -147,9 +154,7 @@ export const authenticateClient = async (
       );
 
       if (!hasAccess) {
-        return res.status(403).json(
-          new ServerResponse(false, { code: "ACCESS_REVOKED" }, "Access denied to this organization")
-        );
+        return revoked(res, 403, "access_removed", "Access denied to this organization");
       }
     }
 
@@ -159,15 +164,11 @@ export const authenticateClient = async (
       const access = await getLoginAccessState(db, tokenPayload.clientUserId, tokenPayload.clientId);
 
       if (!access.exists) {
-        return res.status(401).json(
-          new ServerResponse(false, { code: "ACCESS_REVOKED" }, "Your access has been removed. Please contact your administrator.")
-        );
+        return revoked(res, 401, "access_removed", ACCESS_LOSS_MESSAGES.access_removed);
       }
 
       if (access.loginStatus !== "active" || access.isDisabled) {
-        return res.status(403).json(
-          new ServerResponse(false, { code: "ACCESS_REVOKED" }, "Your access has been disabled. Please contact your administrator.")
-        );
+        return revoked(res, 403, "access_disabled", ACCESS_LOSS_MESSAGES.access_disabled);
       }
     }
 
@@ -181,9 +182,12 @@ export const authenticateClient = async (
         teamId: tokenPayload.organizationId,
       });
       if (!subject) {
-        return res.status(403).json(
-          new ServerResponse(false, { code: "ACCESS_REVOKED" }, "Your access has been removed. Please contact your administrator.")
-        );
+        const reason = await explainAccessLoss(db, {
+          clientUserId: tokenPayload.clientUserId,
+          clientId: tokenPayload.clientId,
+          teamId: tokenPayload.organizationId,
+        });
+        return revoked(res, 403, reason, ACCESS_LOSS_MESSAGES[reason]);
       }
     }
 

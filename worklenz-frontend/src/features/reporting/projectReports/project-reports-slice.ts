@@ -253,6 +253,8 @@ export const fetchGroupedProjects = createAsyncThunk(
 export const fetchProjectDataForCurrentView = createAsyncThunk(
   'projectReports/fetchProjectDataForCurrentView',
   async (_, { getState, dispatch }) => {
+    // Filters change the result set, so a stale page offset must not be reused.
+    dispatch(projectReportsSlice.actions.setIndex(1));
     const state = (getState() as { projectReportsReducer: ProjectReportsState }).projectReportsReducer;
 
     if (state.viewMode === 'grouped') {

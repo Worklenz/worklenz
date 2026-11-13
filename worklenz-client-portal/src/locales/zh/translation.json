@@ -278,7 +278,12 @@
       "file": "文件",
       "approval": "审批",
       "change_request": "变更请求"
-    }
+    },
+    "addReaction": "添加回应",
+    "reactionsLabel": "回应",
+    "reactedTooltip": "点击移除您的回应",
+    "notReactedTooltip": "点击使用 {{emoji}} 进行回应",
+    "reactFailed": "更新回应失败"
   },
   "locked": {
     "reply": "客户查看者可以阅读讨论，但不能回复。",

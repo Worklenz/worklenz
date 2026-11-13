@@ -57,6 +57,7 @@
   "newIssueNamePlaceholder": "Schreiben Sie einen Ausgabetitel",
   "loadingFilters": "Filter werden geladen...",
   "failedToUpdateColumnOrder": "Fehler beim Aktualisieren der Spaltenreihenfolge",
+  "projectIdRequired": "Projekt-ID ist erforderlich",
   "failedToUpdatePhaseOrder": "Fehler beim Aktualisieren der Phasenreihenfolge",
   "pleaseTryAgain": "Bitte versuchen Sie es erneut",
   "taskNotCompleted": "Aufgabe ist nicht abgeschlossen",

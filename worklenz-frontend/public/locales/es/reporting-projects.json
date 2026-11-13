@@ -81,4 +81,8 @@
   "loadMoreProjectsButton": "Cargar {{remaining}} proyectos más",
   "loadingText": "Cargando...",
   "showingProjectsText": "Mostrando {{shown}} de {{total}} proyectos"
+,
+  "myTasksView": {
+    "rowsPerPage": "Filas por página:"
+  }
 }

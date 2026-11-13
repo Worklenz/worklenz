@@ -14,6 +14,7 @@ import {
   getChatDotTone,
   getChatStatusTag,
 } from '../chats-helpers';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface ChatsConversationListProps {
   conversations: ClientPortalChatConversation[];
@@ -141,10 +142,11 @@ const ChatsConversationListItem: React.FC<ChatsConversationListItemProps> = ({
 
   const tag = getChatStatusTag(conversation);
   const hasMessages = !!conversation.lastMessage;
+  const decodedName = decodeHtmlEntities(conversation.name);
   const sender =
     conversation.lastSenderType === 'team_member'
       ? t('youText', { defaultValue: 'You' })
-      : conversation.lastSenderName || conversation.name;
+      : conversation.lastSenderName || decodedName;
   const time = formatTime(
     conversation.lastMessageAt ?? undefined,
     t('yesterday', { defaultValue: 'Yesterday' })
@@ -186,7 +188,7 @@ const ChatsConversationListItem: React.FC<ChatsConversationListItemProps> = ({
           background: dotColors[getChatDotTone(conversation)],
         }}
       />
-      <CustomAvatar avatarName={conversation.name || '?'} size={30} />
+      <CustomAvatar avatarName={decodedName || '?'} size={30} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <Flex align="center" justify="space-between" gap={6}>
           <span
@@ -198,7 +200,7 @@ const ChatsConversationListItem: React.FC<ChatsConversationListItemProps> = ({
               whiteSpace: 'nowrap',
             }}
           >
-            {conversation.name}
+            {decodedName}
           </span>
           {tag && (
             <span

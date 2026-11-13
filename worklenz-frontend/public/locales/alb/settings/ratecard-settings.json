@@ -42,6 +42,7 @@
   "jobRolesTitle": "Rolet e punës",
   "noJobTitlesMessage": "Ju lutemi krijoni tituj pune së pari në cilësimet përpara se të shtoni role në rate cards.",
   "createNewJobTitle": "Krijo titull të ri pune",
+  "createJobTitleButtonText": "Krijo një titull pune",
   "jobTitleNamePlaceholder": "Shkruani emrin e titullit të punës",
   "jobTitleNameRequired": "Emri i titullit të punës është i detyrueshëm",
   "jobTitleCreatedSuccess": "Titulli i punës u krijua me sukses",

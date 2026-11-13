@@ -34,23 +34,26 @@ interface ITaskContext {
 async function loadGitState(taskId: string): Promise<ITaskGitState> {
   const result = await db.query(
     `SELECT
-       COALESCE(JSON_AGG(JSON_BUILD_OBJECT('merged', p.merged))
-         FILTER (WHERE l.link_type = 'pull_request' AND l.closes), '[]'::JSON) AS closing,
+       COUNT(*) FILTER (WHERE l.link_type = 'pull_request' AND p.merged)::INT AS merged_prs,
        COUNT(*) FILTER (WHERE l.link_type = 'pull_request' AND p.state = 'open' AND NOT p.is_draft)::INT AS open_prs,
        COUNT(*) FILTER (WHERE l.link_type = 'pull_request' AND p.state = 'open' AND p.is_draft)::INT AS draft_prs,
        COUNT(*) FILTER (WHERE l.link_type = 'branch' AND NOT b.is_deleted)::INT AS branches
      FROM github_task_links l
      LEFT JOIN github_pull_requests p ON p.id = l.pull_request_id
      LEFT JOIN github_branches b ON b.id = l.branch_id
-     WHERE l.task_id = $1`,
+     JOIN tasks t ON t.id = l.task_id
+     JOIN github_repositories r ON r.id = COALESCE(p.repository_id, b.repository_id)
+     JOIN github_integrations i ON i.id = r.integration_id AND i.status = 'active'
+     JOIN github_project_repositories pr ON pr.project_id = t.project_id AND pr.repository_id = r.id
+     WHERE l.task_id = $1 AND r.is_available = TRUE`,
     [taskId],
   );
   const row = result.rows[0];
   return {
-    closingPullRequests: row.closing,
-    openPullRequests: row.open_prs,
-    draftPullRequests: row.draft_prs,
-    activeBranches: row.branches,
+    mergedPullRequests: row?.merged_prs ?? 0,
+    openPullRequests: row?.open_prs ?? 0,
+    draftPullRequests: row?.draft_prs ?? 0,
+    activeBranches: row?.branches ?? 0,
   };
 }
 
@@ -185,6 +188,7 @@ export async function reconcileTasks(
   repositoryId: string,
   authorLogin?: string | null,
 ): Promise<void> {
+  const failures: string[] = [];
   for (const taskId of new Set(taskIds)) {
     try {
       const contextResult = await db.query(
@@ -231,14 +235,16 @@ export async function reconcileTasks(
       }
 
       const actorId = await resolveActorId(context, repositoryId, authorLogin);
-      if (!actorId) continue;
+      if (!actorId) throw new Error(`No actor available for GitHub status transition on task ${taskId}`);
 
       const event = resolveReachedEvent(gitState);
       await applyStatusTransition(context, target, actorId, await describeTransitionSource(taskId, event));
     } catch (error) {
       log_error(error);
+      failures.push(taskId);
     }
   }
+  if (failures.length) throw new Error(`GitHub status reconciliation failed for ${failures.length} task(s)`);
 }
 
 /** Tell clients with the project open that GitHub activity changed for these tasks. */

@@ -25,6 +25,7 @@ export interface ITaskComment {
 }
 
 export interface ITaskCommentViewModel extends ITaskComment {
+  raw_content?: string;
   edit?: boolean;
   is_edited?: boolean;
   is_deleted?: boolean;

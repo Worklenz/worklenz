@@ -1,16 +1,19 @@
 import { useMemo } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAuthService } from '@/hooks/useAuth';
+import useIsProjectManager from '@/hooks/useIsProjectManager';
+import { ILocalSession } from '@/types/auth/local-session.types';
+import { ROLE_NAMES } from '@/types/roles/role.types';
 import { canUseFeature } from '@/utils/subscription-utils';
 import { getSessionRoleName } from '@/utils/role-permissions.utils';
-import { ROLE_NAMES } from '@/types/roles/role.types';
 
 /**
  * Returns whether the current user can create and assign tasks in the current project.
  *
  * Rules (Business Plan only):
  *  - If the feature is not on a Business plan, everyone can create tasks.
- *  - If project-level `restrict_task_creation` is TRUE on Business Plan → only Admins/Owners/Team Leads can create.
+ *  - If project-level `restrict_task_creation` is TRUE on Business Plan → only
+ *    Admins/Owners/Team Leads and Project Managers can create.
  *  - If org-level restriction is active → same rule.
  *
  * The hook returns:
@@ -25,18 +28,23 @@ export interface ITaskCreationPermission {
 export interface IProjectTaskCreationContext {
   restrict_task_creation?: boolean;
   is_guest?: boolean;
+  is_project_manager?: boolean;
 }
-
-import { ILocalSession } from '@/types/auth/local-session.types';
 
 export const getTaskCreationPermission = ({
   session,
   project,
   orgConfig,
+  isProjectManager = false,
 }: {
   session: ILocalSession | null | undefined;
-  project?: { restrict_task_creation?: boolean; is_guest?: boolean } | null;
+  project?: {
+    restrict_task_creation?: boolean;
+    is_guest?: boolean;
+    is_project_manager?: boolean;
+  } | null;
   orgConfig?: { restrict_task_creation?: boolean } | null;
+  isProjectManager?: boolean;
 }): ITaskCreationPermission => {
   // Guests can never create tasks, but this is not a "restriction" toggle.
   if (project?.is_guest) {
@@ -56,14 +64,16 @@ export const getTaskCreationPermission = ({
     return { canCreateTask: true, isRestricted: false };
   }
 
-  // Restriction is active — check if user is Admin/Owner/Team Lead
+  // Restriction is active — Admins/Owners/Team Leads and Project Managers may create
+  // regardless of team role (e.g. Member + Project Manager).
   const roleName = getSessionRoleName(session ?? null);
-  const isPrivileged =
+  const isPrivilegedTeamRole =
     roleName === ROLE_NAMES.OWNER ||
     roleName === ROLE_NAMES.ADMIN ||
     roleName === ROLE_NAMES.TEAM_LEAD;
+  const isPm = isProjectManager || Boolean(project?.is_project_manager);
 
-  return { canCreateTask: isPrivileged, isRestricted: true };
+  return { canCreateTask: isPrivilegedTeamRole || isPm, isRestricted: true };
 };
 
 const useTaskCreationPermission = (
@@ -74,11 +84,17 @@ const useTaskCreationPermission = (
   const session = auth.getCurrentSession();
   const reduxProject = useAppSelector(state => state.projectReducer.project);
   const orgConfig = useAppSelector(state => state.orgConfigReducer);
+  const isProjectManager = useIsProjectManager();
 
   return useMemo<ITaskCreationPermission>(() => {
     const project = projectOverride !== undefined ? projectOverride : reduxProject;
-    return getTaskCreationPermission({ session, project, orgConfig });
-  }, [session, reduxProject, orgConfig, projectOverride]);
+    return getTaskCreationPermission({
+      session,
+      project,
+      orgConfig,
+      isProjectManager,
+    });
+  }, [session, reduxProject, orgConfig, projectOverride, isProjectManager]);
 };
 
 export default useTaskCreationPermission;

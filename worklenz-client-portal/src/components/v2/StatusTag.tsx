@@ -53,6 +53,7 @@ const STATUS_MAPS = {
     Active: { label: 'Active', color: 'green' },
     Invited: { label: 'Invited', color: 'blue' },
     Deactivated: { label: 'Deactivated', color: 'default' },
+    Deleted: { label: 'Account deleted', color: 'red' },
   },
 } satisfies Record<string, StatusMap>;
 

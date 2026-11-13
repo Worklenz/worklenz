@@ -19,6 +19,7 @@ import {
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { releaseDocsEditors } from '@/pages/projects/project-view-1/docs/docs-editor-release';
 import { useState, useCallback, useMemo, memo, useRef, useEffect } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 
@@ -278,7 +279,16 @@ const ProjectViewHeader = memo(() => {
       logger.error('Error creating task', error);
       setCreatingTask(false);
     }
-  }, [isSoftwareProject, selectedProject?.id, currentSession, socket, dispatch, groupBy, tab, t]);
+  }, [
+    isSoftwareProject,
+    selectedProject?.id,
+    currentSession,
+    socket,
+    dispatch,
+    groupBy,
+    tab,
+    t,
+  ]);
 
   const handleImportTaskTemplate = useCallback(() => {
     if (isFreeUser(currentSession)) {
@@ -337,6 +347,7 @@ const ProjectViewHeader = memo(() => {
   }, [dispatch, projectId, tab]);
 
   const handleNavigateToProjects = useCallback(() => {
+    releaseDocsEditors();
     navigate('/worklenz/projects');
   }, [navigate]);
 
@@ -721,7 +732,7 @@ const ProjectViewHeader = memo(() => {
 
   const pageHeaderTitle = useMemo(
     () => (
-      <Flex gap={4} align="center" wrap className={styles.titleContainer}>
+      <Flex gap={4} align="center" wrap="nowrap" className={styles.titleContainer}>
         <Tooltip title={t('navigateBackTooltip', { defaultValue: 'Go back to projects list' })}>
           <ArrowLeftOutlined
             className={styles.backButton}
@@ -736,9 +747,15 @@ const ProjectViewHeader = memo(() => {
             onClick={handleNavigateToProjects}
           />
         </Tooltip>
-        <Typography.Title level={4} className={styles.projectTitle} style={{ marginBlockEnd: 0, marginInlineStart: 8 }}>
-          {decodeHtmlEntities(selectedProject?.name)}
-        </Typography.Title>
+        <Tooltip title={decodeHtmlEntities(selectedProject?.name)}>
+          <Typography.Title
+            level={4}
+            className={styles.projectTitle}
+            style={{ marginBlockEnd: 0, marginInlineStart: 8 }}
+          >
+            {decodeHtmlEntities(selectedProject?.name)}
+          </Typography.Title>
+        </Tooltip>
         <div className={styles.projectAttributes}>{projectAttributes}</div>
       </Flex>
     ),
@@ -780,7 +797,7 @@ const ProjectViewHeader = memo(() => {
         </div>
       </div>
       {createPortal(
-        <ProjectSettingsModal onClose={() => {}} />,
+        <ProjectSettingsModal onClose={() => { }} />,
         document.body,
         'project-settings-modal'
       )}

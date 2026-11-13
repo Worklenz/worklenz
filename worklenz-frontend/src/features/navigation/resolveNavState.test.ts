@@ -86,7 +86,9 @@ describe('client portal navigation', () => {
     const saved: NavPreferencesState = {
       ...preferences,
       order: { 'client-portal': { '': ['invoices', 'clients'] } },
-      orderVersions: { 'client-portal': 3 },
+      // Include every surface with an ORDER_VERSIONS entry so a new surface bump
+      // elsewhere does not fail this regression.
+      orderVersions: { 'client-portal': 3, reporting: 1 },
     };
 
     const { state, changed } = applyOrderResets(saved);

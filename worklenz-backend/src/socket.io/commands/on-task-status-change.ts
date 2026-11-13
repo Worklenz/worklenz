@@ -13,6 +13,7 @@ import { log_error } from "../../shared/utils";
 import {verifyNonGuestTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
 import { checkPhaseCompletionGuard } from "../../shared/phase-completion-guard";
 import { autoAdvanceToNextPhase } from "../../shared/phase-auto-advance";
+import { recordTaskStatusHistory } from "../../services/reporting-analytics/task-status-history.service";
 
 export async function on_task_status_change(_io: Server, socket: Socket, data?: string) {
   try {
@@ -181,6 +182,17 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
       new_value: body.status_id,
       old_value: taskData.status_id
     });
+
+    try {
+      await recordTaskStatusHistory({
+        taskId: body.task_id,
+        newStatusId: body.status_id,
+        previousStatusId: taskData.status_id,
+        changedBy: userId as string | undefined,
+      });
+    } catch (historyError) {
+      log_error(historyError as Error);
+    }
 
     notifyProjectUpdates(socket, body.task_id);
 

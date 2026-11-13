@@ -81,4 +81,8 @@
   "loadMoreProjectsButton": "Załaduj {{remaining}} więcej projektów",
   "loadingText": "Ładowanie...",
   "showingProjectsText": "Wyświetlanie {{shown}} z {{total}} projektów"
+,
+  "myTasksView": {
+    "rowsPerPage": "Wiersze na stronę:"
+  }
 }

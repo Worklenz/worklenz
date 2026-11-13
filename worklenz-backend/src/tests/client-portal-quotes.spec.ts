@@ -14,7 +14,6 @@ import {
   isNewQuoteStatus,
   isQuoteStatus,
 } from "../controllers/client-portal/client-portal-quote-helpers";
-import { InvoiceTemplateGenerator } from "../shared/invoice-template-generator";
 import { createMockRequest, createMockResponse } from "./utils/express-mock";
 import { createQueryResult } from "./utils/db-mock";
 
@@ -69,35 +68,6 @@ describe("quote helpers", () => {
   it("never sorts by an unlisted column", () => {
     expect(buildQuoteOrderBy("1; DROP TABLE x", "asc")).toMatch(/^q\.created_at ASC/);
     expect(buildQuoteOrderBy("valid_until", "desc")).toMatch(/^q\.valid_until DESC/);
-  });
-});
-
-describe("InvoiceTemplateGenerator.generateQuoteHTML", () => {
-  const base = {
-    invoiceNumber: "QUO-1",
-    status: "expired",
-    createdAt: "2026-03-02T00:00:00Z",
-    dueDate: "2026-03-16",
-    amount: 100,
-    currency: "USD",
-    isOverdue: true,
-    client: { name: "Acme" },
-  };
-
-  it("uses quote labels", () => {
-    const html = InvoiceTemplateGenerator.generateQuoteHTML(base);
-    expect(html).toContain("<h2>QUOTE</h2>");
-    expect(html).toContain("PREPARED FOR");
-    expect(html).toContain("Valid Until");
-    expect(html).toContain("Expired");
-    expect(html).not.toContain("BILLED TO");
-  });
-
-  it("leaves the invoice wording unchanged", () => {
-    const html = InvoiceTemplateGenerator.generateInvoiceHTML({ ...base, status: "sent", isOverdue: false });
-    expect(html).toContain("<h2>INVOICE</h2>");
-    expect(html).toContain("BILLED TO");
-    expect(html).toContain("Due Date");
   });
 });
 

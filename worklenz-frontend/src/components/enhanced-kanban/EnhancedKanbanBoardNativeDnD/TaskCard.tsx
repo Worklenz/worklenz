@@ -3,7 +3,8 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/app/store';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
+import { setSelectedTaskId, setShowTaskDrawer, setLastDeletedTaskId } from '@/features/task-drawer/task-drawer.slice';
+import { roadmapApi } from '@/pages/projects/projectView/gantt/services/roadmap-api.service';
 import { useTranslation } from 'react-i18next';
 import AvatarGroup from '@/components/AvatarGroup';
 import LazyAssigneeSelectorWrapper from '@/components/task-management/lazy-assignee-selector';
@@ -358,6 +359,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
           if (!task.id) return;
           const res = await tasksApiService.deleteTask(task.id);
           if (res.done) {
+            dispatch(setLastDeletedTaskId(task.id));
             dispatch(setSelectedTaskId(null));
             if (task.is_sub_task) {
               dispatch(
@@ -375,6 +377,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
               dispatch(deleteKanbanTask(task.id));
             }
             dispatch(setShowTaskDrawer(false));
+            dispatch(roadmapApi.util.invalidateTags(['RoadmapTasks', 'ProjectPhases']));
             if (task.parent_task_id) {
               socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.parent_task_id);
             }

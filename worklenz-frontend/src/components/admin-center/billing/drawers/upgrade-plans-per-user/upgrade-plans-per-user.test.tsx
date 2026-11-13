@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ILocalSession } from '@/types/auth/local-session.types';
 
 const dispatch = vi.fn();
 let billingInfo: Record<string, unknown> = { total_used: 5 };
@@ -14,20 +15,27 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 const trackMixpanelEvent = vi.fn();
-vi.mock('@/hooks/useMixpanelTracking', () => ({ useMixpanelTracking: () => ({ trackMixpanelEvent }) }));
+vi.mock('@/hooks/useMixpanelTracking', () => ({
+  useMixpanelTracking: () => ({ trackMixpanelEvent }),
+}));
 vi.mock('@/hooks/useAppDispatch', () => ({ useAppDispatch: () => dispatch }));
 vi.mock('@/hooks/useAppSelector', () => ({
-  useAppSelector: (selector: (state: unknown) => unknown) => selector({ adminCenterReducer: { billingInfo } }),
+  useAppSelector: (selector: (state: unknown) => unknown) =>
+    selector({ adminCenterReducer: { billingInfo } }),
 }));
-let session: Record<string, unknown> = { team_id: 'team-1', subscription_type: 'PADDLE' };
+let session: ILocalSession = { team_id: 'team-1', subscription_type: 'PADDLE' };
 vi.mock('@/hooks/useAuth', () => ({
   useAuthService: () => ({ setCurrentSession: vi.fn(), getCurrentSession: () => session }),
 }));
 vi.mock('@/features/admin-center/admin-center.slice', () => ({
   fetchBillingInfo: () => ({ type: 'fetchBillingInfo' }),
+  fetchStorageInfo: () => ({ type: 'fetchStorageInfo' }),
+  closeUpgradeModal: () => ({ type: 'closeUpgradeModal' }),
   toggleUpgradeModal: () => ({ type: 'toggleUpgradeModal' }),
 }));
-vi.mock('@/features/user/userSlice', () => ({ setUser: (user: unknown) => ({ type: 'setUser', payload: user }) }));
+vi.mock('@/features/user/userSlice', () => ({
+  setUser: (user: unknown) => ({ type: 'setUser', payload: user }),
+}));
 vi.mock('@/utils/session-helper', () => ({ setSession: vi.fn() }));
 vi.mock('@/utils/errorLogger', () => ({ default: { error: vi.fn() } }));
 vi.mock('@/api/auth/auth.api.service', () => ({
@@ -63,6 +71,8 @@ vi.mock('@/components/admin-center/billing/drawers/upgrade-plans/UpgradePlans', 
 }));
 
 import PerUserUpgradePlans from './PerUserUpgradePlans';
+import { authApiService } from '@/api/auth/auth.api.service';
+import type { ILegacyCheckoutEvent } from '@/utils/paddle-billing-checkout';
 import UpgradePlansSwitch from './UpgradePlansSwitch';
 import type { IPerUserPlansResponse } from '@/api/admin-center/billing.api.service';
 
@@ -81,7 +91,13 @@ const data = (overrides: Partial<IPerUserPlansResponse> = {}): IPerUserPlansResp
   ...overrides,
 });
 
-const checkoutPayload = { provider: 'paddle_billing', client_token: 't', items: [], customer: { email: 'a@b.com' }, customData: {} };
+const checkoutPayload = {
+  provider: 'paddle_billing',
+  client_token: 't',
+  items: [],
+  customer: { email: 'a@b.com' },
+  customData: {},
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -90,23 +106,26 @@ beforeEach(() => {
   upgradeToPaidPlan.mockResolvedValue({ done: true, body: checkoutPayload });
 });
 
-describe('PerUserUpgradePlans Free and Enterprise cards', () => {
-  it('shows Free and Enterprise next to the paid plans', () => {
+describe('PerUserUpgradePlans Free option', () => {
+  it('shows Free below the paid plans', () => {
     render(<PerUserUpgradePlans data={data()} />);
     expect(screen.getByText('plans.free.name')).toBeTruthy();
-    expect(screen.getByText('plans.enterprise.name')).toBeTruthy();
+    expect(screen.queryByText('plans.enterprise.name')).toBeNull();
   });
 
   it('hides the Free card for AppSumo customers', () => {
     render(<PerUserUpgradePlans data={data({ has_ltd_codes: true })} />);
     expect(screen.queryByText('plans.free.name')).toBeNull();
-    expect(screen.getByText('plans.enterprise.name')).toBeTruthy();
+    expect(screen.queryByText('plans.enterprise.name')).toBeNull();
   });
 
   it('disables the Free button for a team already on Free', () => {
     session = { team_id: 'team-1', subscription_type: 'FREE' };
     render(<PerUserUpgradePlans data={data()} />);
-    const buttons = screen.getAllByText('currentPlan').map(node => node.closest('button')).filter(Boolean);
+    const buttons = screen
+      .getAllByText('currentPlan')
+      .map(node => node.closest('button'))
+      .filter(Boolean);
     expect(buttons.length).toBe(1);
     expect((buttons[0] as HTMLButtonElement).disabled).toBe(true);
   });
@@ -123,12 +142,6 @@ describe('PerUserUpgradePlans Free and Enterprise cards', () => {
     await user.click(screen.getByText('freeConfirm.ok'));
     await waitFor(() => expect(switchToFreePlan).toHaveBeenCalledWith('team-1'));
   });
-
-  it('links Enterprise to sales', () => {
-    render(<PerUserUpgradePlans data={data()} />);
-    const link = screen.getByText('contactSales').closest('a');
-    expect(link?.getAttribute('href')).toContain('mailto:');
-  });
 });
 
 describe('PerUserUpgradePlans analytics', () => {
@@ -138,12 +151,21 @@ describe('PerUserUpgradePlans analytics', () => {
     expect(trackMixpanelEvent).toHaveBeenCalledWith('pricing_modal_opened', expect.anything());
 
     await user.click(screen.getByText('annual'));
-    expect(trackMixpanelEvent).toHaveBeenCalledWith('billing_frequency_changed', expect.objectContaining({ billing_frequency: 'annual' }));
+    expect(trackMixpanelEvent).toHaveBeenCalledWith(
+      'billing_frequency_changed',
+      expect.objectContaining({ billing_frequency: 'annual' })
+    );
 
     await user.click(screen.getAllByText('select')[0]);
-    expect(trackMixpanelEvent).toHaveBeenCalledWith('plan_selected', expect.objectContaining({ plan_key: 'pro' }));
+    expect(trackMixpanelEvent).toHaveBeenCalledWith(
+      'plan_selected',
+      expect.objectContaining({ plan_key: 'pro' })
+    );
     await waitFor(() =>
-      expect(trackMixpanelEvent).toHaveBeenCalledWith('checkout_initiated', expect.objectContaining({ plan_key: 'pro', seats: 5 }))
+      expect(trackMixpanelEvent).toHaveBeenCalledWith(
+        'checkout_initiated',
+        expect.objectContaining({ plan_key: 'pro', seats: 5 })
+      )
     );
   });
 });
@@ -158,7 +180,9 @@ describe('PerUserUpgradePlans seat minimum', () => {
     rerender(<PerUserUpgradePlans data={data()} />);
 
     await user.click(screen.getAllByText('select')[0]);
-    await waitFor(() => expect(upgradeToPaidPlan).toHaveBeenCalledWith('pro-m', 'per_user', 7, false));
+    await waitFor(() =>
+      expect(upgradeToPaidPlan).toHaveBeenCalledWith('pro-m', 'per_user', 7, false)
+    );
   });
 });
 
@@ -187,6 +211,46 @@ describe('PerUserUpgradePlans', () => {
     expect((openPaddleBillingCheckout.mock.calls[0] as unknown[])[0]).toBe(checkoutPayload);
   });
 
+  it('closes pricing immediately and refreshes the session again after a late webhook', async () => {
+    const user = userEvent.setup();
+    const unwrap = vi
+      .fn()
+      .mockResolvedValueOnce({ plan_id: 'free' })
+      .mockResolvedValue({ billing_provider: 'paddle_billing', plan_id: 'pro-m', total_seats: 5 });
+    dispatch.mockReturnValue({ unwrap });
+    vi.mocked(authApiService.verify).mockResolvedValue({
+      authenticated: true,
+      user: session,
+      auth_error: '',
+      message: '',
+    });
+    const view = render(<PerUserUpgradePlans data={data()} />);
+    await user.click(screen.getAllByText('select')[0]);
+    await waitFor(() => expect(openPaddleBillingCheckout).toHaveBeenCalledTimes(1));
+    const callback = (openPaddleBillingCheckout.mock.calls[0] as unknown[])[1] as (
+      event: ILegacyCheckoutEvent
+    ) => void;
+    vi.useFakeTimers();
+    try {
+      await act(async () => callback({ event: 'Checkout.Complete' }));
+      expect(dispatch).toHaveBeenCalledWith({ type: 'closeUpgradeModal' });
+      expect(authApiService.verify).toHaveBeenCalledTimes(1);
+      view.unmount();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(authApiService.verify).toHaveBeenCalledTimes(2);
+      expect(dispatch).toHaveBeenCalledWith({ type: 'fetchStorageInfo' });
+      expect(dispatch).toHaveBeenCalledWith({ type: 'setUser', payload: session });
+      await act(async () => {
+        await vi.runAllTimersAsync();
+      });
+      expect(unwrap).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('uses the annual plan when annual billing is selected', async () => {
     const user = userEvent.setup();
     render(<PerUserUpgradePlans data={data()} />);
@@ -194,7 +258,9 @@ describe('PerUserUpgradePlans', () => {
     await user.click(screen.getByText('annual'));
     await user.click(screen.getAllByText('select')[1]);
 
-    await waitFor(() => expect(upgradeToPaidPlan).toHaveBeenCalledWith('biz-y', 'per_user', 5, false));
+    await waitFor(() =>
+      expect(upgradeToPaidPlan).toHaveBeenCalledWith('biz-y', 'per_user', 5, false)
+    );
   });
 
   it('asks before replacing a legacy subscription, and records the consent', async () => {
@@ -207,7 +273,9 @@ describe('PerUserUpgradePlans', () => {
     expect(upgradeToPaidPlan).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole('button', { name: 'legacyConfirm.ok' }));
-    await waitFor(() => expect(upgradeToPaidPlan).toHaveBeenCalledWith('pro-m', 'per_user', 5, true));
+    await waitFor(() =>
+      expect(upgradeToPaidPlan).toHaveBeenCalledWith('pro-m', 'per_user', 5, true)
+    );
   });
 
   it('does not start checkout when the legacy confirmation is declined', async () => {
@@ -237,21 +305,62 @@ describe('PerUserUpgradePlans', () => {
     billingInfo = { total_used: 5, plan_id: 'pro-m' };
     render(<PerUserUpgradePlans data={data({ has_billing_subscription: true })} />);
 
-    expect(screen.getByText('currentPlan')).toBeTruthy();
-    expect((screen.getAllByText('switch')[0].closest('button') as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getAllByText('switch')[1].closest('button') as HTMLButtonElement).disabled).toBe(false);
+    // The current card carries a tag and a disabled button, both labelled "currentPlan".
+    expect(screen.getAllByText('currentPlan').length).toBe(2);
+    const currentButton = screen
+      .getAllByText('currentPlan')
+      .map(node => node.closest('button'))
+      .find(Boolean);
+    expect((currentButton as HTMLButtonElement).disabled).toBe(true);
+    // Only the other paid plan is left to switch to.
+    expect(screen.getAllByText('switch').length).toBe(1);
+    expect((screen.getByText('switch').closest('button') as HTMLButtonElement).disabled).toBe(
+      false
+    );
   });
 
   it('shows the AppSumo Expansion plan with its own seat count', async () => {
     const user = userEvent.setup();
-    const expansion = { id: 'exp-m', name: 'Expansion', plan_key: 'business_appsumo_expansion' as const, billing_type: 'month' as const, price: 6 };
-    render(<PerUserUpgradePlans data={data({ plans: [...plans, expansion], has_ltd_codes: true })} />);
+    const expansion = {
+      id: 'exp-m',
+      name: 'Expansion',
+      plan_key: 'business_appsumo_expansion' as const,
+      billing_type: 'month' as const,
+      price: 6,
+    };
+    render(
+      <PerUserUpgradePlans data={data({ plans: [...plans, expansion], has_ltd_codes: true })} />
+    );
 
     expect(screen.getByText('plans.expansion.name')).toBeTruthy();
     expect(screen.getByText('$6')).toBeTruthy();
 
-    await user.click(screen.getAllByText('select')[2]);
-    await waitFor(() => expect(upgradeToPaidPlan).toHaveBeenCalledWith('exp-m', 'per_user', 1, false));
+    await user.click(screen.getByText('select'));
+    await waitFor(() =>
+      expect(upgradeToPaidPlan).toHaveBeenCalledWith('exp-m', 'per_user', 1, false)
+    );
+  });
+
+  it('shows only the expansion seat selector for AppSumo customers and uses it at checkout', async () => {
+    const user = userEvent.setup();
+    const expansion = {
+      id: 'exp-m',
+      name: 'Expansion',
+      plan_key: 'business_appsumo_expansion' as const,
+      billing_type: 'month' as const,
+      price: 6,
+    };
+    render(
+      <PerUserUpgradePlans data={data({ plans: [...plans, expansion], has_ltd_codes: true })} />
+    );
+
+    expect(screen.getAllByRole('spinbutton')).toHaveLength(1);
+    expect(screen.queryByText(/seatsHelp/)).toBeNull();
+    await user.click(screen.getByRole('button', { name: /increaseUsers/ }));
+    await user.click(screen.getByText('select'));
+    await waitFor(() =>
+      expect(upgradeToPaidPlan).toHaveBeenCalledWith('exp-m', 'per_user', 2, false)
+    );
   });
 
   it('reports a failed checkout without throwing', async () => {

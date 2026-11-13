@@ -9,12 +9,15 @@ import {
   Form,
   Input,
   message,
+  PlusOutlined,
   Select,
   Spin,
   Switch,
+  theme,
   Tooltip,
   Typography,
 } from '@/shared/antd-imports';
+import CreateJobTitleModal from '@/components/common/create-job-title-modal/CreateJobTitleModal';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAuthService } from '@/hooks/useAuth';
@@ -76,35 +79,39 @@ const UpdateMemberDrawer = ({
   const auth = useAuthService();
   const [form] = Form.useForm();
 
+  const { token } = theme.useToken();
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [resentSuccess, setResentSuccess] = useState(false);
   const [jobTitles, setJobTitles] = useState<IJobTitle[]>([]);
   const [selectedJobTitle, setSelectedJobTitle] = useState<string | null>(null);
+  const [isCreateJobTitleOpen, setIsCreateJobTitleOpen] = useState(false);
+  const [jobTitleSearchText, setJobTitleSearchText] = useState('');
   const [departments, setDepartments] = useState<IDepartment[]>([]);
   const [practices, setPractices] = useState<IPractice[]>([]);
   const [teamMember, setTeamMember] = useState<ITeamMemberViewModel | null>(null);
   const [teamLeads, setTeamLeads] = useState<ITeamMemberViewModel[]>([]);
   const [loadingTeamLeads, setLoadingTeamLeads] = useState(false);
 
-  // Job titles pagination state
+  // Job titles state
   const [jobTitlesLoading, setJobTitlesLoading] = useState(false);
   const [jobTitlesTotal, setJobTitlesTotal] = useState(0);
-  const [jobTitlesPage, setJobTitlesPage] = useState(1);
-  const jobTitlesPageSize = 10;
-  const scrollPositionRef = useRef(0);
   const isMountedRef = useRef(true);
 
   const isDrawerOpen = useAppSelector(state => state.memberReducer.isUpdateMemberDrawerOpen);
 
   const displayName = teamMember?.name ?? selectedMemberName ?? '';
 
-  const isOwnAccount = useMemo(() => {
-    return auth.getCurrentSession()?.email === teamMember?.email;
-  }, [auth, teamMember?.email]);
-
   const currentUser = auth.getCurrentSession();
   const currentUserRole = getSessionRoleName(currentUser);
+
+  const isOwnAccount = useMemo(() => {
+    return (
+      (Boolean(currentUser?.email) && currentUser?.email === teamMember?.email) ||
+      (Boolean(currentUser?.team_member_id) && currentUser?.team_member_id === selectedMemberId)
+    );
+  }, [currentUser?.email, currentUser?.team_member_id, teamMember?.email, selectedMemberId]);
+
   const canManageTarget = useMemo(() => {
     if (currentUserRole === ROLE_NAMES.ADMIN) {
       return teamMember?.role_name?.toLowerCase() !== 'owner';
@@ -112,9 +119,33 @@ const UpdateMemberDrawer = ({
     return canManageUserRole(currentUser?.role_name, teamMember?.role_name, currentUser?.owner);
   }, [currentUser?.role_name, currentUser?.owner, currentUserRole, teamMember?.role_name]);
 
+  const canEditMemberDetails = useMemo(() => {
+    if (currentUserRole === ROLE_NAMES.OWNER) return true;
+    if (currentUserRole === ROLE_NAMES.ADMIN) {
+      if (isOwnAccount) return true;
+      return Boolean(canManageTarget);
+    }
+    if (isOwnAccount) return true;
+    return false;
+  }, [currentUserRole, isOwnAccount, canManageTarget]);
+
+  const canCreateJobTitle = useMemo(() => {
+    return currentUserRole === ROLE_NAMES.OWNER || currentUserRole === ROLE_NAMES.ADMIN;
+  }, [currentUserRole]);
+
+  const canEditRole = useMemo(() => {
+    if (isOwnAccount) return false;
+    return Boolean(canManageTarget);
+  }, [isOwnAccount, canManageTarget]);
+
+  const canEditManager = useMemo(() => {
+    if (isOwnAccount) return false;
+    return Boolean(canManageTarget);
+  }, [isOwnAccount, canManageTarget]);
+
   const canEditOwnAccount = useMemo(() => {
-    return isOwnAccount && currentUser?.owner;
-  }, [isOwnAccount, currentUser?.owner]);
+    return isOwnAccount;
+  }, [isOwnAccount]);
 
   const isOwnerEditingOwnDetails = useMemo(() => {
     return isOwnAccount && currentUserRole === ROLE_NAMES.OWNER;
@@ -151,16 +182,13 @@ const UpdateMemberDrawer = ({
     return teamMember?.pending_invitation && selectedMemberId && !resentSuccess;
   }, [teamMember?.pending_invitation, selectedMemberId, resentSuccess]);
 
-  const getJobTitles = async (page: number = 1, append: boolean = false) => {
+  const getJobTitles = async () => {
     try {
       setJobTitlesLoading(true);
-      const res = await jobTitlesApiService.getJobTitles(page, jobTitlesPageSize, null, null, null);
+      const res = await jobTitlesApiService.getJobTitles(1, 1000, 'name', 'asc', null);
       if (res.done) {
-        const newJobTitles = res.body.data || [];
-        const total = res.body.total || 0;
-
-        setJobTitles(prev => (append ? [...prev, ...newJobTitles] : newJobTitles));
-        setJobTitlesTotal(total);
+        setJobTitles(res.body.data || []);
+        setJobTitlesTotal(res.body.total || 0);
       }
     } catch (error) {
       logger.error('Error fetching job titles:', error);
@@ -211,23 +239,6 @@ const UpdateMemberDrawer = ({
     }
   };
 
-  const handleJobTitleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLDivElement;
-    const scrollTop = target.scrollTop;
-    const scrollHeight = target.scrollHeight;
-    const clientHeight = target.clientHeight;
-
-    if (scrollTop + clientHeight >= scrollHeight) {
-      const hasMore = jobTitles.length < jobTitlesTotal;
-      if (hasMore && !jobTitlesLoading) {
-        const nextPage = jobTitlesPage + 1;
-        setJobTitlesPage(nextPage);
-        getJobTitles(nextPage, true);
-      }
-    }
-
-    scrollPositionRef.current = scrollTop;
-  };
 
   const getTeamMember = useCallback(async () => {
     if (!selectedMemberId) return;
@@ -263,9 +274,32 @@ const UpdateMemberDrawer = ({
         }
       }
 
-      // For team owner editing their own details, skip the role/admin update
-      // since they can't change their own role
-      if (!isOwnerEditingOwnDetails) {
+      // For any user editing their own details, protect role/admin fields
+      // and only update basic details (job title, department, practice).
+      if (isOwnAccount) {
+        const currentJobTitle = teamMember?.job_title;
+        const newJobTitle = form.getFieldValue('jobTitle');
+        const newDepartmentId = form.getFieldValue('departmentId');
+        const newPracticeId = form.getFieldValue('practiceId');
+        const basicInfoChanged =
+          newJobTitle !== currentJobTitle ||
+          newDepartmentId !== teamMember?.department_id ||
+          newPracticeId !== teamMember?.practice_id;
+        if (basicInfoChanged) {
+          const body: ITeamMemberCreateRequest = {
+            job_title: newJobTitle,
+            department_id: newDepartmentId,
+            practice_id: newPracticeId,
+            emails: [teamMember.email],
+            is_admin: Boolean(teamMember.is_admin || teamMember.role_name === ROLE_NAMES.ADMIN),
+            role_name: teamMember.role_name || ROLE_NAMES.MEMBER,
+          };
+          const res = await teamMembersApiService.update(selectedMemberId, body);
+          if (!res.done) {
+            throw new Error(res.message || t('updateError'));
+          }
+        }
+      } else {
         const body: ITeamMemberCreateRequest = {
           job_title: form.getFieldValue('jobTitle'),
           department_id: form.getFieldValue('departmentId'),
@@ -286,38 +320,13 @@ const UpdateMemberDrawer = ({
         if (!res.done) {
           throw new Error(res.message || t('updateError'));
         }
-      } else {
-        // For owner, only update the non-privileged fields (job title, department,
-        // practice) they're allowed to touch on their own account; role/admin stay put.
-        const currentJobTitle = teamMember?.job_title;
-        const newJobTitle = form.getFieldValue('jobTitle');
-        const newDepartmentId = form.getFieldValue('departmentId');
-        const newPracticeId = form.getFieldValue('practiceId');
-        const basicInfoChanged =
-          newJobTitle !== currentJobTitle ||
-          newDepartmentId !== teamMember?.department_id ||
-          newPracticeId !== teamMember?.practice_id;
-        if (basicInfoChanged) {
-          const body: ITeamMemberCreateRequest = {
-            job_title: newJobTitle,
-            department_id: newDepartmentId,
-            practice_id: newPracticeId,
-            emails: [teamMember.email],
-            is_admin: false,
-            role_name: ROLE_NAMES.OWNER,
-          };
-          const res = await teamMembersApiService.update(selectedMemberId, body);
-          if (!res.done) {
-            throw new Error(res.message || t('updateError'));
-          }
-        }
       }
 
       const currentManagerId = teamMember?.reports_to_member_id;
       const newManagerId = values.manager;
 
-      // Handle team lead assignment changes and notify parent immediately
-      if (currentManagerId !== newManagerId) {
+      // Handle team lead assignment changes only when managing another member
+      if (!isOwnAccount && currentManagerId !== newManagerId) {
         if (newManagerId) {
           await teamManagementApiService.assignManager(selectedMemberId, newManagerId);
           // Find the selected team lead's name so the table cell updates right away
@@ -348,7 +357,7 @@ const UpdateMemberDrawer = ({
               : 'Member';
 
       onNameUpdate?.(selectedMemberId, resolvedName);
-      if (!isOwnerEditingOwnDetails) {
+      if (!isOwnAccount) {
         onRoleUpdate?.(selectedMemberId, newRoleName);
       }
       onJobTitleUpdate?.(selectedMemberId, resolvedJobTitle);
@@ -383,18 +392,13 @@ const UpdateMemberDrawer = ({
   };
 
   const afterOpenChange = async (visible: boolean) => {
-    if (visible) {
-      // Don't reset the form here - let useEffect handle data loading and form population
-      // Only reset helper state
-      setJobTitles([]);
-      setJobTitlesPage(1);
-      setJobTitlesTotal(0);
-      scrollPositionRef.current = 0;
-    } else {
+    if (!visible) {
       // When drawer closes, clean up
       setTeamMember(null);
       setResentSuccess(false);
       form.resetFields();
+      setJobTitles([]);
+      setJobTitlesTotal(0);
     }
   };
 
@@ -427,22 +431,17 @@ const UpdateMemberDrawer = ({
   useEffect(() => {
     isMountedRef.current = true;
 
-    const loadData = async () => {
-      if (isDrawerOpen && selectedMemberId) {
-        // Load team member data first and don't wait for job titles/team leads
-        await getTeamMember();
+    if (isDrawerOpen) {
+      // Load job titles, departments, practices, and team leads in parallel immediately
+      getJobTitles();
+      getDepartments();
+      getPractices();
+      getTeamLeads();
 
-        if (!isMountedRef.current) return;
-
-        // Load job titles, departments, practices, and team leads in parallel (don't wait for them)
-        getJobTitles(1, false);
-        getDepartments();
-        getPractices();
-        getTeamLeads();
+      if (selectedMemberId) {
+        getTeamMember();
       }
-    };
-
-    loadData();
+    }
 
     return () => {
       isMountedRef.current = false;
@@ -512,62 +511,95 @@ const UpdateMemberDrawer = ({
             placeholder={t('memberNamePlaceholder', {
               defaultValue: 'Enter member name',
             })}
-            disabled={
-              isOwnAccount
-                ? !canEditOwnAccount
-                : !(
-                    currentUserRole === ROLE_NAMES.OWNER ||
-                    (currentUserRole === ROLE_NAMES.ADMIN && canManageTarget)
-                  )
-            }
+            disabled={!canEditMemberDetails}
           />
         </Form.Item>
 
-        <Form.Item label={t('jobTitleLabel', { defaultValue: 'Job Title' })} name="jobTitle" initialValue={null}>
+        <Form.Item
+          label={t('jobTitleLabel', { defaultValue: 'Job Title' })}
+          name="jobTitle"
+          initialValue={null}
+        >
           <Select
-            optionLabelProp="label"
+            allowClear
             size="middle"
-            placeholder={t('jobTitlePlaceholder', { defaultValue: 'Select or search job title (Optional)' })}
+            placeholder={t('jobTitlePlaceholder', {
+              defaultValue: 'Select or search job title (Optional)',
+            })}
             showSearch
-            disabled={
-              isOwnAccount
-                ? !canEditOwnAccount
-                : !(
-                    currentUserRole === ROLE_NAMES.OWNER ||
-                    (currentUserRole === ROLE_NAMES.ADMIN && canManageTarget)
-                  )
-            }
+            disabled={!canEditMemberDetails}
             filterOption={(input, option) =>
-              (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+              String(option?.children || option?.label || '')
+                .toLowerCase()
+                .includes(input.toLowerCase())
             }
-            options={jobTitles.map(job => ({
-              label: job.name,
-              value: job.id,
-            }))}
-            suffixIcon={false}
-            onChange={(value, option) => {
-              if (option && 'label' in option) {
-                form.setFieldsValue({ jobTitle: option.label || value });
-              }
+            onSearch={val => setJobTitleSearchText(val)}
+            onChange={value => {
+              form.setFieldsValue({ jobTitle: value || null });
             }}
-            onSelect={value => setSelectedJobTitle(value)}
-            onPopupScroll={handleJobTitleScroll}
-            loading={jobTitlesLoading && jobTitles.length === 0}
-            notFoundContent={
-              jobTitlesLoading && jobTitles.length === 0 ? <Spin size="small" /> : null
-            }
+            loading={jobTitlesLoading}
             popupRender={menu => (
               <div>
-                {menu}
-                {jobTitlesLoading && jobTitles.length > 0 && (
-                  <div style={{ textAlign: 'center', padding: '8px' }}>
-                    <Spin size="small" />
+                {canCreateJobTitle && (
+                  <div
+                    style={{
+                      padding: '4px 8px',
+                      borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                    }}
+                  >
+                    <Button
+                      type="text"
+                      icon={<PlusOutlined />}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        display: 'flex',
+                        alignItems: 'center',
+                        color: token.colorPrimary,
+                        fontWeight: 500,
+                        height: 32,
+                      }}
+                      onMouseDown={e => e.preventDefault()}
+                      onClick={() => setIsCreateJobTitleOpen(true)}
+                    >
+                      {t('createJobTitleButtonText', { defaultValue: 'Create a Job Title' })}
+                    </Button>
                   </div>
                 )}
+                {menu}
               </div>
             )}
-          />
+          >
+            {jobTitles.map(job => (
+              <Select.Option key={job.id} value={job.name!} label={job.name}>
+                {job.name}
+              </Select.Option>
+            ))}
+          </Select>
         </Form.Item>
+
+        <CreateJobTitleModal
+          open={isCreateJobTitleOpen && canCreateJobTitle}
+          initialName={jobTitleSearchText}
+          onClose={() => setIsCreateJobTitleOpen(false)}
+          onSuccess={newJobTitle => {
+            if (!newJobTitle?.id) return;
+            setJobTitles(prev => {
+              if (
+                prev.some(
+                  j =>
+                    j.id === newJobTitle.id ||
+                    j.name?.trim().toLowerCase() === newJobTitle.name?.trim().toLowerCase()
+                )
+              ) {
+                return prev;
+              }
+              return [newJobTitle, ...prev];
+            });
+            form.setFieldsValue({ jobTitle: newJobTitle.name });
+            setJobTitleSearchText('');
+          }}
+        />
 
         <Form.Item
           label={t('departmentLabel', { defaultValue: 'Department' })}
@@ -580,14 +612,7 @@ const UpdateMemberDrawer = ({
             size="middle"
             placeholder={t('departmentPlaceholder', { defaultValue: 'Select department' })}
             showSearch
-            disabled={
-              isOwnAccount
-                ? !canEditOwnAccount
-                : !(
-                    currentUserRole === ROLE_NAMES.OWNER ||
-                    (currentUserRole === ROLE_NAMES.ADMIN && canManageTarget)
-                  )
-            }
+            disabled={!canEditMemberDetails}
             filterOption={(input, option) =>
               (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
             }
@@ -609,14 +634,7 @@ const UpdateMemberDrawer = ({
             size="middle"
             placeholder={t('practicePlaceholder', { defaultValue: 'Select practice' })}
             showSearch
-            disabled={
-              isOwnAccount
-                ? !canEditOwnAccount
-                : !(
-                    currentUserRole === ROLE_NAMES.OWNER ||
-                    (currentUserRole === ROLE_NAMES.ADMIN && canManageTarget)
-                  )
-            }
+            disabled={!canEditMemberDetails}
             filterOption={(input, option) =>
               (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
             }
@@ -639,7 +657,7 @@ const UpdateMemberDrawer = ({
             rules={[{ required: true }]}
           >
             <Select
-              disabled={isOwnAccount ? !canEditOwnAccount : !canManageTarget}
+              disabled={!canEditRole}
               options={translatedRoleOptions}
               optionRender={option => (
                 <Flex vertical gap={2} style={{ whiteSpace: 'normal', lineHeight: 1.4 }}>
@@ -677,7 +695,7 @@ const UpdateMemberDrawer = ({
               allowClear
               placeholder={t('selectManagerPlaceholder', { defaultValue: 'Select a Team Lead as manager' })}
               loading={loadingTeamLeads}
-              disabled={isOwnAccount ? !canEditOwnAccount : !canManageTarget}
+              disabled={!canEditManager}
               showSearch
               filterOption={(input, option) =>
                 (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
@@ -705,7 +723,7 @@ const UpdateMemberDrawer = ({
               type="primary"
               style={{ width: '100%' }}
               htmlType="submit"
-              disabled={isOwnAccount ? !canEditOwnAccount : !canManageTarget}
+              disabled={!canEditMemberDetails}
             >
               {t('updateButton', { defaultValue: 'Save Changes' })}
             </Button>

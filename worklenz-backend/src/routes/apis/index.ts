@@ -39,6 +39,7 @@ import projectInsightsApiRouter from "./project-insights-api-router";
 import adminCenterApiRouter from "./admin-center-api-router";
 import reportingApiRouter from "./reporting-api-router";
 import teamLeadReportingApiRouter from "./team-lead-reporting-api-router";
+import reportingAnalyticsApiRouter from "./reporting-analytics-api-router";
 import activityLogsApiRouter from "./activity-logs-api-router";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import passwordValidator from "../../middlewares/validators/password-validator";
@@ -75,6 +76,7 @@ import taskDependenciesApiRouter from "./task-dependencies-api-router";
 
 import taskRecurringApiRouter from "./task-recurring-api-router";
 import teamFilesApiRouter from "./team-files-api-router";
+import teamDocumentsApiRouter from "./team-documents-api-router";
 
 import customColumnsApiRouter from "./custom-columns-api-router";
 import projectFinanceApiRouter from "../../routes/apis/project-finance-api-router";
@@ -132,6 +134,7 @@ api.use("/project-insights", projectInsightsApiRouter);
 api.use("/admin-center", adminCenterApiRouter);
 api.use("/reporting", reportingApiRouter);
 api.use("/reporting", teamLeadReportingApiRouter);
+api.use("/reporting/analytics", reportingAnalyticsApiRouter);
 api.use("/activity-logs", activityLogsApiRouter);
 api.use("/projects-folders", projectFoldersApiRouter);
 api.use("/task-phases", taskPhasesApiRouter);
@@ -195,6 +198,7 @@ api.use("/task-dependencies", taskDependenciesApiRouter);
 
 api.use("/task-recurring", taskRecurringApiRouter);
 api.use("/team-files", teamFilesApiRouter);
+api.use("/team-documents", teamDocumentsApiRouter);
 
 api.use("/custom-columns", customColumnsApiRouter);
 api.use("/support", supportApiRouter);

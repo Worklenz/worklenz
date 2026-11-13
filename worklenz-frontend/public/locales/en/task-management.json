@@ -19,6 +19,8 @@
   "viewOnBoard": "View on Board",
   "completeSprint": "Complete sprint",
   "startSprint": "Start sprint",
+  "createSprint": "Create sprint",
+  "sprintSetupRequiredHint": "Create a sprint to unlock the backlog and start adding issues.",
   "editSprint": "Edit sprint",
   "noTasksInGroupDescription": "Add a task to get started",
   "addFirstTask": "Add your first task",
@@ -43,6 +45,12 @@
   "done": "Done",
   "defaultTaskName": "Untitled Task",
 
+  "editSprintName": "Click to rename",
+  "editSprintDates": "Click to change dates",
+  "addDates": "Add dates",
+  "sprintUpdated": "Sprint updated",
+  "sprintUpdateError": "Could not update sprint",
+  "sprintNameRequired": "Sprint name is required",
   "indicators": {
     "tooltips": {
       "subtasks": "{{count}} subtask",

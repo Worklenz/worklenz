@@ -153,4 +153,6 @@
   "searchLabels": "Kërko etiketa...",
   "noLabels": "Nuk u gjetën etiketa",
   "labelFilter": "Etiketat"
+,
+  "rowsPerPage": "Rreshta për faqe:"
 }

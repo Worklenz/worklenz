@@ -4,10 +4,11 @@ import db from "../config/db";
  * Server-side enforcement for the `restrict_task_creation` Business Plan feature.
  *
  * When the restriction is active for a project (project-level or org-level), only
- * privileged users (Owner/Admin/Team Lead) may create or modify tasks. The
- * `is_task_creation_restricted(user_id, project_id)` DB function encapsulates the
- * plan check, the restriction flags and the role check, returning TRUE when the
- * given user is NOT allowed to create/modify tasks in the given project.
+ * privileged users (Owner/Admin/Team Lead) and Project Managers may create or
+ * modify tasks. The `is_task_creation_restricted(user_id, project_id)` DB function
+ * encapsulates the plan check, the restriction flags, the team-role check, and the
+ * project-manager check, returning TRUE when the given user is NOT allowed to
+ * create/modify tasks in the given project.
  *
  * These helpers mirror the frontend `useTaskCreationPermission` gating so the
  * UI-disabled controls cannot be bypassed via direct socket/API calls.

@@ -13,6 +13,7 @@ import { NotificationsService } from "../services/notifications/notifications.se
 import { IPassportSession } from "../interfaces/passport-session";
 import { SocketEvents } from "../socket.io/events";
 import { IO } from "../shared/io";
+import { notifyProjectDateChanges } from "../shared/project-date-notifications";
 import { getCurrentProjectsCount, getFreePlanSettings } from "../shared/paddle-utils";
 import { ActivityLoggingService } from "../services/activity-logging.service";
 import { NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE } from "../shared/guest-access-sql";
@@ -64,9 +65,12 @@ export default class ProjectsController extends WorklenzControllerBase {
       }
     }
 
-    IO.getSocketById(user.socket_id as string)
-    ?.to(projectId)
-    .emit(SocketEvents.PROJECT_DATA_CHANGE.toString(), {user_id: user.id});
+    IO.emitToProjectRoom(
+      projectId as string,
+      SocketEvents.PROJECT_DATA_CHANGE,
+      { user_id: user.id },
+      { excludeSocketId: user.socket_id || undefined }
+    );
 
   }
 
@@ -99,6 +103,20 @@ export default class ProjectsController extends WorklenzControllerBase {
     req.body.project_manager_id = req.body.project_manager ? req.body.project_manager.id : null;
     req.body.priority_id = req.body.priority_id || null;
     req.body.project_type = req.body.project_type === "software" ? "software" : "general";
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "members_can_view_client_team")) {
+      if (typeof req.body.members_can_view_client_team !== "boolean") {
+        return res
+          .status(200)
+          .send(
+            new ServerResponse(
+              false,
+              null,
+              "members_can_view_client_team must be a boolean."
+            )
+          );
+      }
+    }
 
     // FIX: Format dates consistently like tasks - parse as date-only strings to avoid timezone issues
     if (req.body.start_date) {
@@ -724,6 +742,8 @@ export default class ProjectsController extends WorklenzControllerBase {
     const safeSortOrder = (sortOrder === "desc" || sortOrder === "DESC") ? "DESC" : "ASC";
     
     const search = (req.query.search || "").toString().trim();
+    // `team` = non-guests, `guest` = guests only, anything else = all (backward compatible).
+    const memberType = (req.query.member_type || "").toString().trim().toLowerCase();
 
     let searchFilter = "";
     const params = [req.params.id, req.user?.team_id ?? null, size, offset];
@@ -735,6 +755,14 @@ export default class ProjectsController extends WorklenzControllerBase {
         )
       `;
       params.push(search);
+    }
+
+    const isGuestPredicate = `(pal.key = 'GUEST' OR COALESCE(tm.is_guest, FALSE) = TRUE)`;
+    let memberTypeFilter = "";
+    if (memberType === "guest") {
+      memberTypeFilter = `AND ${isGuestPredicate}`;
+    } else if (memberType === "team") {
+      memberTypeFilter = `AND NOT ${isGuestPredicate}`;
     }
 
     const q = `
@@ -762,6 +790,7 @@ export default class ProjectsController extends WorklenzControllerBase {
          LEFT JOIN users u ON tm.user_id = u.id
          LEFT JOIN project_access_levels pal ON project_members.project_access_level_id = pal.id
          WHERE project_id = $1
+         ${memberTypeFilter}
          ${search ? searchFilter : ""}
       )
       SELECT
@@ -823,6 +852,7 @@ export default class ProjectsController extends WorklenzControllerBase {
              sps.name AS status,
              sps.color_code AS status_color,
              sps.icon AS status_icon,
+             projects.client_id,
              (SELECT name FROM clients WHERE id = projects.client_id) AS client_name,
              projects.use_manual_progress,
              projects.use_weighted_progress,
@@ -830,6 +860,7 @@ export default class ProjectsController extends WorklenzControllerBase {
              projects.auto_assign_task_creator,
              projects.restrict_task_creation,
              projects.phase_assignees_enabled,
+             projects.members_can_view_client_team,
              to_jsonb(projects)->>'worklenz_id' AS worklenz_id,
              projects.restrict_tasks_to_assignee,
              projects.auto_assign_subtask_phase,
@@ -996,6 +1027,27 @@ export default class ProjectsController extends WorklenzControllerBase {
       delete req.body.restrict_tasks_to_assignee;
     }
 
+    // Written only by update_project(); reject non-booleans so string "false" is not coerced.
+    const hasMembersCanViewClientTeam = Object.prototype.hasOwnProperty.call(
+      req.body,
+      "members_can_view_client_team"
+    );
+    if (hasMembersCanViewClientTeam) {
+      if (!canUpdateProjectPrivacy) {
+        delete req.body.members_can_view_client_team;
+      } else if (typeof req.body.members_can_view_client_team !== "boolean") {
+        return res
+          .status(200)
+          .send(
+            new ServerResponse(
+              false,
+              null,
+              "members_can_view_client_team must be a boolean."
+            )
+          );
+      }
+    }
+
     // read before update_project(), which also writes this column,
     // so the audit entry below records the real old → new transition.
     let previousRestrictTasksToAssignee = false;
@@ -1067,6 +1119,21 @@ export default class ProjectsController extends WorklenzControllerBase {
     const [data] = result.rows;
 
     if (data.project?.id) {
+      const datesResult = await db.query(
+        `SELECT to_char(p.start_date AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS start_date,
+                to_char(p.end_date AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS end_date,
+                t.user_id AS owner_id
+         FROM projects p JOIN teams t ON t.id = p.team_id WHERE p.id = $1`,
+        [req.params.id]
+      );
+      const dates = datesResult.rows[0];
+      if (dates) {
+        const previousDates = settingsBefore ? {
+          start_date: typeof settingsBefore.start_date === "string" ? settingsBefore.start_date.slice(0, 10) : null,
+          end_date: typeof settingsBefore.end_date === "string" ? settingsBefore.end_date.slice(0, 10) : null,
+        } : null;
+        notifyProjectDateChanges(req.params.id, dates.owner_id, previousDates, dates);
+      }
       if (Object.prototype.hasOwnProperty.call(req.body, 'phase_assignees_enabled')) {
         await db.query(
           `

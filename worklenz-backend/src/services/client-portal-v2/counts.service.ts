@@ -15,8 +15,10 @@ export async function getPortalCounts(q: Queryable, teamId: string, userId: stri
   const result = await q.query(
     `SELECT
        (SELECT COUNT(*)::int FROM client_portal_approvals a
+         JOIN clients ac ON ac.id = a.client_id AND ac.deleted_at IS NULL
          WHERE a.organization_team_id = $1 AND a.status = 'awaiting') AS awaiting_approvals,
        (SELECT COUNT(*)::int FROM client_portal_change_requests r
+         JOIN clients rc ON rc.id = r.client_id AND rc.deleted_at IS NULL
          WHERE r.organization_team_id = $1 AND r.status IN ('submitted', 'under_review')) AS review_change_requests`,
     [teamId]
   );

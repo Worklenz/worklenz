@@ -37,6 +37,7 @@ import {
 } from '../../../../../api/client-portal/client-portal-api';
 import '@/styles/chat-thread.css';
 import { PortalLoader } from '@/components/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 type ChatBoxProps = {
   openedChat: TempChatsType;
@@ -310,7 +311,7 @@ const ChatBox = ({ openedChat, onBack, subtitle }: ChatBoxProps) => {
             style={{ flexShrink: 0 }}
           />
         )}
-        <CustomAvatar avatarName={openedChat.name} size={40} />
+        <CustomAvatar avatarName={decodeHtmlEntities(openedChat.name)} size={40} />
         <Flex vertical flex={1}>
           <Typography.Text
             strong
@@ -319,7 +320,7 @@ const ChatBox = ({ openedChat, onBack, subtitle }: ChatBoxProps) => {
               textTransform: 'capitalize',
             }}
           >
-            {openedChat.name}
+            {decodeHtmlEntities(openedChat.name)}
           </Typography.Text>
           {subtitle && (
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -418,7 +419,7 @@ const ChatBox = ({ openedChat, onBack, subtitle }: ChatBoxProps) => {
                   >
                     {!isMine && (
                       <div style={{ width: 28, flexShrink: 0 }}>
-                        <CustomAvatar avatarName={openedChat.name} size={28} />
+                        <CustomAvatar avatarName={decodeHtmlEntities(openedChat.name)} size={28} />
                       </div>
                     )}
 
@@ -511,7 +512,7 @@ const ChatBox = ({ openedChat, onBack, subtitle }: ChatBoxProps) => {
                       </div>
 
                       {!isMine && (
-                        <div className="chat-msg-author">{openedChat.name}</div>
+                        <div className="chat-msg-author">{decodeHtmlEntities(openedChat.name)}</div>
                       )}
 
                       {chatMessage.content && (

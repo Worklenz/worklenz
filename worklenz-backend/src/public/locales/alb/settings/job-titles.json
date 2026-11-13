@@ -5,6 +5,7 @@
   "deleteConfirmationCancel": "Anulo",
   "searchPlaceholder": "Kërko sipas emrit",
   "createJobTitleButton": "Krijo Titull Pune",
+  "createJobTitleButtonText": "Krijo një titull pune",
   "pinTooltip": "Klikoni për ta fiksuar në menynë kryesore",
   "createJobTitleDrawerTitle": "Krijo Titull Pune",
   "updateJobTitleDrawerTitle": "Përditëso Titullin e Punës",
@@ -17,6 +18,9 @@
   "createJobTitleErrorMessage": "Krijimi i titullit të punës dështoi!",
   "updateJobTitleSuccessMessage": "Titulli i punës u përditësua me sukses!",
   "updateJobTitleErrorMessage": "Përditësimi i titullit të punës dështoi!",
+  "paginationTotal": "{{start}}-{{end}} nga {{total}} artikuj",
+  "editTooltip": "Modifiko",
+  "deleteTooltip": "Fshi",
   "fetchJobTitleErrorMessage": "Marrja e titullit të punës dështoi. Ju lutemi provoni përsëri.",
   "pageTitle": "Menaxho titujt e punës"
 }

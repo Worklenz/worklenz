@@ -169,4 +169,8 @@
     },
     "empty": "Noch nicht genug Geschichte für eine Prognose. Protokollieren Sie die Zeit und senden Sie Rechnungen, um einen Trend zu erstellen."
   }
+,
+  "myTasksView": {
+    "rowsPerPage": "Zeilen pro Seite:"
+  }
 }

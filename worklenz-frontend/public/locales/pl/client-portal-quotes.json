@@ -113,5 +113,6 @@
   "deleteQuoteSuccess": "Oferta została usunięta",
   "deleteQuoteError": "Nie udało się usunąć oferty",
   "linkedChangeRequest": "Połączone żądanie zmiany",
-  "openChangeRequest": "Otwórz żądanie zmiany"
+  "openChangeRequest": "Otwórz żądanie zmiany",
+  "downloadFailed": "Nie udało się pobrać pliku PDF. Spróbuj ponownie."
 }

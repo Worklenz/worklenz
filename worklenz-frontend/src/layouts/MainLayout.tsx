@@ -5,6 +5,7 @@ import { memo, useMemo } from 'react';
 import GlobalUpgradeModal from '@/components/upgrade/GlobalUpgradeModal';
 import { PROJECTS_RAIL_SUB_ROUTES, FINANCE_RAIL_SUB_ROUTES } from '@/features/navigation/nav-registry';
 import { useHomeDashboardSocketSync } from '@/hooks/useHomeDashboardSocketSync';
+import { useScheduleSocketHandlers } from '@/hooks/useScheduleSocketHandlers';
 
 const MainLayout = memo(() => {
   const location = useLocation();
@@ -14,6 +15,11 @@ const MainLayout = memo(() => {
   // in the app, e.g. changing a task's status from a Project view — HomeLayout
   // unmounts and stops listening the moment you navigate away from Home.
   useHomeDashboardSocketSync();
+
+  // Mounted here (rather than PlannerLayout) so Planner/Schedule's RTK Query cache
+  // is kept fresh when tasks are created, assigned, or modified from any project view
+  // or task drawer — PlannerLayout unmounts when navigating away to Projects.
+  useScheduleSocketHandlers();
 
   const isProjectView = useMemo(
     () =>

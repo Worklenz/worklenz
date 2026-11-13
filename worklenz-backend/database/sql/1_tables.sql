@@ -12,7 +12,7 @@ CREATE TYPE DEPENDENCY_TYPE AS ENUM ('blocked_by');
 
 CREATE TYPE SCHEDULE_TYPE AS ENUM ('daily', 'weekly', 'yearly', 'monthly', 'every_x_days', 'every_x_weeks', 'every_x_months');
 
-CREATE TYPE LANGUAGE_TYPE AS ENUM ('en', 'es', 'pt', 'alb', 'de', 'zh_cn', 'ko');
+CREATE TYPE LANGUAGE_TYPE AS ENUM ('en', 'es', 'pt', 'alb', 'de', 'zh_cn', 'ko', 'pl', 'fr', 'it');
 
 -- START: Users
 CREATE SEQUENCE IF NOT EXISTS users_user_no_seq START 1;
@@ -2374,6 +2374,7 @@ CREATE TABLE IF NOT EXISTS cc_column_configurations (
     expression                TEXT,
     first_numeric_column_key  TEXT,
     second_numeric_column_key TEXT,
+    parent_column_id          UUID,
     created_at                TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at                TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -2385,6 +2386,14 @@ ALTER TABLE cc_column_configurations
     ADD FOREIGN KEY (column_id) REFERENCES cc_custom_columns
         ON DELETE CASCADE;
 
+ALTER TABLE cc_column_configurations
+    ADD FOREIGN KEY (parent_column_id) REFERENCES cc_custom_columns
+        ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_cc_column_configurations_parent_column_id
+    ON cc_column_configurations(parent_column_id)
+    WHERE parent_column_id IS NOT NULL;
+
 CREATE TABLE IF NOT EXISTS cc_selection_options (
     id              UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     column_id       UUID                                                NOT NULL,
@@ -2392,6 +2401,7 @@ CREATE TABLE IF NOT EXISTS cc_selection_options (
     selection_name  TEXT                                                NOT NULL,
     selection_color TEXT,
     selection_order INTEGER                                             NOT NULL,
+    parent_selection_id TEXT,
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

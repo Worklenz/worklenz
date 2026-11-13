@@ -12,6 +12,11 @@ export { UserStatusTag, OrganizationAccessTag } from './UserStatusTag';
 export { VisibilitySwitch } from './VisibilitySwitch';
 export { StatCard, type StatTone } from './StatCard';
 export { ConfirmEffectModal } from './ConfirmEffectModal';
+export {
+  useClientOrganizationActions,
+  type ClientOrganizationActions,
+  type ClientOrganizationTarget,
+} from './useClientOrganizationActions';
 export { RoleCards } from './RoleCards';
 export { InvitationLinkModal } from './InvitationLinkModal';
 export { PortalAvatar, PortalPerson } from './PortalAvatar';

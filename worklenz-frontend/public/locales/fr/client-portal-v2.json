@@ -93,5 +93,8 @@
   "toolbarSelectAll": "Sélectionner tout",
   "toolbarClearAll": "Tout effacer",
   "toolbarFields": "Champs",
-  "toolbarShowFields": "Afficher les champs"
+  "toolbarShowFields": "Afficher les champs",
+  "userDeleted": "Compte supprimé",
+  "userDeletedHint": "Supprimé par l’utilisateur le {{deleted}}. Peut être restauré jusqu’au {{until}}.",
+  "userDeletedHintExpired": "Supprimé par l’utilisateur le {{deleted}}."
 }

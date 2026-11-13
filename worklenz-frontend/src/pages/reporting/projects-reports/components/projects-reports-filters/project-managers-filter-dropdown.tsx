@@ -21,7 +21,13 @@ import {
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const ProjectManagersFilterDropdown = () => {
+interface ProjectManagersFilterDropdownProps {
+  inline?: boolean;
+}
+
+const ProjectManagersFilterDropdown = ({
+  inline = false,
+}: ProjectManagersFilterDropdownProps) => {
   const dispatch = useAppDispatch();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const projectManagerInputRef = useRef<InputRef>(null);
@@ -100,6 +106,10 @@ const ProjectManagersFilterDropdown = () => {
       </Flex>
     </Card>
   );
+
+  if (inline) {
+  return projectManagerDropdownContent;
+}
 
   return (
     <Dropdown

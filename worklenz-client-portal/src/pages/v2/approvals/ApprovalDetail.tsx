@@ -42,6 +42,7 @@ import {
   useRoleLabel,
 } from '@/components/v2';
 import type { ClientApprovalDetailV2 } from '@/types/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const LINK_ICONS = {
   file: <FileTextOutlined />,
@@ -122,7 +123,7 @@ const ApprovalBody: React.FC<{ approval: ClientApprovalDetailV2 }> = ({ approval
       } else if (outcome === 'approved') {
         void message.success(
           t('approvals.approvedToast', {
-            item: link.file_version ? `${link.name} v${link.file_version}` : link.name,
+            item: link.file_version ? `${decodeHtmlEntities(link.name)} v${link.file_version}` : decodeHtmlEntities(link.name),
             defaultValue: 'Approved. Your team is notified and {{item}} is recorded as approved.',
           })
         );
@@ -162,10 +163,10 @@ const ApprovalBody: React.FC<{ approval: ClientApprovalDetailV2 }> = ({ approval
       <Flex justify="space-between" align="flex-start" gap={12} wrap="wrap" style={{ marginBottom: 14 }}>
         <div style={{ minWidth: 0 }}>
           <Typography.Title level={4} style={{ margin: 0 }}>
-            {approval.title}
+            {decodeHtmlEntities(approval.title)}
           </Typography.Title>
           <Typography.Text type="secondary">
-            {approval.ref_no} · {approval.project_name} · {t('approvals.revision', { count: approval.revision, defaultValue: 'Revision {{count}}' })}
+            {approval.ref_no} · {decodeHtmlEntities(approval.project_name)} · {t('approvals.revision', { count: approval.revision, defaultValue: 'Revision {{count}}' })}
           </Typography.Text>
         </div>
         <StatusTag kind="approval" status={approval.status} />
@@ -183,7 +184,7 @@ const ApprovalBody: React.FC<{ approval: ClientApprovalDetailV2 }> = ({ approval
               <Flex gap={10} align="center">
                 <span aria-hidden style={{ fontSize: 18 }}>{LINK_ICONS[link.type]}</span>
                 <div>
-                  <Typography.Text strong style={{ display: 'block' }}>{link.name}</Typography.Text>
+                  <Typography.Text strong style={{ display: 'block' }}>{decodeHtmlEntities(link.name)}</Typography.Text>
                   <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
                     {link.type === 'file'
                       ? t('approvals.versionN', { version: link.file_version, defaultValue: 'Version {{version}}' })

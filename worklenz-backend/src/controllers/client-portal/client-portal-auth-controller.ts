@@ -7,7 +7,7 @@ import db from "../../config/db";
 import TokenService from "../../services/token-service";
 import crypto from "crypto";
 import { sendEmail, sendEmailEnhanced, EmailRequest } from "../../shared/email";
-import { loadClientSubject } from "../../services/client-portal-v2/subject";
+import { explainAccessLoss, loadClientSubject } from "../../services/client-portal-v2/subject";
 import FileConstants from "../../shared/file-constants";
 import { IEmailTemplateType } from "../../interfaces/email-template-type";
 import { getClientPortalBaseUrl } from "../../cron_jobs/helpers";
@@ -36,7 +36,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         SELECT c.id, c.name, c.email, c.company_name, c.status, c.invite_slug, t.name as team_name
         FROM clients c
         JOIN teams t ON c.team_id = t.id
-        WHERE LOWER(c.invite_slug) = LOWER($1) AND c.status = 'pending'
+        WHERE LOWER(c.invite_slug) = LOWER($1) AND c.status = 'pending' AND c.deleted_at IS NULL
       `;
       const clientResult = await db.query(clientQuery, [slug]);
 
@@ -108,7 +108,9 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         token as string,
       );
 
-      if (!invitation) {
+      // This endpoint is unauthenticated, so an invitation of a deleted or deactivated client must look
+      // exactly like one that does not exist: it would otherwise reveal the company and team names.
+      if (!invitation || invitation.client_deleted_at || invitation.client_status === "inactive") {
         return res
           .status(404)
           .json(
@@ -196,9 +198,14 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         ? await getLoginAccessState(db, clientUserId, decoded.clientId)
         : null;
       if (!access || !access.exists || access.loginStatus !== "active" || access.isDisabled) {
+        const reason = await explainAccessLoss(db, {
+          clientUserId: clientUserId as string,
+          clientId: decoded.clientId,
+          teamId: decoded.organizationId,
+        });
         return res
           .status(401)
-          .json(new ServerResponse(false, null, "Access has been revoked"));
+          .json(new ServerResponse(false, { code: "ACCESS_REVOKED", reason }, "Access has been revoked"));
       }
 
       // Removing a company user deletes the contact but not the login, so also require that this person is
@@ -210,9 +217,14 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         teamId: decoded.organizationId,
       });
       if (!subject) {
+        const reason = await explainAccessLoss(db, {
+          clientUserId: clientUserId as string,
+          clientId: decoded.clientId,
+          teamId: decoded.organizationId,
+        });
         return res
           .status(401)
-          .json(new ServerResponse(false, null, "Access has been revoked"));
+          .json(new ServerResponse(false, { code: "ACCESS_REVOKED", reason }, "Access has been revoked"));
       }
 
       // Generate new token with updated expiry
@@ -430,7 +442,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
           SELECT cu.*
           FROM client_users cu
           JOIN clients c ON cu.client_id = c.id
-          WHERE cu.user_id = $1 AND c.team_id = $2
+          WHERE cu.user_id = $1 AND c.team_id = $2 AND c.deleted_at IS NULL
         `;
         const clientResult = await db.query(clientCheckQuery, [
           userId,
@@ -591,9 +603,9 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
 
       // Get client information
       const clientQuery = `
-        SELECT c.id, c.name, c.email, c.company_name, c.phone, c.contact_person, c.invite_slug
+        SELECT c.id, c.name, c.email, c.company_name, c.phone, c.contact_person, c.invite_slug, c.status
         FROM clients c
-        WHERE c.id = $1 AND c.team_id = $2
+        WHERE c.id = $1 AND c.team_id = $2 AND c.deleted_at IS NULL
       `;
       const clientResult = await db.query(clientQuery, [clientId, teamId]);
 
@@ -604,6 +616,18 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
       }
 
       const client = clientResult.rows[0];
+
+      if (client.status === "inactive") {
+        return res
+          .status(409)
+          .json(
+            new ServerResponse(
+              false,
+              { code: "CLIENT_INACTIVE" },
+              "This client is deactivated. Reactivate it before sending an invitation.",
+            ),
+          );
+      }
 
       // Validate that client has an email address
       if (!client.email || client.email.trim() === "") {
@@ -818,9 +842,9 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
 
       // Get client information
       const clientQuery = `
-        SELECT c.id, c.name, c.email, c.company_name, c.phone, c.contact_person
+        SELECT c.id, c.name, c.email, c.company_name, c.phone, c.contact_person, c.status
         FROM clients c
-        WHERE c.id = $1 AND c.team_id = $2
+        WHERE c.id = $1 AND c.team_id = $2 AND c.deleted_at IS NULL
       `;
       const clientResult = await db.query(clientQuery, [clientId, teamId]);
 
@@ -831,6 +855,18 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
       }
 
       const client = clientResult.rows[0];
+      if (client.status === "inactive") {
+        return res
+          .status(409)
+          .json(
+            new ServerResponse(
+              false,
+              { code: "CLIENT_INACTIVE" },
+              "This client is deactivated. Reactivate it before sending an invitation.",
+            ),
+          );
+      }
+
       const clientContactId = await ensureContactIdForClient(db, teamId, client);
 
       // Check if client already has an active portal user (already joined)

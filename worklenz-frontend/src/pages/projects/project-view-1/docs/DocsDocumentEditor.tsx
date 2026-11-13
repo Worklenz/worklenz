@@ -12,7 +12,7 @@ import {
   UnorderedListOutlined,
   OrderedListOutlined,
 } from '@ant-design/icons';
-import { MutableRefObject, useCallback, useEffect, useRef } from 'react';
+import { MutableRefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ISectionDocument } from '@/types/project/project-documents.types';
 import {
@@ -36,6 +36,7 @@ import { TaskMention } from './extensions/task-mention';
 import { createSlashCommands, slashPluginKey } from './extensions/slash-commands';
 import { toggleDocumentList, useDocsBlockCommands } from './docs-block-commands';
 import { DocsBlockControls } from './DocsBlockControls';
+import { registerDocsEditorRelease } from './docs-editor-release';
 
 interface DocsDocumentEditorProps {
   content: ISectionDocument;
@@ -58,6 +59,7 @@ export const DocsDocumentEditor = ({
   commandsRef.current = commands;
   const slashMenuRef = useRef<DocsSuggestionMenuHandle>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [released, setReleased] = useState(false);
   const contentVersion = useRef(content.version);
   const callbacks = useRef({ onChange, onActivity, onReady });
   callbacks.current = { onChange, onActivity, onReady };
@@ -163,6 +165,8 @@ export const DocsDocumentEditor = ({
     return () => callbacks.current.onReady?.(null);
   }, [editor]);
 
+  useEffect(() => registerDocsEditorRelease(() => setReleased(true)), []);
+
   useEffect(
     () => () => {
       handlersRef.current.mentionMenu?.close();
@@ -201,6 +205,8 @@ export const DocsDocumentEditor = ({
         .run();
     } else editor.commands.focus('end');
   };
+
+  if (released) return <div className="docs-document-editor" />;
 
   return (
     <div className="docs-document-editor" ref={containerRef}>

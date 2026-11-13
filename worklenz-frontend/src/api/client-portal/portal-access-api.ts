@@ -4,12 +4,16 @@ import { PORTAL_V2, buildQuery } from './portal-api-utils';
 import type {
   AddClientRequest,
   AddClientResult,
+  ClientDeletePreview,
+  ClientOrganization,
   ClientOrganizationsList,
   ClientOrganizationsParams,
   ClientUser,
   ClientUsersList,
   ClientUsersParams,
   ClientWorkspaceOverview,
+  DeleteOrganizationRequest,
+  DeleteOrganizationResult,
   PagedParams,
   PortalSettingsV2,
   PortalSettingsV2Response,
@@ -26,6 +30,12 @@ const USER_CHANGED_TAGS = [
   'PortalCounts',
   'AuditLog',
 ] as const;
+
+/**
+ * Deleting, restoring, deactivating or reactivating a client organization changes everything a user change
+ * does, plus the project client pickers and the legacy client details/lists the Edit client modal reads.
+ */
+const ORGANIZATION_CHANGED_TAGS = [...USER_CHANGED_TAGS, 'Clients', 'ClientProjects'] as const;
 
 type SettingsPatch = {
   [K in keyof PortalSettingsV2]?: PortalSettingsV2[K] extends object
@@ -126,6 +136,73 @@ export const portalAccessApi = clientPortalApi.injectEndpoints({
       invalidatesTags: [...USER_CHANGED_TAGS],
     }),
 
+    // What deleting a client would affect or be blocked by. Never cached: it must reflect right now.
+    getOrganizationDeletePreview: builder.query<ServerEnvelope<ClientDeletePreview>, string>({
+      query: organizationId => `${PORTAL_V2}/organizations/${organizationId}/delete-preview`,
+      keepUnusedDataFor: 0,
+    }),
+
+    // Soft delete: the client's users lose access at once, and everything is kept for 30 days.
+    deletePortalOrganization: builder.mutation<ServerEnvelope<DeleteOrganizationResult>, DeleteOrganizationRequest>({
+      query: ({ organizationId, confirmPendingApprovals, confirmOpenChangeRequests }) => ({
+        url: `${PORTAL_V2}/organizations/${organizationId}`,
+        method: 'DELETE',
+        body: {
+          confirm_pending_approvals: confirmPendingApprovals === true,
+          confirm_open_change_requests: confirmOpenChangeRequests === true,
+        },
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        ...ORGANIZATION_CHANGED_TAGS,
+        { type: 'Client', id: organizationId },
+      ],
+    }),
+
+    restorePortalOrganization: builder.mutation<
+      ServerEnvelope<ClientOrganization>,
+      { organizationId: string; newName?: string }
+    >({
+      query: ({ organizationId, newName }) => ({
+        url: `${PORTAL_V2}/organizations/${organizationId}/restore`,
+        method: 'POST',
+        body: newName ? { new_name: newName } : {},
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        ...ORGANIZATION_CHANGED_TAGS,
+        { type: 'Client', id: organizationId },
+      ],
+    }),
+
+    deactivatePortalOrganization: builder.mutation<ServerEnvelope<ClientOrganization>, string>({
+      query: organizationId => ({
+        url: `${PORTAL_V2}/organizations/${organizationId}/deactivate`,
+        method: 'POST',
+        body: {},
+      }),
+      invalidatesTags: (_result, _error, organizationId) => [
+        ...ORGANIZATION_CHANGED_TAGS,
+        { type: 'Client', id: organizationId },
+      ],
+    }),
+
+    reactivatePortalOrganization: builder.mutation<ServerEnvelope<ClientOrganization>, string>({
+      query: organizationId => ({
+        url: `${PORTAL_V2}/organizations/${organizationId}/reactivate`,
+        method: 'POST',
+        body: {},
+      }),
+      invalidatesTags: (_result, _error, organizationId) => [
+        ...ORGANIZATION_CHANGED_TAGS,
+        { type: 'Client', id: organizationId },
+      ],
+    }),
+
+    // A person deleted their own account: staff bring it back inside the 30-day window.
+    restorePortalAccount: builder.mutation<ServerEnvelope<ClientUser>, string>({
+      query: userId => ({ url: `${PORTAL_V2}/client-users/${userId}/restore-account`, method: 'POST', body: {} }),
+      invalidatesTags: [...USER_CHANGED_TAGS],
+    }),
+
     // The two-method Add Client wizard, finished in one transaction on the server.
     addPortalClient: builder.mutation<ServerEnvelope<AddClientResult>, AddClientRequest>({
       query: body => ({ url: `${PORTAL_V2}/add-client`, method: 'POST', body }),
@@ -147,5 +224,11 @@ export const {
   useDeactivatePortalUserMutation,
   useReactivatePortalUserMutation,
   useRemovePortalUserMutation,
+  useGetOrganizationDeletePreviewQuery,
+  useDeletePortalOrganizationMutation,
+  useRestorePortalOrganizationMutation,
+  useDeactivatePortalOrganizationMutation,
+  useReactivatePortalOrganizationMutation,
+  useRestorePortalAccountMutation,
   useAddPortalClientMutation,
 } = portalAccessApi;

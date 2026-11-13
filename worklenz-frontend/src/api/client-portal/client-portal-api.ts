@@ -475,20 +475,6 @@ export interface ClientActivity {
   limit: number;
 }
 
-export interface BulkUpdateRequest {
-  client_ids: string[];
-  name?: string;
-  email?: string;
-  company_name?: string;
-  phone?: string;
-  address?: string;
-  status?: 'active' | 'inactive' | 'pending';
-}
-
-export interface BulkDeleteRequest {
-  client_ids: string[];
-}
-
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: `${config.apiUrl}${API_BASE_URL}`,
   prepareHeaders: async headers => {
@@ -982,42 +968,8 @@ export const clientPortalApi = createApi({
         { type: 'ClientProjects', id },
         { type: 'ClientTeam', id },
         'Clients',
+        'PortalOrganizations',
       ],
-    }),
-
-    deactivateClient: builder.mutation<void, string>({
-      query: id => ({
-        url: `/clients/portal/clients/${id}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: ['Clients'],
-      // Optimistically mark the client as inactive so the Activate/Deactivate
-      // menu item flips immediately without waiting for the refetch round-trip.
-      onQueryStarted: async (id, { dispatch, queryFulfilled, getState }) => {
-        const patches: ReturnType<typeof dispatch>[] = [];
-        const state = getState() as any;
-        const queryKeys = Object.keys(state?.clientPortalApi?.queries || {});
-        for (const key of queryKeys) {
-          if (!key.startsWith('getClients')) continue;
-          const args = state.clientPortalApi.queries[key]?.originalArgs;
-          const patch = dispatch(
-            clientPortalApi.util.updateQueryData('getClients', args, draft => {
-              const clients: any[] = (draft as any)?.body?.clients ?? [];
-              const target = clients.find((c: any) => c.id === id);
-              if (target) {
-                target.status = 'inactive';
-                target.has_portal_access = false;
-              }
-            })
-          );
-          patches.push(patch);
-        }
-        try {
-          await queryFulfilled;
-        } catch {
-          patches.forEach(p => (p as any).undo?.());
-        }
-      },
     }),
 
     // Client Projects
@@ -1145,7 +1097,6 @@ export const {
   useLazyGetClientDetailsQuery,
   useCreateClientMutation,
   useUpdateClientMutation,
-  useDeactivateClientMutation,
 
   // Client Projects
   useGetClientProjectsQuery,

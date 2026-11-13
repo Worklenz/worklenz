@@ -110,7 +110,7 @@ export async function getTeamMemberRoleName(
   `;
 
   const result = await db.query(q, [teamMemberId, teamId]);
-  const roleName = result.rows[0]?.name;
+  const roleName = result?.rows?.[0]?.name;
 
   return roleName ? normalizeTeamRoleName(roleName) : null;
 }
@@ -241,4 +241,29 @@ export async function getUserRoleInTeam(userId: string, teamId: string): Promise
   
   const result = await db.query(q, [userId, teamId]);
   return result.rows[0]?.name || null;
+}
+
+/**
+ * Check if the target team member is the user themselves
+ */
+export function isSelfTeamMember(
+  user: IPassportSession | undefined,
+  teamMemberId?: string | null,
+): boolean {
+  if (!user?.team_member_id || !teamMemberId) {
+    return false;
+  }
+  return user.team_member_id === teamMemberId;
+}
+
+/**
+ * Check if user can read or update their own or a managed team member
+ */
+export function canReadOrUpdateTeamMember(
+  user: IPassportSession | undefined,
+  teamMemberId?: string | null,
+): boolean {
+  if (!user) return false;
+  if (canManageTeamMembers(user)) return true;
+  return isSelfTeamMember(user, teamMemberId);
 }

@@ -20,8 +20,11 @@ export interface ClientRoleDefinition {
   can: Record<ClientCapability, boolean>;
 }
 
-/** "Invite expired" is a flag on an Invited user, not a separate status. */
-export type ClientUserStatus = 'invited' | 'active' | 'deactivated';
+/**
+ * "Invite expired" is a flag on an Invited user, not a separate status. `deleted` is a person who deleted
+ * their own account: they cannot sign in, but the profile stays here until the 30-day window ends.
+ */
+export type ClientUserStatus = 'invited' | 'active' | 'deactivated' | 'deleted';
 
 export type OrganizationPortalAccess = 'active' | 'invited' | 'deactivated' | 'none';
 
@@ -40,6 +43,10 @@ export interface ClientUser {
   job_title: string | null;
   role: ClientRole;
   status: ClientUserStatus;
+  /** When the person deleted their own account; set only when `status` is `deleted`. */
+  account_deleted_at: string | null;
+  /** Until when the account can be restored; null once the 30-day window has ended. */
+  restorable_until: string | null;
   /** Invited more than 7 days ago and not activated. */
   invite_expired: boolean;
   /** Added without sending the invitation ("Invite not sent yet"). */
@@ -63,6 +70,12 @@ export interface ClientOrganization {
   name: string;
   initials: string;
   color: string;
+  /** `clients.status`; staff deactivate an organization by setting it to `inactive`. */
+  status: 'active' | 'inactive' | 'pending' | string;
+  /** Set only for a deleted organization (the Deleted view). */
+  deleted_at: string | null;
+  /** When a deleted organization stops being restorable and is purged. */
+  purge_on: string | null;
   /** Client user the invitation link is created for; null when the organization has no portal admin. */
   primary_contact_id?: string | null;
   primary_contact_name: string | null;
@@ -83,6 +96,8 @@ export interface ClientOrganization {
 
 export interface ClientOrganizationStats {
   organizations: number;
+  /** Deleted organizations still inside the 30-day restore window. */
+  deleted_organizations: number;
   active_users: number;
   invited_users: number;
   expired_invites: number;
@@ -92,6 +107,44 @@ export interface ClientOrganizationStats {
 export interface ClientOrganizationsParams extends PagedParams {
   /** One access state, or several joined with commas. */
   access?: OrganizationPortalAccess | string;
+  /** true lists the deleted organizations that can still be restored, instead of the live ones. */
+  deleted?: boolean;
+}
+
+export interface ClientDeletePreviewInvoice {
+  invoice_no: string;
+  currency: string;
+  outstanding: number;
+}
+
+/** What the Delete client dialog shows before anything happens. */
+export interface ClientDeletePreview {
+  organization_id: string;
+  name: string;
+  status: string;
+  active_users: number;
+  invited_users: number;
+  total_users: number;
+  portal_projects: number;
+  /** Unpaid invoices. Any of these blocks the delete. */
+  open_invoices: ClientDeletePreviewInvoice[];
+  /** Approvals still waiting for a decision; deleting needs an explicit confirmation. */
+  pending_approvals: Array<{ ref_no: string; title: string }>;
+  /** Change requests that are not completed, rejected or cancelled; deleting needs an explicit confirmation. */
+  open_change_requests: Array<{ title: string }>;
+  retention_days: number;
+}
+
+export interface DeleteOrganizationResult {
+  organization_id: string;
+  deleted_at: string;
+  purge_on: string;
+}
+
+export interface DeleteOrganizationRequest {
+  organizationId: string;
+  confirmPendingApprovals?: boolean;
+  confirmOpenChangeRequests?: boolean;
 }
 
 export interface ClientUsersParams extends PagedParams {
@@ -112,6 +165,8 @@ export interface UpdateClientUserRequest {
   role?: ClientRole;
   /** Send true after the "last Client Admin" warning was confirmed. */
   confirm_last_admin?: boolean;
+  /** Send true after the "only approver" warning was confirmed (demoting the only approver of an approval). */
+  confirm_pending_approvals?: boolean;
 }
 
 export interface AddClientRequest {

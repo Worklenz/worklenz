@@ -12,6 +12,7 @@ import {
   MoreOutlined,
   ProjectOutlined,
   StopOutlined,
+  UndoOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import { Button, Dropdown, Flex, Typography, theme } from '@/shared/antd-imports';
@@ -36,6 +37,7 @@ import {
 } from '@/components/client-portal/v2';
 import type { PortalField, PortalFilterGroup } from '@/components/client-portal/v2';
 import { CLIENT_ROLES, type ClientRole, type ClientUser, type ClientUserStatus } from '@/types/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { useClientUserActions } from './useClientUserActions';
 
 type StatusFilter = ClientUserStatus | 'invite_expired';
@@ -145,7 +147,41 @@ export const ClientUsersPanel = ({ organizationId, onOpenOrganization, onTotalCh
     if (list) onTotalChange?.(list.total);
   }, [list, onTotalChange]);
 
-  const menuFor = (user: ClientUser): MenuProps['items'] => [
+  /**
+   * A person who deleted their own account can only be looked at, restored (inside the 30-day window) or removed.
+   * Reactivate would not bring the account back, so it is not offered.
+   */
+  const deletedAccountMenu = (user: ClientUser): MenuProps['items'] => [
+    {
+      key: 'view',
+      icon: <EyeOutlined />,
+      label: t('menu.view', { defaultValue: 'View profile' }),
+      onClick: () => actions.onView(user),
+    },
+    ...(user.restorable_until
+      ? [
+          {
+            key: 'restoreAccount',
+            icon: <UndoOutlined />,
+            label: t('menu.restoreAccount', { defaultValue: 'Restore account' }),
+            onClick: () => actions.onRestoreAccount(user),
+          },
+        ]
+      : []),
+    { type: 'divider' as const },
+    {
+      key: 'remove',
+      danger: true,
+      icon: <DeleteOutlined />,
+      label: t('menu.remove', { defaultValue: 'Remove user' }),
+      onClick: () => actions.onRemove(user),
+    },
+  ];
+
+  const menuFor = (user: ClientUser): MenuProps['items'] =>
+    user.status === 'deleted'
+      ? deletedAccountMenu(user)
+      : [
     {
       key: 'view',
       icon: <EyeOutlined />,
@@ -233,9 +269,9 @@ export const ClientUsersPanel = ({ organizationId, onOpenOrganization, onTotalCh
             // Same avatar + bold name as the Clients table, so a client looks the same in both lists.
             render: (_value: unknown, user: ClientUser) => (
               <Flex align="center" gap={10}>
-                <PortalAvatar name={user.organization_name} />
+                <PortalAvatar name={decodeHtmlEntities(user.organization_name)} />
                 <ClickableName onClick={onOpenOrganization ? () => onOpenOrganization(user.organization_id) : undefined}>
-                  {user.organization_name}
+                  {decodeHtmlEntities(user.organization_name)}
                 </ClickableName>
               </Flex>
             ),
@@ -251,7 +287,11 @@ export const ClientUsersPanel = ({ organizationId, onOpenOrganization, onTotalCh
         />
       ),
       render: (_value, user) => (
-        <Flex align="center" gap={10} style={{ opacity: user.status === 'deactivated' ? 0.6 : 1 }}>
+        <Flex
+          align="center"
+          gap={10}
+          style={{ opacity: user.status === 'deactivated' || user.status === 'deleted' ? 0.6 : 1 }}
+        >
           <PortalAvatar name={user.name} />
           <ClickableName onClick={() => actions.onView(user)}>{user.name}</ClickableName>
         </Flex>
@@ -316,6 +356,7 @@ export const ClientUsersPanel = ({ organizationId, onOpenOrganization, onTotalCh
         { text: tShared('userInvited', { defaultValue: 'Invited' }), value: 'invited' },
         { text: tShared('userInviteExpired', { defaultValue: 'Invite expired' }), value: 'invite_expired' },
         { text: tShared('userDeactivated', { defaultValue: 'Deactivated' }), value: 'deactivated' },
+        { text: tShared('userDeleted', { defaultValue: 'Account deleted' }), value: 'deleted' },
       ],
       filteredValue: statuses.length ? statuses : null,
       title: (
@@ -349,7 +390,7 @@ export const ClientUsersPanel = ({ organizationId, onOpenOrganization, onTotalCh
       ),
       render: (_value, user) =>
         user.projects.length > 0 ? (
-          <span title={user.projects.map(project => project.name).join('\n')}>
+          <span title={user.projects.map(project => decodeHtmlEntities(project.name)).join('\n')}>
             {t('users.projectCount', { count: user.projects.length, defaultValue: '{{count}} projects' })}
           </span>
         ) : (
@@ -416,8 +457,12 @@ export const ClientUsersPanel = ({ organizationId, onOpenOrganization, onTotalCh
     { value: 'invited', label: tShared('userInvited', { defaultValue: 'Invited' }) },
     { value: 'invite_expired', label: tShared('userInviteExpired', { defaultValue: 'Invite expired' }) },
     { value: 'deactivated', label: tShared('userDeactivated', { defaultValue: 'Deactivated' }) },
+    { value: 'deleted', label: tShared('userDeleted', { defaultValue: 'Account deleted' }) },
   ];
-  const clientOptions = (organizations.data?.body?.items ?? []).map(item => ({ value: item.id, label: item.name }));
+  const clientOptions = (organizations.data?.body?.items ?? []).map(item => ({
+    value: item.id,
+    label: decodeHtmlEntities(item.name),
+  }));
 
   const filterGroups: PortalFilterGroup[] = [
     {
@@ -511,11 +556,11 @@ export const ClientUsersPanel = ({ organizationId, onOpenOrganization, onTotalCh
                 getKey: user => user.organization_id,
                 renderHeader: (_key, users) => (
                   <Flex align="center" gap={10}>
-                    <PortalAvatar name={users[0].organization_name} />
+                    <PortalAvatar name={decodeHtmlEntities(users[0].organization_name)} />
                     <ClickableName
                       onClick={onOpenOrganization ? () => onOpenOrganization(users[0].organization_id) : undefined}
                     >
-                      {users[0].organization_name}
+                      {decodeHtmlEntities(users[0].organization_name)}
                     </ClickableName>
                     <Typography.Text type="secondary" style={{ fontSize: 12, fontWeight: 400 }}>
                       {t('users.groupBy.count', { count: users.length, defaultValue: '{{count}} users' })}

@@ -20,11 +20,14 @@ export interface IAcceptTeamInvite {
   show_alert?: boolean;
 }
 
+
 export interface ITeamGetResponse extends ITeam {
   owner?: boolean;
   owns_by?: string;
   created_at?: string;
+  logo_url?: string | null;
 }
+
 
 // Type for all modal/drawer states
 export interface UIState {
