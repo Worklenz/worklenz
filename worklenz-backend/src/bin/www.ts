@@ -89,6 +89,7 @@ io.on("connection", (socket: Socket) => {
   // misses re-emitting LOGIN after a silent reconnect.
   const userId = getLoggedInUserIdFromSocket(socket);
   if (userId) {
+    void socket.join(`user:${userId}`);
     void on_login(io, socket, userId);
   }
   register(io, socket);

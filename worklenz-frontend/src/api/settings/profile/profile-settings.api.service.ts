@@ -66,8 +66,9 @@ export const profileSettingsApiService = {
     new_password: string;
     confirm_password: string;
     password: string;
-  }): Promise<IServerResponse<any>> => {
-    const response = await apiClient.post<IServerResponse<any>>(
+    logout_other_sessions: boolean;
+  }): Promise<IServerResponse<null>> => {
+    const response = await apiClient.post<IServerResponse<null>>(
       `${API_BASE_URL}/change-password`,
       body
     );
