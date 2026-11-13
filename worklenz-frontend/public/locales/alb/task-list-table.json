@@ -248,6 +248,7 @@
       "keyLabelPlaceholder": "p.sh.: MK"
     },
     "dependentSelection": {
+      "parentOptionsLocked": "Nuk mund të shtohen këtu opsione të reja për fushën prind, sepse fusha të tjera varen prej saj.",
       "newBadge": "E RE",
       "parentField": "Fusha prind",
       "chooseParent": "— Zgjidh —",

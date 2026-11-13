@@ -248,6 +248,7 @@
       "keyLabelPlaceholder": "ex : MK"
     },
     "dependentSelection": {
+      "parentOptionsLocked": "Impossible d’ajouter ici des options au champ parent, car d’autres champs en dépendent.",
       "newBadge": "NOUVEAU",
       "parentField": "Champ parent",
       "chooseParent": "— Choisir —",

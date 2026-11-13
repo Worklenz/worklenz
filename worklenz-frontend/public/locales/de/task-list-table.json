@@ -248,6 +248,7 @@
       "keyLabelPlaceholder": "z. B.: MK"
     },
     "dependentSelection": {
+      "parentOptionsLocked": "Hier können keine neuen übergeordneten Optionen hinzugefügt werden, da andere Felder von diesem Feld abhängen.",
       "newBadge": "NEU",
       "parentField": "Übergeordnetes Feld",
       "chooseParent": "— Auswählen —",

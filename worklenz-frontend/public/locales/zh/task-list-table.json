@@ -248,6 +248,7 @@
       "keyLabelPlaceholder": "例如：MK"
     },
     "dependentSelection": {
+      "parentOptionsLocked": "无法在此添加新的父字段选项，因为其他字段依赖于此字段。",
       "newBadge": "新",
       "parentField": "父字段",
       "chooseParent": "— 选择 —",

@@ -248,6 +248,7 @@
       "keyLabelPlaceholder": "np.: MK"
     },
     "dependentSelection": {
+      "parentOptionsLocked": "Nie można tutaj dodać nowych opcji pola nadrzędnego, ponieważ inne pola od niego zależą.",
       "newBadge": "NOWE",
       "parentField": "Pole nadrzędne",
       "chooseParent": "— Wybierz —",
