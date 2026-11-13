@@ -17,7 +17,7 @@ export interface MilestoneView {
   project_id: string;
   name: string;
   description: string;
-  target_date: string;
+  target_date: string | null;
   completed_at: string | null;
   status: MilestoneStatus;
   visibility: PortalVisibility;

@@ -21,7 +21,7 @@ import { USER_VIEW_SQL } from "./users.service";
 export const CLIENT_PROJECT_STATUSES = ["on_track", "at_risk", "on_hold", "completed"] as const;
 export const PROJECT_PHASES = ["Discovery", "Design", "Development", "UAT", "Deployment"] as const;
 export type ClientProjectStatus = (typeof CLIENT_PROJECT_STATUSES)[number];
-export type ProjectPhase = (typeof PROJECT_PHASES)[number];
+export type ProjectPhase = string;
 export type ProgressSource = "worklenz" | "manual";
 
 /**
@@ -47,6 +47,7 @@ export interface PortalProjectRow {
   portal_enabled: boolean;
   status: ClientProjectStatus;
   phase: ProjectPhase | null;
+  phases: string[];
   progress: number;
   next_milestone: { name: string; target_date: string } | null;
   active_client_users: number;
@@ -61,6 +62,7 @@ const mapProjectRow = (row: any): PortalProjectRow => ({
   portal_enabled: row.portal_enabled === true,
   status: row.client_status,
   phase: row.current_phase ?? null,
+  phases: Array.isArray(row.phases) ? row.phases : [],
   progress: row.progress ?? 0,
   next_milestone: row.next_milestone_name
     ? { name: row.next_milestone_name, target_date: row.next_milestone_date }
@@ -75,6 +77,12 @@ const PROJECT_LIST_SQL = `
          COALESCE(pcs.portal_enabled, FALSE) AS portal_enabled,
          COALESCE(pcs.client_status, 'on_track') AS client_status,
          pcs.current_phase,
+         COALESCE(
+           (SELECT array_agg(ph.name ORDER BY ph.sort_index, ph.created_at, ph.name)
+              FROM project_phases ph
+             WHERE ph.project_id = p.id),
+           '{}'::text[]
+         ) AS phases,
          CASE WHEN pcs.progress_source = 'manual' THEN pcs.manual_progress
               ELSE ${WORKLENZ_PROGRESS_SQL} END AS progress,
          nm.name AS next_milestone_name,
@@ -257,6 +265,7 @@ export interface ProjectOverviewView {
   project_id: string;
   status: ClientProjectStatus;
   phase: ProjectPhase | null;
+  phases: string[];
   progress_source: ProgressSource;
   milestone_source: MilestoneSource;
   worklenz_progress: number;
@@ -308,6 +317,12 @@ export async function getProjectOverview(
             s.start_date::text AS start_date, s.expected_completion::text AS expected_completion,
             s.primary_contact_member_id, s.client_summary, s.allow_client_uploads, s.internal_notes,
             p.start_date::date::text AS worklenz_start_date, p.end_date::date::text AS worklenz_end_date,
+            COALESCE(
+              (SELECT array_agg(ph.name ORDER BY ph.sort_index, ph.created_at, ph.name)
+                 FROM project_phases ph
+                WHERE ph.project_id = s.project_id),
+              '{}'::text[]
+            ) AS phases,
             ${WORKLENZ_PROGRESS_SQL} AS worklenz_progress
        FROM project_client_settings s
        JOIN projects p ON p.id = s.project_id
@@ -321,6 +336,7 @@ export async function getProjectOverview(
     project_id: projectId,
     status: row.client_status,
     phase: row.current_phase ?? null,
+    phases: Array.isArray(row.phases) ? row.phases : [],
     progress_source: row.progress_source,
     milestone_source: row.milestone_source === "worklenz" ? "worklenz" : "manual",
     worklenz_progress: row.worklenz_progress ?? 0,
@@ -386,8 +402,14 @@ export async function updateProjectOverview(input: {
     set("client_status", patch.status);
   }
   if (patch.phase !== undefined) {
-    if (patch.phase !== null && !(PROJECT_PHASES as readonly string[]).includes(patch.phase)) {
-      throw badRequest("Invalid project phase");
+    if (patch.phase !== null) {
+      const validPhase = await db.query(
+        `SELECT 1 FROM project_phases WHERE project_id = $1 AND name = $2 LIMIT 1`,
+        [projectId, patch.phase]
+      );
+      if (validPhase.rows.length === 0) {
+        throw badRequest("Invalid project phase");
+      }
     }
     set("current_phase", patch.phase);
   }

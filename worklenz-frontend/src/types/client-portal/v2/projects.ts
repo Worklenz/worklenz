@@ -7,7 +7,7 @@ import type { PagedList, PagedParams, PortalVisibility, StaffRef } from './commo
 export type ClientProjectStatus = 'on_track' | 'at_risk' | 'on_hold' | 'completed';
 
 export const PROJECT_PHASES = ['Discovery', 'Design', 'Development', 'UAT', 'Deployment'] as const;
-export type ProjectPhase = (typeof PROJECT_PHASES)[number];
+export type ProjectPhase = string;
 
 /** `worklenz` follows task completion (read-only); `manual` is a 0-100 value staff set. */
 export type ProgressSource = 'worklenz' | 'manual';
@@ -25,6 +25,7 @@ export interface PortalProject {
   portal_enabled: boolean;
   status: ClientProjectStatus;
   phase: ProjectPhase | null;
+  phases?: string[];
   progress: number;
   next_milestone: { name: string; target_date: string } | null;
   active_client_users: number;
@@ -64,6 +65,7 @@ export interface ProjectOverview {
   project_id: string;
   status: ClientProjectStatus;
   phase: ProjectPhase | null;
+  phases?: string[];
   progress_source: ProgressSource;
   milestone_source: MilestoneSource;
   /** The computed WorkLenz progress, shown read-only when `progress_source` is `worklenz`. */
