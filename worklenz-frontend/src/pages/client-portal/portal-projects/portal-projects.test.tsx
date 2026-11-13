@@ -26,7 +26,7 @@ const state = vi.hoisted(() => ({
   updateTask: vi.fn(),
   milestones: [] as unknown[],
   /** 'manual' = milestones staff maintain here; 'worklenz' = the project's own phases. */
-  milestoneSource: 'manual' as 'manual' | 'worklenz',
+  milestoneSource: undefined as 'manual' | 'worklenz' | undefined,
   tasks: { items: [] as unknown[], counts: { all: 0, client: 0, internal: 0 }, total: 0 },
   files: [] as unknown[],
   messageSuccess: vi.fn(),
@@ -134,6 +134,7 @@ beforeEach(() => {
   state.deleteMilestone.mockResolvedValue({ body: null });
   state.updateTask.mockResolvedValue({ body: {} });
   state.milestones = [makeMilestone()];
+  state.milestoneSource = 'manual';
   state.tasks = { items: [makeTask()], counts: { all: 1, client: 0, internal: 1 }, total: 1 };
   state.files = [];
 });
@@ -168,7 +169,16 @@ describe('PortalSwitch', () => {
 });
 
 describe('MilestonesTab', () => {
+  it('defaults to WorkLenz phases when no milestone source is set', () => {
+    state.milestoneSource = undefined;
+    inRouter(<MilestonesTab project={project} />);
+
+    expect(screen.getByRole('radio', { name: 'WorkLenz phases' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('radio', { name: 'Set manually' })).toHaveAttribute('aria-checked', 'false');
+  });
+
   it('shows an Internal Only milestone with its private note and counts what is shared', () => {
+    state.milestoneSource = 'manual';
     inRouter(<MilestonesTab project={project} />);
 
     // The note is rich text, so the label and the note itself are separate elements.

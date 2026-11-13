@@ -31,7 +31,7 @@ export const EFFECTIVE_MILESTONES_SQL = `(
 
 export async function getMilestoneSource(q: Queryable, projectId: string): Promise<MilestoneSource> {
   const result = await q.query(`SELECT milestone_source FROM project_client_settings WHERE project_id = $1`, [projectId]);
-  return result.rows[0]?.milestone_source === "worklenz" ? "worklenz" : "manual";
+  return result.rows[0]?.milestone_source === "manual" ? "manual" : "worklenz";
 }
 
 export interface PhaseMilestoneRow {
