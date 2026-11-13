@@ -29,6 +29,7 @@ import { getEmailConfigurationErrors } from "../shared/email";
 import { getDeploymentMode } from "../shared/deployment-mode";
 import { isPaddleServiceConfigured } from "../shared/paddle-requests";
 import { initializeI18n } from "../config/i18n";
+import { startTelemetryHeartbeat } from "../services/telemetry-heartbeat";
 
 function normalizePort(val?: string) {
   const p = parseInt(val || "0", 10);
@@ -136,6 +137,7 @@ function onListening() {
     startAddonJobs();
   }
   startBackgroundWorkers();
+  startTelemetryHeartbeat();
   process.env.ENABLE_RECURRING_JOBS === "true" && startRecurringTasksJob();
   startProjectFilesCleanupJob();
   startSprintAutoScheduleJob();
