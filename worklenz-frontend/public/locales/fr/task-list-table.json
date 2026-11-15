@@ -60,6 +60,7 @@
   "lastupdatedColumn": "Dernière mise à jour",
   "reporterColumn": "Journaliste",
   "moveColumnHandle": "Déplacer la colonne",
+  "resizeColumn": "Redimensionner la colonne {{column}}",
   "dueTimeColumn": "Délai",
   "activeParentBadge": "Parent actif",
   "activeParentTooltip": "La tâche parent n'est pas archivée",

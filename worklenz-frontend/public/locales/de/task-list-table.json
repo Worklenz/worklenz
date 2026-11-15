@@ -60,6 +60,7 @@
   "lastupdatedColumn": "Zuletzt aktualisiert",
   "reporterColumn": "Melder",
   "moveColumnHandle": "Spalte verschieben",
+  "resizeColumn": "Größe der Spalte {{column}} ändern",
   "dueTimeColumn": "Fällige Zeit",
   "activeParentBadge": "Aktive übergeordnete Aufgabe",
   "activeParentTooltip": "Übergeordnete Aufgabe ist nicht archiviert",

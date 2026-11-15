@@ -1,6 +1,10 @@
 import type { ITaskStatus } from '@/types/tasks/taskStatus.types';
-import { DEFAULT_STATUS_CATEGORY_ORDER, type StatusCategoryOrder } from '@/types/project/status-category-order.types';
-import { sortStatusGroupsByCategory, filterEmptyStatusGroups, sortTasksByStatusCategory } from '@/utils/status-category-order';
+import type { StatusCategoryOrder } from '@/types/project/status-category-order.types';
+import {
+  sortStatusGroupsByCategory,
+  filterEmptyStatusGroups,
+  sortTasksByStatusCategory,
+} from '@/utils/status-category-order';
 import { useMemo } from 'react';
 import { UNMAPPED_PHASE_ID } from '@/features/task-management/task-list-mode-context';
 import { Task, TaskGroup } from '@/types/task-management.types';
@@ -25,6 +29,7 @@ interface UseVirtuosoGroupsOptions {
 }
 
 const EMPTY_STATUSES: ITaskStatus[] = [];
+const EMPTY_CATEGORY_ORDER: StatusCategoryOrder = [];
 
 export const useVirtuosoGroups = ({
   groups,
@@ -37,7 +42,7 @@ export const useVirtuosoGroups = ({
   isSoftwareProject,
   phaseList,
   statuses = EMPTY_STATUSES,
-  statusCategoryOrder = DEFAULT_STATUS_CATEGORY_ORDER,
+  statusCategoryOrder = EMPTY_CATEGORY_ORDER,
   sortField,
   sortOrder = 'ASC',
   hasNoTasks = allTasks.length === 0,
@@ -46,12 +51,14 @@ export const useVirtuosoGroups = ({
     let currentTaskIndex = 0;
     const taskLookup = new Map(allTasks.map((task, index) => [task.id, { task, index }]));
 
-    const sortedStatusGroups = currentGrouping === 'status'
-      ? sortStatusGroupsByCategory(groups, statuses, statusCategoryOrder)
-      : groups;
-    const categoryOrderedGroups = currentGrouping === 'status' && !hasNoTasks
-      ? filterEmptyStatusGroups(sortedStatusGroups, new Set(taskLookup.keys()))
-      : sortedStatusGroups;
+    const sortedStatusGroups =
+      currentGrouping === 'status'
+        ? sortStatusGroupsByCategory(groups, statuses, statusCategoryOrder)
+        : groups;
+    const categoryOrderedGroups =
+      currentGrouping === 'status' && !hasNoTasks
+        ? filterEmptyStatusGroups(sortedStatusGroups, new Set(taskLookup.keys()))
+        : sortedStatusGroups;
 
     // Software backlog: always keep Backlog (Unmapped), even when empty; active sprint first.
     const orderedGroups =
@@ -92,9 +99,10 @@ export const useVirtuosoGroups = ({
             const entry = taskLookup.get(taskId);
             return entry ? [entry.task] : [];
           });
-      const orderedTasks = currentGrouping !== 'status' && sortField === 'status'
-        ? sortTasksByStatusCategory(visibleTasks, statuses, statusCategoryOrder, sortOrder)
-        : visibleTasks;
+      const orderedTasks =
+        currentGrouping !== 'status' && sortField === 'status'
+          ? sortTasksByStatusCategory(visibleTasks, statuses, statusCategoryOrder, sortOrder)
+          : visibleTasks;
       const tasksForVirtuoso = orderedTasks.map(task => ({
         ...task,
         originalIndex: taskLookup.get(task.id)!.index,
@@ -156,5 +164,11 @@ export const useVirtuosoGroups = ({
     isBacklogMode,
     isSoftwareProject,
     phaseList,
-    statuses, statusCategoryOrder, sortField, sortOrder, hasNoTasks,
+    statuses,
+    statusCategoryOrder,
+    sortField,
+    sortOrder,
+    hasNoTasks,
   ]);
+
+export type VirtuosoGroupItem = ReturnType<typeof useVirtuosoGroups>[number];

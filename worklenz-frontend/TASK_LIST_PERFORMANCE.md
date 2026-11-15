@@ -57,3 +57,11 @@ The 40px default is an estimate, so expanded subtasks and group headers continue
 to be measured. The 160px buffer limits extra row controls mounted on startup.
 Keep animation-frame scheduling for ResizeObserver: immediate measurement
 produced loop errors in a Chrome fixture when rows expanded or groups collapsed.
+
+The fixed-height table uses `contain: layout` to bound layout work from row and
+scroll measurements. This creates a containing block and stacking context
+([MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/contain)).
+Keep the drag overlay and fixed bulk-action bar outside the contained table, and
+keep cell menus portalled to the document body. When changing this boundary,
+check sticky headers, both scroll axes, variable-height rows, collapsed groups,
+viewport resizing, and popup positioning in a real browser.

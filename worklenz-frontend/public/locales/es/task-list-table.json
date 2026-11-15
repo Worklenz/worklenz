@@ -60,6 +60,7 @@
   "lastupdatedColumn": "Última actualización",
   "reporterColumn": "Reportador",
   "moveColumnHandle": "Mover columna",
+  "resizeColumn": "Cambiar el tamaño de la columna {{column}}",
   "dueTimeColumn": "Hora de vencimiento",
   "activeParentBadge": "Padre activo",
   "activeParentTooltip": "La tarea padre no está archivada",

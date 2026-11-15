@@ -60,6 +60,7 @@
   "lastupdatedColumn": "最后更新",
   "reporterColumn": "报告人",
   "moveColumnHandle": "移动列",
+  "resizeColumn": "调整{{column}}列宽",
   "dueTimeColumn": "截止时间",
   "activeParentBadge": "父任务活跃",
   "activeParentTooltip": "父任务未归档",

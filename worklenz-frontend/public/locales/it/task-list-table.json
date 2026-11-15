@@ -60,6 +60,7 @@
   "lastupdatedColumn": "Ultimo aggiornamento",
   "reporterColumn": "Reporter",
   "moveColumnHandle": "Sposta colonna",
+  "resizeColumn": "Ridimensiona la colonna {{column}}",
   "dueTimeColumn": "Tempo dovuto",
   "activeParentBadge": "Genitore attivo",
   "activeParentTooltip": "L'attività principale non è archiviata",

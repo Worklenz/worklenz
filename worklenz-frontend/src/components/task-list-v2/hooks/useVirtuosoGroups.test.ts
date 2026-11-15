@@ -32,3 +32,97 @@ describe('useVirtuosoGroups', () => {
     expect(result.current[2]).toMatchObject({ tasks: [], count: 0, actualCount: 1 });
   });
 });
+
+describe('development category ordering with virtualized groups', () => {
+  const statuses = [
+    { id: 'todo', name: 'Todo', category_id: 'todo-category' },
+    { id: 'doing', name: 'Doing', category_id: 'doing-category' },
+    { id: 'done', name: 'Done', category_id: 'done-category' },
+  ];
+  const categoryOrder = ['doing-category', 'todo-category', 'done-category'];
+  const task = (id: string, status: string): Task => ({
+    id,
+    status,
+    priority: 'medium',
+    created_at: '',
+    updated_at: '',
+  });
+  const baseOptions = {
+    collapsedGroups: new Set<string>(),
+    urlProjectId: 'project',
+    insertAnchor: null,
+    isBacklogMode: false,
+    isSoftwareProject: false,
+    phaseList: [],
+    statuses,
+    statusCategoryOrder: categoryOrder,
+  };
+
+  it('orders status groups by category and removes empty groups when tasks exist', () => {
+    const groups: TaskGroup[] = [
+      { id: 'todo', title: 'Todo', taskIds: ['a'] },
+      { id: 'done', title: 'Done', taskIds: ['b'] },
+      { id: 'empty', title: 'Empty', taskIds: ['missing'] },
+      { id: 'doing', title: 'Doing', taskIds: ['c'] },
+    ];
+    const { result } = renderHook(() =>
+      useVirtuosoGroups({
+        ...baseOptions,
+        groups,
+        allTasks: [task('a', 'todo'), task('b', 'done'), task('c', 'doing')],
+        currentGrouping: 'status',
+      })
+    );
+    expect(result.current.map(group => group.id)).toEqual(['doing', 'todo', 'done']);
+    expect(result.current.map(group => group.startIndex)).toEqual([0, 2, 4]);
+    expect(result.current[0].tasks[0]).toMatchObject({ id: 'c', originalIndex: 2 });
+  });
+
+  it('keeps empty status groups for example rows in an empty project', () => {
+    const groups: TaskGroup[] = [
+      { id: 'todo', title: 'Todo', taskIds: [] },
+      { id: 'doing', title: 'Doing', taskIds: [] },
+    ];
+    const { result } = renderHook(() =>
+      useVirtuosoGroups({
+        ...baseOptions,
+        groups,
+        allTasks: [],
+        currentGrouping: 'status',
+        hasNoTasks: true,
+      })
+    );
+    expect(result.current.map(group => group.id)).toEqual(['doing', 'todo']);
+    expect(result.current.every(group => group.actualCount === 0 && group.count === 1)).toBe(true);
+  });
+
+  it('sorts tasks within other groupings by status category while retaining lookup indexes', () => {
+    const groups: TaskGroup[] = [{ id: 'medium', title: 'Medium', taskIds: ['a', 'b', 'c'] }];
+    const { result, rerender } = renderHook(
+      ({ sortOrder }: { sortOrder: 'ASC' | 'DESC' }) =>
+        useVirtuosoGroups({
+          ...baseOptions,
+          groups,
+          allTasks: [task('a', 'todo'), task('b', 'done'), task('c', 'doing')],
+          currentGrouping: 'priority',
+          sortField: 'status',
+          sortOrder,
+        }),
+      { initialProps: { sortOrder: 'ASC' as 'ASC' | 'DESC' } }
+    );
+    expect(result.current[0].tasks.map(task => task.id)).toEqual([
+      'c',
+      'a',
+      'b',
+      'add-task-medium-0',
+    ]);
+    expect(result.current[0].tasks[0]).toMatchObject({ originalIndex: 2 });
+    rerender({ sortOrder: 'DESC' });
+    expect(result.current[0].tasks.map(task => task.id)).toEqual([
+      'b',
+      'a',
+      'c',
+      'add-task-medium-0',
+    ]);
+  });
+});
