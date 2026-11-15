@@ -1,5 +1,10 @@
 {
   "name": "Nome",
+  "projectType": "Tipo de projeto",
+  "projectTypeSoftware": "Projeto de software",
+  "projectTypeGeneral": "Projeto geral",
+  "projectTypeSoftwareTooltip": "Projeto de software — issues, backlog e sprints",
+  "projectTypeGeneralTooltip": "Projeto geral — tarefas, fases e boards",
   "client": "Cliente",
   "category": "Categoria",
   "status": "Estado",
