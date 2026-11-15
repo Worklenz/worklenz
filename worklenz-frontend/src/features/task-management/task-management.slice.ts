@@ -306,6 +306,7 @@ export const fetchTasksV3 = createAsyncThunk(
         id: projectId,
         archived: archivedState,
         group: currentGrouping || '',
+        category_order: currentGrouping === 'status',
         field: sortField,
         order: sortOrder,
         search: searchValue,
@@ -744,20 +745,21 @@ const taskManagementSlice = createSlice({
       }
     },
     updateTask: (state, action: PayloadAction<Task>) => {
-      tasksAdapter.upsertOne(state as EntityState<Task, string>, action.payload);
-      // Additionally, update the task within its group if necessary (e.g., if status changed)
       const updatedTask = action.payload;
       const oldTask = state.entities[updatedTask.id];
+      const previousStatus = oldTask?.status;
 
-      if (oldTask && state.grouping === IGroupBy.STATUS && oldTask.status !== updatedTask.status) {
-        // Remove from old status group
-        const oldGroup = state.groups.find(group => group.id === oldTask.status);
-        if (oldGroup) {
-          oldGroup.taskIds = oldGroup.taskIds.filter(id => id !== updatedTask.id);
-        }
+      tasksAdapter.upsertOne(state as EntityState<Task, string>, updatedTask);
 
-        // Add to new status group
-        const newGroup = state.groups.find(group => group.id === updatedTask.status);
+      const isGroupedTask = state.groups.some(group => group.taskIds.includes(updatedTask.id));
+      if (oldTask && isGroupedTask && state.grouping === IGroupBy.STATUS && previousStatus !== updatedTask.status) {
+        state.groups.forEach(group => {
+          group.taskIds = group.taskIds.filter(id => id !== updatedTask.id);
+        });
+
+        const newGroup = state.groups.find(
+          group => group.id === updatedTask.status || group.groupValue === updatedTask.status
+        );
         if (newGroup) {
           newGroup.taskIds.unshift(updatedTask.id);
         }
@@ -815,6 +817,38 @@ const taskManagementSlice = createSlice({
       action.payload.forEach(task => {
         state.entities[task.id] = task;
       });
+    },
+    bulkUpdateTaskStatuses: (
+      state,
+      action: PayloadAction<{ taskIds: string[]; statusId: string; updatedAt: string }>
+    ) => {
+      const { taskIds, statusId, updatedAt } = action.payload;
+      const updatedTaskIds = taskIds.filter(taskId => state.entities[taskId]);
+
+      updatedTaskIds.forEach(taskId => {
+        const task = state.entities[taskId];
+        if (task) {
+          task.status = statusId;
+          task.updatedAt = updatedAt;
+          task.updated_at = updatedAt;
+        }
+      });
+
+      if (state.grouping !== IGroupBy.STATUS) return;
+
+      const groupedTaskIds = new Set(state.groups.flatMap(group => group.taskIds));
+      const movedTaskIds = updatedTaskIds.filter(taskId => groupedTaskIds.has(taskId));
+
+      state.groups.forEach(group => {
+        group.taskIds = group.taskIds.filter(taskId => !movedTaskIds.includes(taskId));
+      });
+
+      const targetGroup = state.groups.find(
+        group => group.id === statusId || group.groupValue === statusId
+      );
+      if (targetGroup) {
+        targetGroup.taskIds.unshift(...movedTaskIds.reverse());
+      }
     },
     bulkDeleteTasks: (state, action: PayloadAction<string[]>) => {
       const taskIds = action.payload;
@@ -1571,6 +1605,7 @@ export const {
   updateTask,
   deleteTask,
   bulkUpdateTasks,
+  bulkUpdateTaskStatuses,
   bulkDeleteTasks,
   reorderTasks,
   moveTaskToGroup,

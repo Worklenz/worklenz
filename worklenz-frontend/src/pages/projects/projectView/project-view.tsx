@@ -28,7 +28,14 @@ import { SocketEvents } from '@/shared/socket-events';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { hasFinanceViewPermission } from '@/utils/finance-permissions';
-import { getProject, setProjectId, setProjectView, clearProjectAccessForId } from '@/features/project/project.slice';
+import {
+  getProject,
+  setProjectId,
+  setProjectView,
+  setStatusCategoryOrder,
+  clearProjectAccessForId,
+} from '@/features/project/project.slice';
+import type { IStatusCategoryOrderChangedEvent } from '@/types/project/status-category-order.types';
 import {
   fetchStatuses,
   fetchStatusesCategories,
@@ -242,6 +249,18 @@ const ProjectView = React.memo(() => {
       );
     };
 
+    const handleStatusCategoryOrderChanged = (payload?: IStatusCategoryOrderChangedEvent) => {
+      if (
+        payload?.project_id !== projectId ||
+        !Array.isArray(payload.category_order) ||
+        payload.category_order.length !== 3 ||
+        !payload.category_order.every(categoryId => typeof categoryId === 'string')
+      ) {
+        return;
+      }
+      dispatch(setStatusCategoryOrder(payload.category_order));
+    };
+
     const handlers: Record<string, (...args: any[]) => void> = {
       [SocketEvents.PROJECT_DATA_CHANGE.toString()]: notify('projectDataUpdatedDesc'),
       [SocketEvents.PROJECT_HEALTH_CHANGE.toString()]: notify('projectHealthUpdatedDesc'),
@@ -250,6 +269,8 @@ const ProjectView = React.memo(() => {
       [SocketEvents.PROJECT_END_DATE_CHANGE.toString()]: notify('projectDatesUpdatedDesc'),
       [SocketEvents.PROJECT_CATEGORY_CHANGE.toString()]: notify('projectCategoryUpdatedDesc'),
       [SocketEvents.PROJECT_PERMISSION_CHANGED.toString()]: handlePermissionChanged,
+      [SocketEvents.PROJECT_STATUS_CATEGORY_ORDER_CHANGED.toString()]:
+        handleStatusCategoryOrderChanged,
     };
 
     Object.entries(handlers).forEach(([event, handler]) => socket.on(event, handler));

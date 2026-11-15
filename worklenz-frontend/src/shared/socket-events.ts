@@ -127,6 +127,9 @@ export enum SocketEvents {
   // Sprint lifecycle changed; project clients should refresh their phase cache.
   PROJECT_SPRINTS_UPDATED,
 
+  // Status-category group ordering changed; project members should update live.
+  PROJECT_STATUS_CATEGORY_ORDER_CHANGED,
+
   // Session was revoked by a password change; force the client to sign out.
   SESSION_REVOKED,
 }

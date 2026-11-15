@@ -31,6 +31,8 @@ export interface ITaskListConfigV2 {
   count?: boolean;
   parent_task?: string;
   group?: string;
+  /** Apply the project status-category order to task-list status groups. */
+  category_order?: boolean;
   isSubtasksInclude: boolean;
   include_empty?: string; // Include empty groups in response
   customColumns?: boolean; // Include custom column values in response

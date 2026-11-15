@@ -43,6 +43,7 @@ import { SocketEvents } from '@/shared/socket-events';
 import KanbanGroup from './KanbanGroup';
 import EnhancedKanbanCreateSection from '../EnhancedKanbanCreateSection';
 import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { selectEffectiveStatusCategoryOrder } from '@/features/project/project.slice';
 
 interface DragStateRef {
   draggedGroupId: string | null;
@@ -73,6 +74,9 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string; isGuest?: bool
     (state: RootState) => state.enhancedKanbanReducer
   );
   const loadedProjectId = useAppSelector(selectKanbanLoadedProjectId);
+  const statusCategoryOrder = useAppSelector(selectEffectiveStatusCategoryOrder);
+  const categoryOrderKey = statusCategoryOrder.join(',');
+  const previousCategoryOrderKey = useRef(categoryOrderKey);
   const { phaseList } = useAppSelector(state => state.phaseReducer);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { statusCategories } = useAppSelector(state => state.taskStatusReducer);
@@ -123,6 +127,15 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string; isGuest?: bool
       dispatch(fetchPhasesByProjectId(projectId) as any);
     }
   }, [dispatch, projectId, loadedProjectId, groupBy, project?.project_type, phaseList.length]);
+
+  useEffect(() => {
+    if (previousCategoryOrderKey.current === categoryOrderKey) return;
+    previousCategoryOrderKey.current = categoryOrderKey;
+
+    if (projectId && groupBy === 'status') {
+      dispatch(fetchEnhancedKanbanGroups(projectId) as any);
+    }
+  }, [categoryOrderKey, dispatch, groupBy, projectId]);
 
   // Software projects: default Board filter to the active sprint (once per project load)
   useEffect(() => {
