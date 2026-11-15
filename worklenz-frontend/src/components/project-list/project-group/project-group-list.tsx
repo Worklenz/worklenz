@@ -24,6 +24,7 @@ import {
 
 import { ProjectGroupListProps } from '@/types/project/project.types';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { projectsApi } from '@/api/projects/projects.v1.api.service';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { themeWiseColor } from '@/utils/themeWiseColor';
@@ -212,11 +213,32 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
   const processColor = (color: string | undefined, fallback?: string) =>
     color || fallback || token.colorPrimary;
 
-  const handleProjectHover = React.useCallback((project_id: string) => {
-    if (project_id) {
+  const hasPrefetchedProjectView = React.useRef(false);
+  const projectMetadataPrefetchTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleProjectHover = React.useCallback((projectId: string) => {
+    if (!hasPrefetchedProjectView.current) {
+      hasPrefetchedProjectView.current = true;
       import('@/pages/projects/projectView/project-view').catch(() => {});
     }
-  }, []);
+
+    if (projectMetadataPrefetchTimer.current) {
+      clearTimeout(projectMetadataPrefetchTimer.current);
+    }
+    if (projectId) {
+      projectMetadataPrefetchTimer.current = setTimeout(() => {
+        dispatch(projectsApi.util.prefetch('getProject', projectId, { ifOlderThan: 5 }));
+      }, 150);
+    }
+  }, [dispatch]);
+
+  React.useEffect(
+    () => () => {
+      if (projectMetadataPrefetchTimer.current) {
+        clearTimeout(projectMetadataPrefetchTimer.current);
+      }
+    },
+    []
+  );
 
   const handleSettingsClick = (e: React.MouseEvent, project: any) => {
     e.stopPropagation();

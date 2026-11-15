@@ -1,4 +1,6 @@
-import React, { useCallback, useMemo, useEffect, useState, useRef } from 'react';
+import React, { useCallback, useMemo, useEffect, useLayoutEffect, useState, useRef } from 'react';
+import { selectHasTaskListFilters, selectShouldFetchInitialTaskList } from '@/features/task-management/task-management.selectors';
+import { isTaskListProfilingEnabled, recordTaskListRender } from './task-list-profiling';
 import { GroupedVirtuoso } from 'react-virtuoso';
 import {
   DndContext,
@@ -84,6 +86,9 @@ import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 // Components
 import TaskRowWithSubtasks from './TaskRowWithSubtasks';
 import TaskGroupHeader from './TaskGroupHeader';
+import { TASK_LIST_VIRTUOSO_COMPONENTS } from './components/VirtuosoGroup';
+import { DeferredMount } from './components/DeferredMount';
+import { TASK_LIST_VIRTUALIZATION } from './constants/virtualization';
 import { BacklogSectionColumnHeader } from './components/BacklogSectionColumnHeader';
 import OptimizedBulkActionBar from '@/components/task-management/optimized-bulk-action-bar';
 import AddTaskRow from './components/AddTaskRow';
@@ -111,6 +116,8 @@ import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
 import { useSocket } from '@/socket/socketContext';
 import { useDragAndDrop } from './hooks/useDragAndDrop';
 import { useBulkActions } from './hooks/useBulkActions';
+import { useVirtuosoGroups } from './hooks/useVirtuosoGroups';
+import { useTaskListScrollContainer } from './hooks/useTaskListScrollContainer';
 
 // Constants and types
 import { BASE_COLUMNS, ColumnStyle, AddTaskRowItem } from './constants/columns';
@@ -178,9 +185,11 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const isOpenDuplicateTaskModal = useAppSelector(
     state => state.taskManagement.isOpenDuplicateTaskModal
   );
-  const { selectedTaskId, showTaskDrawer } = useAppSelector(state => state.taskDrawerReducer);
+  const isOpenConvertToSubtaskDrawer = useAppSelector(state => state.taskReducer.convertToSubtaskDrawerOpen);
+  const selectedTaskId = useAppSelector(state => state.taskDrawerReducer.selectedTaskId);
+  const showTaskDrawer = useAppSelector(state => state.taskDrawerReducer.showTaskDrawer);
 
-  const fields = useAppSelector(state => state.taskManagementFields?.fields) || [];
+  const fields = useAppSelector(state => state.taskManagementFields.fields);
   const listMode = useTaskListMode();
   const isBacklogMode = listMode === 'backlog';
   const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
@@ -209,16 +218,48 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
 
   // Refs for scroll synchronization
   const headerScrollRef = useRef<HTMLDivElement>(null);
-  const outerScrollRef = useRef<HTMLDivElement>(null); // handles horizontal scroll
+  const { outerScrollRef, scrollContainer, attachScrollContainer } = useTaskListScrollContainer();
   const contentScrollRef = useRef<HTMLDivElement>(null); // handles vertical scroll (customScrollParent for virtuoso)
-  // State for GroupedVirtuoso customScrollParent (updated after mount via useEffect)
-  const [scrollContainer, setScrollContainer] = useState<HTMLElement | null>(null);
+  const measurementFrameRef = useRef<number | null>(null);
+  const measuredProjectRef = useRef<string | null>(null);
+  const hasVisibleGroupTasks = groups.some(
+    group => !collapsedGroups.has(group.id) && group.taskIds.length > 0
+  );
+  const scheduleListMeasurement = useCallback(() => {
+    if (!urlProjectId || loadedProjectId !== urlProjectId ||
+        measuredProjectRef.current === urlProjectId || measurementFrameRef.current !== null) return;
+    measurementFrameRef.current = requestAnimationFrame(() => {
+      measurementFrameRef.current = null;
+      const container = outerScrollRef.current;
+      if (!container) return;
+      const renderedTaskRows = container.querySelectorAll('[data-task-id]').length;
+      // Virtuoso can report its first range before task rows are mounted.
+      if (hasVisibleGroupTasks && renderedTaskRows === 0) return;
+      if (performance.getEntriesByName('worklenz-project-view-start', 'mark').length === 0) return;
+      measuredProjectRef.current = urlProjectId;
+      performance.mark('worklenz-task-list-rows', {
+        detail: { renderedTaskRows, styleElements: document.querySelectorAll('style').length },
+      });
+      performance.measure('worklenz-project-view-to-task-list-rows',
+        'worklenz-project-view-start', 'worklenz-task-list-rows');
+      performance.clearMarks('worklenz-project-view-start');
+      performance.clearMarks('worklenz-task-list-rows');
+    });
+  }, [urlProjectId, loadedProjectId, hasVisibleGroupTasks, outerScrollRef]);
+  useEffect(() => () => {
+    if (measurementFrameRef.current !== null) cancelAnimationFrame(measurementFrameRef.current);
+    measurementFrameRef.current = null;
+    measuredProjectRef.current = null;
+  }, [urlProjectId]);
+  useEffect(() => {
+    // Empty or fully collapsed lists may not produce task items to observe.
+    if (scrollContainer && !hasVisibleGroupTasks) scheduleListMeasurement();
+  }, [scrollContainer, hasVisibleGroupTasks, scheduleListMeasurement]);
 
   // Ref to store cleanup function for column resize drag operation
   const resizeCleanupRef = useRef<(() => void) | null>(null);
 
   // State hooks
-  const [initializedFromDatabase, setInitializedFromDatabase] = useState(false);
   const columnReorderStorageKey = urlProjectId
     ? `worklenz.taskList.${isBacklogMode ? 'backlogColumnOrder' : 'columnOrder'}.${urlProjectId}`
     : null;
@@ -545,16 +586,23 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   }, [isBacklogMode, backlogViewportWidth, visibleColumns]);
 
   const containerStyle = useMemo(() => {
-    const style: any = {};
+    const style: React.CSSProperties & Record<string, string> = {};
     visibleColumns.forEach(col => {
       const width = col.id === 'title' && backlogTitleWidth ? backlogTitleWidth : col.width;
       style[`--col-width-${col.id}`] = width;
-      // Also set on document root for global access
-      document.documentElement.style.setProperty(`--col-width-${col.id}`, width);
     });
 
     return style;
   }, [visibleColumns, backlogTitleWidth]);
+
+  // Publish only committed widths, before layout measurement. Rendering must not
+  // mutate the DOM, especially when React retries or abandons a render.
+  useLayoutEffect(() => {
+    const rootStyle = document.documentElement.style;
+    Object.entries(containerStyle).forEach(([property, width]) => {
+      if (rootStyle.getPropertyValue(property) !== width) rootStyle.setProperty(property, width);
+    });
+  }, [containerStyle]);
 
   // Set project context for field visibility when project changes
   useEffect(() => {
@@ -564,10 +612,11 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   }, [dispatch, urlProjectId]);
 
   // Effects
-  const shouldFetchInitialData = useMemo(() => {
-    if (!urlProjectId) return false;
-    return loadedProjectId !== urlProjectId || columns.length === 0;
-  }, [urlProjectId, loadedProjectId, columns.length]);
+  // The project shell can mount while its first request is in flight. Reuse
+  // that request and leave failures visible instead of starting a retry loop.
+  const shouldFetchInitialData = useAppSelector(state =>
+    selectShouldFetchInitialTaskList(state, urlProjectId)
+  );
 
   const shouldShowInitialSkeleton = useMemo(() => {
     // Prevent a brief empty-state flash before initial fetch dispatch flips loading=true
@@ -577,34 +626,24 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   // Show example rows only when the project has zero tasks across all groups
   // AND no filters are currently active. With filters on, an empty group means
   // "no matching tasks" — not an empty project — so placeholders should not show.
-  const activePhases = useAppSelector((state: any) => state.taskReducer?.phases || []);
-  const activePriorities = useAppSelector((state: any) => state.taskReducer?.priorities || []);
-  const activeStatuses = useAppSelector((state: any) => state.taskReducer?.statuses || []);
-  const activeLabels = useAppSelector((state: any) =>
-    (state.taskReducer?.labels || []).filter((l: any) => l.selected)
-  );
-  const activeMembers = useAppSelector((state: any) =>
-    (state.taskReducer?.taskAssignees || []).filter((m: any) => m.selected)
-  );
   // The Backlog tab always pins a sprint filter, so it doesn't count as a user filter there.
-  const hasActiveFilters =
-    (listMode !== 'backlog' && activePhases.length > 0) ||
-    activePriorities.length > 0 ||
-    activeStatuses.length > 0 ||
-    activeLabels.length > 0 ||
-    activeMembers.length > 0;
+  const hasActiveFilters = useAppSelector(state => selectHasTaskListFilters(state, listMode !== 'backlog'));
 
   const hasNoTasks = useMemo(
     () => allTasks.length === 0 && !hasActiveFilters,
     [allTasks, hasActiveFilters]
   );
 
+  const initialFetchProjectRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!urlProjectId || !shouldFetchInitialData) {
+    if (!urlProjectId || !shouldFetchInitialData || initialFetchProjectRef.current === urlProjectId) {
       return;
     }
 
-    dispatch(fetchTasksV3(urlProjectId));
+    initialFetchProjectRef.current = urlProjectId;
+    void dispatch(fetchTasksV3(urlProjectId)).finally(() => {
+      if (initialFetchProjectRef.current === urlProjectId) initialFetchProjectRef.current = null;
+    });
     dispatch(fetchTaskListColumns(urlProjectId));
     dispatch(fetchPhasesByProjectId(urlProjectId));
     dispatch(fetchStatusesCategories());
@@ -640,104 +679,6 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       trackMixpanelEvent(evt_project_task_list_visit, { project_id: urlProjectId });
     }
   }, [trackMixpanelEvent, urlProjectId]);
-
-  // Initialize field visibility from database when columns are loaded (only once)
-  useEffect(() => {
-    if (columns.length > 0 && fields.length > 0 && !initializedFromDatabase) {
-      // Update local fields to match database state only on initial load
-      import('@/features/task-management/taskListFields.slice').then(({ setFields }) => {
-        // Create updated fields based on database column state
-        const updatedFields = fields.map(field => {
-          const backendColumn = columns.find(c => c.key === field.key);
-          if (backendColumn) {
-            return {
-              ...field,
-              visible: backendColumn.pinned ?? field.visible,
-            };
-          }
-          return field;
-        });
-
-        // Only update if there are actual changes
-        const hasChanges = updatedFields.some(
-          (field, index) => field.visible !== fields[index].visible
-        );
-
-        if (hasChanges) {
-          dispatch(setFields(updatedFields));
-        }
-
-        setInitializedFromDatabase(true);
-      });
-    }
-  }, [columns, fields, dispatch, initializedFromDatabase]);
-
-  // Capture scroll container for GroupedVirtuoso.
-  // outerScrollRef is the single scroll container (both X and Y).
-  // Must depend on loading/loadingColumns: the div only mounts after loading finishes.
-  useEffect(() => {
-    if (outerScrollRef.current) {
-      setScrollContainer(outerScrollRef.current);
-    }
-  }, [loading, loadingColumns]);
-
-  // Apply .virtuoso-group-header-wrapper class to the sticky wrappers that
-  // GroupedVirtuoso creates around each groupContent render.
-  // This lets the CSS rule set top:40px so headers stick below the column header row.
-  useEffect(() => {
-    const container = outerScrollRef.current;
-    if (!container) return;
-
-    const tagStickyWrapper = (el: Element) => {
-      if (!(el instanceof HTMLElement)) return;
-      if (
-        el.classList.contains('virtuoso-group-header-wrapper') ||
-        el.classList.contains('tasklist-backlog-group-header')
-      ) {
-        return;
-      }
-      if (window.getComputedStyle(el).position !== 'sticky') return;
-      const child = el.firstElementChild;
-      if (
-        child &&
-        (child.classList.contains('mt-2') || child.querySelector('[data-group-header]'))
-      ) {
-        // Backlog has no global column header, so its sprint header must stick at
-        // top: 0. The shared 40px offset would pin that header on top of the rows.
-        // Background color comes from CSS variables (--tl-group-header-bg /
-        // --tl-backlog-group-header-bg) so theme changes never touch this code path.
-        el.classList.add(
-          el.closest('.tasklist-backlog')
-            ? 'tasklist-backlog-group-header'
-            : 'virtuoso-group-header-wrapper'
-        );
-      }
-    };
-
-    const tagStickyWrappersIn = (root: ParentNode) => {
-      tagStickyWrapper(root as Element);
-      root.querySelectorAll('*').forEach(tagStickyWrapper);
-    };
-
-    tagStickyWrappersIn(container);
-    const observer = new MutationObserver(mutations => {
-      // Only inspect newly added subtrees instead of rescanning the whole
-      // list on every DOM mutation.
-      for (const mutation of mutations) {
-        mutation.addedNodes.forEach(node => {
-          if (node instanceof HTMLElement) {
-            tagStickyWrapper(node);
-            node.querySelectorAll('*').forEach(tagStickyWrapper);
-          }
-        });
-      }
-    });
-    observer.observe(container, { childList: true, subtree: true });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [loading, loadingColumns]);
 
   // Cleanup column resize listeners on unmount to prevent memory leaks
   useEffect(() => {
@@ -995,130 +936,11 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
     [visibleColumns]
   );
 
-  // Memoized values for GroupedVirtuoso
-  const virtuosoGroups = useMemo(() => {
-    let currentTaskIndex = 0;
-    const taskIds = new Set(allTasks.map(task => task.id));
-
-    const sortedStatusGroups =
-      currentGrouping === 'status'
-        ? sortStatusGroupsByCategory(groups, statuses, statusCategoryOrder)
-        : groups;
-    const categoryOrderedGroups =
-      currentGrouping === 'status' && !hasNoTasks
-        ? filterEmptyStatusGroups(sortedStatusGroups, taskIds)
-        : sortedStatusGroups;
-
-    // Software backlog: always keep Backlog (Unmapped), even when empty; active sprint first.
-    const orderedGroups =
-      isBacklogMode && isSoftwareProject
-        ? (() => {
-            const hasBacklog = groups.some(group => group.id === UNMAPPED_PHASE_ID);
-            const withBacklog = hasBacklog
-              ? groups
-              : [
-                  ...groups,
-                  {
-                    id: UNMAPPED_PHASE_ID,
-                    title: UNMAPPED_PHASE_ID,
-                    taskIds: [] as string[],
-                    type: 'phase' as const,
-                    color: '#fbc84c69',
-                    groupValue: UNMAPPED_PHASE_ID.toLowerCase(),
-                  },
-                ];
-            return [...withBacklog].sort((a, b) => {
-              if (a.id === UNMAPPED_PHASE_ID) return 1;
-              if (b.id === UNMAPPED_PHASE_ID) return -1;
-              const aStatus = phaseList.find(phase => phase.id === a.id)?.sprint_status;
-              const bStatus = phaseList.find(phase => phase.id === b.id)?.sprint_status;
-              const rank = (status?: string | null) =>
-                status === 'active' ? 0 : status === 'planned' ? 1 : 2;
-              return rank(aStatus) - rank(bStatus);
-            });
-          })()
-        : categoryOrderedGroups;
-
-    return orderedGroups.map(group => {
-      const isCurrentGroupCollapsed = collapsedGroups.has(group.id);
-
-      const visibleTasksInGroup = isCurrentGroupCollapsed
-        ? []
-        : group.taskIds
-            .map(taskId => allTasks.find(task => task.id === taskId))
-            .filter((task): task is Task => task !== undefined);
-
-      const orderedTasks =
-        currentGrouping !== 'status' && sortField === 'status'
-          ? sortTasksByStatusCategory(visibleTasksInGroup, statuses, statusCategoryOrder, sortOrder)
-          : visibleTasksInGroup;
-      const tasksForVirtuoso = orderedTasks.map(task => ({
-        ...task,
-        originalIndex: allTasks.indexOf(task),
-      }));
-
-      const addTaskItem: AddTaskRowItem = {
-        id: `add-task-${group.id}-0`,
-        isAddTaskRow: true,
-        groupId: group.id,
-        groupType: currentGrouping || 'status',
-        groupValue: group.id, // Send the UUID that backend expects
-        projectId: urlProjectId,
-        rowId: `add-task-${group.id}-0`,
-        autoFocus: false,
-        isInsertMode: insertAnchor?.groupId === group.id && !!insertAnchor?.afterTaskId,
-        insertAfterTaskId:
-          insertAnchor?.groupId === group.id ? (insertAnchor.afterTaskId ?? null) : null,
-      };
-
-      let itemsWithAddTask: Array<(Task & { originalIndex: number }) | AddTaskRowItem> =
-        tasksForVirtuoso;
-      if (!isCurrentGroupCollapsed) {
-        if (insertAnchor?.groupId === group.id && insertAnchor.afterTaskId) {
-          const anchorIndex = tasksForVirtuoso.findIndex(
-            task => task.id === insertAnchor.afterTaskId
-          );
-          if (anchorIndex >= 0) {
-            const next: Array<(Task & { originalIndex: number }) | AddTaskRowItem> = [
-              ...tasksForVirtuoso,
-            ];
-            next.splice(anchorIndex + 1, 0, addTaskItem);
-            itemsWithAddTask = next;
-          } else {
-            itemsWithAddTask = [...tasksForVirtuoso, addTaskItem];
-          }
-        } else {
-          itemsWithAddTask = [...tasksForVirtuoso, addTaskItem];
-        }
-      }
-
-      const groupData = {
-        ...group,
-        tasks: itemsWithAddTask,
-        startIndex: currentTaskIndex,
-        count: itemsWithAddTask.length,
-        actualCount: group.taskIds.length,
-        groupValue: group.groupValue || group.title,
-      };
-      currentTaskIndex += itemsWithAddTask.length;
-      return groupData;
-    });
-  }, [
-    groups,
-    allTasks,
-    hasNoTasks,
-    statuses,
-    statusCategoryOrder,
-    collapsedGroups,
-    currentGrouping,
-    sortField,
-    sortOrder,
-    urlProjectId,
-    insertAnchor,
-    isBacklogMode,
-    isSoftwareProject,
-    phaseList,
-  ]);
+  const virtuosoGroups = useVirtuosoGroups({
+    groups, allTasks, collapsedGroups, currentGrouping, urlProjectId, insertAnchor,
+    isBacklogMode, isSoftwareProject, phaseList,
+    statuses, statusCategoryOrder, sortField, sortOrder, hasNoTasks,
+  });
 
   const virtuosoGroupCounts = useMemo(() => {
     return virtuosoGroups.map(group => group.count);
@@ -1261,7 +1083,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
         );
       }
 
-      return (
+      const row = (
         <TaskRowWithSubtasks
           taskId={item.id}
           projectId={urlProjectId}
@@ -1272,6 +1094,9 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
           isGuest={isWorkReadOnly}
         />
       );
+      return isTaskListProfilingEnabled ? (
+        <React.Profiler id="row" onRender={recordTaskListRender}>{row}</React.Profiler>
+      ) : row;
     },
     [
       virtuosoItems,
@@ -1294,7 +1119,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
 
   // Render column headers
   const renderColumnHeaders = useCallback(() => {
-    return (
+    const header = (
       <DndContext
         sensors={columnSensors}
         collisionDetection={closestCenter}
@@ -1750,10 +1575,14 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
         </SortableContext>
       </DndContext>
     );
+    return isTaskListProfilingEnabled ? (
+      <React.Profiler id="table-header" onRender={recordTaskListRender}>{header}</React.Profiler>
+    ) : header;
   }, [
     visibleColumns,
     t,
     handleCustomColumnSettings,
+    outerScrollRef,
     isDarkMode,
     overColumnId,
     activeColumnId,
@@ -1802,7 +1631,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
               }}
             >
               <div
-                ref={outerScrollRef}
+                ref={attachScrollContainer}
                 className="flex-1 bg-[var(--tl-surface-bg)] relative"
                 style={{ overflowX: 'auto', overflowY: 'auto', minHeight: 0 }}
               >
@@ -1998,7 +1827,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                 outerScrollRef is the customScrollParent for virtuoso AND the X scroll container.
                 TaskGroupHeader's sticky left:0 containing block is this element — full scroll width. */}
             <div
-              ref={outerScrollRef}
+              ref={attachScrollContainer}
               className={`flex-1 relative ${isBacklogMode ? '' : 'bg-[var(--tl-surface-bg)] transition-colors duration-200'}`}
               style={{
                 overflowX: 'auto',
@@ -2037,88 +1866,87 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                   items={sortableTaskIds}
                   strategy={verticalListSortingStrategy}
                 >
-                  <GroupedVirtuoso
-                    customScrollParent={scrollContainer || undefined}
-                    overscan={800}
-                    groupCounts={virtuosoGroupCounts}
-                    groupContent={renderGroup}
-                    components={
-                      isBacklogMode ? BACKLOG_VIRTUOSO_COMPONENTS : DEFAULT_VIRTUOSO_COMPONENTS
-                    }
-                    itemContent={(index, groupIndex) => {
-                      const item = virtuosoItems[index];
-                      if (!item) return <div />;
-                      const group = virtuosoGroups[groupIndex];
-                      const groupOffset = virtuosoGroupCounts
-                        .slice(0, groupIndex)
-                        .reduce((sum, c) => sum + c, 0);
-                      const indexInGroup = index - groupOffset;
-                      const isLastItemOfGroup = indexInGroup === (group?.tasks.length ?? 0) - 1;
-                      const isFirstInGroup = indexInGroup === 0 && !('isAddTaskRow' in item);
-                      const previousItem =
-                        indexInGroup > 0 ? group?.tasks?.[indexInGroup - 1] : null;
-                      const showInsertDivider =
-                        indexInGroup > 0 &&
-                        !('isAddTaskRow' in item) &&
-                        !!previousItem &&
-                        !('isAddTaskRow' in previousItem);
-                      // Check if this is the last real task in the group
-                      const isLastInGroup =
-                        !('isAddTaskRow' in item) &&
-                        indexInGroup === group.tasks.length - 1 &&
-                        group.tasks.filter(t => !('isAddTaskRow' in t)).length > 0 &&
-                        item.id !== `add-task-${group.id}-0`;
+                  {/* Changing from the internal scroller to an external parent replaces
+                      Virtuoso's viewport subtree. Wait for the real parent before mounting.
+                      A 40px estimate skips the probe; expanded rows are still measured. */}
+                  {scrollContainer && (
+                    <GroupedVirtuoso
+                      customScrollParent={scrollContainer}
+                      {...TASK_LIST_VIRTUALIZATION}
+                      components={TASK_LIST_VIRTUOSO_COMPONENTS}
+                      itemsRendered={scheduleListMeasurement}
+                      groupCounts={virtuosoGroupCounts}
+                      groupContent={renderGroup}
+                      itemContent={(index, groupIndex) => {
+                        const item = virtuosoItems[index];
+                        if (!item) return <div />;
+                        const group = virtuosoGroups[groupIndex];
 
-                      const isOverThisTask =
-                        activeId && overId === item.id && !('isAddTaskRow' in item);
-                      const showBefore = isOverThisTask && dropPosition === 'before';
-                      const showAfter = isOverThisTask && dropPosition === 'after';
-                      const showIntoParent = isOverThisTask && dropPosition === 'into';
-                      const backlogCardStyle: React.CSSProperties = isBacklogMode
-                        ? {
-                            background: themeToken.colorBgContainer,
-                            borderLeft: activeSprintGroupIds.has(group?.id ?? '')
-                              ? `3px solid ${themeToken.colorPrimary}`
-                              : `1px solid ${themeToken.colorBorderSecondary}`,
-                            borderRight: `1px solid ${themeToken.colorBorderSecondary}`,
-                            ...(isLastItemOfGroup && {
-                              borderBottom: `1px solid ${themeToken.colorBorderSecondary}`,
-                              borderBottomLeftRadius: 10,
-                              borderBottomRightRadius: 10,
-                              overflow: 'hidden',
-                            }),
-                          }
-                        : {};
+                        const indexInGroup = index - group.startIndex;
+                        const isFirstInGroup = indexInGroup === 0 && !('isAddTaskRow' in item);
+                        const previousItem =
+                          indexInGroup > 0 ? group?.tasks?.[indexInGroup - 1] : null;
+                         const showInsertDivider =
+                           indexInGroup > 0 &&
+                           !('isAddTaskRow' in item) &&
+                           previousItem &&
+                           !('isAddTaskRow' in previousItem);
+                         // Check if this is the last real task in the group
+                        const isLastInGroup = !('isAddTaskRow' in item) &&
+                          indexInGroup === group.tasks.length - 1 &&
+                          item.id !== `add-task-${group.id}-0`;
 
-                      return (
-                        <div
-                          style={{ minWidth: 'max-content', ...backlogCardStyle }}
-                          className={`relative ${
-                            showIntoParent
-                              ? 'ring-2 ring-inset ring-blue-400 dark:ring-blue-500 bg-blue-50/50 dark:bg-blue-900/20 rounded'
-                              : ''
-                          }`}
-                          onMouseMove={e => {
-                            // Find the InsertTaskDivider button inside this row and update
-                            // its left position to follow the cursor — direct DOM update,
-                            // no React state, no re-render.
-                            const btn = (
-                              e.currentTarget as HTMLElement
-                            ).querySelector<HTMLButtonElement>('[data-insert-btn]');
-                            if (!btn) return;
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            // clientX relative to the row's left edge
-                            const x = e.clientX - rect.left;
-                            btn.style.left = `${x}px`;
-                          }}
-                        >
-                          {showBefore && activeId && (
-                            <DropSpacer
-                              key="drop-before"
-                              isVisible={true}
-                              visibleColumns={visibleColumns}
-                              isDarkMode={isDarkMode}
-                            />
+                        const isOverThisTask =
+                          activeId && overId === item.id && !('isAddTaskRow' in item);
+                        const showBefore = isOverThisTask && dropPosition === 'before';
+                        const showAfter = isOverThisTask && dropPosition === 'after';
+                        const showIntoParent = isOverThisTask && dropPosition === 'into';
+                        const isLastItemOfGroup = indexInGroup === (group?.tasks.length ?? 0) - 1;
+                        const backlogCardStyle: React.CSSProperties = isBacklogMode
+                          ? {
+                              background: themeToken.colorBgContainer,
+                              borderLeft: activeSprintGroupIds.has(group?.id ?? '')
+                                ? `3px solid ${themeToken.colorPrimary}`
+                                : `1px solid ${themeToken.colorBorderSecondary}`,
+                              borderRight: `1px solid ${themeToken.colorBorderSecondary}`,
+                              ...(isLastItemOfGroup && {
+                                borderBottom: `1px solid ${themeToken.colorBorderSecondary}`,
+                                borderBottomLeftRadius: 10,
+                                borderBottomRightRadius: 10,
+                                overflow: 'hidden',
+                              }),
+                            }
+                          : {};
+
+                        return (
+                          <div
+                            style={{ minWidth: 'max-content', ...backlogCardStyle }}
+                            className={`relative ${
+                              showIntoParent
+                                ? 'ring-2 ring-inset ring-blue-400 dark:ring-blue-500 bg-blue-50/50 dark:bg-blue-900/20 rounded'
+                                : ''
+                            }`}
+                            onMouseMove={e => {
+                              // Find the InsertTaskDivider button inside this row and update
+                              // its left position to follow the cursor — direct DOM update,
+                              // no React state, no re-render.
+                              const btn = (
+                                e.currentTarget as HTMLElement
+                              ).querySelector<HTMLButtonElement>('[data-insert-btn]');
+                              if (!btn) return;
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              // clientX relative to the row's left edge
+                              const x = e.clientX - rect.left;
+                              btn.style.left = `${x}px`;
+                            }}
+                          >
+                            {showBefore && activeId && (
+                              <DropSpacer
+                                key="drop-before"
+                                isVisible={true}
+                                visibleColumns={visibleColumns}
+                                isDarkMode={isDarkMode}
+                              />
                           )}
                            {showInsertDivider && previousItem && canCreateTask && !isWorkReadOnly && (
                              <InsertTaskDivider
@@ -2166,6 +1994,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                     }}
                     style={{ minWidth: 'max-content' }}
                   />
+                  )}
                 </SortableContext>
               </div>
             </div>
@@ -2236,14 +2065,17 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
           {createPortal(<CustomColumnModal />, document.body, 'custom-column-modal')}
 
           {/* Convert To Subtask Drawer */}
-          {createPortal(<ConvertToSubtaskDrawer />, document.body, 'convert-to-subtask-drawer')}
+          {createPortal(
+            <DeferredMount isOpen={isOpenConvertToSubtaskDrawer}><ConvertToSubtaskDrawer /></DeferredMount>,
+            document.body, 'convert-to-subtask-drawer'
+          )}
 
           {/* Duplicate Task Modal */}
           {createPortal(
-            <DuplicateTaskModal
+            <DeferredMount isOpen={isOpenDuplicateTaskModal}><DuplicateTaskModal
               open={isOpenDuplicateTaskModal}
               onClose={() => dispatch(setDuplicateTaskModalStatus(false))}
-            />,
+            /></DeferredMount>,
             document.body,
             'duplicate-task-modal'
           )}
@@ -2253,4 +2085,10 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   );
 };
 
-export default TaskListV2Section;
+const ProfiledTaskListV2Section = (props: TaskListV2SectionProps) => (
+  <React.Profiler id="table" onRender={recordTaskListRender}>
+    <TaskListV2Section {...props} />
+  </React.Profiler>
+);
+
+export default isTaskListProfilingEnabled ? ProfiledTaskListV2Section : TaskListV2Section;

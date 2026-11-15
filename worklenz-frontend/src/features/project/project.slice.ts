@@ -1,4 +1,5 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { RootState } from '@/app/store';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITaskListColumn, ITaskListGroup } from '@/types/tasks/taskList.types';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
@@ -9,10 +10,10 @@ import { ITaskPhase } from '@/types/tasks/taskPhase.types';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import type { StatusCategoryOrder } from '@/types/project/status-category-order.types';
 import { projectsApiService } from '@/api/projects/projects.api.service';
+import { projectsApi } from '@/api/projects/projects.v1.api.service';
 import { ICachedProjectAccess } from '@/types/project/project-access.types';
 import { extractProjectAccess } from '@/utils/project-access.utils';
 import logger from '@/utils/errorLogger';
-import type { RootState } from '@/app/store';
 
 interface TaskListState {
   projectId: string | null;
@@ -76,22 +77,55 @@ const initialState: TaskListState = {
 
 export const getProject = createAsyncThunk(
   'project/getProject',
-  async (projectId: string, { rejectWithValue }) => {
+  async (projectId: string, { rejectWithValue, dispatch, getState }) => {
     try {
-      const response = await projectsApiService.getProject(projectId);
+      const cachedProjectQuery = projectsApi.endpoints.getProject.select(projectId)(
+        getState() as RootState
+      );
+      const isFreshPrefetch =
+        cachedProjectQuery.status === 'fulfilled' &&
+        !!cachedProjectQuery.fulfilledTimeStamp &&
+        Date.now() - cachedProjectQuery.fulfilledTimeStamp < 5000;
+
+      if (isFreshPrefetch && cachedProjectQuery.data?.body) {
+        return cachedProjectQuery.data.body;
+      }
+
+      // Initiating the same RTK Query endpoint joins an in-flight hover prefetch
+      // and refreshes stale cache entries through the same request path.
+      const shouldForceRefetch =
+        cachedProjectQuery.status === 'fulfilled' || cachedProjectQuery.status === 'rejected';
+      const response = await dispatch(
+        projectsApi.endpoints.getProject.initiate(projectId, {
+          subscribe: false,
+          forceRefetch: shouldForceRefetch,
+        })
+      ).unwrap();
       return response.body;
-    } catch (error: any) {
+    } catch (error) {
+      const queryError = error as {
+        status?: unknown;
+        data?: { message?: string };
+        message?: string;
+      };
+      const statusCode = typeof queryError.status === 'number' ? queryError.status : 500;
+      const message =
+        queryError.data?.message ||
+        (statusCode === 403
+          ? 'You do not have permission to access this project'
+          : (error instanceof Error ? error.message : queryError.message) ||
+            'Failed to fetch project');
+
       // Check if it's a 403 Forbidden error (no access to project)
-      if (error?.response?.status === 403) {
-        const errorData = error?.response?.data;
+      if (statusCode === 403) {
         return rejectWithValue({
-          message: errorData?.message || 'You do not have permission to access this project',
+          message: message || 'You do not have permission to access this project',
           statusCode: 403,
         });
       }
       return rejectWithValue({
-        message: error instanceof Error ? error.message : 'Failed to fetch project',
-        statusCode: error?.response?.status || 500,
+        message,
+        statusCode,
       });
     }
   }
