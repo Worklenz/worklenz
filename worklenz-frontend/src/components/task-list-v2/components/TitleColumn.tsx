@@ -494,6 +494,27 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
                 })
               ).unwrap();
 
+              if (response.done) {
+                const copiedTaskId = response.body?.id;
+                notification.success({
+                  message: tDuplicate('copyToProject.success', {
+                    defaultValue: 'Task copied successfully',
+                  }),
+                  btn: copiedTaskId ? (
+                    <Button
+                      size="small"
+                      type="link"
+                      style={{
+                        padding: 0,
+                      }}
+                      onClick={() => navigate(`/worklenz/t/${copiedTaskId}`)}
+                    >
+                      {tDuplicate('copyToProject.openTask', { defaultValue: 'Open task' })}
+                    </Button>
+                  ) : undefined,
+                });
+              }
+
               setCopyToProjectOpen(false);
             } catch (error) {
               logger.error('Failed to copy task to project:', error);
