@@ -418,7 +418,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     text: string,
     paramOffset: number
   ): { clause: string; params: string[] } {
-    if (!text) return { clause: "", params: [] };
+    if (typeof text !== "string" || !text) return { clause: "", params: [] };
     const types = text
       .split(" ")
       .map(type => type.trim())
