@@ -96,6 +96,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       logger.info(message);
     });
 
+    socket.on(SocketEvents.SESSION_REVOKED.toString(), () => {
+      window.location.assign('/auth/logging-out');
+    });
+
     socket.on(
       SocketEvents.TEAM_MEMBER_REMOVED.toString(),
       (data: { teamId: string; message: string; removedUserId?: string }) => {
@@ -133,6 +137,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         socketRef.current.off(SocketEvents.LOGIN.toString());
         socketRef.current.off(SocketEvents.INVITATIONS_UPDATE.toString());
         socketRef.current.off(SocketEvents.TEAM_MEMBER_REMOVED.toString());
+        socketRef.current.off(SocketEvents.SESSION_REVOKED.toString());
         socketRef.current.removeAllListeners();
 
         // Then close the connection

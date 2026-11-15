@@ -1,4 +1,5 @@
 import { AuditActor, recordAuditEvent } from "./audit.service";
+import { projectOpenForPortalSql } from "./scope";
 import { Queryable } from "./types";
 
 /**
@@ -231,7 +232,11 @@ export interface SharedCounts {
 export async function getSharedCounts(q: Queryable, teamId: string): Promise<SharedCounts> {
   const result = await q.query(
     `WITH portal_projects AS (
-       SELECT project_id FROM project_client_settings WHERE team_id = $1 AND portal_enabled IS TRUE
+       SELECT pcs.project_id
+         FROM project_client_settings pcs
+         JOIN projects p ON p.id = pcs.project_id
+        WHERE pcs.team_id = $1 AND pcs.portal_enabled IS TRUE
+          AND ${projectOpenForPortalSql("p")}
      )
      SELECT
        (SELECT COUNT(*)::int FROM tasks t

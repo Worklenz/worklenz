@@ -1,4 +1,5 @@
 {
+  "exampleTaskCreateFailed": "No se pudo confirmar la creación de la tarea. Comprueba la lista antes de volver a intentarlo.",
   "apply": "Aplicar",
   "keyColumn": "Clave",
   "taskColumn": "Tarea",
@@ -71,7 +72,7 @@
   "selectText": "Seleccionar",
   "labelsSelectorInputTip": "¡Presiona enter para crear!",
   "addTaskText": "Agregar tarea",
-  "createIssueText": "Crear problema",
+  "createIssueText": "Crear elemento de trabajo",
   "createWorkItemText": "Crear elemento de trabajo",
   "insertIssueText": "Insertar problema",
   "addSubTaskText": "Agregar subtarea",
@@ -80,6 +81,7 @@
   "addSubTaskInputPlaceholder": "Escribe el nombre de la subtarea y presiona Enter para guardar",
   "noTasksInGroup": "No hay tareas en este grupo",
   "dropTaskHere": "Soltar tarea aquí",
+  "dropHere": "Soltar aquí",
   "openButton": "Abrir",
   "okButton": "Aceptar",
   "noLabelsFound": "No se encontraron etiquetas",

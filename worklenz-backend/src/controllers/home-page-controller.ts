@@ -1116,6 +1116,15 @@ export default class HomePageController extends WorklenzControllerBase {
                              WHERE user_id = $2
                                AND project_id = projects.id) AS archived,
                       color_code,
+                      project_type,
+                      (SELECT default_view
+                       FROM project_members prm
+                       WHERE prm.project_id = projects.id
+                         AND prm.team_member_id = (
+                           SELECT id FROM team_members
+                           WHERE user_id = $2 AND team_id = $1
+                           LIMIT 1
+                         )) AS team_member_default_view,
                       (SELECT COUNT(*)
                        FROM tasks
                        WHERE archived IS FALSE

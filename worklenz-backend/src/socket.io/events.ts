@@ -129,4 +129,7 @@ export enum SocketEvents {
 
   // Status-category group ordering changed; project members should refresh group order.
   PROJECT_STATUS_CATEGORY_ORDER_CHANGED,
+
+  // Session was revoked by a password change; force the client to sign out.
+  SESSION_REVOKED,
 }

@@ -91,7 +91,7 @@
       "status": "Status voltado para o cliente",
       "users": "Usuários clientes"
     },
-    "description": "Escolha quais projetos ficam visíveis no Portal do Cliente e o que é compartilhado dentro de cada um. Tudo começa apenas como interno.",
+    "description": "Escolha quais projetos ficam visíveis no Portal do Cliente e o que é compartilhado dentro de cada um. Tudo começa apenas como interno. Projetos arquivados por um proprietário ou administrador ficam de fora.",
     "empty": "Nenhum projeto ainda. Crie um projeto no seu espaço de trabalho e vincule-o a um cliente.",
     "fieldSaveFailed": "O projeto não pôde ser atualizado.",
     "fieldSaved": "{{name}} atualizado.",

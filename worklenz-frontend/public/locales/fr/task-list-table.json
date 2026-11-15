@@ -1,4 +1,5 @@
 {
+  "exampleTaskCreateFailed": "Impossible de confirmer la création de la tâche. Vérifiez la liste avant de réessayer.",
   "apply": "Appliquer",
   "keyColumn": "Clé",
   "taskColumn": "Tâche",
@@ -71,7 +72,7 @@
   "selectText": "Sélectionnez",
   "labelsSelectorInputTip": "Appuyez sur Entrée pour créer !",
   "addTaskText": "Ajouter une tâche",
-  "createIssueText": "Créer un problème",
+  "createIssueText": "Créer un élément de travail",
   "createWorkItemText": "Créer un élément de travail",
   "insertIssueText": "Insérer un problème",
   "addSubTaskText": "Ajouter une sous-tâche",
@@ -80,6 +81,7 @@
   "addSubTaskInputPlaceholder": "Tapez le nom de la sous-tâche et appuyez sur Entrée pour enregistrer",
   "noTasksInGroup": "Aucune tâche dans ce groupe",
   "dropTaskHere": "Déposez la tâche ici",
+  "dropHere": "Déposer ici",
   "openButton": "Ouvert",
   "okButton": "D'accord",
   "noLabelsFound": "Aucune étiquette trouvée",

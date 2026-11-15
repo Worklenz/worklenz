@@ -98,7 +98,7 @@
   "terminology": {
     "issue": "Issue",
     "issues": "Issues",
-    "createIssue": "Create Issue",
+    "createIssue": "Create work item",
     "issueList": "List",
     "backlog": "Backlog",
     "sprint": "Sprint",

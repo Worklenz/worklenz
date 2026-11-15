@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Table,
   Empty,
@@ -53,6 +54,7 @@ import {
 import logger from '@/utils/errorLogger';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';
 import { ProjectRateCell } from '@/components/project-list/project-list-table/project-list-favorite/project-rate-cell';
+import { ProjectTypeCell } from '@/components/project-list/project-list-table/project-list-type/project-type-cell';
 import { ProjectListUpdatedAt } from '@/components/project-list/project-list-table/project-list-updated-at/project-list-updated';
 
 const { Title, Text } = Typography;
@@ -114,8 +116,8 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
   navigate,
   onProjectSelect,
   loading,
-  t,
 }) => {
+  const { t } = useTranslation('all-project-list');
   const { groupedRequestParams } = useAppSelector(state => state.projectsReducer);
   const projectListFields = useAppSelector(state => state.projectListFieldsReducer.fields);
   const { token } = theme.useToken();
@@ -265,7 +267,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
     [projectListFields]
   );
 
-  // ✅ Column order: Favorite → Name → Client → Priority → Status → Tasks Progress → Category → Last Updated → Actions
+  // ✅ Column order: Favorite → Name → Project Type → Client → Priority → Status → Tasks Progress → Category → Last Updated → Actions
   // Sorting: each column below gets a `sorter`. Since every group renders its own
   // <Table> instance, AntD keeps sort state scoped to that instance automatically —
   // sorting one group's table does NOT affect sibling groups.
@@ -320,7 +322,20 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
           </div>
         ),
       },
-      // 3. Client
+      // 3. Project Type
+      {
+        title: t('projectType', { defaultValue: 'Project Type' }),
+        dataIndex: 'project_type',
+        key: 'PROJECT_TYPE',
+        width: 160,
+        sorter: (a: IProjectViewModel, b: IProjectViewModel) =>
+          (a.project_type || 'general').localeCompare(b.project_type || 'general'),
+        showSorterTooltip: false,
+        render: (_: string, record: IProjectViewModel) => (
+          <ProjectTypeCell t={t as any} record={record} />
+        ),
+      },
+      // 4. Client
       // FIX: projects with an assigned client must always sort above projects
       // without one, in BOTH ascending and descending order. AntD auto-negates
       // a plain comparator's return value on descend, which would flip that
@@ -337,7 +352,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
         showSorterTooltip: false,
         render: (text: string) => text || '—',
       },
-      // 4. Priority
+      // 5. Priority
       {
         title: t('priority', { defaultValue: 'Priority' }),
         dataIndex: 'priority_name',
@@ -500,7 +515,13 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                 </button>
               </Tooltip>
               <Tooltip
-                title={isOwnerOrAdmin ? (record.archived ? t('unarchive') : t('archive')) : t('noPermission')}
+                title={
+                  isOwnerOrAdmin
+                    ? record.archived
+                      ? t('unarchive', { defaultValue: 'Unarchive' })
+                      : t('archive', { defaultValue: 'Archive' })
+                    : t('noPermission', { defaultValue: "You don't have permission to perform this action" })
+                }
               >
                 <button
                   style={{
@@ -593,7 +614,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
               padding: '2px 4px',
             }}
           >
-            Expand All
+            {t('expandAll', { defaultValue: 'Expand All' })}
           </button>
           <span style={{ color: token.colorTextSecondary, fontSize: 12, lineHeight: '22px' }}>|</span>
           <button
@@ -608,7 +629,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
               padding: '2px 4px',
             }}
           >
-            Collapse All
+            {t('collapseAll', { defaultValue: 'Collapse All' })}
           </button>
         </div>
       )}
@@ -680,11 +701,16 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                 )}
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                   <Title level={5} style={{ margin: 0, fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>
-                    {group?.groupName || 'Unnamed Group'}
+                    {group?.groupName || t('unnamedGroup', { defaultValue: 'Unnamed Group' })}
                   </Title>
                   <span style={{ color: token.colorTextSecondary, fontSize: 12 }}>|</span>
                   <Text style={{ fontSize: 12, color: token.colorTextSecondary, whiteSpace: 'nowrap' }}>
-                    {projects.length} {projects.length === 1 ? 'project' : 'projects'}
+                    {t('projectCount', {
+                      count: projects.length,
+                      defaultValue_one: '{{count}} project',
+                      defaultValue_other: '{{count}} projects',
+                      defaultValue: '{{count}} projects',
+                    })}
                   </Text>
                 </div>
               </Space>
@@ -704,7 +730,8 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                   onClick: () =>
                     onProjectSelect(
                       record?.id || '',
-                      (record as any)?.team_member_default_view || (record as any)?.default_view
+                      record.team_member_default_view || record.default_view,
+                      record.project_type
                     ),
                   style: { cursor: 'pointer' },
                   onMouseEnter: () => handleProjectHover(record?.id || ''),

@@ -83,7 +83,7 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
     const addTaskLabel = isBacklogWorkItemRow
       ? t('createWorkItemText', { defaultValue: 'Create work item' })
       : isSoftwareProject
-        ? t('createIssueText', { defaultValue: 'Create Issue' })
+        ? t('createIssueText', { defaultValue: 'Create work item' })
         : t('addTaskText', { defaultValue: 'Add Task' });
     const insertTaskLabel = isSoftwareProject
       ? t('insertIssueText', { defaultValue: 'Insert Issue' })

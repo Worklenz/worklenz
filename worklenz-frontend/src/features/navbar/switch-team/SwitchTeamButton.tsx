@@ -92,6 +92,22 @@ const SwitchTeamButton = () => {
     return teamId === session.team_id;
   };
 
+  const getRoleLabel = (roleName?: string) => {
+    switch (roleName?.toLowerCase().trim()) {
+      case 'owner':
+        return t('ownerRole', { defaultValue: 'Owner' });
+      case 'admin':
+        return t('adminRole', { defaultValue: 'Admin' });
+      case 'team lead':
+      case 'teamlead':
+        return t('teamLeadRole', { defaultValue: 'Team Lead' });
+      case 'member':
+        return t('memberRole', { defaultValue: 'Member' });
+      default:
+        return roleName;
+    }
+  };
+
   const handleVerifyAuth = async () => {
     const result = await dispatch(verifyAuthentication()).unwrap();
     if (result.authenticated) {
@@ -132,39 +148,46 @@ const SwitchTeamButton = () => {
     if (!open) setSearchQuery('');
   };
 
-  const renderTeamCard = (team: ITeamGetResponse, index: number, total: number) => (
-    <Card
-      className="switch-team-card"
-      onClick={() => team.id && handleTeamSelect(team.id)}
-      bordered={false}
-      style={{ width: 230 }}
-    >
-      <Flex vertical>
-        <Flex gap={12} align="center" justify="space-between" style={{ padding: '4px 12px' }}>
-          <Flex gap={8} align="center">
-            <CustomAvatar
-              avatarName={team.name || ''}
-              avatarUrl={team.logo_url || undefined}
-              fallbackUrl={worklenzLogo}
-            />
-            <Flex vertical>
-              <Typography.Text style={{ fontSize: 11, fontWeight: 300 }}>
-                {t('owned-by', { ns: 'common', defaultValue: 'Owned by' })} {team.owns_by}
-              </Typography.Text>
-              <Typography.Text>{team.name}</Typography.Text>
+  const renderTeamCard = (team: ITeamGetResponse, index: number, total: number) => {
+    const roleLabel = getRoleLabel(team.owner ? 'Owner' : team.role_name);
+
+    return (
+      <Card
+        className="switch-team-card"
+        onClick={() => team.id && handleTeamSelect(team.id)}
+        bordered={false}
+        style={{ width: 230 }}
+      >
+        <Flex vertical>
+          <Flex gap={12} align="center" justify="space-between" style={{ padding: '4px 12px' }}>
+            <Flex gap={8} align="center">
+              <CustomAvatar
+                avatarName={team.name || ''}
+                avatarUrl={team.logo_url || undefined}
+                fallbackUrl={worklenzLogo}
+              />
+              <Flex vertical>
+                <Typography.Text style={{ fontSize: 11, fontWeight: 300 }}>
+                  {t('owned-by', { ns: 'common', defaultValue: 'Owned by' })} {team.owns_by}
+                </Typography.Text>
+                <Typography.Text>
+                  {team.name}
+                  {roleLabel && ` (${roleLabel})`}
+                </Typography.Text>
+              </Flex>
             </Flex>
+            <CheckCircleFilled
+              style={{
+                fontSize: 16,
+                color: isActiveTeam(team.id ?? '') ? colors.limeGreen : colors.lightGray,
+              }}
+            />
           </Flex>
-          <CheckCircleFilled
-            style={{
-              fontSize: 16,
-              color: isActiveTeam(team.id ?? '') ? colors.limeGreen : colors.lightGray,
-            }}
-          />
+          {index < total - 1 && <Divider style={{ margin: 0 }} />}
         </Flex>
-        {index < total - 1 && <Divider style={{ margin: 0 }} />}
-      </Flex>
-    </Card>
-  );
+      </Card>
+    );
+  };
 
   const dropdownItems = filteredTeams.map((team, index) => ({
     key: team.id || '',

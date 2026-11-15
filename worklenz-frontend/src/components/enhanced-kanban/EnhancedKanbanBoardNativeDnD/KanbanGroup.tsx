@@ -678,7 +678,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                     onClick={() => handleOpenCreateCard('top')}
                     aria-label={
                       isSoftwareProject
-                        ? t('createIssue', { defaultValue: 'Create Issue' })
+                        ? t('createIssue', { defaultValue: 'Create work item' })
                         : t('addTask')
                     }
                   >
@@ -837,7 +837,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                   />
                 </svg>
                 {isSoftwareProject
-                  ? t('createIssue', { defaultValue: 'Create Issue' })
+                  ? t('createIssue', { defaultValue: 'Create work item' })
                   : t('addTask')}
               </button>
             )}

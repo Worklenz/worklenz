@@ -40,6 +40,13 @@ const ALL_DATE_PRESETS: AnalyticsDatePreset[] = [
   'custom',
 ];
 
+const areSameIdSets = (a: string[], b: string[]): boolean => {
+  if (a.length !== b.length) return false;
+  const sortedA = [...a].sort();
+  const sortedB = [...b].sort();
+  return sortedA.every((id, i) => id === sortedB[i]);
+};
+
 export interface AnalyticsFilterBarProps {
   projectOptions: FilterOption[];
   selectedProjectIds: string[];
@@ -52,6 +59,12 @@ export interface AnalyticsFilterBarProps {
   teamOptions?: FilterOption[];
   selectedTeamIds?: string[];
   onTeamsChange?: (ids: string[]) => void;
+  /**
+   * Team IDs restored on Clear (and treated as non-active for the badge).
+   * Analytics pages that scope projects by team should pass the session/default team
+   * so Clear does not empty the Projects dropdown.
+   */
+  defaultTeamIds?: string[];
   datePreset?: AnalyticsDatePreset;
   onDatePresetChange?: (preset: AnalyticsDatePreset) => void;
   /** Limit which date presets appear (defaults to all). */
@@ -85,6 +98,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
   teamOptions = [],
   selectedTeamIds = [],
   onTeamsChange,
+  defaultTeamIds = [],
   datePreset,
   onDatePresetChange,
   availableDatePresets = ALL_DATE_PRESETS,
@@ -107,6 +121,11 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
   const showStatuses = Boolean(onStatusesChange && statusOptions.length > 0);
   const showIncludeDone =
     typeof includeDone === 'boolean' && Boolean(onIncludeDoneChange);
+
+  const isDefaultTeamSelection = React.useCallback(
+    (ids: string[]) => areSameIdSets(ids, defaultTeamIds),
+    [defaultTeamIds]
+  );
 
   const [draftProjectIds, setDraftProjectIds] = React.useState(selectedProjectIds);
   const [draftMemberIds, setDraftMemberIds] = React.useState(selectedMemberIds);
@@ -133,7 +152,9 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
     let count = 0;
     if (selectedProjectIds.length > 0) count++;
     if (showMembers && selectedMemberIds.length > 0) count++;
-    if (showTeams && selectedTeamIds.length > 0) count++;
+    if (showTeams && !isDefaultTeamSelection(selectedTeamIds)) {
+      count++;
+    }
     if (showDate && datePreset && datePreset !== defaultDatePreset) count++;
     if (showStatuses && selectedStatusIds.length > 0) count++;
     if (showIncludeDone && includeDone) count++;
@@ -144,6 +165,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
     selectedMemberIds,
     showTeams,
     selectedTeamIds,
+    isDefaultTeamSelection,
     showDate,
     datePreset,
     defaultDatePreset,
@@ -156,7 +178,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
   const hasDraftFilters =
     draftProjectIds.length > 0 ||
     (showMembers && draftMemberIds.length > 0) ||
-    (showTeams && draftTeamIds.length > 0) ||
+    (showTeams && !isDefaultTeamSelection(draftTeamIds)) ||
     (showDate && draftDatePreset !== defaultDatePreset) ||
     (showStatuses && draftStatusIds.length > 0) ||
     (showIncludeDone && draftIncludeDone);
@@ -172,16 +194,18 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
   };
 
   const handleClearAll = () => {
+    const resetTeamIds = defaultTeamIds;
+
     setDraftProjectIds([]);
     setDraftMemberIds([]);
-    setDraftTeamIds([]);
+    setDraftTeamIds(resetTeamIds);
     setDraftDatePreset(defaultDatePreset);
     setDraftStatusIds([]);
     setDraftIncludeDone(false);
 
     onProjectsChange([]);
     if (onMembersChange) onMembersChange([]);
-    if (onTeamsChange) onTeamsChange([]);
+    if (onTeamsChange) onTeamsChange(resetTeamIds);
     if (onDatePresetChange) onDatePresetChange(defaultDatePreset);
     if (onStatusesChange) onStatusesChange([]);
     if (onIncludeDoneChange) onIncludeDoneChange(false);

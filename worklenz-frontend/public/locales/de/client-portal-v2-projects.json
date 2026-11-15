@@ -91,7 +91,7 @@
       "status": "Kundenorientierter Status",
       "users": "Client-Benutzer"
     },
-    "description": "Wählen Sie aus, welche Projekte im Kundenportal sichtbar sind und was in jedem einzelnen geteilt wird. Alles beginnt als „Nur intern“.",
+    "description": "Wählen Sie aus, welche Projekte im Kundenportal sichtbar sind und was in jedem einzelnen geteilt wird. Alles beginnt als „Nur intern“. Projekte, die ein Eigentümer oder Administrator archiviert hat, werden ausgelassen.",
     "empty": "Noch keine Projekte. Erstellen Sie ein Projekt in Ihrem Arbeitsbereich und verknüpfen Sie es dann mit einem Kunden.",
     "fieldSaveFailed": "Das Projekt konnte nicht aktualisiert werden.",
     "fieldSaved": "{{name}} aktualisiert.",
