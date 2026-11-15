@@ -7,13 +7,17 @@ import { ITaskPrioritiesGetResponse } from '@/types/apiModels/taskPrioritiesGetR
 import { ITaskStatusViewModel } from '@/types/tasks/taskStatusGetResponse.types';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import type { StatusCategoryOrder } from '@/types/project/status-category-order.types';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 import { ICachedProjectAccess } from '@/types/project/project-access.types';
 import { extractProjectAccess } from '@/utils/project-access.utils';
+import logger from '@/utils/errorLogger';
+import type { RootState } from '@/app/store';
 
 interface TaskListState {
   projectId: string | null;
   project: IProjectViewModel | null;
+  statusCategoryOrder: StatusCategoryOrder | null;
   projectLoading: boolean;
   /** Phase 3 — permissions keyed by project id so A→B never reuses A's PM controls. */
   permissionsByProjectId: Record<string, ICachedProjectAccess>;
@@ -49,6 +53,7 @@ const cacheAccessFromProject = (
 const initialState: TaskListState = {
   projectId: null,
   project: null,
+  statusCategoryOrder: null,
   projectLoading: false,
   permissionsByProjectId: {},
   activeMembers: [],
@@ -92,15 +97,61 @@ export const getProject = createAsyncThunk(
   }
 );
 
+interface SaveStatusCategoryOrderRequest {
+  projectId: string;
+  categoryOrder: StatusCategoryOrder;
+}
+
+interface StatusCategoryOrderResult {
+  projectId: string;
+  categoryOrder: StatusCategoryOrder;
+}
+
+export const saveStatusCategoryOrder = createAsyncThunk<
+  StatusCategoryOrderResult,
+  SaveStatusCategoryOrderRequest,
+  { rejectValue: string }
+>('project/saveStatusCategoryOrder', async ({ projectId, categoryOrder }, { rejectWithValue }) => {
+  try {
+    const response = await projectsApiService.saveStatusCategoryOrder(projectId, categoryOrder);
+    return { projectId, categoryOrder: response.body.category_order };
+  } catch (error) {
+    logger.error('Save Status Category Order', error);
+    return rejectWithValue(
+      error instanceof Error ? error.message : 'Failed to save status category order'
+    );
+  }
+});
+
+export const resetStatusCategoryOrder = createAsyncThunk<
+  StatusCategoryOrderResult,
+  string,
+  { rejectValue: string }
+>('project/resetStatusCategoryOrder', async (projectId, { rejectWithValue }) => {
+  try {
+    const response = await projectsApiService.resetStatusCategoryOrder(projectId);
+    return { projectId, categoryOrder: response.body.category_order };
+  } catch (error) {
+    logger.error('Reset Status Category Order', error);
+    return rejectWithValue(
+      error instanceof Error ? error.message : 'Failed to reset status category order'
+    );
+  }
+});
+
 const projectSlice = createSlice({
   name: 'project',
   initialState,
   reducers: {
     setProjectId: (state, action: PayloadAction<string | null>) => {
+      if (state.projectId !== action.payload) {
+        state.statusCategoryOrder = null;
+      }
       state.projectId = action.payload;
     },
     setProject: (state, action: PayloadAction<IProjectViewModel>) => {
       state.project = action.payload;
+      state.statusCategoryOrder = action.payload.status_category_order ?? null;
       cacheAccessFromProject(state, action.payload);
     },
     mergeProject: (state, action: PayloadAction<Partial<IProjectViewModel>>) => {
@@ -109,7 +160,16 @@ const projectSlice = createSlice({
       } else {
         state.project = action.payload as IProjectViewModel;
       }
+      if (action.payload.status_category_order !== undefined) {
+        state.statusCategoryOrder = action.payload.status_category_order;
+      }
       cacheAccessFromProject(state, state.project);
+    },
+    setStatusCategoryOrder: (state, action: PayloadAction<StatusCategoryOrder>) => {
+      state.statusCategoryOrder = action.payload;
+      if (state.project) {
+        state.project.status_category_order = action.payload;
+      }
     },
     cacheProjectAccess: (
       state,
@@ -238,12 +298,29 @@ const projectSlice = createSlice({
       .addCase(getProject.fulfilled, (state, action) => {
         state.projectLoading = false;
         state.project = action.payload;
+        if (state.projectId === action.meta.arg) {
+          state.statusCategoryOrder = action.payload.status_category_order ?? null;
+        }
         cacheAccessFromProject(state, action.payload);
       })
       .addCase(getProject.rejected, (state, action) => {
         state.projectLoading = false;
         const payload = action.payload as { message: string; statusCode?: number } | undefined;
         state.error = payload?.message || 'Failed to fetch project';
+      })
+      .addCase(saveStatusCategoryOrder.fulfilled, (state, action) => {
+        if (state.projectId !== action.payload.projectId) return;
+        state.statusCategoryOrder = action.payload.categoryOrder;
+        if (state.project?.id === action.payload.projectId) {
+          state.project.status_category_order = action.payload.categoryOrder;
+        }
+      })
+      .addCase(resetStatusCategoryOrder.fulfilled, (state, action) => {
+        if (state.projectId !== action.payload.projectId) return;
+        state.statusCategoryOrder = action.payload.categoryOrder;
+        if (state.project?.id === action.payload.projectId) {
+          state.project.status_category_order = action.payload.categoryOrder;
+        }
       });
   },
 });
@@ -251,6 +328,7 @@ const projectSlice = createSlice({
 export const {
   setProjectId,
   setProject,
+  setStatusCategoryOrder,
   mergeProject,
   cacheProjectAccess,
   clearProjectAccessCache,
@@ -275,5 +353,19 @@ export const {
   setRefreshTimestamp,
   updateProjectCurrency,
 } = projectSlice.actions;
+
+const EMPTY_STATUS_CATEGORY_ORDER: StatusCategoryOrder = [];
+
+export const selectEffectiveStatusCategoryOrder = (
+  state: Pick<RootState, 'projectReducer'>
+): StatusCategoryOrder => {
+  const { projectId, project, statusCategoryOrder } = state.projectReducer;
+  if (statusCategoryOrder) return statusCategoryOrder;
+  // The project API resolves the system default because category IDs are database-specific.
+  if (project?.id === projectId && project.status_category_order) {
+    return project.status_category_order;
+  }
+  return EMPTY_STATUS_CATEGORY_ORDER;
+};
 
 export default projectSlice.reducer;

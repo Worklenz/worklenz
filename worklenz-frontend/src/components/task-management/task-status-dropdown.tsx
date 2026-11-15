@@ -8,9 +8,6 @@ import { SocketEvents } from '@/shared/socket-events';
 import { Task } from '@/types/task-management.types';
 import {
   updateTask,
-  selectCurrentGroupingV3,
-  selectGroups,
-  moveTaskBetweenGroups,
 } from '@/features/task-management/task-management.slice';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import { getContrastColor } from '@/utils/colorUtils';
@@ -41,8 +38,6 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const statusList = useAppSelector(state => state.taskStatusReducer.status);
-  const currentGroupingV3 = useAppSelector(selectCurrentGroupingV3);
-  const groups = useAppSelector(selectGroups);
 
   // Default status colors for common statuses (fallback when backend doesn't provide colors)
   const defaultStatusColors: Record<string, string> = {
@@ -109,31 +104,6 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
       };
       dispatch(updateTask(updatedTask));
 
-      // Handle group movement if grouping by status
-      if (currentGroupingV3 === 'status' && groups && groups.length > 0) {
-        // Find current group containing the task
-        const currentGroup = groups.find(group => group.taskIds.includes(task.id));
-
-        // Find target group based on the new status ID
-        let targetGroup = groups.find(group => group.id === statusId);
-
-        // If not found by status ID, try matching with group value
-        if (!targetGroup) {
-          targetGroup = groups.find(group => group.groupValue === statusId);
-        }
-
-        if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
-          // Move task between groups immediately for instant feedback
-          dispatch(
-            moveTaskBetweenGroups({
-              taskId: task.id,
-              sourceGroupId: currentGroup.id,
-              targetGroupId: targetGroup.id,
-            })
-          );
-        }
-      }
-
       // Emit socket event for server-side update and real-time sync
       socket?.emit(
         SocketEvents.TASK_STATUS_CHANGE.toString(),
@@ -146,7 +116,7 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
       );
       setIsOpen(false);
     },
-    [task, connected, socket, projectId, dispatch, currentGroupingV3, groups, t]
+    [task, connected, socket, projectId, dispatch, t]
   );
 
   // Calculate dropdown position and handle outside clicks

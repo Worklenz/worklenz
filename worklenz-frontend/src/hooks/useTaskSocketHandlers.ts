@@ -440,38 +440,22 @@ export const useTaskSocketHandlers = () => {
         }
       }
 
-      // Handle group movement ONLY if grouping by status and task exists
-      if (currentTask && groups && groups.length > 0 && currentGrouping === 'status') {
-        // Find current group containing the task
-        const currentGroup = groups.find(group => group.taskIds.includes(response.id));
-
-        // Find target group based on the actual status ID from response
+      // The updateTask reducer moves existing tasks between status groups.
+      if (currentTask && groups.length > 0 && currentGrouping === 'status') {
         let targetGroup = groups.find(group => group.id === response.status_id);
 
-        // If not found by status ID, try matching with group value
         if (!targetGroup) {
           targetGroup = groups.find(group => group.groupValue === response.status_id);
         }
 
-        // If still not found, try matching by status name (fallback)
         if (!targetGroup && (response as any).status) {
           const statusName = String((response as any).status || '').toLowerCase();
           targetGroup = groups.find(group => group.title?.toLowerCase() === statusName);
         }
 
-        if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
-          // Use the action to move task between groups
-          dispatch(
-            moveTaskBetweenGroups({
-              taskId: response.id,
-              sourceGroupId: currentGroup.id,
-              targetGroupId: targetGroup.id,
-            })
-          );
-        } else if (!targetGroup) {
-          // Fallback: refetch tasks to ensure consistency
+        if (!targetGroup) {
           if (projectId) {
-            dispatch(fetchTasksV3(projectId));
+            dispatch(fetchTasksV3({ projectId, silent: true }));
           }
         }
       }

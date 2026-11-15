@@ -2,6 +2,7 @@ import express from "express";
 
 import ProjectsController from "../../controllers/projects-controller";
 import ProgressTrackingController from "../../controllers/reporting/progress-tracking/progress-tracking-controller";
+import ProjectStatusCategoryOrderController from "../../controllers/project-status-category-order-controller";
 
 import idParamValidator from "../../middlewares/validators/id-param-validator";
 import projectsBodyValidator from "../../middlewares/validators/projects-body-validator";
@@ -116,6 +117,24 @@ projectsApiRouter.put(
   projectsBodyValidator,
   safeControllerFunction(ProjectsController.update),
 );
+const requireStatusCategoryOrderPermission = requireProjectPermission("statuses", {
+  sources: ["params.id", "query.current_project_id"],
+});
+
+projectsApiRouter.put(
+  "/:id/status-category-order",
+  idParamValidator,
+  requireStatusCategoryOrderPermission,
+  safeControllerFunction(ProjectStatusCategoryOrderController.updateCategoryOrder)
+);
+
+projectsApiRouter.delete(
+  "/:id/status-category-order",
+  idParamValidator,
+  requireStatusCategoryOrderPermission,
+  safeControllerFunction(ProjectStatusCategoryOrderController.resetCategoryOrder)
+);
+
 projectsApiRouter.delete(
   "/:id",
   requireProjectPermission("delete", {

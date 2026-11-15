@@ -46,7 +46,10 @@ import {
 import { ITaskStatusCreateRequest } from '@/types/tasks/task-status-create-request';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import { useParams } from 'react-router-dom';
-import { setProjectId } from '@/features/project/project.slice';
+import {
+  selectEffectiveStatusCategoryOrder,
+  setProjectId,
+} from '@/features/project/project.slice';
 import logger from '@/utils/errorLogger';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import debounce from 'lodash-es/debounce';
@@ -87,6 +90,7 @@ const [currentTaskIndex, setCurrentTaskIndex] = useState(-1);
 const [isLoading, setIsLoading] = useState(true);
 
   const { projectId } = useAppSelector(state => state.projectReducer);
+  const statusCategoryOrder = useAppSelector(selectEffectiveStatusCategoryOrder);
   const { taskGroups, groupBy, loadingGroups, search, archived } = useAppSelector(
     state => state.boardReducer
   );
@@ -99,6 +103,8 @@ const [isLoading, setIsLoading] = useState(true);
   const originalSourceGroupIdRef = useRef<string | null>(null);
   const lastOverId = useRef<UniqueIdentifier | null>(null);
   const recentlyMovedToNewContainer = useRef(false);
+  const categoryOrderKey = statusCategoryOrder.join(',');
+  const previousCategoryOrderKey = useRef(categoryOrderKey);
   const [clonedItems, setClonedItems] = useState<ITaskListGroup[] | null>(null);
   const isDraggingRef = useRef(false);
 
@@ -128,6 +134,15 @@ const [isLoading, setIsLoading] = useState(true);
 
     loadData();
   }, [dispatch, projectId, groupBy, projectView, search, archived]);
+
+  useEffect(() => {
+    if (previousCategoryOrderKey.current === categoryOrderKey) return;
+    previousCategoryOrderKey.current = categoryOrderKey;
+
+    if (projectId && groupBy === IGroupBy.STATUS && projectView === 'kanban') {
+      void dispatch(fetchBoardTaskGroups(projectId));
+    }
+  }, [categoryOrderKey, dispatch, groupBy, projectId, projectView]);
 
   // Create sensors with memoization to prevent unnecessary re-renders
   const sensors = useSensors(
