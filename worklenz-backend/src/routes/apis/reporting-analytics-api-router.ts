@@ -1,7 +1,6 @@
 import express from "express";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import analyticsProjectAccessMiddleware from "../../middlewares/analytics-project-access";
-import { canViewAnalyticsReports } from "../../shared/reporting-analytics-permissions";
 import { withLastUpdated } from "../../redis/analytics-cache";
 import { ServerResponse } from "../../models/server-response";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
@@ -18,20 +17,15 @@ import BudgetTrackingController from "../../controllers/reporting-analytics/budg
 import AnalyticsTemplatesController from "../../controllers/reporting-analytics/analytics-templates-controller";
 import { requireFeature } from "../../shared/entitlements/gates";
 
+import {
+  viewFinanceValidator,
+  viewReportsValidator,
+} from "../../middlewares/validators/organization-permission-validator";
+
 const router = express.Router();
 
-async function requireAnalyticsAccess(
-  req: IWorkLenzRequest,
-  res: IWorkLenzResponse,
-  next: express.NextFunction
-) {
-  if (!(await canViewAnalyticsReports(req.user))) {
-    return res
-      .status(403)
-      .send(new ServerResponse(false, null, "You are not authorized to access analytics"));
-  }
-  return next();
-}
+/** View reports + paid plan — same gate as classic reporting. */
+const requireAnalyticsAccess = viewReportsValidator
 
 router.get(
   "/meta",
@@ -151,6 +145,7 @@ router.post(
 router.post(
   "/project-health/series",
   requireAnalyticsAccess,
+  viewFinanceValidator,
   requireFeature("finance_module"),
   analyticsProjectAccessMiddleware,
   safeControllerFunction(ProjectHealthController.getSeries)
@@ -158,6 +153,7 @@ router.post(
 router.get(
   "/project-health/series",
   requireAnalyticsAccess,
+  viewFinanceValidator,
   requireFeature("finance_module"),
   analyticsProjectAccessMiddleware,
   safeControllerFunction(ProjectHealthController.getSeries)
@@ -166,6 +162,7 @@ router.get(
 router.post(
   "/project-health/export/csv",
   requireAnalyticsAccess,
+  viewFinanceValidator,
   requireFeature("finance_module"),
   analyticsProjectAccessMiddleware,
   safeControllerFunction(ProjectHealthController.exportCsv)
@@ -261,6 +258,7 @@ router.post(
 router.post(
   "/budget-tracking/series",
   requireAnalyticsAccess,
+  viewFinanceValidator,
   requireFeature("finance_module"),
   analyticsProjectAccessMiddleware,
   safeControllerFunction(BudgetTrackingController.getSeries)
@@ -268,6 +266,7 @@ router.post(
 router.get(
   "/budget-tracking/series",
   requireAnalyticsAccess,
+  viewFinanceValidator,
   requireFeature("finance_module"),
   analyticsProjectAccessMiddleware,
   safeControllerFunction(BudgetTrackingController.getSeries)
@@ -276,6 +275,7 @@ router.get(
 router.post(
   "/budget-tracking/export/csv",
   requireAnalyticsAccess,
+  viewFinanceValidator,
   requireFeature("finance_module"),
   analyticsProjectAccessMiddleware,
   safeControllerFunction(BudgetTrackingController.exportCsv)

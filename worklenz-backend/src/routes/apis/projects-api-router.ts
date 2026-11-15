@@ -105,6 +105,7 @@ projectsApiRouter.get(
 );
 projectsApiRouter.put(
   "/update-pinned-view",
+  verifyProjectAccess("body", "project_id"),
   projectMemberValidator,
   safeControllerFunction(ProjectsController.updatePinnedView),
 );

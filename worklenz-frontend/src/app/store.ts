@@ -70,6 +70,7 @@ import labelReducer from '@features/settings/label/labelSlice';
 import adminCenterReducer from '@features/admin-center/admin-center.slice';
 import auditLogReducer from '@features/admin-center/audit-log/audit-log.slice';
 import { auditLogApi } from '@/api/admin-center/audit-log.api.service';
+import { permissionSchemesApi } from '@/api/admin-center/permission-schemes.api.service';
 
 // Features
 import dateReducer from '@features/date/dateSlice';
@@ -253,6 +254,7 @@ const coreReducers = {
 
   // Software projects & audit log
   [auditLogApi.reducerPath]: auditLogApi.reducer,
+  [permissionSchemesApi.reducerPath]: permissionSchemesApi.reducer,
   epicsReducer: epicsReducer,
   releasesReducer: releasesReducer,
   createIssueModalReducer: createIssueModalReducer,
@@ -288,6 +290,7 @@ export const store = configureStore({
       projectWorkloadApi.middleware,
       scheduleApi.middleware,
       auditLogApi.middleware,
+      permissionSchemesApi.middleware,
       ...addonMiddlewares
     ),
   reducer: {

@@ -14,18 +14,26 @@ import verifyTaskAccess, { verifyNonGuestTaskAccess } from "../../../middlewares
 import verifyNonGuestPlannerAccess from "../../../middlewares/verify-non-guest-planner-access";
 import { requireAnyFeature } from "../../../shared/entitlements/gates";
 import { PLANNER_FEATURES } from "../../../shared/entitlements/feature-registry";
+import { manageOrganizationSettingsValidator } from "../../../middlewares/validators/organization-permission-validator";
+import { requireProjectPermission } from "../../../middlewares/validators/require-project-permission";
 
 const scheduleApiRouter = express.Router();
 
-// Guests do not have access to the Planner (Schedule/Timeline/Workload) at all.
+// Working days/hours — used by Admin Center Utilization Settings (outside Planner).
+// Registered before the guest Planner gate so "Manage organization settings" works for Guests too.
+scheduleApiRouter.get("/settings", safeControllerFunction(ScheduleControllerV2.getSettings));
+scheduleApiRouter.put(
+  "/settings",
+  manageOrganizationSettingsValidator,
+  safeControllerFunction(ScheduleControllerV2.updateSettings)
+);
+
+// Guests only reach the Planner (Schedule/Timeline/Workload) when granted "View planner".
 scheduleApiRouter.use(verifyNonGuestPlannerAccess);
 
-// Shared endpoints, available on every plan because screens outside the Planner use them:
-//  - working days/hours settings (admin-center settings, utilization calculations)
+// Shared endpoints outside the paid Planner feature gate:
 //  - time-off, a personal calendar feature (Home calendar, quick actions)
 // Everything registered after the requireAnyFeature gate below is Planner-only.
-scheduleApiRouter.get("/settings", safeControllerFunction(ScheduleControllerV2.getSettings));
-scheduleApiRouter.put("/settings", safeControllerFunction(ScheduleControllerV2.updateSettings));
 
 // ============================================
 // Time-Off Management Endpoints
@@ -56,7 +64,12 @@ scheduleApiRouter.get("/dates/:date/:type", safeControllerFunction(ScheduleContr
 scheduleApiRouter.get("/members", safeControllerFunction(ScheduleControllerV2.getOrganizationMembers));
 scheduleApiRouter.get("/members/projects/:id", safeControllerFunction(ScheduleControllerV2.getOrganizationMemberProjects));
 scheduleApiRouter.get("/members/:memberId/summary", safeControllerFunction(ScheduleControllerV2.getMemberScheduleSummary));
-scheduleApiRouter.post("/schedule", safeControllerFunction(ScheduleControllerV2.createSchedule));
+scheduleApiRouter.post(
+  "/schedule",
+  verifyNonGuestProjectAccess('body', 'project_id'),
+  requireProjectPermission("settings", { sources: ["body.project_id"] }),
+  safeControllerFunction(ScheduleControllerV2.createSchedule)
+);
 
 // ============================================
 // Capacity Management Endpoints (NEW)
@@ -99,7 +112,12 @@ scheduleApiRouter.get(
 scheduleApiRouter.get("/timeline/projects", safeControllerFunction(ProjectTimelineController.getProjectsTimeline));
 
 // Update a project's start/end date (drag-resize on the Timeline bar)
-scheduleApiRouter.put("/timeline/projects/:id/dates", idParamValidator, safeControllerFunction(ProjectTimelineController.updateProjectDates));
+scheduleApiRouter.put(
+  "/timeline/projects/:id/dates",
+  idParamValidator,
+  requireProjectPermission("settings", { sources: ["params.id"] }),
+  safeControllerFunction(ProjectTimelineController.updateProjectDates)
+);
 
 // ============================================
 // Workload Management Endpoints (NEW)

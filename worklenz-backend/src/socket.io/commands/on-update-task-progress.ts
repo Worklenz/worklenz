@@ -5,6 +5,7 @@ import { getLoggedInUserIdFromSocket, log, log_error, notifyProjectUpdates, emit
 import { logProgressChange } from "../../services/activity-logs/activity-logs.service";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
 import { isAssigneeScopeEditRestrictedForTask } from "../../shared/assignee-task-scope";
+import { verifyNonGuestTaskAccessSocket } from "../authorization";
 
 interface UpdateTaskProgressData {
   task_id: string;
@@ -91,6 +92,7 @@ export async function on_update_task_progress(io: any, socket: Socket, data: str
     if (!task_id || progress_value === undefined) {
       return;
     }
+    if (!await verifyNonGuestTaskAccessSocket(socket, task_id)) return;
 
     if (await isAssigneeScopeEditRestrictedForTask(getLoggedInUserIdFromSocket(socket), task_id)) {
       return;

@@ -179,6 +179,14 @@ export function canManageTeamMembers(user: IPassportSession | undefined): boolea
 }
 
 /**
+ * Roles a non-admin "Manage users" holder may assign or manage.
+ * Admins (and above) stay Owner/Admin-only — never editable via Manage users alone.
+ */
+export function getManageUsersAssignableRoles(): TeamRoleName[] {
+  return [TEAM_ROLE_NAMES.TEAM_LEAD, TEAM_ROLE_NAMES.MEMBER];
+}
+
+/**
  * Check if user can manage projects within team (Owner or Admin)
  */
 export function canManageTeamProjects(user: IPassportSession | undefined): boolean {

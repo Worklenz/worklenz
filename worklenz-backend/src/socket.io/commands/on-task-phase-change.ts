@@ -1,3 +1,4 @@
+import { verifyNonGuestTaskAccessSocket } from "../authorization";
 import {Server, Socket} from "socket.io";
 
 import db from "../../config/db";
@@ -146,6 +147,7 @@ async function autoAssignPhaseAssignee(
 export async function on_task_phase_change(_io: Server, socket: Socket, body?: any) {
   try {
     if (!body?.task_id) return;
+    if (!(await verifyNonGuestTaskAccessSocket(socket, body.task_id))) return;
 
     if (await isAssigneeScopeEditRestrictedForTask(getLoggedInUserIdFromSocket(socket), body.task_id)) {
       return;

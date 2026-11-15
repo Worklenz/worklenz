@@ -30,6 +30,7 @@ export interface IProjectPermissions {
 }
 
 export interface IProjectViewModel extends IProject {
+  task_role_permissions?: { create_tasks: boolean; edit_tasks: boolean; delete_tasks: boolean; comment: boolean };
   status_category_order?: StatusCategoryOrder | null;
   key?: string;
   client_name?: string | null;
