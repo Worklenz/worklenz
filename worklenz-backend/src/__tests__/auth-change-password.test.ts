@@ -152,7 +152,7 @@ describe('AuthController.changePassword', () => {
     expect(res.send.mock.calls[0][0].done).toBe(false);
   });
 
-  it('does not report success when no matching sessions were deleted', async () => {
+  it('commits the password update even when no matching sessions existed to delete', async () => {
     mockUserRow({ id: 'user-1', email: 'a@b.com', google_id: null, password: existingHash });
     sessionClient.query.mockImplementation((sql: string) => {
       if (sql.startsWith('DELETE FROM pg_sessions')) return Promise.resolve({ rows: [], rowCount: 0 });
@@ -169,9 +169,8 @@ describe('AuthController.changePassword', () => {
       res
     );
 
-    expect(sessionClient.query).toHaveBeenCalledWith('ROLLBACK');
-    expect(sessionClient.query).not.toHaveBeenCalledWith('COMMIT');
-    expect(res.send.mock.calls[0][0].done).toBe(false);
+    expect(sessionClient.query).toHaveBeenCalledWith('COMMIT');
+    expect(res.send.mock.calls[0][0].done).toBe(true);
   });
 
   it('keeps other sessions active when logout is not requested', async () => {

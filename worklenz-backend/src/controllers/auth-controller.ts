@@ -138,7 +138,7 @@ export default class AuthController extends WorklenzControllerBase {
           try {
             await client.query("BEGIN");
             await client.query(updatePasswordQ, [encryptedPassword, userId]);
-            const deletedSessions = await client.query(
+            await client.query(
               `DELETE FROM pg_sessions
                WHERE sess::jsonb @> jsonb_build_object(
                  'passport', jsonb_build_object('user', jsonb_build_object('id', $1::text))
@@ -146,9 +146,6 @@ export default class AuthController extends WorklenzControllerBase {
                OR sess::jsonb #>> '{passport,user}' = $1;`,
               [userId]
             );
-            if (deletedSessions.rowCount === 0) {
-              throw new Error("No active sessions were invalidated after password change.");
-            }
             await client.query("COMMIT");
             IO.emitToRoom(`user:${userId}`, SocketEvents.SESSION_REVOKED, {});
           } catch (error) {
