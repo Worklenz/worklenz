@@ -25,7 +25,6 @@ import {
 } from '@/components/client-portal/v2';
 import type { PortalField, PortalFilterGroup } from '@/components/client-portal/v2';
 import {
-  PROJECT_PHASES,
   type ClientProjectStatus,
   type PortalProject,
   type ProjectPhase,
@@ -124,13 +123,13 @@ const PortalProjectsPage = () => {
     },
     ...(project.organization_id
       ? [
-          {
-            key: 'client',
-            icon: <TeamOutlined />,
-            label: t('menu.client', { defaultValue: 'Open client' }),
-            onClick: () => navigate(clientWorkspacePath(project.organization_id as string)),
-          },
-        ]
+        {
+          key: 'client',
+          icon: <TeamOutlined />,
+          label: t('menu.client', { defaultValue: 'Open client' }),
+          onClick: () => navigate(clientWorkspacePath(project.organization_id as string)),
+        },
+      ]
       : []),
   ];
 
@@ -145,7 +144,20 @@ const PortalProjectsPage = () => {
     value: item.value,
     label: t(`list.statusFilter.${item.value}`, { defaultValue: item.defaultValue }),
   }));
-  const phaseOptions = PROJECT_PHASES.map(value => ({ value, label: value }));
+  const allProjectPhases =
+    list?.phases ??
+    Array.from(
+      new Set(
+        (list?.items ?? []).flatMap(p => [
+          ...(p.phases ?? []),
+          ...(p.phase ? [p.phase] : []),
+        ])
+      )
+    ).sort((a, b) => a.localeCompare(b));
+  const phaseOptions = allProjectPhases.map(value => ({
+    value,
+    label: decodeHtmlEntities(value),
+  }));
   const portalOptions = [
     { value: 'on', label: t('list.portalOn', { defaultValue: 'Portal on' }) },
     { value: 'off', label: t('list.portalOff', { defaultValue: 'Portal off' }) },
@@ -289,7 +301,10 @@ const PortalProjectsPage = () => {
               defaultValue: 'Phase of {{name}}',
             })}
             onChange={value => void saveField(project, 'phase', { phase: value ?? null })}
-            options={PROJECT_PHASES.map(value => ({ value, label: value }))}
+            options={(project.phases ?? []).map(value => ({
+              value,
+              label: decodeHtmlEntities(value),
+            }))}
           />
         </span>
       ),

@@ -1,4 +1,5 @@
 {
+  "exampleTaskCreateFailed": "Die Aufgabenerstellung konnte nicht bestätigt werden. Prüfen Sie die Aufgabenliste, bevor Sie es erneut versuchen.",
   "apply": "Anwenden",
   "keyColumn": "Schlüssel",
   "taskColumn": "Aufgabe",
@@ -80,6 +81,7 @@
   "addSubTaskInputPlaceholder": "Namen der Unteraufgabe eingeben und mit Enter speichern",
   "noTasksInGroup": "Keine Aufgaben in dieser Gruppe",
   "dropTaskHere": "Aufgabe hier ablegen",
+  "dropHere": "Hier ablegen",
   "openButton": "Öffnen",
   "okButton": "OK",
   "noLabelsFound": "Keine Labels gefunden",

@@ -13,7 +13,14 @@ const taskDuplicateApiService = {
   duplicate: async (
     data: ITaskDuplicateRequest
   ): Promise<IServerResponse<ITaskViewModel>> => {
-    const response = await apiClient.post(`${API_BASE_URL}/task-duplicate/duplicate`, data);
+    // Cross-project copy shows its own success notification (with Open task).
+    // Silence the interceptor toast so callers don't get two messages.
+    const isCrossProjectCopy = Boolean(data.destination_project_id);
+    const response = await apiClient.post(
+      `${API_BASE_URL}/task-duplicate/duplicate`,
+      data,
+      isCrossProjectCopy ? { headers: { 'X-Silent-Request': '1' } } : undefined
+    );
     return response.data;
   },
 };

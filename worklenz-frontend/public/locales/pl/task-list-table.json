@@ -1,4 +1,5 @@
 {
+  "exampleTaskCreateFailed": "Nie udało się potwierdzić utworzenia zadania. Sprawdź listę przed ponowną próbą.",
   "apply": "Zastosuj",
   "keyColumn": "Klucz",
   "taskColumn": "Zadanie",
@@ -80,6 +81,7 @@
   "addSubTaskInputPlaceholder": "Wpisz nazwę podzadania i naciśnij klawisz Enter, aby zapisać",
   "noTasksInGroup": "Brak zadań w tej grupie",
   "dropTaskHere": "Upuść zadanie tutaj",
+  "dropHere": "Upuść tutaj",
   "openButton": "Otwórz",
   "okButton": "OK",
   "noLabelsFound": "Nie znaleziono etykiet",

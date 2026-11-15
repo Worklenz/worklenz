@@ -24,6 +24,7 @@ export interface IAcceptTeamInvite {
 export interface ITeamGetResponse extends ITeam {
   owner?: boolean;
   owns_by?: string;
+  role_name?: string;
   created_at?: string;
   logo_url?: string | null;
 }

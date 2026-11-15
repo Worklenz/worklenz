@@ -80,11 +80,24 @@ describe("project scope", () => {
   it("leaves archived projects out of the admin portal project list and its counts", async () => {
     const query = db.query as jest.Mock;
     query.mockReset();
-    query.mockResolvedValue(createQueryResult([{ total: 0, portal_enabled: 0 }]));
+    query.mockResolvedValueOnce(createQueryResult([]))
+      .mockResolvedValueOnce(createQueryResult([{ total: 0, portal_enabled: 0, awaiting_client_approval: 0, open_change_requests: 0, delayed_milestones: 0 }]))
+      .mockResolvedValueOnce(createQueryResult([]));
     await listPortalProjects("team-1", {});
-    const sql = query.mock.calls.map(([text]) => String(text)).join("\n");
-    expect(sql).toContain(projectOpenForPortalSql("p").trim());
-    expect(query.mock.calls.length).toBe(2);
+
+    const allSqlCalls = query.mock.calls.map(([text]) => String(text));
+    const portalPredicate = projectOpenForPortalSql("p").trim();
+
+    // Find the list and stats queries by their SQL signature
+    const listQuerySql = allSqlCalls.find(sql => sql.includes("FROM (") && sql.includes("projects p")) || allSqlCalls[0];
+    const statsQuerySql = allSqlCalls.find(sql => sql.includes("project_client_settings s") && sql.includes("awaiting_client_approval")) || allSqlCalls[1];
+
+    expect(listQuerySql).toContain(portalPredicate);
+    expect(statsQuerySql).toContain(portalPredicate);
+
+    expect(query.mock.calls.length).toBe(3);
+    const phaseCatalogQuery = allSqlCalls.find(sql => sql.includes("SELECT DISTINCT phase_name"));
+    expect(phaseCatalogQuery).toBeDefined();
   });
 
   it("shares an item only when its own visibility says so", () => {

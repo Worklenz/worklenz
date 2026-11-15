@@ -1,4 +1,5 @@
 {
+  "exampleTaskCreateFailed": "Impossible de confirmer la création de la tâche. Vérifiez la liste avant de réessayer.",
   "apply": "Appliquer",
   "keyColumn": "Clé",
   "taskColumn": "Tâche",
@@ -80,6 +81,7 @@
   "addSubTaskInputPlaceholder": "Tapez le nom de la sous-tâche et appuyez sur Entrée pour enregistrer",
   "noTasksInGroup": "Aucune tâche dans ce groupe",
   "dropTaskHere": "Déposez la tâche ici",
+  "dropHere": "Déposer ici",
   "openButton": "Ouvert",
   "okButton": "D'accord",
   "noLabelsFound": "Aucune étiquette trouvée",

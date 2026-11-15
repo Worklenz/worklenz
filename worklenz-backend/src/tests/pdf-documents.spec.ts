@@ -1,4 +1,5 @@
 import { buildInvoicePdf, buildReceiptPdf, InvoiceData } from "../shared/pdf";
+import { htmlToPlainText as invoiceNotesToPlainText } from "../shared/pdf/format";
 
 const base: InvoiceData = {
   invoiceNumber: "INV-0001",
@@ -30,6 +31,39 @@ const base: InvoiceData = {
 const isPdf = (buffer: Buffer): boolean => buffer.subarray(0, 5).toString() === "%PDF-";
 
 describe("PDF documents", () => {
+  it("preserves numbered and bulleted list markers in invoice notes", () => {
+    expect(
+      invoiceNotesToPlainText(
+        "<ol><li><p>one</p></li><li><p>two</p></li><li><p>three</p></li></ol>" +
+          "<ul><li><p>dot</p></li><li><p>dot</p></li><li><p>dot</p></li></ul>"
+      )
+    ).toBe("1. one\n2. two\n3. three\n• dot\n• dot\n• dot");
+  });
+
+  it("indents nested list markers and preserves paragraph boundaries without duplicate breaks", () => {
+    expect(
+      invoiceNotesToPlainText(
+        "<p>before</p><ol><li><p>parent</p><ul><li><p>child</p></li><li><p>another child</p></li></ul>" +
+          "<ol><li><p>nested one</p></li><li><p>nested two</p></li></ol><p>after</p></li>" +
+          "<li><p>next parent</p></li></ol>"
+      )
+    ).toBe(
+      "before\n1. parent\n  • child\n  • another child\n  1. nested one\n  2. nested two\nafter\n2. next parent"
+    );
+  });
+
+  it("handles nested lists without paragraph wrappers, headings, and data-list markers", () => {
+    expect(
+      invoiceNotesToPlainText("<h1>Notes</h1><ol><li>parent<ul><li>child</li></ul></li><li>second</li></ol>")
+    ).toBe("Notes\n1. parent\n  • child\n2. second");
+
+    expect(
+      invoiceNotesToPlainText(
+        '<ol><li data-list="bullet">dot</li><li data-list="ordered">one</li><li data-list="ordered">two</li></ol>'
+      )
+    ).toBe("• dot\n1. one\n2. two");
+  });
+
   it("renders an invoice", async () => {
     const pdf = await buildInvoicePdf(base, "invoice");
     expect(isPdf(pdf)).toBe(true);
