@@ -8,7 +8,10 @@ exports.up = async (pgm) => {
 
     UPDATE project_client_settings
        SET milestone_source = 'worklenz'
-     WHERE milestone_source = 'manual';
+     WHERE milestone_source = 'manual'
+       AND NOT EXISTS (
+         SELECT 1 FROM client_portal_milestones m WHERE m.project_id = project_client_settings.project_id
+       );
   `);
 };
 

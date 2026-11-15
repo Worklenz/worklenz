@@ -232,15 +232,21 @@ export const MilestonesTab = ({ project }: MilestonesTabProps) => {
     },
   ];
 
-  if (query.isLoading) return <PortalLoader />;
-  if (query.isError) {
+  if (query.isLoading || overviewQuery.isLoading) return <PortalLoader />;
+  if (query.isError || overviewQuery.isError) {
     return (
       <Alert
         type="error"
         showIcon
         message={t('milestones.loadFailed', { defaultValue: 'The milestones could not be loaded.' })}
         action={
-          <Button size="small" onClick={() => query.refetch()}>
+          <Button
+            size="small"
+            onClick={() => {
+              if (query.isError) query.refetch();
+              if (overviewQuery.isError) overviewQuery.refetch();
+            }}
+          >
             {t('retry', { defaultValue: 'Retry' })}
           </Button>
         }
