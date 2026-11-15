@@ -1699,13 +1699,14 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
     let currentTaskIndex = 0;
     const taskIds = new Set(allTasks.map(task => task.id));
 
-    const categoryOrderedGroups =
+    const sortedStatusGroups =
       currentGrouping === 'status'
-        ? filterEmptyStatusGroups(
-            sortStatusGroupsByCategory(groups, statuses, statusCategoryOrder),
-            taskIds
-          )
+        ? sortStatusGroupsByCategory(groups, statuses, statusCategoryOrder)
         : groups;
+    const categoryOrderedGroups =
+      currentGrouping === 'status' && !hasNoTasks
+        ? filterEmptyStatusGroups(sortedStatusGroups, taskIds)
+        : sortedStatusGroups;
 
     // Software backlog: always keep Backlog (Unmapped), even when empty; active sprint first.
     const orderedGroups =
@@ -1803,6 +1804,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   }, [
     groups,
     allTasks,
+    hasNoTasks,
     statuses,
     statusCategoryOrder,
     collapsedGroups,
