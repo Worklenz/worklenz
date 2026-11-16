@@ -92,6 +92,13 @@ export class TaskListGroup implements ITaskGroup {
 }
 
 export default class TasksControllerV2 extends TasksControllerBase {
+  private static hasInvalidCustomColumnIds(value: unknown): boolean {
+    if (value === undefined) return false;
+    if (typeof value !== "string") return true;
+    return value.split(/[\s,]+/).filter(Boolean).some(
+      id => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    );
+  }
   private static isCountsOnly(query: ParsedQs) {
     return query.count === "true";
   }
@@ -1187,6 +1194,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
+    if (TasksControllerV2.hasInvalidCustomColumnIds(req.query.custom_column_ids)) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid custom column IDs"));
+    }
     const startTime = performance.now();
 
     // PERFORMANCE OPTIMIZATION: Skip expensive progress calculation by default
@@ -1318,6 +1328,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
+    if (TasksControllerV2.hasInvalidCustomColumnIds(req.query.custom_column_ids)) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid custom column IDs"));
+    }
     const startTime = performance.now();
 
     if (req.query.refresh_progress === "true" && req.params.id) {
@@ -2287,6 +2300,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
+    if (TasksControllerV2.hasInvalidCustomColumnIds(req.query.custom_column_ids)) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid custom column IDs"));
+    }
     const startTime = performance.now();
     const groupBy = (req.query.group || GroupBy.STATUS) as string;
 
