@@ -1,4 +1,4 @@
-import { GanttGroupingMode, GanttTask } from '../types/gantt-types';
+import { DependencyType, GanttGroupingMode, GanttTask } from '../types/gantt-types';
 import { formatDateLocal } from './date-utils';
 
 export type RoadmapExportFormat = 'pdf' | 'xlsx';
@@ -17,6 +17,14 @@ export interface RoadmapExportRowPayload {
   parent: string;
   color: string | null;
 }
+
+const DEPENDENCY_TYPE_LABEL: Record<DependencyType, string> = {
+  blocked_by: 'blocked by',
+  finish_to_start: 'finish to start',
+  start_to_start: 'start to start',
+  finish_to_finish: 'finish to finish',
+  start_to_finish: 'start to finish',
+};
 
 export interface RoadmapExportPayload {
   project_id: string;
@@ -70,11 +78,24 @@ export const buildRoadmapExportRows = (tasks: GanttTask[]): RoadmapExportRowPayl
     (task.children || []).forEach(child => names.set(child.id, child.name));
   });
 
-  const dependencyLabel = (task: GanttTask): string =>
-    (task.dependencies || [])
+  const dependencyLabel = (task: GanttTask): string => {
+    if (task.dependencyRecords?.length) {
+      return task.dependencyRecords
+        .map(dep => {
+          const name = names.get(dep.related_task_id);
+          if (!name) return null;
+          const relation = DEPENDENCY_TYPE_LABEL[dep.dependency_type] || dep.dependency_type;
+          return relation ? `${name} [${relation}]` : name;
+        })
+        .filter((label): label is string => Boolean(label))
+        .join('; ');
+    }
+
+    return (task.dependencies || [])
       .map(id => names.get(id))
       .filter((name): name is string => Boolean(name))
-      .join(', ');
+      .join('; ');
+  };
 
   const rows: RoadmapExportRowPayload[] = [];
   let currentGroup = '';
@@ -90,7 +111,7 @@ export const buildRoadmapExportRows = (tasks: GanttTask[]): RoadmapExportRowPayl
       status: task.status || '',
       priority: task.priority || '',
       assignees: assigneeLabel(task),
-      dependencies: kind === 'task' ? dependencyLabel(task) : '',
+      dependencies: dependencyLabel(task),
       parent,
       color: null,
     });

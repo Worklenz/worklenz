@@ -67,6 +67,44 @@ describe('buildRoadmapExportRows', () => {
     expect(rows[2].priority).toBe('Medium');
   });
 
+  it('includes dependency types and subtask dependencies when available', () => {
+    const rows = buildRoadmapExportRows([
+      task({
+        id: 'task-1',
+        name: 'Design review',
+        dependencies: ['task-2'],
+        dependencyRecords: [
+          {
+            id: 'dep-1',
+            task_id: 'task-1',
+            related_task_id: 'task-2',
+            dependency_type: 'blocked_by',
+          },
+        ],
+        children: [
+          task({
+            id: 'sub-1',
+            name: 'Wireframes',
+            dependencies: ['task-2'],
+            dependencyRecords: [
+              {
+                id: 'dep-2',
+                task_id: 'sub-1',
+                related_task_id: 'task-2',
+                dependency_type: 'finish_to_start',
+              },
+            ],
+          }),
+        ],
+      }),
+      task({ id: 'task-2', name: 'Kickoff', dependencies: [] }),
+    ]);
+
+    expect(rows[0].dependencies).toBe('Kickoff [blocked by]');
+    expect(rows[1].kind).toBe('subtask');
+    expect(rows[1].dependencies).toBe('Kickoff [finish to start]');
+  });
+
   it('does not repeat a section’s children as extra tasks', () => {
     const child = task({ id: 'only-once', name: 'Once' });
     const rows = buildRoadmapExportRows([
