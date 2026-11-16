@@ -11,7 +11,7 @@ i18n
   .init({
     fallbackLng: 'en',
     defaultNS: 'common',
-    ns: ['common', 'home', 'task-drawer/task-drawer'], // Preload namespaces used on first paint
+    ns: ['common', 'home', 'task-drawer/task-drawer', 'all-project-list', 'project-view-docs'], // Preload namespaces used on first paint
 
     interpolation: {
       escapeValue: false,
@@ -25,7 +25,8 @@ i18n
     debug: false,
 
     backend: {
-      loadPath: '/locales/{{lng}}/{{ns}}.json',
+      // Bump when locale JSON changes so browsers do not keep a stale translation file.
+      loadPath: '/locales/{{lng}}/{{ns}}.json?v=20261106-work-item',
     },
 
     react: {

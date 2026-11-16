@@ -15,30 +15,27 @@ import {
   FILTER_PILL_BUTTON_STYLE,
   FILTER_PILL_CONTROL_STYLE,
   MultiSelectFilterPill,
-  SingleSelectFilterPill,
   type FilterOption,
 } from '@/components/common/filters/MultiSelectFilterPill';
+import { ReportingDatePresetPill } from '@/components/reporting/filters/ReportingDatePresetPill';
+import {
+  isReportingDateApplicable,
+  REPORTING_DATE_PRESETS,
+  type ReportingCustomRange,
+  type ReportingDatePreset,
+} from '@/utils/date-presets';
 
 const { Text } = Typography;
 
-export type AnalyticsDatePreset =
-  | 'last_7_days'
-  | 'last_14_days'
-  | 'last_30_days'
-  | 'last_60_days'
-  | 'last_90_days'
-  | 'this_quarter'
-  | 'custom';
+/** Same presets as Classic Time Logs / reporting date filters. */
+export type AnalyticsDatePreset = ReportingDatePreset;
 
-const ALL_DATE_PRESETS: AnalyticsDatePreset[] = [
-  'last_7_days',
-  'last_14_days',
-  'last_30_days',
-  'last_60_days',
-  'last_90_days',
-  'this_quarter',
-  'custom',
-];
+const areSameIdSets = (a: string[], b: string[]): boolean => {
+  if (a.length !== b.length) return false;
+  const sortedA = [...a].sort();
+  const sortedB = [...b].sort();
+  return sortedA.every((id, i) => sortedB[i] === id);
+};
 
 export interface AnalyticsFilterBarProps {
   projectOptions: FilterOption[];
@@ -52,9 +49,22 @@ export interface AnalyticsFilterBarProps {
   teamOptions?: FilterOption[];
   selectedTeamIds?: string[];
   onTeamsChange?: (ids: string[]) => void;
+  /**
+   * Team IDs restored on Clear (and treated as non-active for the badge).
+   * Analytics pages that scope projects by team should pass the session/default team
+   * so Clear does not empty the Projects dropdown.
+   */
+  defaultTeamIds?: string[];
   datePreset?: AnalyticsDatePreset;
+  customRange?: ReportingCustomRange;
+  /** Applies both the preset and optional custom range together (staged until Apply). */
+  onDateChange?: (preset: AnalyticsDatePreset, customRange: ReportingCustomRange) => void;
+  /**
+   * @deprecated Prefer `onDateChange`. Still accepted so callers that only need a preset
+   * keep compiling during migration; custom range is passed as null.
+   */
   onDatePresetChange?: (preset: AnalyticsDatePreset) => void;
-  /** Limit which date presets appear (defaults to all). */
+  /** Limit which date presets appear (defaults to the Classic reporting list). */
   availableDatePresets?: AnalyticsDatePreset[];
   /** Used for badge count + Clear; defaults to last_30_days. */
   defaultDatePreset?: AnalyticsDatePreset;
@@ -85,9 +95,12 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
   teamOptions = [],
   selectedTeamIds = [],
   onTeamsChange,
+  defaultTeamIds = [],
   datePreset,
+  customRange = null,
+  onDateChange,
   onDatePresetChange,
-  availableDatePresets = ALL_DATE_PRESETS,
+  availableDatePresets,
   defaultDatePreset = 'last_30_days',
   statusOptions = [],
   selectedStatusIds = [],
@@ -103,10 +116,18 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
 
   const showMembers = Boolean(onMembersChange);
   const showTeams = Boolean(onTeamsChange);
-  const showDate = Boolean(datePreset && onDatePresetChange);
+  const applyDate = onDateChange ?? (onDatePresetChange
+    ? (preset: AnalyticsDatePreset) => onDatePresetChange(preset)
+    : undefined);
+  const showDate = Boolean(datePreset && applyDate);
   const showStatuses = Boolean(onStatusesChange && statusOptions.length > 0);
   const showIncludeDone =
     typeof includeDone === 'boolean' && Boolean(onIncludeDoneChange);
+
+  const isDefaultTeamSelection = React.useCallback(
+    (ids: string[]) => areSameIdSets(ids, defaultTeamIds),
+    [defaultTeamIds]
+  );
 
   const [draftProjectIds, setDraftProjectIds] = React.useState(selectedProjectIds);
   const [draftMemberIds, setDraftMemberIds] = React.useState(selectedMemberIds);
@@ -114,6 +135,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
   const [draftDatePreset, setDraftDatePreset] = React.useState(
     datePreset ?? defaultDatePreset
   );
+  const [draftCustomRange, setDraftCustomRange] = React.useState<ReportingCustomRange>(customRange);
   const [draftStatusIds, setDraftStatusIds] = React.useState(selectedStatusIds);
   const [draftIncludeDone, setDraftIncludeDone] = React.useState(includeDone ?? false);
 
@@ -123,6 +145,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
     setDraftMemberIds(selectedMemberIds);
     setDraftTeamIds(selectedTeamIds);
     setDraftDatePreset(datePreset ?? defaultDatePreset);
+    setDraftCustomRange(customRange);
     setDraftStatusIds(selectedStatusIds);
     setDraftIncludeDone(includeDone ?? false);
     // Re-sync drafts only when the panel opens (same pattern as Time Entries).
@@ -133,8 +156,16 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
     let count = 0;
     if (selectedProjectIds.length > 0) count++;
     if (showMembers && selectedMemberIds.length > 0) count++;
-    if (showTeams && selectedTeamIds.length > 0) count++;
-    if (showDate && datePreset && datePreset !== defaultDatePreset) count++;
+    if (showTeams && !isDefaultTeamSelection(selectedTeamIds)) {
+      count++;
+    }
+    if (
+      showDate &&
+      datePreset &&
+      (datePreset !== defaultDatePreset || (datePreset === 'custom' && customRange))
+    ) {
+      count++;
+    }
     if (showStatuses && selectedStatusIds.length > 0) count++;
     if (showIncludeDone && includeDone) count++;
     return count;
@@ -144,8 +175,10 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
     selectedMemberIds,
     showTeams,
     selectedTeamIds,
+    isDefaultTeamSelection,
     showDate,
     datePreset,
+    customRange,
     defaultDatePreset,
     showStatuses,
     selectedStatusIds,
@@ -156,53 +189,54 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
   const hasDraftFilters =
     draftProjectIds.length > 0 ||
     (showMembers && draftMemberIds.length > 0) ||
-    (showTeams && draftTeamIds.length > 0) ||
-    (showDate && draftDatePreset !== defaultDatePreset) ||
+    (showTeams && !isDefaultTeamSelection(draftTeamIds)) ||
+    (showDate &&
+      (draftDatePreset !== defaultDatePreset ||
+        (draftDatePreset === 'custom' && draftCustomRange !== null))) ||
     (showStatuses && draftStatusIds.length > 0) ||
     (showIncludeDone && draftIncludeDone);
 
+  const isDateDraftApplicable =
+    !showDate || isReportingDateApplicable(draftDatePreset, draftCustomRange);
+
+  const emitDate = (preset: AnalyticsDatePreset, range: ReportingCustomRange) => {
+    if (onDateChange) {
+      onDateChange(preset, range);
+    } else if (onDatePresetChange) {
+      onDatePresetChange(preset);
+    }
+  };
+
   const handleApply = () => {
+    if (!isDateDraftApplicable) return;
     onProjectsChange(draftProjectIds);
     if (onMembersChange) onMembersChange(draftMemberIds);
     if (onTeamsChange) onTeamsChange(draftTeamIds);
-    if (onDatePresetChange) onDatePresetChange(draftDatePreset);
+    if (showDate) emitDate(draftDatePreset, draftCustomRange);
     if (onStatusesChange) onStatusesChange(draftStatusIds);
     if (onIncludeDoneChange) onIncludeDoneChange(draftIncludeDone);
     setPanelOpen(false);
   };
 
   const handleClearAll = () => {
+    const resetTeamIds = defaultTeamIds;
+
     setDraftProjectIds([]);
     setDraftMemberIds([]);
-    setDraftTeamIds([]);
+    setDraftTeamIds(resetTeamIds);
     setDraftDatePreset(defaultDatePreset);
+    setDraftCustomRange(null);
     setDraftStatusIds([]);
     setDraftIncludeDone(false);
 
     onProjectsChange([]);
     if (onMembersChange) onMembersChange([]);
-    if (onTeamsChange) onTeamsChange([]);
-    if (onDatePresetChange) onDatePresetChange(defaultDatePreset);
+    if (onTeamsChange) onTeamsChange(resetTeamIds);
+    if (showDate) emitDate(defaultDatePreset, null);
     if (onStatusesChange) onStatusesChange([]);
     if (onIncludeDoneChange) onIncludeDoneChange(false);
     setPanelOpen(false);
   };
-
-  const dateLabels: Record<AnalyticsDatePreset, string> = {
-    last_7_days: t('dateLast7', { defaultValue: 'Last 7 days' }),
-    last_14_days: t('dateLast14', { defaultValue: 'Last 14 days' }),
-    last_30_days: t('dateLast30', { defaultValue: 'Last 30 days' }),
-    last_60_days: t('dateLast60', { defaultValue: 'Last 60 days' }),
-    last_90_days: t('dateLast90', { defaultValue: 'Last 90 days' }),
-    this_quarter: t('dateThisQuarter', { defaultValue: 'This quarter' }),
-    custom: t('dateCustom', { defaultValue: 'Custom' }),
-  };
-  const dateOptions = availableDatePresets.map(value => ({
-    value,
-    label: dateLabels[value],
-  }));
-  const selectedDateLabel =
-    dateOptions.find(o => o.value === draftDatePreset)?.label ?? dateOptions[0]?.label;
 
   const panelContent = (
     <div style={{ width: 'min(420px, calc(100vw - 32px))', padding: '4px 0' }}>
@@ -212,13 +246,15 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
 
       <Flex gap={8} wrap="wrap" align="center">
         {showDate && (
-          <SingleSelectFilterPill
-            label={selectedDateLabel}
-            options={dateOptions}
-            value={draftDatePreset}
-            onChange={value => setDraftDatePreset(value as AnalyticsDatePreset)}
-            ariaLabel={t('datePreset', { defaultValue: 'Date range' })}
-            isActive={draftDatePreset !== defaultDatePreset}
+          <ReportingDatePresetPill
+            datePreset={draftDatePreset}
+            customRange={draftCustomRange}
+            allowedPresets={onDateChange ? availableDatePresets : (availableDatePresets ?? REPORTING_DATE_PRESETS).filter(preset => preset !== 'custom')}
+            showResolvedRange
+            onChange={(preset, range) => {
+              setDraftDatePreset(preset);
+              setDraftCustomRange(range);
+            }}
           />
         )}
 
@@ -303,7 +339,12 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
         >
           {t('clearFilters', { defaultValue: 'Clear' })}
         </Button>
-        <Button type="primary" onClick={handleApply} style={FILTER_PILL_BUTTON_STYLE}>
+        <Button
+          type="primary"
+          onClick={handleApply}
+          disabled={!isDateDraftApplicable}
+          style={FILTER_PILL_BUTTON_STYLE}
+        >
           {t('applyFilters', { defaultValue: 'Apply' })}
         </Button>
       </Flex>

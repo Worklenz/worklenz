@@ -91,7 +91,7 @@
       "status": "Stan skierowany do klienta",
       "users": "Użytkownicy klienta"
     },
-    "description": "Wybierz, które projekty będą widoczne w Portalu Klienta i co będzie udostępniane w każdym z nich. Wszystko zaczyna się od opcji Tylko wewnętrzne.",
+    "description": "Wybierz, które projekty będą widoczne w Portalu Klienta i co będzie udostępniane w każdym z nich. Wszystko zaczyna się od opcji Tylko wewnętrzne. Projekty zarchiwizowane przez właściciela lub administratora są pomijane.",
     "empty": "Nie ma jeszcze żadnych projektów. Utwórz projekt w swoim obszarze roboczym, a następnie połącz go z klientem.",
     "fieldSaveFailed": "Nie udało się zaktualizować projektu.",
     "fieldSaved": "{{name}} zaktualizowano.",

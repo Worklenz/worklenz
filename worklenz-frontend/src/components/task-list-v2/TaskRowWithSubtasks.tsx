@@ -1,6 +1,7 @@
 import React, { memo, useState, useCallback, useRef, useEffect } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { selectTaskListMemberIds, selectTaskListLabelIds } from '@/features/task-management/task-management.selectors';
 import {
   selectTaskById,
   createSubtask,
@@ -283,17 +284,8 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
     const isLoadingSubtasks = useAppSelector(state => selectSubtaskLoading(state, taskId));
     const dispatch = useAppDispatch();
 
-    const selectedMemberIds = useAppSelector(
-      state =>
-        state.taskReducer?.taskAssignees?.filter((m: any) => m.selected).map((m: any) => m.id) ||
-        [],
-      (a, b) => JSON.stringify(a) === JSON.stringify(b)
-    );
-    const selectedLabelIds = useAppSelector(
-      state =>
-        state.taskReducer?.labels?.filter((l: any) => l.selected).map((l: any) => l.id) || [],
-      (a, b) => JSON.stringify(a) === JSON.stringify(b)
-    );
+    const selectedMemberIds = useAppSelector(selectTaskListMemberIds);
+    const selectedLabelIds = useAppSelector(selectTaskListLabelIds);
     const priorities = useAppSelector(state => state.taskReducer?.priorities || []);
 
     const activeFilters = React.useMemo(

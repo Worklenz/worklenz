@@ -280,6 +280,96 @@ const allTasksReportsSlice = createSlice({
       task.names = action.payload.names;
     },
 
+    // Applies status changes from TASK_STATUS_CHANGE socket events so the
+    // All Tasks report reflects drawer/list edits without a full refetch.
+    updateTaskStatus: (
+      state,
+      action: PayloadAction<{
+        id: string;
+        status_id?: string;
+        status_name?: string;
+        color_code?: string;
+        color_code_dark?: string;
+        complete_ratio?: number;
+        completed_at?: string | null;
+        statusCategory?: IProjectTask['status_category'];
+      }>
+    ) => {
+      const {
+        id,
+        status_id,
+        status_name,
+        color_code,
+        color_code_dark,
+        complete_ratio,
+        completed_at,
+        statusCategory,
+      } = action.payload;
+
+      const applyStatus = (task: IProjectTask) => {
+        if (status_id !== undefined) {
+          task.status_id = status_id;
+          task.status = status_id;
+        }
+        if (status_name !== undefined) task.status_name = status_name;
+        if (color_code !== undefined) task.status_color = color_code;
+        if (color_code_dark !== undefined) task.status_color_dark = color_code_dark;
+        if (typeof complete_ratio === 'number') {
+          task.complete_ratio = complete_ratio;
+          task.progress = complete_ratio;
+        }
+        if (completed_at !== undefined) {
+          task.completed_at = completed_at ?? undefined;
+        }
+        if (statusCategory !== undefined) task.status_category = statusCategory;
+        task.updated_at = new Date().toISOString();
+      };
+
+      const task = state.tasksList.find(t => t.id === id);
+      if (task) applyStatus(task);
+
+      for (const group of state.groupedTasks) {
+        const groupedTask = group.tasks.find(t => t.id === id);
+        if (groupedTask) applyStatus(groupedTask);
+      }
+    },
+
+    // Applies priority changes from TASK_PRIORITY_CHANGE socket events.
+    updateTaskPriority: (
+      state,
+      action: PayloadAction<{
+        id: string;
+        priority_id?: string;
+        priority_name?: string;
+        color_code?: string;
+        color_code_dark?: string;
+        priority_value?: number;
+      }>
+    ) => {
+      const { id, priority_id, priority_name, color_code, color_code_dark, priority_value } =
+        action.payload;
+
+      const applyPriority = (task: IProjectTask) => {
+        if (priority_id !== undefined) {
+          task.priority_id = priority_id;
+          task.priority = priority_id;
+        }
+        if (priority_name !== undefined) task.priority_name = priority_name;
+        if (color_code !== undefined) task.priority_color = color_code;
+        if (color_code_dark !== undefined) task.priority_color_dark = color_code_dark;
+        if (priority_value !== undefined) task.priority_value = priority_value;
+        task.updated_at = new Date().toISOString();
+      };
+
+      const task = state.tasksList.find(t => t.id === id);
+      if (task) applyPriority(task);
+
+      for (const group of state.groupedTasks) {
+        const groupedTask = group.tasks.find(t => t.id === id);
+        if (groupedTask) applyPriority(groupedTask);
+      }
+    },
+
     // Used internally by setTeamsAndFetch only.
     // Do NOT dispatch these directly and then call fetchAllTasks in a
     // component — that causes a stale-state race. Use setTeamsAndFetch instead.
@@ -515,6 +605,8 @@ export const {
   setSort,
   setSearchQuery,
   updateTaskAssignees,
+  updateTaskStatus,
+  updateTaskPriority,
   setSelectOrDeselectAllTeams,
   setSelectOrDeselectTeam,
   setSelectedProjects,

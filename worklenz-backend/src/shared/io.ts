@@ -37,8 +37,17 @@ export class IO {
     }
   }
 
-  public static emit(event: SocketEvents, socketId: string, data?: any) {
-    this.getSocketById(socketId)?.emit(event.toString(), data);
+  /** Broadcast to sockets currently in an arbitrary room (e.g. Client Portal team/client rooms). */
+  public static emitToRoom(room: string, event: SocketEvents | string, data?: unknown) {
+    if (!room || !this.instance) return;
+    const eventName = typeof event === "string" ? event : event.toString();
+    this.instance.to(room).emit(eventName, data);
+  }
+
+  public static emit(event: SocketEvents | string, socketId: string, data?: any) {
+    if (!socketId) return;
+    const eventName = typeof event === "string" ? event : event.toString();
+    this.getSocketById(socketId)?.emit(eventName, data);
   }
 
   public static async emitByUserId(id: string, userId: string | null, event: SocketEvents, data?: any) {

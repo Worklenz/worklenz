@@ -1,4 +1,8 @@
 import Excel from "exceljs";
+import { execFileSync, spawnSync } from "child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import path from "path";
 import {
   barGeometry,
   buildRoadmapExcel,
@@ -30,6 +34,29 @@ const row = (overrides: Record<string, unknown> = {}) => ({
 });
 
 describe("roadmap export", () => {
+  const canExtractPdfText = spawnSync("pdftotext", ["-v"]).error == null;
+  (canExtractPdfText ? it : it.skip)("preserves mixed-script names in the rendered PDF", async () => {
+    const name = "Zażółć 中文 Ελληνικά Привет";
+    const prepared = prepareRoadmapExport({ format: "pdf", group_by: "phase", rows: [row({ name })] });
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    const pdf = await buildRoadmapPdf({ projectName: name, exportedOn: "2026-11-10", groupingLabel: "Phase", rows: prepared.value.rows });
+    const dir = mkdtempSync(path.join(tmpdir(), "roadmap-pdf-"));
+    try {
+      const file = path.join(dir, "roadmap.pdf");
+      writeFileSync(file, pdf);
+      const text = execFileSync("pdftotext", [file, "-"], { encoding: "utf8" });
+      expect(text.split(name)).toHaveLength(3);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+  it("validates and preserves shared timeline bounds", () => {
+    const result = prepareRoadmapExport({ format: "pdf", group_by: "phase", rows: [row()], timeline_start: "2026-01-01", timeline_end: "2026-12-31" });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect([result.value.timelineStart, result.value.timelineEnd]).toEqual(["2026-01-01", "2026-12-31"]);
+    expect(prepareRoadmapExport({ format: "pdf", group_by: "phase", rows: [], timeline_start: "2026-12-31", timeline_end: "2026-01-01" }).ok).toBe(false);
+  });
   it("rejects an unknown format and an invalid date", () => {
     expect(prepareRoadmapExport({ format: "csv", group_by: "phase", rows: [] }).ok).toBe(false);
     const dated = prepareRoadmapExport({

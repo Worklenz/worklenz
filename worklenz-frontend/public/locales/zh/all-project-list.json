@@ -1,5 +1,10 @@
 {
   "name": "名称",
+  "projectType": "项目类型",
+  "projectTypeSoftware": "软件项目",
+  "projectTypeGeneral": "通用项目",
+  "projectTypeSoftwareTooltip": "软件项目 — 问题、待办和冲刺",
+  "projectTypeGeneralTooltip": "通用项目 — 任务、阶段和看板",
   "client": "客户",
   "category": "类别",
   "status": "状态",
@@ -62,5 +67,10 @@
   "groups": "团体",
   "retry": "重试",
   "searchProjects": "按项目名称搜索",
-  "members": "成员"
+  "members": "成员",
+  "expandAll": "展开全部",
+  "collapseAll": "折叠全部",
+  "unnamedGroup": "未命名分组",
+  "projectCount_one": "{{count}} 个项目",
+  "projectCount_other": "{{count}} 个项目"
 }

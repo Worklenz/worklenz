@@ -1,5 +1,10 @@
 {
   "name": "Name",
+  "projectType": "Projekttyp",
+  "projectTypeSoftware": "Softwareprojekt",
+  "projectTypeGeneral": "Allgemeines Projekt",
+  "projectTypeSoftwareTooltip": "Softwareprojekt — Issues, Backlog und Sprints",
+  "projectTypeGeneralTooltip": "Allgemeines Projekt — Aufgaben, Phasen und Boards",
   "client": "Kunde",
   "category": "Kategorie",
   "status": "Alle Status",
@@ -62,5 +67,10 @@
   "groups": "Gruppen",
   "retry": "Erneut versuchen",
   "searchProjects": "Nach Projektname suchen",
-  "members": "Mitglieder"
+  "members": "Mitglieder",
+  "expandAll": "Alle erweitern",
+  "collapseAll": "Alle reduzieren",
+  "unnamedGroup": "Unbenannte Gruppe",
+  "projectCount_one": "{{count}} Projekt",
+  "projectCount_other": "{{count}} Projekte"
 }

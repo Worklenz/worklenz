@@ -91,7 +91,7 @@
       "status": "Statusi përballë klientit",
       "users": "Përdoruesit e klientëve"
     },
-    "description": "Zgjidhni cilat projekte janë të dukshme në Portalin e Klientit dhe çfarë ndahet brenda secilit prej tyre. Gjithçka fillon vetëm si e brendshme.",
+    "description": "Zgjidhni cilat projekte janë të dukshme në Portalin e Klientit dhe çfarë ndahet brenda secilit prej tyre. Gjithçka fillon vetëm si e brendshme. Projektet e arkivuara nga një pronar ose administrator lihen jashtë.",
     "empty": "Asnjë projekt ende. Krijoni një projekt në hapësirën tuaj të punës, më pas lidheni atë me një klient.",
     "fieldSaveFailed": "Projekti nuk mund të përditësohej.",
     "fieldSaved": "{{name}} përditësuar.",

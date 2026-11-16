@@ -81,7 +81,12 @@
     "stopAndStart": "停止并启动",
     "cancel": "取消",
     "logTime": "记录时间",
-    "openTimeLogPanel": "{{taskName}} 的打开时间日志"
+    "openTimeLogPanel": "{{taskName}} 的打开时间日志",
+    "dailyLimitExceededTitle": "超出每日时间限制",
+    "dailyLimitExceededDesc": "记录的总时间每天不能超过 24 小时。此计时器运行了 {{elapsed}}，但您在 {{day}} 仅剩 {{remaining}}。",
+    "logRemainingAllowance": "记录剩余时间 ({{remaining}})",
+    "discardTimer": "放弃计时器",
+    "keepRunning": "保持运行"
   },
   "ownerRole": "所有者",
   "adminRole": "管理员",

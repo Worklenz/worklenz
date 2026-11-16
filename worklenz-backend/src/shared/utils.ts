@@ -204,6 +204,7 @@ const DISCUSSION_SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
   allowedTags: ["p", "br", "h1", "h2", "h3", "strong", "b", "em", "i", "u", "s", "ul", "ol", "li", "a", "blockquote", "code", "pre", "span"],
   allowedAttributes: {
     a: ["href", "target", "rel"],
+    li: ["data-list"],
     span: ["class", "data-type", "data-id", "data-label"],
   },
   allowedSchemes: ["http", "https", "mailto"],

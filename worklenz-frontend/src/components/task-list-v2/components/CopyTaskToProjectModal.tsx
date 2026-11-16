@@ -61,7 +61,7 @@ const normalizeCompareResult = (
   };
 };
 
-const CopyTaskToProjectModal = ({
+const CopyTaskToProjectDialog = ({
   open,
   sourceProjectId,
   taskTitle,
@@ -396,6 +396,16 @@ const CopyTaskToProjectModal = ({
       )}
     </Modal>
   );
+};
+
+// Task title cells each own a dialog. Avoid mounting its controls and effects
+// until requested, then retain it so Modal can finish its closing animation.
+const CopyTaskToProjectModal = (props: CopyTaskToProjectModalProps) => {
+  const [hasOpened, setHasOpened] = useState(props.open);
+
+  if (props.open && !hasOpened) setHasOpened(true);
+
+  return props.open || hasOpened ? <CopyTaskToProjectDialog {...props} /> : null;
 };
 
 export default CopyTaskToProjectModal;

@@ -1,5 +1,10 @@
 {
   "name": "Nome del progetto",
+  "projectType": "Tipo di progetto",
+  "projectTypeSoftware": "Progetto software",
+  "projectTypeGeneral": "Progetto generale",
+  "projectTypeSoftwareTooltip": "Progetto software — issue, backlog e sprint",
+  "projectTypeGeneralTooltip": "Progetto generale — attività, fasi e board",
   "client": "Cliente",
   "category": "Categoria",
   "status": "Stato",
@@ -58,5 +63,10 @@
   },
   "groups": "gruppi",
   "retry": "Riprova",
-  "members": "Membri"
+  "members": "Membri",
+  "expandAll": "Espandi tutto",
+  "collapseAll": "Comprimi tutto",
+  "unnamedGroup": "Gruppo senza nome",
+  "projectCount_one": "{{count}} progetto",
+  "projectCount_other": "{{count}} progetti"
 }

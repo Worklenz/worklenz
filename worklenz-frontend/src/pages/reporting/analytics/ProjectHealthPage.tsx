@@ -178,6 +178,12 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     [projectHealths]
   );
 
+  /** Session/default team — Clear restores this so project options stay available. */
+  const defaultTeamIds = useMemo(() => {
+    const id = session?.team_id ? String(session.team_id) : teamOptions[0]?.value;
+    return id ? [id] : [];
+  }, [session?.team_id, teamOptions]);
+
   // Load the full team set for KPIs / health donut / table.
   // Projects selection only scopes the Progress & budget bar chart (latest 20 by default).
   const filters: ProjectHealthFilters = useMemo(
@@ -438,6 +444,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
         teamOptions={teamOptions}
         selectedTeamIds={selectedTeamIds}
         onTeamsChange={setSelectedTeamIds}
+        defaultTeamIds={defaultTeamIds}
         statusOptions={healthOptions}
         selectedStatusIds={selectedHealthIds}
         onStatusesChange={setSelectedHealthIds}

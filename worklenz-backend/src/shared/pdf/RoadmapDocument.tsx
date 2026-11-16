@@ -1,5 +1,4 @@
 import { Page, StyleSheet, Text, View, Document } from "@react-pdf/renderer";
-import { PDF_FONT_FAMILY } from "./fonts";
 import { safeColor } from "./format";
 import type {
   RoadmapDependencyLink,
@@ -29,7 +28,7 @@ const TIMELINE_WIDTH = 454;
 
 const styles = StyleSheet.create({
   page: {
-    fontFamily: PDF_FONT_FAMILY,
+    fontFamily: "RoadmapSans",
     fontSize: 9,
     color: "#262626",
     paddingTop: 28,
@@ -266,8 +265,8 @@ const typeLabel = (kind: RoadmapPdfRow["kind"]): string => {
 };
 
 const dateRange = (row: RoadmapPdfRow): string => {
-  if (row.startDate && row.endDate) return `${row.startDate} → ${row.endDate}`;
-  return row.startDate || row.endDate || "—";
+  if (row.startDate && row.endDate) return `${row.startDate} - ${row.endDate}`;
+  return row.startDate || row.endDate || "-";
 };
 
 const detailValue = (row: RoadmapPdfRow, key: (typeof DETAIL_COLUMNS)[number]["key"]): string => {
@@ -275,6 +274,23 @@ const detailValue = (row: RoadmapPdfRow, key: (typeof DETAIL_COLUMNS)[number]["k
   if (key === "progress") return row.progress == null ? "" : `${row.progress}%`;
   if (key === "startDate" || key === "endDate") return row[key] || "";
   return String(row[key] || "");
+};
+
+// Explicit text runs avoid renderer fallback producing incorrect glyph mappings
+// when a line mixes several font subsets.
+const PdfTextRuns = ({ text }: { text: string }) => {
+  const runs: Array<{ font: string; text: string }> = [];
+  for (const char of text) {
+    const code = char.codePointAt(0) ?? 0;
+    const font = ((code >= 0x3000 && code <= 0x30ff) || (code >= 0x3400 && code <= 0x9fff) || (code >= 0xac00 && code <= 0xd7af)) ? "DroidSansFallback"
+      : code >= 0x0d80 && code <= 0x0dff ? "NotoSansSinhala"
+      : code >= 0x0b80 && code <= 0x0bff ? "NotoSansTamil"
+      : "RoadmapSans";
+    const last = runs[runs.length - 1];
+    if (last?.font === font) last.text += char;
+    else runs.push({ font, text: char });
+  }
+  return <>{runs.map((run, index) => <Text key={index} style={{ fontFamily: run.font }}>{run.text}</Text>)}</>;
 };
 
 interface RoadmapDocumentProps {
@@ -323,22 +339,30 @@ const ChartPage = ({ model }: RoadmapDocumentProps) => (
         >
           <View style={[styles.nameCell, { paddingLeft: indentFor(row.kind) }]}>
             <Text style={row.kind === "group" ? styles.groupName : styles.name}>
-              {clip(row.name, row.kind === "group" ? 28 : 24)}
+              <PdfTextRuns text={clip(row.name, row.kind === "group" ? 28 : 24)} />
             </Text>
             {row.kind !== "group" && row.dependencies ? (
-              <Text style={styles.depLine}>{clip(`Depends: ${row.dependencies}`, 34)}</Text>
+              <Text style={styles.depLine}>
+                <PdfTextRuns text={clip(`Depends: ${row.dependencies}`, 34)} />
+              </Text>
             ) : null}
           </View>
           <View style={styles.metaCell}>
-            <Text style={styles.metaLine}>{dateRange(row)}</Text>
             <Text style={styles.metaLine}>
-              {[
-                row.progress != null ? `${row.progress}%` : null,
-                row.status || null,
-                row.priority || null,
-              ]
-                .filter(Boolean)
-                .join(" · ") || "—"}
+              <PdfTextRuns text={dateRange(row)} />
+            </Text>
+            <Text style={styles.metaLine}>
+              <PdfTextRuns
+                text={
+                  [
+                    row.progress != null ? `${row.progress}%` : null,
+                    row.status || null,
+                    row.priority || null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || "-"
+                }
+              />
             </Text>
           </View>
           <View style={styles.barTrack}>
@@ -405,10 +429,10 @@ const DetailsPage = ({ model }: RoadmapDocumentProps) => (
               style={[
                 styles.tableCell,
                 { width: column.width },
-                row.kind === "group" ? { fontWeight: 700 } : null,
+                row.kind === "group" ? { fontWeight: 700 } : {},
               ]}
             >
-              {clip(detailValue(row, column.key), column.key === "name" ? 28 : 22)}
+              <PdfTextRuns text={clip(detailValue(row, column.key), column.key === "name" ? 28 : 22)} />
             </Text>
           ))}
         </View>
@@ -446,10 +470,12 @@ const DependenciesPage = ({ model }: RoadmapDocumentProps) => (
         <View key={`dep-${index}-${link.from}-${link.to}`} style={styles.tableRow} wrap={false}>
           {DEP_COLUMNS.map(column => (
             <Text key={column.key} style={[styles.tableCell, { width: column.width }]}>
-              {clip(
-                column.key === "kind" ? typeLabel(link.kind) : String(link[column.key] || ""),
-                36
-              )}
+              <PdfTextRuns
+                text={clip(
+                  column.key === "kind" ? typeLabel(link.kind) : String(link[column.key] || ""),
+                  36
+                )}
+              />
             </Text>
           ))}
         </View>

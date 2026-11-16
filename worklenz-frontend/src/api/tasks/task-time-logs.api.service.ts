@@ -4,6 +4,7 @@ import { IServerResponse } from '@/types/common.types';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
 import { getUserSession } from '@/utils/session-helper';
 import { toQueryString } from '@/utils/toQueryString';
+import config from '@/config/env';
 
 const rootUrl = `${API_BASE_URL}/task-time-log`;
 
@@ -249,6 +250,22 @@ export const taskTimeLogsApiService = {
     return response.data;
   },
 
+  getDailyAllowance: async (
+    date?: string
+  ): Promise<
+    IServerResponse<{
+      enforce_daily_time_limit: boolean;
+      date?: string;
+      limit_seconds?: number;
+      logged_seconds?: number;
+      remaining_seconds?: number | null;
+    }>
+  > => {
+    const params = date ? `?date=${encodeURIComponent(date)}` : '';
+    const response = await apiClient.get(`${rootUrl}/daily-allowance${params}`);
+    return response.data;
+  },
+
   getRunningTimers: async (): Promise<IServerResponse<IRunningTimer[]>> => {
     const response = await apiClient.get(`${rootUrl}/running-timers`);
     return response.data;
@@ -366,6 +383,6 @@ export const taskTimeLogsApiService = {
     sort_order?: 'asc' | 'desc';
   } & IScopeAwareParams) {
     const queryString = toQueryString(params);
-    window.location.href = `${import.meta.env.VITE_API_URL}${rootUrl}/export-csv${queryString}`;
+    window.location.href = `${config.apiUrl}${rootUrl}/export-csv${queryString}`;
   },
 };

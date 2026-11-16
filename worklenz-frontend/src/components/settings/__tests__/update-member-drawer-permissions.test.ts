@@ -1,62 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { ROLE_NAMES } from '@/types/roles/role.types';
-import { canManageUserRole, getSessionRoleName } from '@/utils/role-permissions.utils';
+import { evaluateUpdateMemberPermissions } from '@/utils/update-member-permissions';
 
 describe('update-member-drawer permission and self-edit gating rules', () => {
-  const evaluatePermissions = ({
-    currentUser,
-    selectedMemberId,
-    teamMember,
-  }: {
-    currentUser: {
-      email?: string;
-      team_member_id?: string;
-      role_name?: string;
-      owner?: boolean;
-      is_admin?: boolean;
-    } | null;
-    selectedMemberId: string | null;
-    teamMember: {
-      email?: string;
-      role_name?: string;
-    } | null;
-  }) => {
-    const currentUserRole = getSessionRoleName(currentUser as any);
-
-    const isOwnAccount = Boolean(
-      (currentUser?.email && currentUser?.email === teamMember?.email) ||
-        (currentUser?.team_member_id && currentUser?.team_member_id === selectedMemberId)
-    );
-
-    const canManageTarget =
-      currentUserRole === ROLE_NAMES.ADMIN
-        ? teamMember?.role_name?.toLowerCase() !== 'owner'
-        : canManageUserRole(currentUser?.role_name, teamMember?.role_name, currentUser?.owner);
-
-    const canEditMemberDetails =
-      currentUserRole === ROLE_NAMES.OWNER ||
-      (currentUserRole === ROLE_NAMES.ADMIN && (isOwnAccount || Boolean(canManageTarget))) ||
-      isOwnAccount;
-
-    const canCreateJobTitle =
-      currentUserRole === ROLE_NAMES.OWNER || currentUserRole === ROLE_NAMES.ADMIN;
-
-    const canEditRole = !isOwnAccount && Boolean(canManageTarget);
-    const canEditManager = !isOwnAccount && Boolean(canManageTarget);
-
-    return {
-      currentUserRole,
-      isOwnAccount,
-      canManageTarget,
-      canEditMemberDetails,
-      canCreateJobTitle,
-      canEditRole,
-      canEditManager,
-    };
-  };
-
   it('allows Member to edit own basic details while protecting role, manager, and job-title creation', () => {
-    const perms = evaluatePermissions({
+    const perms = evaluateUpdateMemberPermissions({
       currentUser: {
         email: 'member@test.com',
         team_member_id: 'tm-member',
@@ -77,7 +24,7 @@ describe('update-member-drawer permission and self-edit gating rules', () => {
   });
 
   it('allows Team Lead to edit own basic details while protecting role, manager, and job-title creation', () => {
-    const perms = evaluatePermissions({
+    const perms = evaluateUpdateMemberPermissions({
       currentUser: {
         email: 'lead@test.com',
         team_member_id: 'tm-lead',
@@ -98,7 +45,7 @@ describe('update-member-drawer permission and self-edit gating rules', () => {
   });
 
   it('prohibits Member from editing another member', () => {
-    const perms = evaluatePermissions({
+    const perms = evaluateUpdateMemberPermissions({
       currentUser: {
         email: 'member@test.com',
         team_member_id: 'tm-member',
@@ -118,8 +65,70 @@ describe('update-member-drawer permission and self-edit gating rules', () => {
     expect(perms.canEditManager).toBe(false);
   });
 
+  it('allows Member with Manage users to edit another member', () => {
+    const perms = evaluateUpdateMemberPermissions({
+      currentUser: {
+        email: 'member@test.com',
+        team_member_id: 'tm-member',
+        role_name: 'Member',
+      },
+      selectedMemberId: 'tm-other',
+      teamMember: {
+        email: 'other@test.com',
+        role_name: 'Member',
+      },
+      hasManageUsers: true,
+    });
+
+    expect(perms.canEditMemberDetails).toBe(true);
+    expect(perms.canCreateJobTitle).toBe(true);
+    expect(perms.canEditRole).toBe(true);
+  });
+
+  it('does not let Manage users edit an Admin', () => {
+    const perms = evaluateUpdateMemberPermissions({
+      currentUser: {
+        email: 'member@test.com',
+        team_member_id: 'tm-member',
+        role_name: 'Member',
+      },
+      selectedMemberId: 'tm-admin',
+      teamMember: {
+        email: 'admin@test.com',
+        role_name: 'Admin',
+      },
+      hasManageUsers: true,
+    });
+
+    expect(perms.canEditMemberDetails).toBe(false);
+    expect(perms.canCreateJobTitle).toBe(true);
+    expect(perms.canEditRole).toBe(false);
+    expect(perms.canEditManager).toBe(false);
+  });
+
+  it('allows Member with project Manage members to edit details but not team role', () => {
+    const perms = evaluateUpdateMemberPermissions({
+      currentUser: {
+        email: 'member@test.com',
+        team_member_id: 'tm-member',
+        role_name: 'Member',
+      },
+      selectedMemberId: 'tm-other',
+      teamMember: {
+        email: 'other@test.com',
+        role_name: 'Member',
+      },
+      allowProjectMemberManage: true,
+    });
+
+    expect(perms.canEditMemberDetails).toBe(true);
+    expect(perms.canCreateJobTitle).toBe(false);
+    expect(perms.canEditRole).toBe(false);
+    expect(perms.canEditManager).toBe(false);
+  });
+
   it('allows Admin to create job titles and manage other members, but protects role on self', () => {
-    const selfPerms = evaluatePermissions({
+    const selfPerms = evaluateUpdateMemberPermissions({
       currentUser: {
         email: 'admin@test.com',
         team_member_id: 'tm-admin',
@@ -138,7 +147,7 @@ describe('update-member-drawer permission and self-edit gating rules', () => {
     expect(selfPerms.canEditRole).toBe(false);
     expect(selfPerms.canEditManager).toBe(false);
 
-    const otherPerms = evaluatePermissions({
+    const otherPerms = evaluateUpdateMemberPermissions({
       currentUser: {
         email: 'admin@test.com',
         team_member_id: 'tm-admin',

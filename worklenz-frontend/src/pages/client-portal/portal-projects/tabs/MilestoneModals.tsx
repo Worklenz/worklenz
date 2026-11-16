@@ -71,7 +71,7 @@ export const MilestoneModal = ({ project, editing, onClose }: MilestoneModalProp
       ? {
           name: editing.name,
           description: editing.description,
-          target_date: editing.target_date,
+          target_date: editing.target_date ?? '',
           status: editing.status,
           visibility: editing.visibility,
           internal_note: editing.internal_note,

@@ -28,7 +28,6 @@ import {
 } from '@/api/client-portal/portal-projects-api';
 import { formatPortalDate } from '@/components/client-portal/v2';
 import {
-  PROJECT_PHASES,
   type ClientProjectStatus,
   type PortalProject,
   type ProgressSource,
@@ -36,6 +35,7 @@ import {
   type ProjectPhase,
 } from '@/types/client-portal/v2';
 import { PortalLoader } from '@/components/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { RichTextField } from '../../shared/rich-text/RichTextField';
 import { RichTextView } from '../../shared/rich-text/RichTextView';
 
@@ -178,13 +178,13 @@ export const OverviewTab = ({ project }: OverviewTabProps) => {
   const progressHint =
     form.progress_source === 'worklenz'
       ? t('overview.progressWorklenzHint', {
-          value: overview.worklenz_progress,
-          defaultValue:
-            'Read from the project’s WorkLenz progress ({{value}}%). It updates as tasks are completed.',
-        })
+        value: overview.worklenz_progress,
+        defaultValue:
+          'Read from the project’s WorkLenz progress ({{value}}%). It updates as tasks are completed.',
+      })
       : t('overview.progressManualHint', {
-          defaultValue: 'Set by hand. It will not change when tasks are completed.',
-        });
+        defaultValue: 'Set by hand. It will not change when tasks are completed.',
+      });
 
   return (
     <Row gutter={[20, 20]}>
@@ -221,7 +221,10 @@ export const OverviewTab = ({ project }: OverviewTabProps) => {
                     aria-label={t('overview.phase', { defaultValue: 'Current phase' })}
                     onChange={value => update({ phase: value ?? null })}
                     placeholder={t('overview.phaseNone', { defaultValue: 'Not set' })}
-                    options={PROJECT_PHASES.map(phase => ({ value: phase, label: phase }))}
+                    options={(overview.phases ?? []).map(phase => ({
+                      value: phase,
+                      label: decodeHtmlEntities(phase),
+                    }))}
                   />
                 </Form.Item>
               </Col>
@@ -273,11 +276,11 @@ export const OverviewTab = ({ project }: OverviewTabProps) => {
                   extra={
                     followsWorklenz
                       ? t('overview.datesFromWorklenz', {
-                          defaultValue: 'Taken from the WorkLenz project. Switch progress to Set manually to enter dates here.',
-                        })
+                        defaultValue: 'Taken from the WorkLenz project. Switch progress to Set manually to enter dates here.',
+                      })
                       : t('overview.expectedCompletionHint', {
-                          defaultValue: 'Leave blank and the portal shows “Not set” instead of inventing a date.',
-                        })
+                        defaultValue: 'Leave blank and the portal shows “Not set” instead of inventing a date.',
+                      })
                   }
                 >
                   <Input
