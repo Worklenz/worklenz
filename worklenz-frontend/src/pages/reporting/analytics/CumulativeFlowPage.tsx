@@ -5,10 +5,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Flex, message } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import quarterOfYear from 'dayjs/plugin/quarterOfYear';
 import { jsPDF } from 'jspdf';
-
-dayjs.extend(quarterOfYear);
+import { BOUNDED_ANALYTICS_DATE_PRESETS, resolveAnalyticsDateBounds } from '@/utils/date-presets';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
@@ -70,7 +68,8 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
 
   const {
     datePreset,
-    setDatePreset,
+    customRange,
+    setDateFilter,
     selectedProjectIds,
     setSelectedProjectIds,
     setAutomaticProjectIds,
@@ -101,9 +100,9 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
     applyCommonAnalyticsTemplateFilters(template.filters_json, {
       setSelectedProjectIds,
       setSelectedTeamIds,
-      setDatePreset,
+      setDateFilter,
     });
-  }, [setSelectedProjectIds, setSelectedTeamIds, setDatePreset]);
+  }, [setSelectedProjectIds, setSelectedTeamIds, setDateFilter]);
 
   const {
     templates,
@@ -124,23 +123,17 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
       project_ids: selectedProjectIds,
       team_ids: selectedTeamIds,
       date_preset: datePreset,
+      custom_range: customRange,
     }),
   });
 
   const title = (isCustomTemplateView && customTemplateName?.trim()) || baseTitle;
   useDocumentTitle(title);
 
-  const dateBounds = useMemo(() => {
-    const end = dayjs();
-    let start = end.subtract(30, 'day');
-    if (datePreset === 'last_7_days') start = end.subtract(7, 'day');
-    if (datePreset === 'last_90_days') start = end.subtract(90, 'day');
-    if (datePreset === 'this_quarter') start = end.startOf('quarter');
-    return {
-      date_from: start.startOf('day').toISOString(),
-      date_to: end.endOf('day').toISOString(),
-    };
-  }, [datePreset]);
+  const dateBounds = useMemo(
+    () => resolveAnalyticsDateBounds(datePreset, customRange),
+    [datePreset, customRange]
+  );
 
   const filters: CfdSeriesFilters = useMemo(
     () => ({
@@ -395,8 +388,9 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
       selectedProjectIds={selectedProjectIds}
       onProjectsChange={setSelectedProjectIds}
       datePreset={datePreset}
-      onDatePresetChange={setDatePreset}
-      availableDatePresets={['last_7_days', 'last_30_days', 'last_90_days', 'this_quarter']}
+      customRange={customRange}
+      onDateChange={setDateFilter}
+        availableDatePresets={BOUNDED_ANALYTICS_DATE_PRESETS}
       loading={filtersLoading}
     />
   );

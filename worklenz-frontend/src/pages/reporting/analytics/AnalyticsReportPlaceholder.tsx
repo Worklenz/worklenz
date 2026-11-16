@@ -10,7 +10,7 @@ import {
   type AnalyticsDatePreset,
   type AnalyticsExportFormat,
 } from '@/components/reporting/analytics';
-import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
+import type { ReportingCustomRange } from '@/utils/date-presets';
 
 interface AnalyticsReportPlaceholderProps {
   titleKey: string;
@@ -29,6 +29,7 @@ export const AnalyticsReportPlaceholder: React.FC<AnalyticsReportPlaceholderProp
   const title = t(titleKey, { defaultValue: titleDefault });
   useDocumentTitle(title);
   const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
+  const [customRange, setCustomRange] = useState<ReportingCustomRange>(null);
   const [projectIds, setProjectIds] = useState<string[]>([]);
   const [includeDone, setIncludeDone] = useState(false);
 
@@ -46,7 +47,11 @@ export const AnalyticsReportPlaceholder: React.FC<AnalyticsReportPlaceholderProp
           selectedProjectIds={projectIds}
           onProjectsChange={setProjectIds}
           datePreset={datePreset}
-          onDatePresetChange={setDatePreset}
+          customRange={customRange}
+          onDateChange={(preset, range) => {
+            setDatePreset(preset);
+            setCustomRange(range);
+          }}
           includeDone={includeDone}
           onIncludeDoneChange={setIncludeDone}
         />
