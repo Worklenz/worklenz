@@ -32,6 +32,7 @@ import { useSelector } from 'react-redux';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useOrderedStatuses } from '@/hooks/useOrderedStatuses';
 import { selectTasks } from '@/features/projects/bulkActions/bulkActionSlice';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { useTranslation } from 'react-i18next';
@@ -196,7 +197,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
 
     // Get data from Redux store
-    const statusList = useAppSelector(state => state.taskStatusReducer.status);
+    const statusList = useOrderedStatuses();
     const priorityList = useAppSelector(state => state.priorityReducer.priorities);
     const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
     const projectType = useAppSelector(state => state.projectReducer.project?.project_type);

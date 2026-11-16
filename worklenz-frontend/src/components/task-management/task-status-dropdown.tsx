@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
-import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useOrderedStatuses } from '@/hooks/useOrderedStatuses';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { Task } from '@/types/task-management.types';
@@ -37,7 +37,7 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const statusList = useAppSelector(state => state.taskStatusReducer.status);
+  const statusList = useOrderedStatuses();
 
   // Default status colors for common statuses (fallback when backend doesn't provide colors)
   const defaultStatusColors: Record<string, string> = {
