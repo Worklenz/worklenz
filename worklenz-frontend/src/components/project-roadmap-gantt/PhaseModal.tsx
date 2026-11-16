@@ -262,7 +262,7 @@ const PhaseModal: React.FC<PhaseModalProps> = ({ visible, phase, onClose, onUpda
                 <DatePicker className="w-full dark:bg-gray-700 dark:border-gray-600" />
               </Form.Item>
             ) : (
-              <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+              <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 overflow-hidden relative">
                 <div className="flex items-center gap-2">
                   <CalendarOutlined className="text-gray-600 dark:text-gray-400" />
                   <span className="font-medium text-gray-900 dark:text-gray-100">Start:</span>
@@ -282,7 +282,7 @@ const PhaseModal: React.FC<PhaseModalProps> = ({ visible, phase, onClose, onUpda
                 <DatePicker className="w-full dark:bg-gray-700 dark:border-gray-600" />
               </Form.Item>
             ) : (
-              <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+              <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 overflow-hidden relative">
                 <div className="flex items-center gap-2">
                   <CalendarOutlined className="text-gray-600 dark:text-gray-400" />
                   <span className="font-medium text-gray-900 dark:text-gray-100">End:</span>
@@ -371,7 +371,9 @@ const PhaseModal: React.FC<PhaseModalProps> = ({ visible, phase, onClose, onUpda
                             {task.assigneeName && (
                               <Space>
                                 <TeamOutlined />
-                                <Typography.Text type="secondary">{task.assigneeName}</Typography.Text>
+                                <Typography.Text type="secondary" style={{ overflowWrap: 'anywhere' }}>
+                                  {task.assigneeName}
+                                </Typography.Text>
                               </Space>
                             )}
                           </div>
