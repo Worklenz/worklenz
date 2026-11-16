@@ -1,6 +1,7 @@
 import type { AnalyticsDatePreset } from '@/components/reporting/analytics';
 import {
   VALID_REPORTING_DATE_PRESETS,
+  isCalendarDate,
   type ReportingCustomRange,
 } from '@/utils/date-presets';
 
@@ -14,9 +15,6 @@ export interface CommonAnalyticsTemplateFilterSetters {
   setCustomRange?: (range: ReportingCustomRange) => void;
   setDateFilter?: (preset: AnalyticsDatePreset, customRange: ReportingCustomRange) => void;
 }
-
-const isCalendarDate = (date: string): boolean =>
-  /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(date));
 
 const parseCustomRange = (value: unknown): ReportingCustomRange | undefined => {
   if (value === null) return null;
@@ -72,6 +70,7 @@ export const applyCommonAnalyticsTemplateFilters = (
 
   if (hasValidPreset) {
     const nextPreset = preset as AnalyticsDatePreset;
+    if (nextPreset === 'custom' && !customRange) return;
     const nextRange = nextPreset === 'custom' ? (customRange ?? null) : null;
     if (setters.setDateFilter) {
       setters.setDateFilter(nextPreset, nextRange);

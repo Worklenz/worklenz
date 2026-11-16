@@ -20,6 +20,7 @@ import {
 import { ReportingDatePresetPill } from '@/components/reporting/filters/ReportingDatePresetPill';
 import {
   isReportingDateApplicable,
+  REPORTING_DATE_PRESETS,
   type ReportingCustomRange,
   type ReportingDatePreset,
 } from '@/utils/date-presets';
@@ -248,7 +249,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
           <ReportingDatePresetPill
             datePreset={draftDatePreset}
             customRange={draftCustomRange}
-            allowedPresets={availableDatePresets}
+            allowedPresets={onDateChange ? availableDatePresets : (availableDatePresets ?? REPORTING_DATE_PRESETS).filter(preset => preset !== 'custom')}
             showResolvedRange
             onChange={(preset, range) => {
               setDraftDatePreset(preset);

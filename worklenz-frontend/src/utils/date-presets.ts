@@ -36,6 +36,10 @@ export const DATE_PRESET_FORMAT = 'YYYY-MM-DD';
 
 const fmt = (date: Dayjs): string => date.format(DATE_PRESET_FORMAT);
 
+export const isCalendarDate = (date: string): boolean =>
+  /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+  dayjs(date).isValid() && dayjs(date).format(DATE_PRESET_FORMAT) === date;
+
 /**
  * A calendar day written the way the viewer's language writes it ("Sep 17, 2026", "17. Sept. 2026",
  * "2026年9月17日"), using dayjs's global locale — which the app switches with the UI language.

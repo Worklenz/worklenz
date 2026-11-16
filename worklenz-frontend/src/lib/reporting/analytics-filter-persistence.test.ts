@@ -58,4 +58,11 @@ describe('analytics-filter-persistence', () => {
     expect(readAnalyticsFilterSession('velocity', DEFAULT_ANALYTICS_FILTER_FIELDS).state.selectedProjectIds).toEqual(['valid']);
   });
 
+  it('rejects invalid saved calendar dates', () => {
+    sessionStorage.setItem(getAnalyticsFilterStorageKey('velocity', 'team-1', 'user-1'),
+      JSON.stringify({ datePreset: 'custom', customRange: ['2026-02-30', '2026-03-01'] }));
+    const { state } = readAnalyticsFilterSession('velocity', DEFAULT_ANALYTICS_FILTER_FIELDS);
+    expect(state.datePreset).toBe('last_30_days');
+    expect(state.customRange).toBeNull();
+  });
 });

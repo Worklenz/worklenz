@@ -1,6 +1,7 @@
 import type { AnalyticsDatePreset } from '@/components/reporting/analytics';
 import {
   VALID_REPORTING_DATE_PRESETS,
+  isCalendarDate,
   type ReportingCustomRange,
 } from '@/utils/date-presets';
 import { getUserSession } from '@/utils/session-helper';
@@ -43,10 +44,6 @@ const asStringArray = (value: unknown): string[] | undefined => {
   if (!Array.isArray(value)) return undefined;
   return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
 };
-
-const isCalendarDate = (date: string): boolean =>
-  /^\d{4}-\d{2}-\d{2}$/.test(date) &&
-  !Number.isNaN(Date.parse(date));
 
 const parseCustomRange = (value: unknown): ReportingCustomRange | undefined => {
   if (value === null) return null;
@@ -117,6 +114,10 @@ export const readAnalyticsFilterSession = <T extends AnalyticsPersistedFilterSta
       next.customRange = next.datePreset === 'custom' ? customRange : null;
     } else if (next.datePreset !== 'custom') {
       next.customRange = null;
+    }
+    if (next.datePreset === 'custom' && !next.customRange) {
+      next.datePreset = defaults.datePreset;
+      next.customRange = defaults.customRange;
     }
 
     if (typeof parsed.includeDone === 'boolean') {

@@ -132,4 +132,11 @@ describe('AnalyticsFilterBar', () => {
 
     expect(screen.getByRole('button', { name: 'Apply' })).toBeDisabled();
   });
+  it('hides custom ranges from preset-only callers even when explicitly allowed', async () => {
+    renderBar({ datePreset: 'last_30_days', onDatePresetChange: vi.fn(),
+      availableDatePresets: ['last_30_days', 'custom'] });
+    fireEvent.click(screen.getByRole('button', { name: /Filter/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /caret-down\s+Last 30 Days/ }));
+    expect(screen.queryByRole('option', { name: /Custom Range/ })).not.toBeInTheDocument();
+  });
 });
