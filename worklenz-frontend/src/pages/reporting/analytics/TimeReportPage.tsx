@@ -6,10 +6,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import quarterOfYear from 'dayjs/plugin/quarterOfYear';
 import { jsPDF } from 'jspdf';
-
-dayjs.extend(quarterOfYear);
+import { resolveAnalyticsDateBounds } from '@/utils/date-presets';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -85,7 +83,8 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
 
   const {
     datePreset,
-    setDatePreset,
+    customRange,
+    setDateFilter,
     selectedProjectIds,
     setSelectedProjectIds,
     setAutomaticProjectIds,
@@ -118,9 +117,9 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
       setSelectedProjectIds,
       setSelectedMemberIds,
       setSelectedTeamIds,
-      setDatePreset,
+      setDateFilter,
     });
-  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds, setDatePreset]);
+  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds, setDateFilter]);
 
   const {
     templates,
@@ -142,6 +141,7 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
       member_ids: selectedMemberIds,
       team_ids: selectedTeamIds,
       date_preset: datePreset,
+      custom_range: customRange,
     }),
   });
 
@@ -163,20 +163,10 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
     return id ? [id] : [];
   }, [session?.team_id, teamOptions]);
 
-  const dateBounds = useMemo(() => {
-    const end = dayjs();
-    let start = end.subtract(30, 'day');
-    if (datePreset === 'last_7_days') start = end.subtract(7, 'day');
-    if (datePreset === 'last_14_days') start = end.subtract(14, 'day');
-    if (datePreset === 'last_30_days') start = end.subtract(30, 'day');
-    if (datePreset === 'last_60_days') start = end.subtract(60, 'day');
-    if (datePreset === 'last_90_days') start = end.subtract(90, 'day');
-    if (datePreset === 'this_quarter') start = end.startOf('quarter');
-    return {
-      date_from: start.startOf('day').toISOString(),
-      date_to: end.endOf('day').toISOString(),
-    };
-  }, [datePreset]);
+  const dateBounds = useMemo(
+    () => resolveAnalyticsDateBounds(datePreset, customRange),
+    [datePreset, customRange]
+  );
 
   const filters: TimeReportFilters = useMemo(
     () => ({
@@ -432,15 +422,8 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
         onTeamsChange={setSelectedTeamIds}
         defaultTeamIds={defaultTeamIds}
         datePreset={datePreset}
-        onDatePresetChange={setDatePreset}
-        availableDatePresets={[
-          'last_7_days',
-          'last_14_days',
-          'last_30_days',
-          'last_60_days',
-          'last_90_days',
-          'this_quarter',
-        ]}
+        customRange={customRange}
+        onDateChange={setDateFilter}
         loading={filtersLoading}
       />
     </Flex>

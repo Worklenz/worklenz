@@ -218,3 +218,29 @@ it('preserves only the explicitly cleared field across reopening', () => {
   expect(reopened.result.current.selectedTeamIds).toEqual([]);
   expect(reopened.result.current.selectedProjectIds).toEqual(['project-1']);
 });
+
+it('persists customRange with setDateFilter and restores it', () => {
+  sessionStorage.clear();
+  const first = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'time-report' }));
+  act(() => {
+    first.result.current.setDateFilter('custom', ['2026-01-01', '2026-01-15']);
+  });
+  first.unmount();
+
+  const restored = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'time-report' }));
+  expect(restored.result.current.datePreset).toBe('custom');
+  expect(restored.result.current.customRange).toEqual(['2026-01-01', '2026-01-15']);
+});
+
+it('ignores legacy Advanced date presets and keeps the default', () => {
+  sessionStorage.clear();
+  const key = 'worklenz.analyticsReportFilters:team-1:user-1:velocity';
+  sessionStorage.setItem(
+    key,
+    JSON.stringify({ datePreset: 'this_quarter', selectedProjectIds: ['p1'] })
+  );
+
+  const { result } = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'velocity' }));
+  expect(result.current.datePreset).toBe('last_30_days');
+  expect(result.current.selectedProjectIds).toEqual(['p1']);
+});

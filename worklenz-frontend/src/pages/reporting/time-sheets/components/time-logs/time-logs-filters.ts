@@ -1,5 +1,12 @@
-import dayjs, { Dayjs } from 'dayjs';
-import { DatePresetKey, formatCalendarDate, getDatePresetRange } from '@/utils/date-presets';
+import dayjs from 'dayjs';
+import {
+  REPORTING_DATE_PRESETS,
+  formatResolvedRange,
+  resolveReportingDateRange,
+  type IDatePresetRange,
+  type ReportingCustomRange,
+  type ReportingDatePreset,
+} from '@/utils/date-presets';
 import { ITimeLogBillableFilter, ITimeLogsFilterRequest } from '@/types/reporting/time-logs.types';
 
 /** Same sentinel the Members time sheet and the backend use for "member has no practice". */
@@ -8,13 +15,13 @@ export const NO_PRACTICE_FILTER_ID = '__no_practice__';
 /** Sentinel for "entries whose project has no client"; the backend understands it. */
 export const NO_CLIENT_FILTER_ID = '__no_client__';
 
-export type TimeLogsDatePreset = DatePresetKey | 'custom';
+export type TimeLogsDatePreset = ReportingDatePreset;
 export type TimeLogsBillableValue = 'billable' | 'non_billable';
 
 export interface ITimeLogsFilterState {
   datePreset: TimeLogsDatePreset;
   /** Inclusive `[from, to]`, `YYYY-MM-DD`. Only read when `datePreset === 'custom'`. */
-  customRange: [string, string] | null;
+  customRange: ReportingCustomRange;
   projectIds: string[];
   /** May contain {@link NO_PRACTICE_FILTER_ID}. */
   practiceIds: string[];
@@ -26,10 +33,7 @@ export interface ITimeLogsFilterState {
   billable: TimeLogsBillableValue[];
 }
 
-export interface IResolvedDateRange {
-  from: string;
-  to: string;
-}
+export type IResolvedDateRange = IDatePresetRange;
 
 /** What the page shows before any filter is applied: the current week, up to and including today. */
 export const DEFAULT_TIME_LOGS_DATE_PRESET: TimeLogsDatePreset = 'this_week';
@@ -44,24 +48,8 @@ export const DEFAULT_TIME_LOGS_FILTERS: ITimeLogsFilterState = {
   billable: [],
 };
 
-/**
- * Order the presets are offered in: shortest span first, grouped by period
- * (day, week, month), the current period before the previous one, then the
- * unbounded and manual choices.
- */
-export const TIME_LOGS_DATE_PRESETS: TimeLogsDatePreset[] = [
-  'today',
-  'yesterday',
-  'this_week',
-  'last_week',
-  'last_7_days',
-  'this_month',
-  'last_month',
-  'last_30_days',
-  'last_3_months',
-  'all_time',
-  'custom',
-];
+/** @see REPORTING_DATE_PRESETS */
+export const TIME_LOGS_DATE_PRESETS: TimeLogsDatePreset[] = REPORTING_DATE_PRESETS;
 
 export const isTimeLogsFilterState = (value: unknown): value is ITimeLogsFilterState => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -79,27 +67,10 @@ export const isTimeLogsFilterState = (value: unknown): value is ITimeLogsFilterS
     isStringArray(filters.billable) && filters.billable.every(item => item === 'billable' || item === 'non_billable');
 };
 
-/**
- * The concrete calendar range a state stands for, or `null` for "all time"
- * (and for a custom range that has not been picked yet). Evaluated on demand
- * so relative presets like "This Month" follow the clock.
- */
-export const resolveDateRange = (
-  state: Pick<ITimeLogsFilterState, 'datePreset' | 'customRange'>,
-  now: Dayjs = dayjs()
-): IResolvedDateRange | null => {
-  if (state.datePreset === 'custom') {
-    return state.customRange ? { from: state.customRange[0], to: state.customRange[1] } : null;
-  }
-  return getDatePresetRange(state.datePreset, now);
-};
+/** @see resolveReportingDateRange */
+export const resolveDateRange = resolveReportingDateRange;
 
-/** "Sep 1, 2026 – Sep 17, 2026", a single date for one day, or `null` when unbounded. */
-export const formatResolvedRange = (range: IResolvedDateRange | null): string | null => {
-  if (!range) return null;
-  if (range.from === range.to) return formatCalendarDate(range.from);
-  return `${formatCalendarDate(range.from)} – ${formatCalendarDate(range.to)}`;
-};
+export { formatResolvedRange };
 
 /** Both sides ticked is the same as neither: no billable filter. */
 export const toBillableRequest = (

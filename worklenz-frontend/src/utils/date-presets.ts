@@ -92,3 +92,96 @@ export const getDatePresetRange = (
       return null;
   }
 };
+
+/** Preset key plus the manual custom-range choice used by reporting date filters. */
+export type ReportingDatePreset = DatePresetKey | 'custom';
+
+/** Inclusive `[from, to]` as `YYYY-MM-DD`. Only meaningful when preset is `custom`. */
+export type ReportingCustomRange = [string, string] | null;
+
+/**
+ * Order the presets are offered in: shortest span first, grouped by period
+ * (day, week, month), the current period before the previous one, then the
+ * unbounded and manual choices.
+ */
+export const REPORTING_DATE_PRESETS: ReportingDatePreset[] = [
+  'today',
+  'yesterday',
+  'this_week',
+  'last_week',
+  'last_7_days',
+  'this_month',
+  'last_month',
+  'last_30_days',
+  'last_3_months',
+  'all_time',
+  'custom',
+];
+
+/** Default text per preset, keyed to the `time-report` locale keys. */
+export const REPORTING_DATE_PRESET_LABELS: Record<
+  ReportingDatePreset,
+  { key: string; defaultValue: string }
+> = {
+  today: { key: 'timeLogsPresetToday', defaultValue: 'Today' },
+  yesterday: { key: 'timeLogsPresetYesterday', defaultValue: 'Yesterday' },
+  last_7_days: { key: 'timeLogsPresetLast7Days', defaultValue: 'Last 7 Days' },
+  this_week: { key: 'timeLogsPresetThisWeek', defaultValue: 'This Week' },
+  last_week: { key: 'timeLogsPresetLastWeek', defaultValue: 'Last Week' },
+  this_month: { key: 'timeLogsPresetThisMonth', defaultValue: 'This Month' },
+  last_30_days: { key: 'timeLogsPresetLast30Days', defaultValue: 'Last 30 Days' },
+  last_month: { key: 'timeLogsPresetLastMonth', defaultValue: 'Last Month' },
+  last_3_months: { key: 'timeLogsPresetLast3Months', defaultValue: 'Last 3 Months' },
+  last_90_days: { key: 'timeLogsPresetLast90Days', defaultValue: 'Last 90 Days' },
+  all_time: { key: 'timeLogsPresetAllTime', defaultValue: 'All Time' },
+  custom: { key: 'timeLogsPresetCustom', defaultValue: 'Custom Range' },
+};
+
+/**
+ * The concrete calendar range a preset/custom choice stands for, or `null` for
+ * "all time" (and for a custom range that has not been picked yet).
+ */
+export const resolveReportingDateRange = (
+  state: { datePreset: ReportingDatePreset; customRange: ReportingCustomRange },
+  now: Dayjs = dayjs()
+): IDatePresetRange | null => {
+  if (state.datePreset === 'custom') {
+    return state.customRange ? { from: state.customRange[0], to: state.customRange[1] } : null;
+  }
+  return getDatePresetRange(state.datePreset, now);
+};
+
+/** "Sep 1, 2026 – Sep 17, 2026", a single date for one day, or `null` when unbounded. */
+export const formatResolvedRange = (range: IDatePresetRange | null): string | null => {
+  if (!range) return null;
+  if (range.from === range.to) return formatCalendarDate(range.from);
+  return `${formatCalendarDate(range.from)} – ${formatCalendarDate(range.to)}`;
+};
+
+export interface AnalyticsDateBounds {
+  date_from?: string;
+  date_to?: string;
+}
+
+/**
+ * Resolves a reporting date filter into ISO day-bounds for Advanced analytics APIs.
+ * Omits both fields for `all_time` or an incomplete custom range.
+ */
+export const resolveAnalyticsDateBounds = (
+  datePreset: ReportingDatePreset,
+  customRange: ReportingCustomRange,
+  now: Dayjs = dayjs()
+): AnalyticsDateBounds => {
+  const range = resolveReportingDateRange({ datePreset, customRange }, now);
+  if (!range) return {};
+  return {
+    date_from: dayjs(range.from).startOf('day').toISOString(),
+    date_to: dayjs(range.to).endOf('day').toISOString(),
+  };
+};
+
+/** True when a custom range has both ends (or the preset is not custom). */
+export const isReportingDateApplicable = (
+  datePreset: ReportingDatePreset,
+  customRange: ReportingCustomRange
+): boolean => datePreset !== 'custom' || customRange !== null;

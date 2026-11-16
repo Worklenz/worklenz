@@ -1,10 +1,15 @@
 import type { AnalyticsDatePreset } from '@/components/reporting/analytics';
+import {
+  REPORTING_DATE_PRESETS,
+  type ReportingCustomRange,
+} from '@/utils/date-presets';
 import { getUserSession } from '@/utils/session-helper';
 
 const STORAGE_KEY_PREFIX = 'worklenz.analyticsReportFilters';
 
 export interface AnalyticsPersistedFilterState {
   datePreset?: AnalyticsDatePreset;
+  customRange?: ReportingCustomRange;
   selectedProjectIds?: string[];
   selectedMemberIds?: string[];
   selectedTeamIds?: string[];
@@ -39,21 +44,31 @@ const asStringArray = (value: unknown): string[] | undefined => {
   return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
 };
 
-const DATE_PRESETS: AnalyticsDatePreset[] = [
-  'last_7_days',
-  'last_14_days',
-  'last_30_days',
-  'last_60_days',
-  'last_90_days',
-  'this_quarter',
-  'custom',
-];
+const isCalendarDate = (date: string): boolean =>
+  /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+  !Number.isNaN(Date.parse(date));
+
+const parseCustomRange = (value: unknown): ReportingCustomRange | undefined => {
+  if (value === null) return null;
+  if (!Array.isArray(value) || value.length !== 2) return undefined;
+  if (!value.every((item): item is string => typeof item === 'string' && isCalendarDate(item))) {
+    return undefined;
+  }
+  if (value[0] > value[1]) return undefined;
+  return [value[0], value[1]];
+};
 
 /** Read persisted analytics filters for the active session/workspace. */
 export const readAnalyticsFilterSession = <T extends AnalyticsPersistedFilterState>(
   reportKey: string,
   defaults: T
-): { state: T; wasRestored: boolean; hasExplicitFilters: boolean; explicitProjects?: boolean; explicitTeams?: boolean } => {
+): {
+  state: T;
+  wasRestored: boolean;
+  hasExplicitFilters: boolean;
+  explicitProjects?: boolean;
+  explicitTeams?: boolean;
+} => {
   if (typeof sessionStorage === 'undefined') {
     return { state: defaults, wasRestored: false, hasExplicitFilters: false };
   }
@@ -89,20 +104,33 @@ export const readAnalyticsFilterSession = <T extends AnalyticsPersistedFilterSta
     const healthIds = asStringArray(parsed.selectedHealthIds);
     if (healthIds) next.selectedHealthIds = healthIds;
 
+    // Unknown/legacy presets (last_14_days, this_quarter, …) are ignored → page default.
     if (
       typeof parsed.datePreset === 'string' &&
-      DATE_PRESETS.includes(parsed.datePreset as AnalyticsDatePreset)
+      REPORTING_DATE_PRESETS.includes(parsed.datePreset as AnalyticsDatePreset)
     ) {
       next.datePreset = parsed.datePreset as AnalyticsDatePreset;
+    }
+
+    const customRange = parseCustomRange(parsed.customRange);
+    if (customRange !== undefined) {
+      next.customRange = next.datePreset === 'custom' ? customRange : null;
+    } else if (next.datePreset !== 'custom') {
+      next.customRange = null;
     }
 
     if (typeof parsed.includeDone === 'boolean') {
       next.includeDone = parsed.includeDone;
     }
 
-    return { state: next as T, wasRestored: true, hasExplicitFilters: parsed.hasExplicitFilters === true,
-      explicitProjects: typeof parsed.explicitProjects === 'boolean' ? parsed.explicitProjects : undefined,
-      explicitTeams: typeof parsed.explicitTeams === 'boolean' ? parsed.explicitTeams : undefined };
+    return {
+      state: next as T,
+      wasRestored: true,
+      hasExplicitFilters: parsed.hasExplicitFilters === true,
+      explicitProjects:
+        typeof parsed.explicitProjects === 'boolean' ? parsed.explicitProjects : undefined,
+      explicitTeams: typeof parsed.explicitTeams === 'boolean' ? parsed.explicitTeams : undefined,
+    };
   } catch {
     return { state: defaults, wasRestored: false, hasExplicitFilters: false };
   }
@@ -126,7 +154,10 @@ export const writeAnalyticsFilterSession = (
   );
 
   try {
-    sessionStorage.setItem(storageKey, JSON.stringify({ ...state, hasExplicitFilters, explicitProjects, explicitTeams }));
+    sessionStorage.setItem(
+      storageKey,
+      JSON.stringify({ ...state, hasExplicitFilters, explicitProjects, explicitTeams })
+    );
   } catch {
     // Quota / private mode — ignore; in-memory React state still works for the visit.
   }

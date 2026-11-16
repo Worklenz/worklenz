@@ -5,10 +5,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Flex, Space, Switch, Typography, message } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import quarterOfYear from 'dayjs/plugin/quarterOfYear';
 import { jsPDF } from 'jspdf';
-
-dayjs.extend(quarterOfYear);
+import { resolveAnalyticsDateBounds } from '@/utils/date-presets';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -89,7 +87,8 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
 
   const {
     datePreset,
-    setDatePreset,
+    customRange,
+    setDateFilter,
     selectedProjectIds,
     setSelectedProjectIds,
     setAutomaticProjectIds,
@@ -123,9 +122,9 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
       setSelectedProjectIds,
       setSelectedMemberIds,
       setSelectedTeamIds,
-      setDatePreset,
+      setDateFilter,
     });
-  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds, setDatePreset]);
+  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds, setDateFilter]);
 
   const {
     templates,
@@ -147,6 +146,7 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
       member_ids: selectedMemberIds,
       team_ids: selectedTeamIds,
       date_preset: datePreset,
+      custom_range: customRange,
     }),
   });
 
@@ -163,17 +163,10 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
       }));
   }, [teamMembersState?.data]);
 
-  const dateBounds = useMemo(() => {
-    const end = dayjs();
-    let start = end.subtract(30, 'day');
-    if (datePreset === 'last_7_days') start = end.subtract(7, 'day');
-    if (datePreset === 'last_90_days') start = end.subtract(90, 'day');
-    if (datePreset === 'this_quarter') start = end.startOf('quarter');
-    return {
-      date_from: start.startOf('day').toISOString(),
-      date_to: end.endOf('day').toISOString(),
-    };
-  }, [datePreset]);
+  const dateBounds = useMemo(
+    () => resolveAnalyticsDateBounds(datePreset, customRange),
+    [datePreset, customRange]
+  );
 
   const filters: TimeInStatusFilters = useMemo(
     () => ({
@@ -453,8 +446,8 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
         selectedMemberIds={selectedMemberIds}
         onMembersChange={setSelectedMemberIds}
         datePreset={datePreset}
-        onDatePresetChange={setDatePreset}
-        availableDatePresets={['last_7_days', 'last_30_days', 'last_90_days', 'this_quarter']}
+        customRange={customRange}
+        onDateChange={setDateFilter}
         loading={filtersLoading}
       />
 

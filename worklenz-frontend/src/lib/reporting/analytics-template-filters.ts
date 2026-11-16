@@ -1,4 +1,8 @@
 import type { AnalyticsDatePreset } from '@/components/reporting/analytics';
+import {
+  REPORTING_DATE_PRESETS,
+  type ReportingCustomRange,
+} from '@/utils/date-presets';
 
 export interface CommonAnalyticsTemplateFilterSetters {
   setSelectedProjectIds?: (ids: string[]) => void;
@@ -7,17 +11,22 @@ export interface CommonAnalyticsTemplateFilterSetters {
   setSelectedStatusIds?: (ids: string[]) => void;
   setSelectedHealthIds?: (ids: string[]) => void;
   setDatePreset?: (preset: AnalyticsDatePreset) => void;
+  setCustomRange?: (range: ReportingCustomRange) => void;
+  setDateFilter?: (preset: AnalyticsDatePreset, customRange: ReportingCustomRange) => void;
 }
 
-const DATE_PRESETS: AnalyticsDatePreset[] = [
-  'last_7_days',
-  'last_14_days',
-  'last_30_days',
-  'last_60_days',
-  'last_90_days',
-  'this_quarter',
-  'custom',
-];
+const isCalendarDate = (date: string): boolean =>
+  /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(date));
+
+const parseCustomRange = (value: unknown): ReportingCustomRange | undefined => {
+  if (value === null) return null;
+  if (!Array.isArray(value) || value.length !== 2) return undefined;
+  if (!value.every((item): item is string => typeof item === 'string' && isCalendarDate(item))) {
+    return undefined;
+  }
+  if (value[0] > value[1]) return undefined;
+  return [value[0], value[1]];
+};
 
 const asStringIds = (value: unknown): string[] | null => {
   if (!Array.isArray(value)) return null;
@@ -57,11 +66,18 @@ export const applyCommonAnalyticsTemplateFilters = (
   }
 
   const preset = filters.date_preset;
-  if (
-    typeof preset === 'string' &&
-    DATE_PRESETS.includes(preset as AnalyticsDatePreset) &&
-    setters.setDatePreset
-  ) {
-    setters.setDatePreset(preset as AnalyticsDatePreset);
+  const customRange = parseCustomRange(filters.custom_range ?? filters.customRange);
+  const hasValidPreset =
+    typeof preset === 'string' && REPORTING_DATE_PRESETS.includes(preset as AnalyticsDatePreset);
+
+  if (hasValidPreset) {
+    const nextPreset = preset as AnalyticsDatePreset;
+    const nextRange = nextPreset === 'custom' ? (customRange ?? null) : null;
+    if (setters.setDateFilter) {
+      setters.setDateFilter(nextPreset, nextRange);
+    } else {
+      if (setters.setDatePreset) setters.setDatePreset(nextPreset);
+      if (setters.setCustomRange) setters.setCustomRange(nextRange);
+    }
   }
 };
