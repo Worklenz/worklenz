@@ -4,6 +4,16 @@ import type { Task, TaskGroup } from '@/types/task-management.types';
 
 type CategoryStatus = Pick<ITaskStatus, 'category_id'> | Pick<TaskGroup, 'category_id'>;
 
+export const canReorderStatuses = (
+  statuses: ITaskStatus[],
+  fromIndex: number,
+  toIndex: number
+): boolean => {
+  const source = statuses[fromIndex];
+  const target = statuses[toIndex];
+  return !!source?.category_id && source.category_id === target?.category_id;
+};
+
 export const getCategoryRank = (
   status: CategoryStatus | null | undefined,
   order: readonly string[]

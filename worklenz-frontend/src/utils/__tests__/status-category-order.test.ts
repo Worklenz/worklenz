@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  canReorderStatuses,
   getCategoryRank,
   getCollapsedGroupIds,
   getDoneStatusGroupIds,
@@ -28,6 +29,19 @@ const tasks: Task[] = [
 ];
 
 describe('status category order', () => {
+  it('allows roadmap status reordering only within a known category', () => {
+    const reorderStatuses: ITaskStatus[] = [
+      { id: 'doing-1', category_id: 'doing' },
+      { id: 'doing-2', category_id: 'doing' },
+      { id: 'done-1', category_id: 'done' },
+      { id: 'unknown' },
+    ];
+
+    expect(canReorderStatuses(reorderStatuses, 0, 1)).toBe(true);
+    expect(canReorderStatuses(reorderStatuses, 0, 2)).toBe(false);
+    expect(canReorderStatuses(reorderStatuses, 0, 3)).toBe(false);
+    expect(canReorderStatuses(reorderStatuses, 0, 4)).toBe(false);
+  });
   it('ranks known categories and puts unknown categories last', () => {
     expect(getCategoryRank({ category_id: 'doing' }, ['todo', 'doing', 'done'])).toBe(1);
     expect(getCategoryRank({ category_id: 'unknown' }, ['todo', 'doing', 'done'])).toBe(3);
