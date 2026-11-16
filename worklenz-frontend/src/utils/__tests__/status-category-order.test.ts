@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  filterEmptyStatusGroups,
   getCategoryRank,
   getCollapsedGroupIds,
   getDoneStatusGroupIds,
@@ -57,13 +56,6 @@ describe('status category order', () => {
     ]);
   });
 
-  it('omits empty status groups without synthesizing placeholders', () => {
-    expect(filterEmptyStatusGroups(groups, new Set(['task-1', 'task-2'])).map(g => g.id)).toEqual([
-      'doing-1',
-      'todo-1',
-    ]);
-  });
-
   it('identifies all status groups in Done by category membership, independent of order', () => {
     const doneStatuses = [
       ...statuses,
@@ -83,7 +75,7 @@ describe('status category order', () => {
     ]);
   });
 
-  it('covers the task-list acceptance scenarios for default and custom statuses', () => {
+  it('keeps empty status groups when sorting by category for the task list', () => {
     const scenarioStatuses: ITaskStatus[] = [
       { id: 'todo-1', name: 'To Do', category_id: 'todo', order_index: 0 },
       { id: 'doing-1', name: 'Doing', category_id: 'doing', order_index: 1 },
@@ -92,21 +84,16 @@ describe('status category order', () => {
     ];
     const scenarioGroups: TaskGroup[] = [
       { id: 'todo-1', title: 'To Do', taskIds: ['todo-task'], type: 'status' },
-      { id: 'doing-1', title: 'Doing', taskIds: ['doing-task'], type: 'status' },
-      { id: 'done-1', title: 'Done', taskIds: ['done-task'], type: 'status' },
+      { id: 'doing-1', title: 'Doing', taskIds: [], type: 'status' },
+      { id: 'done-1', title: 'Done', taskIds: [], type: 'status' },
       { id: 'qa-blocked', title: 'QA Blocked', taskIds: ['qa-task'], type: 'status' },
     ];
-    const visibleGroupsFor = (taskIds: string[]) =>
-      filterEmptyStatusGroups(
-        sortStatusGroupsByCategory(scenarioGroups, scenarioStatuses, ['doing', 'todo', 'done']),
-        new Set(taskIds)
-      ).map(group => group.id);
 
-    expect(visibleGroupsFor(['todo-task'])).toEqual(['todo-1']);
-    expect(visibleGroupsFor(['doing-task', 'todo-task'])).toEqual(['doing-1', 'todo-1']);
-    expect(visibleGroupsFor(['done-task', 'todo-task'])).toEqual(['todo-1', 'done-1']);
-    expect(visibleGroupsFor(['done-task'])).toEqual(['done-1']);
-    expect(visibleGroupsFor(['qa-task', 'todo-task'])).toEqual(['qa-blocked', 'todo-1']);
+    expect(
+      sortStatusGroupsByCategory(scenarioGroups, scenarioStatuses, ['doing', 'todo', 'done']).map(
+        group => group.id
+      )
+    ).toEqual(['doing-1', 'qa-blocked', 'todo-1', 'done-1']);
   });
 
   it('sorts more than 1,000 tasks by category and status', () => {
