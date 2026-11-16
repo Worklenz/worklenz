@@ -164,7 +164,7 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
             });
           }
           if (!currentVisible) {
-            dispatch(fetchTasksV3(projectId));
+            dispatch(fetchTasksV3({ projectId, silent: true }));
           }
         }
         return;
@@ -182,7 +182,7 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
           })
         );
         if (!currentVisible && (fieldKey === 'COMMENTS' || fieldKey === 'ATTACHMENTS')) {
-          dispatch(fetchTasksV3(projectId));
+          dispatch(fetchTasksV3({ projectId, silent: true }));
         }
       }
     },

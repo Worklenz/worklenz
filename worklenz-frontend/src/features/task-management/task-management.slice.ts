@@ -1441,9 +1441,13 @@ const taskManagementSlice = createSlice({
         state.loading = false;
         state.error =
           action.error?.message || (action.payload as string) || 'Failed to load tasks (V3)';
-        state.ids = [];
-        state.entities = {};
-        state.groups = [];
+        const isSilent =
+          typeof action.meta.arg === 'object' && (action.meta.arg as any).silent === true;
+        if (!isSilent) {
+          state.ids = [];
+          state.entities = {};
+          state.groups = [];
+        }
       })
       .addCase(fetchSubTasks.pending, (state, action) => {
         // Set loading state for specific task

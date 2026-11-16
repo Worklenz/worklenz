@@ -225,7 +225,7 @@ const ShowFieldsFilterDropdown = () => {
       }
 
       if (!col.pinned) {
-        dispatch(fetchTasksV3(projectId));
+        dispatch(fetchTasksV3({ projectId, silent: true }));
       }
     } else {
       if (col.key) {

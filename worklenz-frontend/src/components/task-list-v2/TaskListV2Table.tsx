@@ -101,6 +101,8 @@ interface TaskListV2SectionProps {
 const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }) => {
   const dispatch = useAppDispatch();
   const { projectId: urlProjectId } = useParams();
+  const activeProjectIdRef = useRef(urlProjectId);
+  activeProjectIdRef.current = urlProjectId;
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { t } = useTranslation('task-list-table');
   const { socket, connected } = useSocket();
@@ -336,7 +338,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       .then(res => {
         const hasPinnedCustom =
           Array.isArray(res?.custom) && res.custom.some((col: any) => col.pinned !== false);
-        if (hasPinnedCustom && urlProjectId) {
+        if (hasPinnedCustom && urlProjectId && activeProjectIdRef.current === urlProjectId) {
           dispatch(fetchTasksV3(urlProjectId));
         }
       })
