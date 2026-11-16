@@ -2295,6 +2295,28 @@ export default class TasksControllerV2 extends TasksControllerBase {
     }
   }
 
+  private static async queryTasksWithoutJit(query: string, params: unknown[]) {
+    const client = await db.connect();
+    let shouldDiscardClient = false;
+    try {
+      await client.query("BEGIN READ ONLY");
+      await client.query("SET LOCAL jit = off");
+      const result = await client.query(query, params);
+      await client.query("COMMIT");
+      return result;
+    } catch (error) {
+      try {
+        await client.query("ROLLBACK");
+      } catch (_rollbackError) {
+        // Do not return a connection with an unknown transaction state to the pool.
+        shouldDiscardClient = true;
+      }
+      throw error;
+    } finally {
+      client.release(shouldDiscardClient);
+    }
+  }
+
   @HandleExceptions()
   public static async getTasksV3(
     req: IWorkLenzRequest,
@@ -2335,7 +2357,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
       (async () => {
         const queryStart = performance.now();
         try {
-          return await db.query(q, params);
+          return await this.queryTasksWithoutJit(q, params);
         } finally {
           taskQueryTime = performance.now() - queryStart;
         }
