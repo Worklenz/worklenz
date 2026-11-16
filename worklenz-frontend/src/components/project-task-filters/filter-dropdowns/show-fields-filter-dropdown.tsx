@@ -13,7 +13,10 @@ import {
   updateCustomColumnPinned,
   toggleColumnVisibility,
 } from '@/features/tasks/tasks.slice';
-import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
+import {
+  fetchTasksV3,
+  toggleColumnVisibility as toggleTaskManagementColumnVisibility,
+} from '@/features/task-management/task-management.slice';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
@@ -209,6 +212,7 @@ const ShowFieldsFilterDropdown = () => {
 
       if (col.key) {
         dispatch(toggleColumnVisibility(col.key));
+        dispatch(toggleTaskManagementColumnVisibility(col.key));
       }
 
       if (col.id) {
