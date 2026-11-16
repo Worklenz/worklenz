@@ -44,9 +44,14 @@ export default class TaskStatusesController extends WorklenzControllerBase {
     if (!req.query.project)
       return res.status(400).send(new ServerResponse(false, null));
 
+    const projectId = String(req.query.project);
+    const { resolveProjectCategoryOrder } = await import('../shared/status-category-order');
+    const categoryOrder = await resolveProjectCategoryOrder(projectId);
+
     // A colour picked for a single status is theme independent - it must render
     // the same in light and dark mode. Only statuses without their own colour
-    // fall back to the category's light/dark pair.
+    // fall back to the category's light/dark pair. Order matches task-list
+    // grouping: project category order, then sort_order within each category.
     const q = `
   SELECT task_statuses.id,
          task_statuses.name,
@@ -63,10 +68,11 @@ export default class TaskStatusesController extends WorklenzControllerBase {
          INNER JOIN sys_task_status_categories stsc ON task_statuses.category_id = stsc.id
   WHERE project_id = $1
     AND team_id = $2
-  ORDER BY task_statuses.sort_order;
+  ORDER BY array_position($3::uuid[], task_statuses.category_id),
+           task_statuses.sort_order;
 `;
 
-    const result = await db.query(q, [req.query.project, req.user?.team_id]);
+    const result = await db.query(q, [projectId, req.user?.team_id, categoryOrder]);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 

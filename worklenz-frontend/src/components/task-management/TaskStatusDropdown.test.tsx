@@ -10,16 +10,23 @@ const mocks = vi.hoisted(() => ({
         {
           id: 'todo-status',
           name: 'To Do',
+          category_id: 'todo',
           color_code: '#A9A9A9',
           color_code_dark: '#989898',
         },
         {
           id: 'blocked-status',
           name: 'Blocked',
+          category_id: 'doing',
           color_code: '#8B1A1A',
           color_code_dark: '#B22222',
         },
       ],
+    },
+    projectReducer: {
+      projectId: 'project-1',
+      project: null,
+      statusCategoryOrder: ['todo', 'doing', 'done'],
     },
   },
 }));

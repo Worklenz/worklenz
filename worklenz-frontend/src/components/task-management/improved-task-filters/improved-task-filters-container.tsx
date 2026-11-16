@@ -20,6 +20,7 @@ import { RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useFilterDataLoader } from '@/hooks/useFilterDataLoader';
+import { selectOrderedStatuses } from '@/features/taskAttributes/taskStatus.selectors';
 import {
   fetchTasksV3,
   setArchived as setTaskManagementArchived,
@@ -84,7 +85,7 @@ const selectFilterData = createSelector(
     (state: any) => state.enhancedKanbanReducer.priorities,
     (state: any) => state.taskReducer.statuses,
     (state: any) => state.taskReducer.phases,
-    (state: any) => state.taskStatusReducer.status,
+    selectOrderedStatuses,
     (state: any) => state.phaseReducer.phaseList,
     (state: any) => state.enhancedKanbanReducer.statuses,
     (state: any) => state.enhancedKanbanReducer.phases,
@@ -411,7 +412,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
   const dispatch = useAppDispatch();
   const currentTaskAssignees = useAppSelector(state => state.taskReducer.taskAssignees);
   const currentTaskLabels = useAppSelector(state => state.taskReducer.labels);
-  const allStatuses = useAppSelector((state: RootState) => (state as any).taskStatusReducer?.status || []);
+  const allStatuses = useAppSelector(selectOrderedStatuses);
   const kanbanState = useAppSelector((state: RootState) => state.enhancedKanbanReducer);
   const taskManagementArchived = useAppSelector(selectArchived);
   const enhancedKanbanArchived = useAppSelector(state => state.enhancedKanbanReducer.archived);
