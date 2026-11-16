@@ -331,7 +331,16 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
     void dispatch(fetchTasksV3(urlProjectId)).finally(() => {
       if (initialFetchProjectRef.current === urlProjectId) initialFetchProjectRef.current = null;
     });
-    dispatch(fetchTaskListColumns(urlProjectId));
+    dispatch(fetchTaskListColumns(urlProjectId))
+      .unwrap()
+      .then(res => {
+        const hasPinnedCustom =
+          Array.isArray(res?.custom) && res.custom.some((col: any) => col.pinned !== false);
+        if (hasPinnedCustom && urlProjectId) {
+          dispatch(fetchTasksV3(urlProjectId));
+        }
+      })
+      .catch(() => {});
     dispatch(fetchPhasesByProjectId(urlProjectId));
     dispatch(fetchStatusesCategories());
   }, [dispatch, urlProjectId, shouldFetchInitialData]);

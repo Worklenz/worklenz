@@ -167,6 +167,7 @@ const ProjectView = React.memo(() => {
   // Use ref to prevent duplicate API calls and error messages
   const isLoadingRef = useRef(false);
   const initializationProjectRef = useRef<string | undefined>(undefined);
+  const initializationAttemptRef = useRef(0);
   const cleanupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasShownErrorRef = useRef(false);
 
@@ -392,6 +393,7 @@ const ProjectView = React.memo(() => {
       // simulated unmount does not reset an initialization already in flight.
       cleanupTimerRef.current = setTimeout(() => {
         initializationProjectRef.current = undefined;
+        initializationAttemptRef.current += 1;
         resetAllProjectData();
       }, 0);
     };
@@ -411,6 +413,7 @@ const ProjectView = React.memo(() => {
   useEffect(() => {
     if (initializationProjectRef.current === projectId) return;
     initializationProjectRef.current = projectId;
+    initializationAttemptRef.current += 1;
     setIsInitialized(false);
     isLoadingRef.current = false;
     hasShownErrorRef.current = false;
@@ -426,6 +429,7 @@ const ProjectView = React.memo(() => {
         if (isLoadingRef.current) {
           return;
         }
+        const currentAttempt = ++initializationAttemptRef.current;
         isLoadingRef.current = true;
         performance.mark('worklenz-project-view-start');
 
@@ -463,7 +467,12 @@ const ProjectView = React.memo(() => {
             dispatch, projectId, shouldPreloadTaskList, requestedTab === 'backlog'
           );
 
-          if (initializationProjectRef.current !== projectId) return;
+          if (
+            initializationProjectRef.current !== projectId ||
+            initializationAttemptRef.current !== currentAttempt
+          ) {
+            return;
+          }
 
           // Check if project fetch was rejected (access denied or not found)
           if (projectResult.status === 'rejected') {
@@ -548,7 +557,12 @@ const ProjectView = React.memo(() => {
                 hasTaskDeepLink: Boolean(searchParams.get('task')),
                 onShellReady: () => startTransition(() => setIsInitialized(true)),
               });
-              if (initializationProjectRef.current !== projectId) return;
+              if (
+            initializationProjectRef.current !== projectId ||
+            initializationAttemptRef.current !== currentAttempt
+          ) {
+            return;
+          }
             }
           }
 
@@ -576,7 +590,12 @@ const ProjectView = React.memo(() => {
           console.error('Error loading project data:', error);
           navigate('/worklenz/projects');
         } finally {
-          if (initializationProjectRef.current === projectId) isLoadingRef.current = false;
+          if (
+            initializationProjectRef.current === projectId &&
+            initializationAttemptRef.current === currentAttempt
+          ) {
+            isLoadingRef.current = false;
+          }
         }
       };
 

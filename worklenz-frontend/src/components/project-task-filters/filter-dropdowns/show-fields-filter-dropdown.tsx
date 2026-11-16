@@ -13,6 +13,7 @@ import {
   updateCustomColumnPinned,
   toggleColumnVisibility,
 } from '@/features/tasks/tasks.slice';
+import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
@@ -221,6 +222,10 @@ const ShowFieldsFilterDropdown = () => {
         });
       } else {
         dispatch(updateCustomColumnPinned({ columnKey: col.key, isVisible: !col.pinned }));
+      }
+
+      if (!col.pinned) {
+        dispatch(fetchTasksV3(projectId));
       }
     } else {
       if (col.key) {

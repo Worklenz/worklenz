@@ -38,8 +38,8 @@ export const TaskListBulkActionBar: React.FC<TaskListBulkActionBarProps> = React
         onBulkAssignMembers={memberIds =>
           bulkActions.handleBulkAssignMembers(memberIds, selectedTaskIds)
         }
-        onBulkAddLabels={labelIds =>
-          bulkActions.handleBulkAddLabels(labelIds, selectedTaskIds)
+        onBulkAddLabels={(labelIds, text) =>
+          bulkActions.handleBulkAddLabels(labelIds, selectedTaskIds, text)
         }
         onBulkArchive={() => bulkActions.handleBulkArchive(selectedTaskIds)}
         onBulkDelete={() => bulkActions.handleBulkDelete(selectedTaskIds)}

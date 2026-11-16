@@ -62,7 +62,7 @@ interface OptimizedBulkActionBarProps {
   onBulkPhaseChange?: (phaseId: string) => void;
   onBulkAssignToMe?: () => void;
   onBulkAssignMembers?: (memberIds: string[]) => void;
-  onBulkAddLabels?: (labelIds: string[]) => void;
+  onBulkAddLabels?: (labelIds: string[], text?: string | null) => void;
   onBulkArchive?: () => void;
   onBulkDelete?: () => void;
   onBulkDuplicate?: () => void;
@@ -340,18 +340,15 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
       if (!projectId) return;
       try {
         updateLoadingState('labels', true);
-        const body = {
-          tasks: selectedTaskIds,
-          labels: selectedLabels,
-          text:
-            selectedLabels.length > 0
-              ? null
-              : createLabelText.trim() !== ''
-                ? createLabelText.trim()
-                : null,
-        };
+        const labelText =
+          selectedLabels.length > 0
+            ? null
+            : createLabelText.trim() !== ''
+              ? createLabelText.trim()
+              : null;
         await onBulkAddLabels?.(
-          selectedLabels.map(l => l.id).filter((id): id is string => id !== undefined)
+          selectedLabels.map(l => l.id).filter((id): id is string => id !== undefined),
+          labelText
         );
         setCreateLabelText('');
         setSelectedLabels([]);
@@ -504,8 +501,8 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           description: task.description,
           start_date: task.startDate,
           end_date: task.dueDate,
-          total_hours: task.timeTracking?.estimated || 0,
-          total_minutes: task.timeTracking?.logged || 0,
+          total_hours: Math.floor(task.timeTracking?.estimated || 0),
+          total_minutes: Math.round(((task.timeTracking?.estimated || 0) % 1) * 60),
           progress: task.progress,
           sub_tasks_count: node.sub_tasks.length,
           // Recursively convert child nodes (up to 3 levels)

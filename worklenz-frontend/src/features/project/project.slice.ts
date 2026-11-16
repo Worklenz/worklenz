@@ -145,9 +145,17 @@ export const saveStatusCategoryOrder = createAsyncThunk<
   StatusCategoryOrderResult,
   SaveStatusCategoryOrderRequest,
   { rejectValue: string }
->('project/saveStatusCategoryOrder', async ({ projectId, categoryOrder }, { rejectWithValue }) => {
+>('project/saveStatusCategoryOrder', async ({ projectId, categoryOrder }, { dispatch, rejectWithValue }) => {
   try {
     const response = await projectsApiService.saveStatusCategoryOrder(projectId, categoryOrder);
+    dispatch(
+      projectsApi.util.updateQueryData('getProject', projectId, draft => {
+        if (draft?.body) {
+          draft.body.status_category_order = response.body.category_order;
+        }
+      })
+    );
+    dispatch(projectsApi.util.invalidateTags([{ type: 'Projects', id: projectId }]));
     return { projectId, categoryOrder: response.body.category_order };
   } catch (error) {
     logger.error('Save Status Category Order', error);
@@ -161,9 +169,17 @@ export const resetStatusCategoryOrder = createAsyncThunk<
   StatusCategoryOrderResult,
   string,
   { rejectValue: string }
->('project/resetStatusCategoryOrder', async (projectId, { rejectWithValue }) => {
+>('project/resetStatusCategoryOrder', async (projectId, { dispatch, rejectWithValue }) => {
   try {
     const response = await projectsApiService.resetStatusCategoryOrder(projectId);
+    dispatch(
+      projectsApi.util.updateQueryData('getProject', projectId, draft => {
+        if (draft?.body) {
+          draft.body.status_category_order = response.body.category_order;
+        }
+      })
+    );
+    dispatch(projectsApi.util.invalidateTags([{ type: 'Projects', id: projectId }]));
     return { projectId, categoryOrder: response.body.category_order };
   } catch (error) {
     logger.error('Reset Status Category Order', error);

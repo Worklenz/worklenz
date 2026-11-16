@@ -15,7 +15,7 @@ import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.serv
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import logger from '@/utils/errorLogger';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { CUSTOM_COLUMN_DEFAULT_WIDTH } from '@/utils/column-width-validation';
 
 const AddCustomColumnButton = () => {
@@ -23,6 +23,8 @@ const AddCustomColumnButton = () => {
   const { t } = useTranslation('task-list-table');
   const { t: tCommon } = useTranslation('common');
   const { projectId } = useParams();
+  const projectIdRef = useRef(projectId);
+  projectIdRef.current = projectId;
   const { socket } = useSocket();
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
@@ -41,6 +43,8 @@ const AddCustomColumnButton = () => {
 
     if (isCreating) return;
     setIsCreating(true);
+
+    const targetProjectId = projectId;
 
     try {
       const columnKey = nanoid();
@@ -62,7 +66,7 @@ const AddCustomColumnButton = () => {
       };
 
       // Create column in backend
-      const res = await tasksCustomColumnsService.createCustomColumn(projectId || '', {
+      const res = await tasksCustomColumnsService.createCustomColumn(targetProjectId || '', {
         name: defaultFieldTitle,
         key: columnKey,
         field_type: 'text',
@@ -72,6 +76,10 @@ const AddCustomColumnButton = () => {
       });
 
       if (res.done) {
+        if (targetProjectId !== projectIdRef.current) {
+          return;
+        }
+
         const newColumn: CustomTableColumnsType = {
           key: columnKey,
           name: defaultFieldTitle,
@@ -92,7 +100,7 @@ const AddCustomColumnButton = () => {
         };
 
         dispatch(addCustomColumn(newColumn));
-        socket?.emit(SocketEvents.CUSTOM_COLUMN_CREATED.toString(), JSON.stringify({ project_id: projectId }));
+        socket?.emit(SocketEvents.CUSTOM_COLUMN_CREATED.toString(), JSON.stringify({ project_id: targetProjectId }));
 
         message.success(t('customColumns.columnCreated', { defaultValue: 'Column created. Click on the header to edit.' }));
       }
