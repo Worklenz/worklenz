@@ -4,7 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { ConfigProvider, Modal, theme } from 'antd';
 import reducer from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 import type { ITaskCustomColumn } from '@/types/tasks/task.types';
-import CustomColumnFormContent from './custom-column-form-content';
+import CustomColumnFormContent from './CustomColumnFormContent';
 
 const mocks = vi.hoisted(() => ({ dispatch: vi.fn(), updateColumn: vi.fn() }));
 let state: {
@@ -240,7 +240,6 @@ for (const [mode, algorithm] of [
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'customColumns.modal.updateButton' }));
-
     await waitFor(() =>
       expect(mocks.updateColumn).toHaveBeenCalledWith(
         'child',

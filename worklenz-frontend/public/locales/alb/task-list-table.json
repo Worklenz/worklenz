@@ -60,6 +60,7 @@
   "lastupdatedColumn": "Përditësuar Së Fundi",
   "reporterColumn": "Raportuesi",
   "moveColumnHandle": "Zhvendos kolonën",
+  "resizeColumn": "Ndrysho madhësinë e kolonës {{column}}",
   "dueTimeColumn": "Koha e Afatit",
   "activeParentBadge": "Prind aktiv",
   "activeParentTooltip": "Detyra prind nuk është e arkivuar",

@@ -302,6 +302,20 @@ export const fetchTasksV3 = createAsyncThunk(
       const sortField = state.taskManagement.sortField;
       const sortOrder = state.taskManagement.sortOrder;
 
+      // Only fetch the heavier per-task data used by visible list columns.
+      // Comment and attachment counts remain in the response for task indicators.
+      const visibleFieldKeys = new Set(
+        (state.taskManagementFields?.fields || [])
+          .filter(field => field.visible)
+          .map(field => field.key)
+      );
+      const visibleCustomColumns = state.taskManagement.customColumns.filter(
+        column => column.pinned
+      );
+      const visibleCustomColumnIds = visibleCustomColumns
+        .map(column => column.id)
+        .filter((id): id is string => Boolean(id));
+
       const config: ITaskListConfigV2 = {
         id: projectId,
         archived: archivedState,
@@ -319,7 +333,15 @@ export const fetchTasksV3 = createAsyncThunk(
         isSubtasksInclude: false,
         labels: selectedLabels,
         priorities: selectedPriorities,
-        customColumns: true,
+        customColumns: visibleCustomColumns.length > 0,
+        custom_column_ids:
+          visibleCustomColumnIds.length === visibleCustomColumns.length &&
+          visibleCustomColumnIds.length > 0
+            ? visibleCustomColumnIds.join(',')
+            : undefined,
+        include_attachments: visibleFieldKeys.has('ATTACHMENTS'),
+        include_latest_comment: visibleFieldKeys.has('COMMENTS'),
+        group_tasks: false,
       };
 
       const response = await tasksApiService.getTaskListV3(config);
@@ -1419,9 +1441,13 @@ const taskManagementSlice = createSlice({
         state.loading = false;
         state.error =
           action.error?.message || (action.payload as string) || 'Failed to load tasks (V3)';
-        state.ids = [];
-        state.entities = {};
-        state.groups = [];
+        const isSilent =
+          typeof action.meta.arg === 'object' && (action.meta.arg as any).silent === true;
+        if (!isSilent) {
+          state.ids = [];
+          state.entities = {};
+          state.groups = [];
+        }
       })
       .addCase(fetchSubTasks.pending, (state, action) => {
         // Set loading state for specific task

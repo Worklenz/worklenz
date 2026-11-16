@@ -15,6 +15,7 @@ export const projectsApi = createApi({
   reducerPath: 'projectsApi',
   baseQuery: fetchBaseQuery({
     baseUrl: `${config.apiUrl}${API_BASE_URL}`,
+    timeout: 30000,
     prepareHeaders: async headers => {
       let token = getCsrfToken();
       if (!token) {

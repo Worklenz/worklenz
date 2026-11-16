@@ -60,6 +60,7 @@
   "lastupdatedColumn": "Last Updated",
   "reporterColumn": "Reporter",
   "moveColumnHandle": "Move column",
+  "resizeColumn": "Resize {{column}} column",
   "dueTimeColumn": "Due Time",
   "activeParentBadge": "Active parent",
   "activeParentTooltip": "Parent task is not archived",

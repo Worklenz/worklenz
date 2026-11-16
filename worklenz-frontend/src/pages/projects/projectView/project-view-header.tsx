@@ -20,7 +20,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { releaseDocsEditors } from '@/pages/projects/project-view-1/docs/docs-editor-release';
-import { useState, useCallback, useMemo, memo, useRef, useEffect } from 'react';
+import { useState, useCallback, useMemo, memo, useRef, useEffect, lazy, Suspense, Profiler } from 'react';
+import { isTaskListProfilingEnabled, recordTaskListRender } from '@/components/task-list-v2/task-list-profiling';
 import { createPortal, flushSync } from 'react-dom';
 
 
@@ -50,7 +51,6 @@ import {
 import ProjectStatusIcon from '@/components/common/project-status-icon/project-status-icon';
 import { formatDate } from '@/utils/timeUtils';
 import { toggleSaveAsTemplateDrawer, openSaveAsTemplateDrawer } from '@/features/projects/projectsSlice';
-import SaveProjectAsTemplate from '@/components/save-project-as-template/save-project-as-template';
 import { fetchProjectData, setProjectId, setProjectData } from '@/features/project/project-drawer.slice';
 import { openProjectSettingsModal } from '@/features/project/project-settings-modal.slice';
 import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
@@ -59,9 +59,6 @@ import { DEFAULT_TASK_NAME, UNMAPPED } from '@/shared/constants';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { getGroupIdByGroupedColumn } from '@/services/task-list/taskList.service';
 import logger from '@/utils/errorLogger';
-import ImportTaskTemplate from '@/components/task-templates/import-task-template';
-import ImportSourceModal from '@/pages/settings/import-export/ImportSourceModal';
-import { ProjectSettingsModal } from '@/components/projects/project-settings-modal/ProjectSettingsModal';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 import useProjectPermissions from '@/hooks/useProjectPermissions';
@@ -80,6 +77,7 @@ import { getImportProgress } from '@/api/imports';
 import styles from './project-view-header.module.css';
 
 const CSV_IMPORT_SOURCE = { key: 'csv', label: 'CSV', icon: null };
+const ImportSourceModal = lazy(() => import('@/pages/settings/import-export/ImportSourceModal'));
 
 const ProjectViewHeader = memo(() => {
   const navigate = useNavigate();
@@ -97,7 +95,6 @@ const ProjectViewHeader = memo(() => {
 
   const selectedProject = useAppSelector(state => state.projectReducer.project);
   const projectId = useAppSelector(state => state.projectReducer.projectId);
-  const loadingGroups = useAppSelector(state => state.taskReducer.loadingGroups);
   const groupBy = useAppSelector(state => state.taskReducer.groupBy);
 
   const isGuest = useMemo(() => isUserGuest(selectedProject), [selectedProject]);
@@ -112,6 +109,7 @@ const ProjectViewHeader = memo(() => {
   const [creatingTask, setCreatingTask] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const [isCsvImportOpen, setIsCsvImportOpen] = useState(false);
+  const [hasOpenedCsvImport, setHasOpenedCsvImport] = useState(false);
   const projectTasksFetching = useAppSelector(state => state.taskManagement.loading);
   const [isBackButtonHovered, setIsBackButtonHovered] = useState(false);
 
@@ -299,6 +297,7 @@ const ProjectViewHeader = memo(() => {
   }, [dispatch, currentSession]);
 
   const handleImportTasksFromCsv = useCallback(() => {
+    setHasOpenedCsvImport(true);
     setIsCsvImportOpen(true);
   }, []);
 
@@ -774,6 +773,19 @@ const ProjectViewHeader = memo(() => {
     };
   }, []);
 
+  const actionControls = (
+    <Flex gap={4} align="center" className={styles.actionsSection}>
+      <Tooltip title={t('refreshTooltip', { defaultValue: 'Refresh project data' })}>
+        <Button
+          shape="circle"
+          icon={<SyncOutlined spin={projectTasksFetching} />}
+          onClick={handleRefresh}
+        />
+      </Tooltip>
+      {headerActions}
+    </Flex>
+  );
+
   return (
     <>
       <div
@@ -783,26 +795,15 @@ const ProjectViewHeader = memo(() => {
         }}
       >
         <div className={styles.headerContent}>
-          <div className={styles.titleSection}>{pageHeaderTitle}</div>
-          <Flex gap={4} align="center" className={styles.actionsSection}>
-            <Tooltip title={t('refreshTooltip', { defaultValue: 'Refresh project data' })}>
-              <Button
-                shape="circle"
-                icon={<SyncOutlined spin={projectTasksFetching} />}
-                onClick={handleRefresh}
-              />
-            </Tooltip>
-            {headerActions}
-          </Flex>
+          <div className={styles.titleSection}>{isTaskListProfilingEnabled ? (
+            <Profiler id="project-identity" onRender={recordTaskListRender}>{pageHeaderTitle}</Profiler>
+          ) : pageHeaderTitle}</div>
+          {isTaskListProfilingEnabled ? (
+            <Profiler id="project-actions" onRender={recordTaskListRender}>{actionControls}</Profiler>
+          ) : actionControls}
         </div>
       </div>
-      {createPortal(
-        <ProjectSettingsModal onClose={() => { }} />,
-        document.body,
-        'project-settings-modal'
-      )}
-      {createPortal(<ImportTaskTemplate />, document.body, 'import-task-template')}
-      {createPortal(<ImportSourceModal
+      {hasOpenedCsvImport && createPortal(<Suspense fallback={null}><ImportSourceModal
         open={isCsvImportOpen}
         onClose={() => setIsCsvImportOpen(false)}
         source={CSV_IMPORT_SOURCE}
@@ -817,12 +818,15 @@ const ProjectViewHeader = memo(() => {
         onImportStarted={(projectId) => {
           waitForImportAndRefresh(projectId);
         }}
-      />, document.body, 'import-source-modal')}
-      {createPortal(<SaveProjectAsTemplate />, document.body, 'save-project-as-template')}
+      /></Suspense>, document.body, 'import-source-modal')}
     </>
   );
 });
 
 ProjectViewHeader.displayName = 'ProjectViewHeader';
 
-export default ProjectViewHeader;
+const ProfiledProjectViewHeader = () => (
+  <Profiler id="project-header" onRender={recordTaskListRender}><ProjectViewHeader /></Profiler>
+);
+
+export default isTaskListProfilingEnabled ? ProfiledProjectViewHeader : ProjectViewHeader;

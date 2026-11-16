@@ -26,10 +26,11 @@ const useTaskDrawerUrlSync = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const params = useParams();
   const dispatch = useAppDispatch();
-  const { showTaskDrawer, selectedTaskId, taskAccessFrom, lastDeletedTaskId } = useAppSelector(
-    state => state.taskDrawerReducer
-  );
-  const { projectId } = useAppSelector(state => state.projectReducer);
+  const showTaskDrawer = useAppSelector(state => state.taskDrawerReducer.showTaskDrawer);
+  const selectedTaskId = useAppSelector(state => state.taskDrawerReducer.selectedTaskId);
+  const taskAccessFrom = useAppSelector(state => state.taskDrawerReducer.taskAccessFrom);
+  const lastDeletedTaskId = useAppSelector(state => state.taskDrawerReducer.lastDeletedTaskId);
+  const projectId = useAppSelector(state => state.projectReducer.projectId);
   const routeProjectId = params.projectId || params.id;
 
   // Use a ref to track whether we're in the process of closing the drawer

@@ -11,7 +11,7 @@ import ProjectGroupList from '@/components/project-list/project-group/project-gr
 import { ProjectSettingsModal } from '@/components/projects/project-settings-modal/ProjectSettingsModal';
 import TablePagination from '@/components/TablePagination';
 
-import { useGetProjectsQuery } from '@/api/projects/projects.v1.api.service';
+import { projectsApi, useGetProjectsQuery } from '@/api/projects/projects.v1.api.service';
 import { setGroupBy, setViewMode } from '@features/project/project-view-slice';
 import { setProject, setProjectId } from '@/features/project/project.slice';
 import {
@@ -513,17 +513,40 @@ const ProjectList: React.FC = () => {
   // Warm the project view chunk on first hover only — the dynamic import is
   // cached, but re-entering it on every mouseenter is pointless work.
   const hasPrefetchedProjectView = useRef(false);
-  const prefetchProjectView = useCallback(() => {
-    if (hasPrefetchedProjectView.current) return;
-    hasPrefetchedProjectView.current = true;
-    import('@/pages/projects/projectView/project-view').catch(() => { });
-  }, []);
+  const projectMetadataPrefetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prefetchProjectView = useCallback(
+    (projectId?: string) => {
+      if (!hasPrefetchedProjectView.current) {
+        hasPrefetchedProjectView.current = true;
+        import('@/pages/projects/projectView/project-view').catch(() => {});
+      }
+
+      if (projectMetadataPrefetchTimer.current) {
+        clearTimeout(projectMetadataPrefetchTimer.current);
+      }
+      if (projectId) {
+        projectMetadataPrefetchTimer.current = setTimeout(() => {
+          dispatch(projectsApi.util.prefetch('getProject', projectId, { ifOlderThan: 5 }));
+        }, 150);
+      }
+    },
+    [dispatch]
+  );
+
+  useEffect(
+    () => () => {
+      if (projectMetadataPrefetchTimer.current) {
+        clearTimeout(projectMetadataPrefetchTimer.current);
+      }
+    },
+    []
+  );
 
   const handleRow = useCallback(
     (record: IProjectViewModel) => ({
       onClick: () =>
         navigateToProject(record.id, record.team_member_default_view, record.project_type),
-      onMouseEnter: prefetchProjectView,
+      onMouseEnter: () => prefetchProjectView(record.id),
     }),
     [navigateToProject, prefetchProjectView]
   );

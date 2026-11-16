@@ -1,3 +1,4 @@
+import { DeferredMount } from '@/components/task-list-v2/components/DeferredMount';
 import { TabsProps, Tabs, Button, Result, Alert, Flex, Tooltip } from '@/shared/antd-imports';
 import Drawer from 'antd/es/drawer';
 import { InputRef } from 'antd/es/input';
@@ -49,20 +50,19 @@ const TaskDrawer = () => {
   const [activeTab, setActiveTab] = useState<string>('info');
   const [refreshTimeLogTrigger, setRefreshTimeLogTrigger] = useState(0);
   const { canCreateTask } = useTaskCreationPermission();
-  const {
-    showTaskDrawer,
-    timeLogEditing,
-    taskAccessDenied,
-    taskAccessFrom,
-    targetDrawerTab,
-    lastDeletedTaskId,
-    taskFormViewModel,
-    selectedTaskId,
-  } = useAppSelector(state => state.taskDrawerReducer);
-  const { projectId, project } = useAppSelector(state => state.projectReducer);
-  const priorities = useAppSelector(state => state.priorityReducer.priorities);
-  const labels = useAppSelector(state => state.taskLabelsReducer.labels);
-  const teamMembers = useAppSelector(state => state.teamMembersReducer.teamMembers);
+  const showTaskDrawer = useAppSelector(state => state.taskDrawerReducer.showTaskDrawer);
+  const timeLogEditing = useAppSelector(state => state.taskDrawerReducer.timeLogEditing);
+  const taskAccessDenied = useAppSelector(state => state.taskDrawerReducer.taskAccessDenied);
+  const taskAccessFrom = useAppSelector(state => state.taskDrawerReducer.taskAccessFrom);
+  const targetDrawerTab = useAppSelector(state => state.taskDrawerReducer.targetDrawerTab);
+  const lastDeletedTaskId = useAppSelector(state => state.taskDrawerReducer.lastDeletedTaskId);
+  const taskFormViewModel = useAppSelector(state => state.taskDrawerReducer.taskFormViewModel);
+  const selectedTaskId = useAppSelector(state => state.taskDrawerReducer.selectedTaskId);
+  const projectId = useAppSelector(state => state.projectReducer.projectId);
+  const project = useAppSelector(state => state.projectReducer.project);
+  const priorityCount = useAppSelector(state => state.taskDrawerReducer.showTaskDrawer ? state.priorityReducer.priorities.length : 0);
+  const labelCount = useAppSelector(state => state.taskDrawerReducer.showTaskDrawer ? state.taskLabelsReducer.labels.length : 0);
+  const memberCount = useAppSelector(state => state.taskDrawerReducer.showTaskDrawer ? (state.teamMembersReducer.teamMembers?.data?.length || 0) : 0);
 
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
@@ -112,15 +112,15 @@ const TaskDrawer = () => {
   useEffect(() => {
     if (!showTaskDrawer || taskAccessDenied) return;
 
-    if (!priorities.length) {
+    if (!priorityCount) {
       dispatch(fetchPriorities());
     }
 
-    if (!labels.length) {
+    if (!labelCount) {
       dispatch(fetchLabels());
     }
 
-    if (!teamMembers?.data?.length) {
+    if (!memberCount) {
       dispatch(
         getTeamMembers({ index: 0, size: 100, field: null, order: null, search: null, all: true })
       );
@@ -155,9 +155,9 @@ const TaskDrawer = () => {
     }
   }, [
     dispatch,
-    labels.length,
+    labelCount,
     lastDeletedTaskId,
-    priorities.length,
+    priorityCount,
     project,
     projectId,
     selectedTaskId,
@@ -166,7 +166,7 @@ const TaskDrawer = () => {
     taskAccessFrom,
     taskFormViewModel?.task?.id,
     taskFormViewModel?.task?.name,
-    teamMembers?.data?.length,
+    memberCount,
   ]);
 
   const handleBackToParent = () => {
@@ -358,7 +358,7 @@ const TaskDrawer = () => {
 
   return (
     <>
-      <Drawer {...drawerProps}>
+      <DeferredMount isOpen={showTaskDrawer}><Drawer {...drawerProps}>
         {taskAccessDenied ? (
           <div style={{ padding: '48px 24px' }} role="status" aria-live="polite">
             <Result
@@ -408,7 +408,7 @@ const TaskDrawer = () => {
             </div>
           </>
         )}
-      </Drawer>
+      </Drawer></DeferredMount>
       {createPortal(
         <CustomColumnModal projectId={projectId} />,
         document.body,

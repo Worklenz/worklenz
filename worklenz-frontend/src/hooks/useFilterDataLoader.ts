@@ -1,4 +1,6 @@
-import { useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback } from 'react';
+import { useStore } from 'react-redux';
+import type { RootState } from '@/app/store';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
@@ -13,6 +15,7 @@ import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/
  */
 export const useFilterDataLoader = () => {
   const dispatch = useAppDispatch();
+  const store = useStore<RootState>();
 
   // Memoize the priorities selector to prevent unnecessary re-renders
   const priorities = useAppSelector(state => state.priorityReducer.priorities);
@@ -54,18 +57,31 @@ export const useFilterDataLoader = () => {
 
       // Load project-specific data in parallel without blocking
       if (projectId) {
-        // These dispatch calls are fire-and-forget
-        // They will update the UI when ready, but won't block initial render
-        dispatch(fetchLabelsByProject(projectId));
-        dispatch(fetchTaskAssignees(projectId));
+        const { taskReducer, phaseReducer } = store.getState();
+        if (
+          taskReducer.labelsProjectId !== projectId &&
+          taskReducer.labelsLoadingProjectId !== projectId
+        ) {
+          dispatch(fetchLabelsByProject(projectId));
+        }
+        if (
+          taskReducer.assigneesProjectId !== projectId &&
+          taskReducer.assigneesLoadingProjectId !== projectId
+        ) {
+          dispatch(fetchTaskAssignees(projectId));
+        }
 
         // Load statuses if not already loaded
         if (!statuses.length) {
           dispatch(fetchStatuses(projectId));
         }
 
-        // Always load phases (project-specific)
-        dispatch(fetchPhasesByProjectId(projectId));
+        if (
+          phaseReducer.loadedProjectId !== projectId &&
+          phaseReducer.loadingProjectId !== projectId
+        ) {
+          dispatch(fetchPhasesByProjectId(projectId));
+        }
       }
 
       // Load team members for member filters
@@ -83,7 +99,7 @@ export const useFilterDataLoader = () => {
       console.error('Error loading filter data:', error);
       // Don't throw - filter loading errors shouldn't break the main UI
     }
-  }, [dispatch, priorities.length, statuses.length, projectId]);
+  }, [dispatch, store, priorities.length, statuses.length, projectId]);
 
   // Load filter data on mount and when dependencies change
   useEffect(() => {

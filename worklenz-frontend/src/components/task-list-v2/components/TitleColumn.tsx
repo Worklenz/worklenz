@@ -84,7 +84,10 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
     const isSoftwareProject = useAppSelector(state =>
       isSoftwareProjectType(state.projectReducer.project?.project_type)
     );
-    const { showTaskDrawer, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
+    const showTaskDrawer = useAppSelector(state => state.taskDrawerReducer.showTaskDrawer);
+    const isThisTaskDrawerOpen = useAppSelector(
+      state => state.taskDrawerReducer.showTaskDrawer && state.taskDrawerReducer.selectedTaskId === task.id
+    );
 
     // True nesting depth for rendering the hierarchy chevron icon.
     // For normally nested rows, trust the rendered depth prop.
@@ -152,7 +155,7 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
 
     const handleOpenTaskInDrawer = useCallback(() => {
       if (!task.id) return;
-      if (showTaskDrawer && selectedTaskId === task.id) return;
+      if (isThisTaskDrawerOpen) return;
 
       const taskIds = groups.flatMap(group => group.taskIds);
       const currentIndex = taskIds.indexOf(task.id);
@@ -168,7 +171,7 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
       dispatch(setSelectedTaskId(task.id));
       dispatch(setShowTaskDrawer(true));
       dispatch(fetchTaskDrawer({ taskId: task.id, projectId }));
-    }, [dispatch, groups, projectId, selectedTaskId, showTaskDrawer, task.id]);
+    }, [dispatch, groups, projectId, isThisTaskDrawerOpen, task.id]);
 
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
