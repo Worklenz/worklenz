@@ -89,4 +89,25 @@ describe('AnalyticsFilterBar', () => {
     expect(onProjectsChange).toHaveBeenCalledWith([]);
     expect(onTeamsChange).toHaveBeenCalledWith(['t-default']);
   });
+
+  it('offers Select all on the Members filter', async () => {
+    const onMembersChange = vi.fn();
+    renderBar({
+      selectedProjectIds: [],
+      selectedTeamIds: ['t-default'],
+      memberOptions: [
+        { value: 'm1', label: 'Ada' },
+        { value: 'm2', label: 'Grace' },
+      ],
+      selectedMemberIds: [],
+      onMembersChange,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Filter/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /caret-down\s+Members/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Select all' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(onMembersChange).toHaveBeenCalledWith(['m1', 'm2']);
+  });
 });

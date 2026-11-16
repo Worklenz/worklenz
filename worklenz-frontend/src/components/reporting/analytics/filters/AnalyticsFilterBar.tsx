@@ -265,6 +265,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
             value={draftMemberIds}
             onChange={setDraftMemberIds}
             loading={loading}
+            showBulkActions
             searchPlaceholder={t('searchMembers', { defaultValue: 'Search members' })}
             emptyText={t('noMembers', { defaultValue: 'No members found' })}
           />
