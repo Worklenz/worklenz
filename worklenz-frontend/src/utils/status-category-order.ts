@@ -46,11 +46,6 @@ export const sortStatusGroupsByCategory = (
   });
 };
 
-export const filterEmptyStatusGroups = (
-  groups: TaskGroup[],
-  visibleTaskIds: ReadonlySet<string>
-): TaskGroup[] => groups.filter(group => group.taskIds.some(taskId => visibleTaskIds.has(taskId)));
-
 export const getDoneStatusGroupIds = (
   groups: TaskGroup[],
   statuses: ITaskStatus[]

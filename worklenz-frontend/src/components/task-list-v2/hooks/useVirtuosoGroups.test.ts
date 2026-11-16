@@ -58,11 +58,11 @@ describe('development category ordering with virtualized groups', () => {
     statusCategoryOrder: categoryOrder,
   };
 
-  it('orders status groups by category and removes empty groups when tasks exist', () => {
+  it('orders status groups by category and keeps empty configured groups', () => {
     const groups: TaskGroup[] = [
       { id: 'todo', title: 'Todo', taskIds: ['a'] },
       { id: 'done', title: 'Done', taskIds: ['b'] },
-      { id: 'empty', title: 'Empty', taskIds: ['missing'] },
+      { id: 'empty', title: 'Empty', taskIds: [] },
       { id: 'doing', title: 'Doing', taskIds: ['c'] },
     ];
     const { result } = renderHook(() =>
@@ -73,9 +73,10 @@ describe('development category ordering with virtualized groups', () => {
         currentGrouping: 'status',
       })
     );
-    expect(result.current.map(group => group.id)).toEqual(['doing', 'todo', 'done']);
-    expect(result.current.map(group => group.startIndex)).toEqual([0, 2, 4]);
+    expect(result.current.map(group => group.id)).toEqual(['doing', 'todo', 'done', 'empty']);
+    expect(result.current.map(group => group.startIndex)).toEqual([0, 2, 4, 6]);
     expect(result.current[0].tasks[0]).toMatchObject({ id: 'c', originalIndex: 2 });
+    expect(result.current[3]).toMatchObject({ actualCount: 0, count: 1 });
   });
 
   it('keeps empty status groups for example rows in an empty project', () => {
@@ -89,7 +90,6 @@ describe('development category ordering with virtualized groups', () => {
         groups,
         allTasks: [],
         currentGrouping: 'status',
-        hasNoTasks: true,
       })
     );
     expect(result.current.map(group => group.id)).toEqual(['doing', 'todo']);

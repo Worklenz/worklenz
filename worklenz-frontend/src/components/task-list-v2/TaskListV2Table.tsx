@@ -393,7 +393,6 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
     statusCategoryOrder,
     sortField,
     sortOrder,
-    hasNoTasks,
   });
 
   const virtuosoGroupCounts = useMemo(() => {

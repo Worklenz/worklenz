@@ -2,7 +2,6 @@ import type { ITaskStatus } from '@/types/tasks/taskStatus.types';
 import type { StatusCategoryOrder } from '@/types/project/status-category-order.types';
 import {
   sortStatusGroupsByCategory,
-  filterEmptyStatusGroups,
   sortTasksByStatusCategory,
 } from '@/utils/status-category-order';
 import { useMemo } from 'react';
@@ -25,7 +24,6 @@ interface UseVirtuosoGroupsOptions {
   statusCategoryOrder?: StatusCategoryOrder;
   sortField?: string | null;
   sortOrder?: 'ASC' | 'DESC';
-  hasNoTasks?: boolean;
 }
 
 const EMPTY_STATUSES: ITaskStatus[] = [];
@@ -45,20 +43,17 @@ export const useVirtuosoGroups = ({
   statusCategoryOrder = EMPTY_CATEGORY_ORDER,
   sortField,
   sortOrder = 'ASC',
-  hasNoTasks = allTasks.length === 0,
 }: UseVirtuosoGroupsOptions) =>
   useMemo(() => {
     let currentTaskIndex = 0;
     const taskLookup = new Map(allTasks.map((task, index) => [task.id, { task, index }]));
 
-    const sortedStatusGroups =
+    // Keep every configured status group, including empty ones, so users can add
+    // tasks into statuses that do not yet have any work.
+    const categoryOrderedGroups =
       currentGrouping === 'status'
         ? sortStatusGroupsByCategory(groups, statuses, statusCategoryOrder)
         : groups;
-    const categoryOrderedGroups =
-      currentGrouping === 'status' && !hasNoTasks
-        ? filterEmptyStatusGroups(sortedStatusGroups, new Set(taskLookup.keys()))
-        : sortedStatusGroups;
 
     // Software backlog: always keep Backlog (Unmapped), even when empty; active sprint first.
     const orderedGroups =
@@ -168,7 +163,6 @@ export const useVirtuosoGroups = ({
     statusCategoryOrder,
     sortField,
     sortOrder,
-    hasNoTasks,
   ]);
 
 export type VirtuosoGroupItem = ReturnType<typeof useVirtuosoGroups>[number];
