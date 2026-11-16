@@ -26,8 +26,12 @@ function resolveAddonDir(addonId) {
   const candidates = [
     path.resolve(process.cwd(), 'addons', addonId),
     path.resolve(process.cwd(), '../addons', addonId),
+    path.resolve(process.cwd(), '../addons/worklenz-addons', addonId),
+    path.resolve(process.cwd(), 'addons/worklenz-addons', addonId),
     path.resolve(__dirname, '../../addons', addonId),
     path.resolve(__dirname, '../../../addons', addonId),
+    path.resolve(__dirname, '../../addons/worklenz-addons', addonId),
+    path.resolve(__dirname, '../../../addons/worklenz-addons', addonId),
   ];
 
   for (const candidate of candidates) {

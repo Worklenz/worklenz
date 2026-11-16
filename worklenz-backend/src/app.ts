@@ -19,7 +19,7 @@ import authRouter from "./routes/auth";
 import emailTemplatesRouter from "./routes/email-templates";
 import public_router from "./routes/public";
 import clientPortalApiRouter from "./routes/apis/client-portal-api-router";
-import { loadAddonRouters } from "./addons/load-addons";
+import { loadAddonRouters, startAddonWorkers } from "./addons/load-addons";
 import { isInternalServer, isProduction, log_error } from "./shared/utils";
 import { STORAGE_PROVIDER } from "./shared/constants";
 import sessionMiddleware from "./middlewares/session-middleware";
@@ -53,6 +53,7 @@ const globalRateLimiter = rateLimit({
 });
 
 export const startBackgroundWorkers = (): void => {
+  startAddonWorkers();
   if (process.env.IMPORT_WORKER_ENABLED !== "false") {
     importWorker.start();
   }
@@ -84,7 +85,7 @@ app.use(express.json({
       req.rawBody = buf.toString("utf8");
     }
     // GitHub signs the exact bytes; keep the raw buffer for HMAC verification.
-    if (url.startsWith("/webhook/github")) {
+    if (url.startsWith("/webhook/github") || url.startsWith("/webhook/addons/")) {
       (req as Request & { rawBodyBuffer?: Buffer }).rawBodyBuffer = Buffer.from(buf);
     }
   },

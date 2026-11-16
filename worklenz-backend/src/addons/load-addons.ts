@@ -14,12 +14,36 @@ export interface AddonManifest {
   backend?: {
     routes?: string;
     routePrefix?: string;
+    publicRoutes?: boolean;
+    webhookRoutes?: boolean;
+    lifecycle?: boolean;
   };
   frontend?: {
     routes?: string;
     slots?: string;
     store?: string;
   };
+}
+
+interface AddonLifecycle {
+  start: () => void | Promise<void>;
+  stop?: () => void | Promise<void>;
+}
+
+const addonLifecycles: AddonLifecycle[] = [];
+
+export function startAddonWorkers(): void {
+  for (const lifecycle of addonLifecycles) {
+    Promise.resolve().then(() => lifecycle.start()).catch(error => {
+      console.error("[Addon] Worker startup failed:", error);
+    });
+  }
+}
+
+export async function stopAddonWorkers(): Promise<void> {
+  await Promise.all(addonLifecycles.map(async lifecycle => {
+    if (lifecycle.stop) await lifecycle.stop();
+  }));
 }
 
 /**
@@ -29,8 +53,12 @@ export function resolveAddonDir(addonId: string): string | null {
   const candidates = [
     path.resolve(process.cwd(), "addons", addonId),
     path.resolve(process.cwd(), "../addons", addonId),
+    path.resolve(process.cwd(), "../addons/worklenz-addons", addonId),
+    path.resolve(process.cwd(), "addons/worklenz-addons", addonId),
     path.resolve(__dirname, "../../../addons", addonId),
     path.resolve(__dirname, "../../../../addons", addonId),
+    path.resolve(__dirname, "../../../addons/worklenz-addons", addonId),
+    path.resolve(__dirname, "../../../../addons/worklenz-addons", addonId),
   ];
 
   for (const candidate of candidates) {
@@ -171,6 +199,15 @@ export function loadAddonRouters(app: Express, authMiddleware?: RequestHandler):
         app.use(mountPath, authMiddleware, router);
       } else {
         app.use(mountPath, router);
+      }
+      if (manifest?.backend?.publicRoutes && imported.publicRouter) {
+        app.use(`/public/addons/${apiPrefix}`, imported.publicRouter);
+      }
+      if (manifest?.backend?.webhookRoutes && imported.webhookRouter) {
+        app.use(`/webhook/addons/${apiPrefix}`, imported.webhookRouter);
+      }
+      if (manifest?.backend?.lifecycle && typeof imported.start === "function") {
+        addonLifecycles.push({ start: imported.start, stop: imported.stop });
       }
       console.log(`[Addon] Successfully mounted addon "${addonId}" at ${mountPath}`);
     } catch (error) {

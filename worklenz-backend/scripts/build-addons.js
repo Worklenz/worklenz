@@ -22,6 +22,13 @@ const addonDirsById = new Map(getAddonDirs(nestedAddonsDir));
 for (const [addonId, addonDir] of getAddonDirs(flatAddonsDir)) {
   if (!addonDirsById.has(addonId)) addonDirsById.set(addonId, addonDir);
 }
+const privateAddonsDir = path.join(flatAddonsDir, 'worklenz-addons');
+for (const addonId of (process.env.ENABLED_ADDONS || '').split(',').map(id => id.trim()).filter(Boolean)) {
+  const addonDir = path.join(privateAddonsDir, addonId);
+  if (!addonDirsById.has(addonId) && fs.existsSync(addonDir) && fs.statSync(addonDir).isDirectory()) {
+    addonDirsById.set(addonId, addonDir);
+  }
+}
 const addonDirs = [...addonDirsById.entries()];
 
 if (addonDirs.length === 0) {
@@ -120,6 +127,11 @@ for (const [addonId, addonDir] of addonDirs) {
         stdio: 'inherit',
       }
     );
+
+    const assetsScript = path.join(addonDir, 'backend', 'build-assets.js');
+    if (fs.existsSync(assetsScript)) {
+      execFileSync(process.execPath, [assetsScript], { cwd: path.join(repoRoot, 'worklenz-backend'), stdio: 'inherit' });
+    }
 
     // Normalize any relative addon-sdk imports in emitted dist files to @worklenz/addon-sdk
     const distDir = path.join(addonDir, 'backend', 'dist');

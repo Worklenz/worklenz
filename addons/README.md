@@ -50,3 +50,19 @@ npm run migrate:addons
 ```
 
 Each addon tracks its schema in its own isolated migrations table (e.g. `pgmigrations_<addon_id>`), ensuring the core database schema remains clean and decoupled.
+
+### Optional public endpoints and workers
+
+An enabled add-on may opt in through its manifest's `backend` object:
+
+```json
+{ "backend": { "publicRoutes": true, "webhookRoutes": true, "lifecycle": true } }
+```
+
+Its backend routes module can then export `publicRouter`, mounted at
+`/public/addons/<apiPrefix>`, `webhookRouter`, mounted at
+`/webhook/addons/<apiPrefix>`, and `start` and optional `stop` worker functions.
+These routes do not use session authentication; add-ons must implement their
+own authentication and authorization. Webhook handlers may read the original
+request bytes from `rawBodyBuffer` for signature verification. These exports
+are ignored unless the corresponding manifest option is enabled.

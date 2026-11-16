@@ -48,6 +48,7 @@ export function addonsPlugin(env?: Record<string, string>): Plugin {
             path.resolve(process.cwd(), '../addons', addonId, 'manifest.json'),
             path.resolve(process.cwd(), 'addons', addonId, 'manifest.json'),
             path.resolve(__dirname, '../addons', addonId, 'manifest.json'),
+            path.resolve(__dirname, '../addons/worklenz-addons', addonId, 'manifest.json'),
           ];
           for (const cand of manifestCandidates) {
             if (fs.existsSync(cand)) {
@@ -125,6 +126,7 @@ export const addonMiddlewares = [];
           path.resolve(process.cwd(), '../addons', addonId),
           path.resolve(process.cwd(), 'addons', addonId),
           path.resolve(__dirname, '../addons', addonId),
+          path.resolve(__dirname, '../addons/worklenz-addons', addonId),
         ];
 
         let addonDir: string | null = null;

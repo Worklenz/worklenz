@@ -2,7 +2,7 @@ import db from "../config/db";
 import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "../controllers/worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
-import { sanitizeCommentContent, sanitizePlainText, log_error } from "../shared/utils";
+import { sanitizeCommentContent, sanitizePlainText, sanitizeRichTextDescription, log_error } from "../shared/utils";
 import { NotificationsService } from "../services/notifications/notifications.service";
 import { sendProjectComment } from "../shared/email-notifications";
 import { HTML_TAG_REGEXP, LOG_DESCRIPTIONS, WorklenzColorCodes } from "../shared/constants";
@@ -27,6 +27,7 @@ export {
   HandleExceptions,
   sanitizeCommentContent,
   sanitizePlainText,
+  sanitizeRichTextDescription,
   log_error,
   NotificationsService,
   sendProjectComment,
