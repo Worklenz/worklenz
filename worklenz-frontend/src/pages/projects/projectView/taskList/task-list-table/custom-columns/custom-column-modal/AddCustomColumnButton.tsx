@@ -76,6 +76,8 @@ const AddCustomColumnButton = () => {
       });
 
       if (res.done) {
+        socket?.emit(SocketEvents.CUSTOM_COLUMN_CREATED.toString(), JSON.stringify({ project_id: targetProjectId }));
+
         if (targetProjectId !== projectIdRef.current) {
           return;
         }
@@ -100,7 +102,6 @@ const AddCustomColumnButton = () => {
         };
 
         dispatch(addCustomColumn(newColumn));
-        socket?.emit(SocketEvents.CUSTOM_COLUMN_CREATED.toString(), JSON.stringify({ project_id: targetProjectId }));
 
         message.success(t('customColumns.columnCreated', { defaultValue: 'Column created. Click on the header to edit.' }));
       }

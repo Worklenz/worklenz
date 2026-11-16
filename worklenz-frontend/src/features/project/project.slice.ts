@@ -95,13 +95,18 @@ export const getProject = createAsyncThunk(
       // and refreshes stale cache entries through the same request path.
       const shouldForceRefetch =
         cachedProjectQuery.status === 'fulfilled' || cachedProjectQuery.status === 'rejected';
-      const response = await dispatch(
+      const querySubscription = dispatch(
         projectsApi.endpoints.getProject.initiate(projectId, {
-          subscribe: false,
+          subscribe: true,
           forceRefetch: shouldForceRefetch,
         })
-      ).unwrap();
-      return response.body;
+      );
+      try {
+        const response = await querySubscription.unwrap();
+        return response.body;
+      } finally {
+        querySubscription.unsubscribe();
+      }
     } catch (error) {
       const queryError = error as {
         status?: unknown;
