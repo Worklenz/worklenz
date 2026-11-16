@@ -1,4 +1,5 @@
 import { Page, StyleSheet, Text, View, Document } from "@react-pdf/renderer";
+import { hasCjkFontFace } from "./fonts";
 import { safeColor } from "./format";
 import type {
   RoadmapDependencyLink,
@@ -276,16 +277,22 @@ const detailValue = (row: RoadmapPdfRow, key: (typeof DETAIL_COLUMNS)[number]["k
   return String(row[key] || "");
 };
 
+const isCjkCodePoint = (code: number): boolean =>
+  (code >= 0x3000 && code <= 0x30ff) ||
+  (code >= 0x3400 && code <= 0x9fff) ||
+  (code >= 0xac00 && code <= 0xd7af);
+
 /** Explicit text runs avoid incorrect glyph mappings when a line mixes font subsets. */
 const PdfTextRuns = ({ text }: { text: string }) => {
   const runs: Array<{ font: string; text: string }> = [];
   for (const char of text) {
     const code = char.codePointAt(0) ?? 0;
-    const font =
-      (code >= 0x3000 && code <= 0x30ff) ||
-      (code >= 0x3400 && code <= 0x9fff) ||
-      (code >= 0xac00 && code <= 0xd7af)
+    const font = isCjkCodePoint(code)
+      ? hasCjkFontFace
         ? "DroidSansFallback"
+        : "RoadmapSans"
+      : code >= 0x0100 && code <= 0x024f
+        ? "NotoSansLatinExt"
         : code >= 0x0d80 && code <= 0x0dff
           ? "NotoSansSinhala"
           : code >= 0x0b80 && code <= 0x0bff

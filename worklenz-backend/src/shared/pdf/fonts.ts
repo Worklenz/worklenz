@@ -32,6 +32,9 @@ const tryFontFile = (pkg: string, file: string): string | null => {
 
 let registered = false;
 
+/** True only when DroidSansFallback was registered from a face that contains CJK glyphs. */
+export let hasCjkFontFace = false;
+
 export const registerPdfFonts = (): void => {
   if (registered) return;
 
@@ -61,7 +64,7 @@ export const registerPdfFonts = (): void => {
   const notoRegular = tryFontFile("@fontsource/noto-sans", "noto-sans-latin-400-normal.woff");
   const notoBold = tryFontFile("@fontsource/noto-sans", "noto-sans-latin-700-normal.woff");
 
-  // Prefer Carlito when present; otherwise reuse Noto Sans so Roadmap PDF still exports.
+  // Prefer Carlito when present; otherwise reuse Noto Sans so Latin roadmap PDF still exports.
   const roadmapRegular = carlitoRegular || notoRegular;
   const roadmapBold = carlitoBold || notoBold;
   if (roadmapRegular && roadmapBold) {
@@ -74,6 +77,8 @@ export const registerPdfFonts = (): void => {
     });
   }
 
+  // Only register DroidSansFallback when the real CJK face is available — never alias Latin files as CJK.
+  hasCjkFontFace = false;
   if (cjk) {
     Font.register({
       family: "DroidSansFallback",
@@ -82,15 +87,7 @@ export const registerPdfFonts = (): void => {
         { src: cjk, fontWeight: 700 },
       ],
     });
-  } else if (roadmapRegular && roadmapBold) {
-    // Keep CJK font-family lookups valid even without the portable package.
-    Font.register({
-      family: "DroidSansFallback",
-      fonts: [
-        { src: roadmapRegular, fontWeight: 400 },
-        { src: roadmapBold, fontWeight: 700 },
-      ],
-    });
+    hasCjkFontFace = true;
   }
 
   // Never hyphenate: names, numbers and addresses should wrap whole.
