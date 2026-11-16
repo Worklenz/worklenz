@@ -14,6 +14,7 @@ import {
   parseImportedArray,
   safeDate,
 } from "./value-utils";
+import { canWriteDailyTime } from "../daily-time-limit.service";
 
 /** Imports Jira comments attached to a staged task's raw payload. Returns the number of comments inserted. */
 export const importTaskComments = async (
@@ -99,9 +100,36 @@ export const importTaskWorklogs = async (
     "__jira_worklogs",
   );
   let imported = 0;
+
+  let teamId: string | undefined;
+  if (worklogs.length > 0 && createdByUserId) {
+    const taskLookup = await client.query(
+      `SELECT p.team_id FROM tasks t JOIN projects p ON p.id = t.project_id WHERE t.id = $1 LIMIT 1;`,
+      [taskId]
+    );
+    teamId = taskLookup.rows[0]?.team_id;
+  }
+
   for (const worklog of worklogs) {
     const seconds = Math.max(0, Number(worklog?.timeSpentSeconds || 0));
     if (!seconds) continue;
+
+    const loggedAt = safeDate(worklog?.started || worklog?.created || null);
+
+    if (teamId && createdByUserId) {
+      const allowed = await canWriteDailyTime(
+        client,
+        teamId,
+        createdByUserId,
+        [{ start: loggedAt || new Date(), seconds, isTimedSession: false }],
+        []
+      );
+      if (!allowed) {
+        // Skip entry that exceeds the daily 24-hour limit to maintain database integrity
+        continue;
+      }
+    }
+
     const author = (worklog?.author || "Unknown").trim();
     const startedSuffix = worklog?.started ? ` (${worklog.started})` : "";
     const note = (worklog?.comment || "").trim();
@@ -109,7 +137,6 @@ export const importTaskWorklogs = async (
       `Imported from Jira by ${author}${startedSuffix}${note ? ` - ${note}` : ""}`.trim(),
       500,
     );
-    const loggedAt = safeDate(worklog?.started || worklog?.created || null);
     await client.query(
       `INSERT INTO task_work_log (time_spent, description, task_id, user_id, created_at, updated_at, logged_by_timer)
            VALUES ($1, $2, $3, $4, COALESCE($5::timestamptz, NOW()), COALESCE($5::timestamptz, NOW()), FALSE)`,

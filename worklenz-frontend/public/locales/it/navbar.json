@@ -81,7 +81,12 @@
     "stopAndStart": "Ferma e avvia",
     "cancel": "Annulla",
     "logTime": "Registra tempo",
-    "openTimeLogPanel": "Apri registrazione del tempo per {{taskName}}"
+    "openTimeLogPanel": "Apri registrazione del tempo per {{taskName}}",
+    "dailyLimitExceededTitle": "Limite giornaliero superato",
+    "dailyLimitExceededDesc": "Il tempo totale registrato non può superare le 24 ore al giorno. Questo timer è rimasto attivo per {{elapsed}}, ma hai solo {{remaining}} rimanenti per {{day}}.",
+    "logRemainingAllowance": "Registra tempo rimanente ({{remaining}})",
+    "discardTimer": "Ignora timer",
+    "keepRunning": "Mantieni attivo"
   },
   "ownerRole": "Proprietario",
   "adminRole": "Amministratore",

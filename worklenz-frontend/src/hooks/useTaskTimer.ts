@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { message } from '@/shared/antd-imports';
+import { message, Modal } from '@/shared/antd-imports';
 import { buildTimeString } from '@/utils/timeUtils';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
@@ -126,10 +126,8 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
     if (!taskId) return;
 
     isPendingStart.current = false;
-    resetTimer();
     socket?.emit(SocketEvents.TASK_TIMER_STOP.toString(), JSON.stringify({ task_id: taskId }));
-    clearReduxTimer(taskId);
-  }, [taskId, socket, resetTimer, clearReduxTimer]);
+  }, [taskId, socket]);
 
   // Socket event listeners
   useEffect(() => {
@@ -141,6 +139,43 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
         const parsed = typeof data === 'string' ? JSON.parse(data) : data;
         const targetId = parsed?.task_id || parsed?.id;
         if (targetId === taskId) {
+          if (parsed?.over_limit) {
+            setLocalStarted(true);
+            if (parsed.start_time) {
+              const startEpoch = new Date(parsed.start_time).getTime();
+              dispatch(updateTaskTimeTracking({ taskId, timeTracking: startEpoch }));
+            }
+            const remaining = Number(parsed.remaining_seconds) || 0;
+            const elapsed = Number(parsed.elapsed_seconds) || 0;
+            const day = parsed.exceeded_day || '';
+            const formatSecs = (s: number) => {
+              const h = Math.floor(s / 3600);
+              const m = Math.round((s % 3600) / 60);
+              return `${h}h ${m}m`;
+            };
+
+            Modal.confirm({
+              title: 'Daily Time Limit Exceeded',
+              content: `Total logged time cannot exceed 24 hours per day. This timer ran for ${formatSecs(elapsed)}, but you only have ${formatSecs(remaining)} remaining for ${day}.`,
+              okText: remaining > 0 ? `Log Remaining (${formatSecs(remaining)})` : 'Discard Timer',
+              cancelText: 'Keep Running',
+              onOk: () => {
+                if (remaining > 0) {
+                  socket?.emit(
+                    SocketEvents.TASK_TIMER_STOP.toString(),
+                    JSON.stringify({ task_id: taskId, override_seconds: remaining })
+                  );
+                } else {
+                  socket?.emit(
+                    SocketEvents.TASK_TIMER_STOP.toString(),
+                    JSON.stringify({ task_id: taskId, discard: true })
+                  );
+                }
+              },
+            });
+            return;
+          }
+
           isPendingStart.current = false;
           resetTimer();
           clearReduxTimer(taskId);
