@@ -10,9 +10,9 @@
         "title": "Erweiterte Berichte: Velocity und Cumulative Flow",
         "description": "Engpässe früh erkennen und Sprints mit echten Lieferdaten planen"
       },
-      "clientPortal": {
-        "title": "Kundenportal",
-        "description": "Halte Kunden an einem Ort auf dem Laufenden"
+      "brandedClientPortal": {
+        "title": "Gebrandetes Kundenportal",
+        "description": "Füge dein Logo und deine Markenfarben hinzu"
       },
       "finance": {
         "title": "Finanzzugang",
