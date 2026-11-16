@@ -293,18 +293,35 @@ const PdfTextRuns = ({ text }: { text: string }) => {
   return <>{runs.map((run, index) => <Text key={index} style={{ fontFamily: run.font }}>{run.text}</Text>)}</>;
 };
 
+// Explicit text runs avoid renderer fallback producing incorrect glyph mappings
+// when a line mixes several font subsets.
+const PdfTextRuns = ({ text }: { text: string }) => {
+  const runs: Array<{ font: string; text: string }> = [];
+  for (const char of text) {
+    const code = char.codePointAt(0) ?? 0;
+    const font = ((code >= 0x3000 && code <= 0x30ff) || (code >= 0x3400 && code <= 0x9fff) || (code >= 0xac00 && code <= 0xd7af)) ? "DroidSansFallback"
+      : code >= 0x0d80 && code <= 0x0dff ? "NotoSansSinhala"
+      : code >= 0x0b80 && code <= 0x0bff ? "NotoSansTamil"
+      : "RoadmapSans";
+    const last = runs[runs.length - 1];
+    if (last?.font === font) last.text += char;
+    else runs.push({ font, text: char });
+  }
+  return <>{runs.map((run, index) => <Text key={index} style={{ fontFamily: run.font }}>{run.text}</Text>)}</>;
+};
+
 interface RoadmapDocumentProps {
   model: RoadmapPdfModel;
 }
 
-const ChartPage = ({ model }: RoadmapDocumentProps) => (
-  <Page size="A4" orientation="landscape" style={styles.page}>
-    <Text style={styles.title}>Roadmap</Text>
-    <Text style={styles.project}>{model.projectName}</Text>
-    <Text style={styles.meta}>
-      {`Grouped by ${model.groupingLabel}  ·  Exported ${model.exportedOn}`}
-    </Text>
-    <Text style={styles.sectionTitle}>Timeline</Text>
+export const RoadmapDocument = ({ model }: RoadmapDocumentProps) => (
+  <Document title={`Roadmap - ${model.projectName}`} author="Worklenz">
+    <Page size="A4" orientation="landscape" style={styles.page}>
+      <Text style={styles.title}>Roadmap</Text>
+      <Text style={styles.project}><PdfTextRuns text={model.projectName} /></Text>
+      <Text style={styles.meta}>
+        <PdfTextRuns text={`Grouped by ${model.groupingLabel}  ·  Exported ${model.exportedOn}`} />
+      </Text>
 
     {model.hasTimeline ? (
       <View style={styles.axisRow}>
@@ -439,48 +456,44 @@ const DetailsPage = ({ model }: RoadmapDocumentProps) => (
       ))
     )}
 
-    <Text
-      style={styles.footer}
-      fixed
-      render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
-    />
-  </Page>
-);
-
-const DependenciesPage = ({ model }: RoadmapDocumentProps) => (
-  <Page size="A4" orientation="landscape" style={styles.page} wrap>
-    <Text style={styles.title}>Dependencies</Text>
-    <Text style={styles.project}>{model.projectName}</Text>
-    <Text style={styles.meta}>
-      {`Grouped by ${model.groupingLabel}  ·  Exported ${model.exportedOn}`}
-    </Text>
-
-    <View style={styles.tableHeader} wrap={false}>
-      {DEP_COLUMNS.map(column => (
-        <Text key={column.key} style={[styles.tableHeaderCell, { width: column.width }]}>
-          {column.label}
-        </Text>
-      ))}
-    </View>
-
-    {model.dependencies.length === 0 ? (
-      <Text style={styles.empty}>No roadmap dependencies in this export.</Text>
-    ) : (
-      model.dependencies.map((link, index) => (
-        <View key={`dep-${index}-${link.from}-${link.to}`} style={styles.tableRow} wrap={false}>
-          {DEP_COLUMNS.map(column => (
-            <Text key={column.key} style={[styles.tableCell, { width: column.width }]}>
-              <PdfTextRuns
-                text={clip(
-                  column.key === "kind" ? typeLabel(link.kind) : String(link[column.key] || ""),
-                  36
-                )}
-              />
-            </Text>
-          ))}
-        </View>
-      ))
-    )}
+      {model.rows.length === 0 ? (
+        <Text style={styles.empty}>This roadmap has no phases or tasks to export.</Text>
+      ) : (
+        model.rows.map((row, index) => (
+          <View
+            key={`${row.kind}-${index}-${row.name}`}
+            style={row.kind === "group" ? [styles.row, styles.groupRow] : styles.row}
+            wrap={false}
+          >
+            <View style={[styles.nameCell, { paddingLeft: indentFor(row.kind) }]}>
+              <Text style={row.kind === "group" ? styles.groupName : styles.name}>
+                <PdfTextRuns text={clipName(row.name, row.kind)} />
+              </Text>
+            </View>
+            <View style={styles.barTrack}>
+              {model.todayLeft != null ? (
+                <View style={[styles.today, { left: model.todayLeft * TIMELINE_WIDTH }]} />
+              ) : null}
+              {row.bar ? (
+                <View
+                  style={[
+                    styles.bar,
+                    {
+                      left: row.bar.left * TIMELINE_WIDTH,
+                      width: Math.max(3, row.bar.width * TIMELINE_WIDTH),
+                      backgroundColor: barColor(row),
+                    },
+                  ]}
+                >
+                  {row.kind !== "group" && row.progress ? (
+                    <View style={[styles.barProgress, { width: `${row.progress}%` }]} />
+                  ) : null}
+                </View>
+              ) : null}
+            </View>
+          </View>
+        ))
+      )}
 
     <Text
       style={styles.footer}
