@@ -101,5 +101,6 @@
     "dragDisabledInChronological": "切换到手动排序以拖动重新排序阶段"
   },
   "unscheduledTasksTitle": "未安排的任务",
-  "noUnscheduledTasks": "没有可用的未安排任务。"
+  "noUnscheduledTasks": "没有可用的未安排任务。",
+  "statusReorderSameCategory": "只能在同一类别内重新排列状态。"
 }

@@ -100,6 +100,7 @@
     "complete": "complete",
     "dragDisabledInChronological": "Switch to Manual order to drag-reorder phases"
   },
+  "statusReorderSameCategory": "Statuses can only be reordered within the same category.",
   "unscheduledTasksTitle": "Unscheduled tasks",
   "noUnscheduledTasks": "No unscheduled tasks available."
 }

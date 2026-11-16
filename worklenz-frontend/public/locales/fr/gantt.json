@@ -101,5 +101,6 @@
     "dragDisabledInChronological": "Passer à l'ordre manuel pour glisser-réorganiser les phases"
   },
   "unscheduledTasksTitle": "Tâches non planifiées",
-  "noUnscheduledTasks": "Aucune tâche non planifiée disponible."
+  "noUnscheduledTasks": "Aucune tâche non planifiée disponible.",
+  "statusReorderSameCategory": "Les statuts peuvent uniquement être réorganisés au sein de la même catégorie."
 }

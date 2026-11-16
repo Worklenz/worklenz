@@ -101,5 +101,6 @@
     "dragDisabledInChronological": "Przejdź do opcji Kolejność ręczna, aby zmienić kolejność faz za pomocą przeciągania"
   },
   "unscheduledTasksTitle": "Niezaplanowane zadania",
-  "noUnscheduledTasks": "Brak dostępnych niezaplanowanych zadań."
+  "noUnscheduledTasks": "Brak dostępnych niezaplanowanych zadań.",
+  "statusReorderSameCategory": "Statusy można zmieniać kolejnością tylko w ramach tej samej kategorii."
 }
