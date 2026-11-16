@@ -102,5 +102,5 @@
   },
   "unscheduledTasksTitle": "Niezaplanowane zadania",
   "noUnscheduledTasks": "Brak dostępnych niezaplanowanych zadań.",
-  "statusReorderSameCategory": "Statusy można zmieniać kolejnością tylko w ramach tej samej kategorii."
+  "statusReorderSameCategory": "Kolejność statusów można zmieniać tylko w ramach tej samej kategorii."
 }
