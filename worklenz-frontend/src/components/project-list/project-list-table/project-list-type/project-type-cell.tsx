@@ -11,14 +11,14 @@ interface ProjectTypeCellProps {
 export const ProjectTypeCell: React.FC<ProjectTypeCellProps> = ({ record, t }) => {
   const isSoftware = isSoftwareProjectType(record.project_type);
   const label = isSoftware
-    ? t('projectTypeSoftware', { defaultValue: 'Software Project' })
-    : t('projectTypeGeneral', { defaultValue: 'General Project' });
+    ? t('projectTypeSoftware', { defaultValue: 'Software' })
+    : t('projectTypeGeneral', { defaultValue: 'General' });
   const tooltip = isSoftware
     ? t('projectTypeSoftwareTooltip', {
-        defaultValue: 'Software project — issues, backlog, and sprints',
+        defaultValue: 'Software project-issues, backlog, and sprints',
       })
     : t('projectTypeGeneralTooltip', {
-        defaultValue: 'General project — tasks, phases, and boards',
+        defaultValue: 'General project-tasks, phases, and boards',
       });
 
   return (
