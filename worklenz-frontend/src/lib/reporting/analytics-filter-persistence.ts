@@ -1,6 +1,6 @@
 import type { AnalyticsDatePreset } from '@/components/reporting/analytics';
 import {
-  REPORTING_DATE_PRESETS,
+  VALID_REPORTING_DATE_PRESETS,
   type ReportingCustomRange,
 } from '@/utils/date-presets';
 import { getUserSession } from '@/utils/session-helper';
@@ -104,10 +104,10 @@ export const readAnalyticsFilterSession = <T extends AnalyticsPersistedFilterSta
     const healthIds = asStringArray(parsed.selectedHealthIds);
     if (healthIds) next.selectedHealthIds = healthIds;
 
-    // Unknown/legacy presets (last_14_days, this_quarter, …) are ignored → page default.
+    // Ignore unknown presets while preserving those saved by earlier versions.
     if (
       typeof parsed.datePreset === 'string' &&
-      REPORTING_DATE_PRESETS.includes(parsed.datePreset as AnalyticsDatePreset)
+      VALID_REPORTING_DATE_PRESETS.includes(parsed.datePreset as AnalyticsDatePreset)
     ) {
       next.datePreset = parsed.datePreset as AnalyticsDatePreset;
     }

@@ -6,7 +6,7 @@ import { Flex, Space, Switch, Typography, message } from '@/shared/antd-imports'
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { jsPDF } from 'jspdf';
-import { resolveAnalyticsDateBounds } from '@/utils/date-presets';
+import { BOUNDED_ANALYTICS_DATE_PRESETS, resolveAnalyticsDateBounds } from '@/utils/date-presets';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -448,6 +448,7 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
         datePreset={datePreset}
         customRange={customRange}
         onDateChange={setDateFilter}
+        availableDatePresets={BOUNDED_ANALYTICS_DATE_PRESETS}
         loading={filtersLoading}
       />
 

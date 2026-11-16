@@ -232,7 +232,7 @@ it('persists customRange with setDateFilter and restores it', () => {
   expect(restored.result.current.customRange).toEqual(['2026-01-01', '2026-01-15']);
 });
 
-it('ignores legacy Advanced date presets and keeps the default', () => {
+it('restores legacy Advanced date presets', () => {
   sessionStorage.clear();
   const key = 'worklenz.analyticsReportFilters:team-1:user-1:velocity';
   sessionStorage.setItem(
@@ -241,6 +241,6 @@ it('ignores legacy Advanced date presets and keeps the default', () => {
   );
 
   const { result } = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'velocity' }));
-  expect(result.current.datePreset).toBe('last_30_days');
+  expect(result.current.datePreset).toBe('this_quarter');
   expect(result.current.selectedProjectIds).toEqual(['p1']);
 });

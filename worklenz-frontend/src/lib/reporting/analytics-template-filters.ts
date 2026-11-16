@@ -1,6 +1,6 @@
 import type { AnalyticsDatePreset } from '@/components/reporting/analytics';
 import {
-  REPORTING_DATE_PRESETS,
+  VALID_REPORTING_DATE_PRESETS,
   type ReportingCustomRange,
 } from '@/utils/date-presets';
 
@@ -68,7 +68,7 @@ export const applyCommonAnalyticsTemplateFilters = (
   const preset = filters.date_preset;
   const customRange = parseCustomRange(filters.custom_range ?? filters.customRange);
   const hasValidPreset =
-    typeof preset === 'string' && REPORTING_DATE_PRESETS.includes(preset as AnalyticsDatePreset);
+    typeof preset === 'string' && VALID_REPORTING_DATE_PRESETS.includes(preset as AnalyticsDatePreset);
 
   if (hasValidPreset) {
     const nextPreset = preset as AnalyticsDatePreset;

@@ -13,6 +13,9 @@ export type DatePresetKey =
   | 'today'
   | 'yesterday'
   | 'last_7_days'
+  | 'last_14_days'
+  | 'last_60_days'
+  | 'this_quarter'
   | 'this_week'
   | 'last_week'
   | 'this_month'
@@ -69,6 +72,12 @@ export const getDatePresetRange = (
     }
     case 'last_7_days':
       return { from: fmt(today.subtract(7, 'day')), to: fmt(today.subtract(1, 'day')) };
+    case 'last_14_days':
+      return { from: fmt(today.subtract(14, 'day')), to: fmt(today) };
+    case 'last_60_days':
+      return { from: fmt(today.subtract(60, 'day')), to: fmt(today) };
+    case 'this_quarter':
+      return { from: fmt(today.month(Math.floor(today.month() / 3) * 3).startOf('month')), to: fmt(today) };
     case 'this_week':
       return { from: fmt(today.startOf('week')), to: fmt(today) };
     case 'last_week': {
@@ -118,6 +127,16 @@ export const REPORTING_DATE_PRESETS: ReportingDatePreset[] = [
   'custom',
 ];
 
+// Includes presets saved by earlier versions, even when absent from the menu.
+export const VALID_REPORTING_DATE_PRESETS: ReportingDatePreset[] = [
+  ...REPORTING_DATE_PRESETS, 'last_90_days', 'last_14_days', 'last_60_days', 'this_quarter',
+];
+
+// These analytics services require a finite date range.
+export const BOUNDED_ANALYTICS_DATE_PRESETS = REPORTING_DATE_PRESETS.filter(
+  preset => preset !== 'all_time'
+);
+
 /** Default text per preset, keyed to the `time-report` locale keys. */
 export const REPORTING_DATE_PRESET_LABELS: Record<
   ReportingDatePreset,
@@ -125,6 +144,9 @@ export const REPORTING_DATE_PRESET_LABELS: Record<
 > = {
   today: { key: 'timeLogsPresetToday', defaultValue: 'Today' },
   yesterday: { key: 'timeLogsPresetYesterday', defaultValue: 'Yesterday' },
+  last_14_days: { key: 'dateLast14', defaultValue: 'Last 14 days' },
+  last_60_days: { key: 'dateLast60', defaultValue: 'Last 60 days' },
+  this_quarter: { key: 'dateThisQuarter', defaultValue: 'This quarter' },
   last_7_days: { key: 'timeLogsPresetLast7Days', defaultValue: 'Last 7 Days' },
   this_week: { key: 'timeLogsPresetThisWeek', defaultValue: 'This Week' },
   last_week: { key: 'timeLogsPresetLastWeek', defaultValue: 'Last Week' },
@@ -175,8 +197,8 @@ export const resolveAnalyticsDateBounds = (
   const range = resolveReportingDateRange({ datePreset, customRange }, now);
   if (!range) return {};
   return {
-    date_from: dayjs(range.from).startOf('day').toISOString(),
-    date_to: dayjs(range.to).endOf('day').toISOString(),
+    date_from: `${range.from}T00:00:00.000Z`,
+    date_to: `${range.to}T23:59:59.999Z`,
   };
 };
 
