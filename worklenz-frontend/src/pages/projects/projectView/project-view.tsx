@@ -246,6 +246,13 @@ const ProjectView = React.memo(() => {
         return;
       }
       dispatch(setStatusCategoryOrder(payload.category_order));
+      dispatch(
+        projectsApi.util.updateQueryData('getProject', projectId, draft => {
+          if (draft?.body) {
+            draft.body.status_category_order = payload.category_order;
+          }
+        })
+      );
     };
 
     const handlers: Record<string, (...args: any[]) => void> = {
