@@ -54,16 +54,39 @@ export function parseCsvRows(csv: string): string[][] {
 
 export async function csvToExcelBuffer(
   csv: string,
-  sheetName = "Report"
+  sheetName = "Report",
+  chartPng?: Buffer | null
 ): Promise<Buffer> {
   const workbook = new Excel.Workbook();
   const sheet = workbook.addWorksheet(sheetName.slice(0, 31) || "Report");
   const rows = parseCsvRows(csv);
+
+  if (chartPng?.length) {
+    try {
+      const imageId = workbook.addImage({
+        buffer: chartPng,
+        extension: "png",
+      });
+      sheet.addImage(imageId, {
+        tl: { col: 0, row: 0 },
+        ext: { width: 720, height: 320 },
+      });
+      // Leave room under the chart before the table header.
+      for (let i = 0; i < 18; i++) {
+        sheet.addRow([]);
+      }
+    } catch {
+      // Still export the table if the image cannot be embedded.
+    }
+  }
+
   for (const r of rows) {
     sheet.addRow(r);
   }
-  if (rows[0]) {
-    sheet.getRow(1).font = { bold: true };
+  const headerRowIndex = chartPng?.length ? 19 : 1;
+  const headerRow = sheet.getRow(headerRowIndex);
+  if (headerRow && rows[0]) {
+    headerRow.font = { bold: true };
   }
   sheet.columns.forEach(col => {
     col.width = 18;
@@ -72,8 +95,12 @@ export async function csvToExcelBuffer(
   return Buffer.from(arrayBuffer);
 }
 
-export async function csvToPdfBuffer(title: string, csv: string): Promise<Buffer> {
-  return renderSchedulePdf(title, parseCsvRows(csv));
+export async function csvToPdfBuffer(
+  title: string,
+  csv: string,
+  chartPng?: Buffer | null
+): Promise<Buffer> {
+  return renderSchedulePdf(title, parseCsvRows(csv), chartPng);
 }
 
 export function slugFilename(name: string): string {

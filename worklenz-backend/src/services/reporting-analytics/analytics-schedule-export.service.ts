@@ -1,6 +1,10 @@
 import { CSV_UTF8_BOM, formatCsvCell } from "../../shared/csv-utils";
 import { resolveScheduleOwnerAccessibleProjectIds } from "./analytics-schedule-access";
 import {
+  renderScheduleChartPng,
+  ScheduleChartSource,
+} from "./analytics-schedule-charts";
+import {
   csvToExcelBuffer,
   csvToPdfBuffer,
   ScheduleExportFile,
@@ -53,6 +57,11 @@ import {
 
 type AnalyticsScheduleFormat = "PDF" | "CSV" | "Excel";
 
+interface LiveExportPayload {
+  csv: string;
+  chartSource: ScheduleChartSource | null;
+}
+
 function normalizeFilterInput(filters: Record<string, unknown>): Record<string, unknown> {
   const nested =
     filters.filters && typeof filters.filters === "object" && !Array.isArray(filters.filters)
@@ -90,12 +99,12 @@ function buildVelocityCsv(data: Awaited<ReturnType<typeof getVelocitySeries>>): 
   return `${CSV_UTF8_BOM}${lines.join("\n")}`;
 }
 
-async function buildLiveCsv(
+async function buildLivePayload(
   reportKind: string,
   ownerId: string,
   teamId: string,
   filtersJson: Record<string, unknown>
-): Promise<string> {
+): Promise<LiveExportPayload> {
   const input = normalizeFilterInput(filtersJson);
   const accessible = await resolveScheduleOwnerAccessibleProjectIds(
     ownerId,
@@ -109,42 +118,76 @@ async function buildLiveCsv(
   switch (reportKind) {
     case "planned-vs-actual-tasks": {
       const filters = parsePlannedVsActualTasksFilters(scopedInput, accessible, teamId);
-      return buildPlannedVsActualTasksCsv(await getPlannedVsActualTasksSeries(filters));
+      const data = await getPlannedVsActualTasksSeries(filters);
+      return {
+        csv: buildPlannedVsActualTasksCsv(data),
+        chartSource: { kind: "planned-vs-actual-tasks", data },
+      };
     }
     case "planned-vs-actual-milestones": {
       const filters = parsePlannedVsActualMilestonesFilters(scopedInput, accessible, teamId);
-      return buildPlannedVsActualMilestonesCsv(
-        await getPlannedVsActualMilestonesSeries(filters)
-      );
+      const data = await getPlannedVsActualMilestonesSeries(filters);
+      return {
+        csv: buildPlannedVsActualMilestonesCsv(data),
+        chartSource: { kind: "planned-vs-actual-milestones", data },
+      };
     }
     case "project-health": {
       const filters = parseProjectHealthFilters(scopedInput, accessible, teamId);
-      return buildProjectHealthCsv(await getProjectHealthSeries(filters));
+      const data = await getProjectHealthSeries(filters);
+      return {
+        csv: buildProjectHealthCsv(data),
+        chartSource: { kind: "project-health", data },
+      };
     }
     case "utilization": {
       const filters = parseUtilizationFilters(scopedInput, accessible, teamId);
-      return buildUtilizationCsv(await getUtilizationSeries(filters));
+      const data = await getUtilizationSeries(filters);
+      return {
+        csv: buildUtilizationCsv(data),
+        chartSource: { kind: "utilization", data },
+      };
     }
     case "time-report": {
       const filters = parseTimeReportFilters(scopedInput, accessible, teamId);
-      return buildTimeReportCsv(await getTimeReportSeries(filters));
+      const data = await getTimeReportSeries(filters);
+      return {
+        csv: buildTimeReportCsv(data),
+        chartSource: { kind: "time-report", data },
+      };
     }
     case "budget-tracking": {
       const filters = parseBudgetTrackingFilters(scopedInput, accessible, teamId);
-      return buildBudgetTrackingCsv(await getBudgetTrackingSeries(filters));
+      const data = await getBudgetTrackingSeries(filters);
+      return {
+        csv: buildBudgetTrackingCsv(data),
+        chartSource: { kind: "budget-tracking", data },
+      };
     }
     case "velocity": {
       const filters = parseVelocityFilters(scopedInput, accessible, teamId);
-      return buildVelocityCsv(await getVelocitySeries(filters));
+      const data = await getVelocitySeries(filters);
+      return {
+        csv: buildVelocityCsv(data),
+        chartSource: { kind: "velocity", data },
+      };
     }
     case "cumulative-flow": {
       const filters = parseCfdFilters(scopedInput, accessible, teamId);
-      return buildCfdCsvMatrix(await getCfdSeries(filters));
+      const data = await getCfdSeries(filters);
+      return {
+        csv: buildCfdCsvMatrix(data),
+        chartSource: { kind: "cumulative-flow", data },
+      };
     }
     case "time-in-status": {
       if (!scopedInput.limit) scopedInput.limit = 2000;
       const filters = parseTimeInStatusFilters(scopedInput, accessible, teamId);
-      return buildTimeInStatusCsv(await getTimeInStatusSeries(filters));
+      const data = await getTimeInStatusSeries(filters);
+      return {
+        csv: buildTimeInStatusCsv(data),
+        chartSource: { kind: "time-in-status", data },
+      };
     }
     default:
       throw new Error(`Scheduled export is not supported for report kind: ${reportKind}`);
@@ -154,6 +197,7 @@ async function buildLiveCsv(
 /**
  * Generate a live export file for a saved schedule using current data and
  * the filters captured when the schedule was saved.
+ * PDF/Excel include a chart image plus the data table; CSV is table-only.
  */
 export async function buildLiveScheduleExport(input: {
   reportKind: string;
@@ -163,7 +207,7 @@ export async function buildLiveScheduleExport(input: {
   format: AnalyticsScheduleFormat;
   filtersJson: Record<string, unknown>;
 }): Promise<ScheduleExportFile> {
-  const csv = await buildLiveCsv(
+  const { csv, chartSource } = await buildLivePayload(
     input.reportKind,
     input.ownerId,
     input.teamId,
@@ -180,18 +224,20 @@ export async function buildLiveScheduleExport(input: {
     };
   }
 
+  const chartPng = chartSource ? await renderScheduleChartPng(chartSource) : null;
+
   if (input.format === "Excel") {
     return {
       filename: `${base}-${date}.xlsx`,
       contentType:
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      content: await csvToExcelBuffer(csv, input.reportName),
+      content: await csvToExcelBuffer(csv, input.reportName, chartPng),
     };
   }
 
   return {
     filename: `${base}-${date}.pdf`,
     contentType: "application/pdf",
-    content: await csvToPdfBuffer(input.reportName, csv),
+    content: await csvToPdfBuffer(input.reportName, csv, chartPng),
   };
 }
