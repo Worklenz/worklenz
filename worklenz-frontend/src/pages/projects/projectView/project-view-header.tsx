@@ -461,7 +461,7 @@ const ProjectViewHeader = memo(() => {
 
     if (selectedProject.start_date || selectedProject.end_date) {
       const tooltipContent = (
-        <Typography.Text style={{ color: colors.white }}>
+        <Typography.Text>
           {t('projectDatesInfo', { defaultValue: 'Project timeline information' })}
           <br />
           {selectedProject.start_date &&
