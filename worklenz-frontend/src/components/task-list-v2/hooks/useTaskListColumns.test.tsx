@@ -4,7 +4,7 @@ import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { useTaskListColumns } from './useTaskListColumns';
-import taskManagementReducer from '@/features/task-management/task-management.slice';
+import taskManagementReducer, { addCustomColumn } from '@/features/task-management/task-management.slice';
 import taskManagementFieldsReducer from '@/features/task-management/taskListFields.slice';
 import customColumnsReducer from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 
@@ -116,5 +116,22 @@ describe('useTaskListColumns', () => {
     });
 
     expect(result.current.activeColumnId).toBe('priority');
+  });
+
+  it('keeps the table key separate from the UUID used for column settings', () => {
+    const id = '4203921e-1b19-440f-a262-f8aee8830023';
+    const key = 'P0o-LRyE8wyox0jLHnGvv';
+    localStorage.setItem(`worklenz.taskList.columnOrder.${projectId}`, JSON.stringify([key]));
+    const store = createTestStore();
+    store.dispatch(addCustomColumn({ id, key, name: 'Example', pinned: true, custom_column: true }));
+    const { result } = renderHook(
+      () => useTaskListColumns({ projectId, isBacklogMode: false, isSoftwareProject: false, scrollContainer: null }),
+      { wrapper: ({ children }) => <Provider store={store}>{children}</Provider> }
+    );
+    const customColumn = result.current.visibleColumns.find(column => column.key === key);
+    expect(customColumn).toMatchObject({ id: key, key, uuid: id });
+    expect(result.current.visibleColumns.filter(column => column.key === key)).toHaveLength(1);
+    act(() => result.current.handleCustomColumnSettings(key));
+    expect(store.getState().customColumns.customColumnId).toBe(id);
   });
 });
