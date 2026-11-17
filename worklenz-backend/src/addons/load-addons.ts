@@ -2,6 +2,15 @@ import { Express, RequestHandler } from "express";
 import fs from "fs";
 import path from "path";
 
+const addonJobs: Array<() => void> = [];
+
+/** Start background jobs only after the server is listening. */
+export function startAddonJobs(): void {
+  for (const start of addonJobs) {
+    try { start(); } catch (error) { console.error("[Addon] Failed to start background job:", error); }
+  }
+}
+
 export interface AddonManifest {
   id: string;
   name?: string;
@@ -27,6 +36,10 @@ export interface AddonManifest {
  */
 export function resolveAddonDir(addonId: string): string | null {
   const candidates = [
+    path.resolve(process.cwd(), "addons/worklenz-addons", addonId),
+    path.resolve(process.cwd(), "../addons/worklenz-addons", addonId),
+    path.resolve(__dirname, "../../../addons/worklenz-addons", addonId),
+    path.resolve(__dirname, "../../../../addons/worklenz-addons", addonId),
     path.resolve(process.cwd(), "addons", addonId),
     path.resolve(process.cwd(), "../addons", addonId),
     path.resolve(__dirname, "../../../addons", addonId),
@@ -134,6 +147,7 @@ export function loadAddonRouters(app: Express, authMiddleware?: RequestHandler):
     const routeCandidates = [
       manifest?.backend?.routes ? path.join(addonDir, manifest.backend.routes) : null,
       manifest?.backend?.routes ? path.join(backendDir, manifest.backend.routes) : null,
+      path.join(backendDir, "dist", "addons", "worklenz-addons", addonId, "backend", "routes.js"),
       path.join(backendDir, "dist", "addons", addonId, "backend", "routes.js"),
       path.join(backendDir, "dist", "routes.js"),
       path.join(backendDir, "routes.js"),
@@ -173,6 +187,7 @@ export function loadAddonRouters(app: Express, authMiddleware?: RequestHandler):
         app.use(mountPath, router);
       }
       console.log(`[Addon] Successfully mounted addon "${addonId}" at ${mountPath}`);
+      if (typeof imported.start === "function") addonJobs.push(imported.start);
     } catch (error) {
       console.error(`[Addon] Failed to mount backend router for addon "${addonId}":`, error);
     }

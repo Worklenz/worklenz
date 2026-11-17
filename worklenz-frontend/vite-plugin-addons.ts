@@ -45,6 +45,9 @@ export function addonsPlugin(env?: Record<string, string>): Plugin {
       if (!appTitle || !faviconUrl) {
         for (const addonId of enabledAddonIds) {
           const manifestCandidates = [
+            path.resolve(process.cwd(), '../addons/worklenz-addons', addonId, 'manifest.json'),
+            path.resolve(process.cwd(), 'addons/worklenz-addons', addonId, 'manifest.json'),
+            path.resolve(__dirname, '../addons/worklenz-addons', addonId, 'manifest.json'),
             path.resolve(process.cwd(), '../addons', addonId, 'manifest.json'),
             path.resolve(process.cwd(), 'addons', addonId, 'manifest.json'),
             path.resolve(__dirname, '../addons', addonId, 'manifest.json'),
@@ -122,6 +125,9 @@ export const addonMiddlewares = [];
       enabledAddonIds.forEach((addonId, index) => {
         const safeVar = `addon_${addonId.replace(/[^a-zA-Z0-9]/g, '_')}_${index}`;
         const addonDirCandidates = [
+          path.resolve(process.cwd(), '../addons/worklenz-addons', addonId),
+          path.resolve(process.cwd(), 'addons/worklenz-addons', addonId),
+          path.resolve(__dirname, '../addons/worklenz-addons', addonId),
           path.resolve(process.cwd(), '../addons', addonId),
           path.resolve(process.cwd(), 'addons', addonId),
           path.resolve(__dirname, '../addons', addonId),
