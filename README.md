@@ -123,7 +123,7 @@ _**Client Portal**_
 | **Backend** | TypeScript + Express.js |
 | **Database** | PostgreSQL |
 | **Storage** | SeaweedFS (S3-compatible) / AWS S3 / Azure Blob |
-| **Cache** | Redis |
+| **Storage** | SeaweedFS (S3-compatible), AWS S3, or Azure Blob |
 | **Proxy** | Nginx |
 
 ### Requirements
@@ -141,7 +141,9 @@ Explore Worklenz's [product documentation](https://docs.worklenz.com/en/start/in
 <a id="quick-start-docker"></a>
 ### 🐳 Quick Start (Docker — Recommended)
 
-The fastest way to get Worklenz running locally with all dependencies included. This setup includes **production-ready features** like nginx reverse proxy, SSL/TLS support, Redis caching, and automated backups.
+> **Fresh-install limitation:** The currently pinned backend image does not complete database migrations on a clean install. See [DOCKER_SETUP.md](DOCKER_SETUP.md#known-fresh-install-limitation) before deploying.
+
+The fastest way to get Worklenz running locally with all dependencies included. The supplied Compose file runs PostgreSQL, SeaweedFS, the application services, nginx, and a database backup container.
 
 **📋 Prerequisites:**
 - Docker and Docker Compose installed on your system
@@ -162,7 +164,7 @@ cd worklenz
 This script will:
 - ✅ Create `.env` file with auto-generated security secrets
 - ✅ Configure URLs based on your domain (localhost or production)
-- ✅ Set up SSL certificates (self-signed for localhost, Let's Encrypt for production)
+- ✅ Generate a self-signed certificate for localhost, or use a certificate you provision for your domain
 - ✅ Install and start all services
 
 #### Option 2: Manual Setup
@@ -173,14 +175,16 @@ cd worklenz
 
 # 📄 Copy and configure environment file
 cp .env.example .env
-# Edit .env and set required values (DB_PASSWORD, SESSION_SECRET, etc.)
+# Edit .env and replace the example passwords and secrets.
+# Before starting nginx, provision nginx/ssl/cert.pem and nginx/ssl/key.pem.
+# For local testing only, see DOCKER_SETUP.md for a self-signed certificate.
 
-# ▶️ Start services (includes PostgreSQL, Redis, SeaweedFS)
+# ▶️ Start services (includes PostgreSQL and SeaweedFS)
 docker compose up -d
 ```
 
 **🌐 Access the application:**
-- **Application**: https://localhost (or http://localhost)
+- **Application**: https://localhost (HTTP redirects to HTTPS)
 - **SeaweedFS S3 API**: http://localhost:8333
 
 **🛠️ Management:**
@@ -338,71 +342,12 @@ For local development, follow the [Quick Start (Docker)](#quick-start-docker) se
 
 ### 🌍 Production Deployment
 
-The new Docker setup includes production-ready features for secure and scalable deployments.
-
-#### ⚡ Quick Production Setup
-
-```bash
-# Clone and navigate to the repository
-git clone https://github.com/Worklenz/worklenz.git
-cd worklenz
-
-# Run the automated setup
-./quick-setup.sh
-# When prompted, enter your production domain (e.g., worklenz.example.com)
-# The script will configure SSL with Let's Encrypt automatically
-```
-
-#### 🔧 Manual Production Setup
-
-1. **Configure environment for your domain:**
-   ```bash
-   cp .env.example .env
-   # Edit .env and set:
-   # - DOMAIN=your-domain.com
-   # - VITE_API_URL=https://your-domain.com
-   # - VITE_SOCKET_URL=wss://your-domain.com
-   # - ENABLE_SSL=true
-   # - LETSENCRYPT_EMAIL=your-email@domain.com
-   # - Generate secure secrets for DB_PASSWORD, SESSION_SECRET, etc.
-   ```
-
-2. **Point your domain's DNS A record to your server IP**
-
-3. **Start services with SSL:**
-   ```bash
-   docker compose up -d
-   ```
-
-4. **Access your application at:** https://your-domain.com
-
-#### 🛠️ Management Commands
-
-```bash
-./manage.sh install    # Interactive installation
-./manage.sh upgrade    # Upgrade to latest version
-./manage.sh backup     # Create database backup
-./manage.sh restore    # Restore from backup
-./manage.sh ssl        # Manage SSL certificates
-./manage.sh status     # View service status
-```
-
-#### 🗂️ Deployment Modes
-
-- 🟢 **Express Mode** (default): All services bundled (PostgreSQL, Redis, SeaweedFS)
-  ```bash
-  docker compose up -d
-  ```
-
-- 🔵 **Advanced Mode**: Use external services (AWS S3, Azure Blob, external PostgreSQL)
-  ```bash
-  # Set DEPLOYMENT_MODE=advanced in .env
-  docker compose up -d
-  ```
-
-**For complete deployment documentation**, see [DOCKER_SETUP.md](DOCKER_SETUP.md)
-
-**Video Guide**: For a complete walkthrough of deploying Worklenz to a remote server, check out our [deployment video guide](https://www.youtube.com/watch?v=CAZGu2iOXQs&t=10s).
+For a public deployment, configure your domain, HTTPS certificate, firewall,
+secrets, and backups before starting the stack. The supplied Compose file
+publishes application and storage ports in addition to nginx. See the
+[Docker setup guide](DOCKER_SETUP.md) for the prerequisites and setup steps.
+The bundled database backup does not include attachments; back up the
+SeaweedFS data separately.
 
 ## ⚙️ Configuration
 
@@ -412,17 +357,15 @@ Worklenz uses a comprehensive environment configuration system. Copy `.env.examp
 
 **📂 Key Configuration Areas:**
 
-- **Infrastructure Mode**: `DEPLOYMENT_MODE=express` (all services bundled) or
-  `advanced` (external services)
+- **Infrastructure**: The supplied Compose file starts bundled PostgreSQL and SeaweedFS; external services require changes to Compose.
 - **OSS Feature Entitlement**: `WORKLENZ_DEPLOYMENT_MODE=self_hosted` enables
   Planner, Finance, and Client Portal for all organizations
 - **Domain & URLs**: Configure for localhost or production domain
 - **Database**: PostgreSQL credentials and connection settings
 - **Security Secrets**: Session, cookie, and JWT secrets (auto-generated by setup scripts)
 - **Storage**: SeaweedFS (default), AWS S3, or Azure Blob Storage
-- **Redis**: Cache configuration (Express mode)
-- **SSL/TLS**: Let's Encrypt for production, self-signed for localhost
-- **Backups**: Automated backup retention settings
+- **SSL/TLS**: Externally provisioned certificate for production, self-signed for localhost
+- **Backups**: The Compose database backup retains SQL files for 30 days; back up attachments separately
 - **Optional Features**: Google OAuth, reCAPTCHA, email notifications
 
 **OSS entitlement and email defaults:**
@@ -447,11 +390,9 @@ openssl rand -hex 32  # Use for SESSION_SECRET, COOKIE_SECRET, JWT_SECRET
 **📌 Important Variables:**
 
 - `DOMAIN`: Your domain (localhost for local testing)
-- `DEPLOYMENT_MODE`: express or advanced
 - `WORKLENZ_DEPLOYMENT_MODE`: self_hosted (OSS default; do not change)
 - `STORAGE_PROVIDER`: s3 (SeaweedFS/AWS) or azure
-- `ENABLE_SSL`: true/false for SSL/TLS
-- `BACKUP_RETENTION_DAYS`: Days to keep backups (default: 30)
+- `S3_PUBLIC_URL`: externally reachable bucket URL used in attachment links
 
 For a complete list of variables with detailed documentation, see `.env.example`.
 
@@ -494,8 +435,8 @@ export const S3_SECRET_ACCESS_KEY = process.env.S3_SECRET_ACCESS_KEY || "";
 Worklenz is built with security in mind:
 
 - 🔐 Non-root Docker containers
-- 🌐 Network isolation (backend is internal-only)
-- 🔑 SSL/TLS (Let's Encrypt for production, self-signed for localhost)
+- 🌐 Compose networking (the default file also publishes backend, frontend, and storage ports; restrict access at your firewall)
+- 🔑 SSL/TLS (provide and renew a certificate for production; self-signed for localhost)
 - 🛡️ Rate limiting on API and login endpoints
 - 🔒 Security headers (HSTS, CSP, X-Frame-Options, etc.)
 - 🗝️ Auto-generated secure secrets via `openssl rand -hex 32`
@@ -505,7 +446,7 @@ Found a security vulnerability? Please **do not** open a public issue. Email us 
 
 ## 📈 Analytics
 
-Worklenz uses Google Analytics, Mixpanel, and Microsoft Clarity to understand how the application is used - helping us prioritize improvements and make smarter product decisions.
+Worklenz-operated deployments use Google Analytics, Mixpanel, and Microsoft Clarity to understand application usage. The behavior below describes the source in this repository; published images may contain a different version.
 
 **What we track:**
 - 📊 Usage statistics
@@ -514,8 +455,8 @@ Worklenz uses Google Analytics, Mixpanel, and Microsoft Clarity to understand ho
 - 💻 Browser and device information
 
 **Privacy and consent:**
-- 🍪 Microsoft Clarity loads only after consent. The cookie banner's "Reject All" / "Accept" choice is stored in your browser's local storage and applies to Clarity only.
-- 📈 Google Analytics (always) and Mixpanel (when `VITE_MIXPANEL_TOKEN` is set) are initialized without waiting for that choice, so declining the banner does **not** disable them.
+- Google Analytics loads only on Worklenz-operated production and test hosts. Microsoft Clarity is restricted to the production host and uses the cookie consent setting.
+- Mixpanel initializes when a valid `VITE_MIXPANEL_TOKEN` is included in the frontend build, including on self-hosted installations. Leave it unset when building to disable Mixpanel. Its initialization does not wait for the cookie banner choice.
 - 🔎 Analytics data may include identifiers such as cookies, IP-derived location, and device details. Data is handled according to the providers' policies, including [Google's Privacy Policy](https://policies.google.com/privacy).
 <br/>
 

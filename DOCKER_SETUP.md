@@ -1,390 +1,94 @@
-# Docker Setup Guide - Production-Ready Worklenz
+# Docker setup
 
-This repository now includes a **production-ready Docker setup** with enterprise-grade features including nginx reverse proxy, SSL/TLS support, Redis caching, automated backups, and comprehensive management scripts.
+The supplied `docker-compose.yml` runs the application, PostgreSQL, SeaweedFS,
+nginx, and a database backup container. It uses version-pinned published images;
+these can differ from the source in your checkout. Review the image tags before
+upgrading, and back up your data first.
 
-## 🚀 Quick Start
+## Known fresh-install limitation
 
-### Option 1: Automated Setup (Recommended)
+The Compose file currently pins backend image `3.3.1`. A clean-install test
+showed that database initialization loads the base schema but does not run the
+Node.js migrations. Running `npm run migrate:up` in that image failed because
+`database/pg-migrations-support/team-lead-prerequisites` was missing from the
+image. As a result, the backend reports missing database tables even if the
+frontend loads. A corrected backend image and a verified migration sequence are
+needed before this setup can be considered fully working. Do not use it for a
+new production deployment until that is resolved. Existing installations should
+back up and review their migration history before attempting an upgrade.
+
+## Prerequisites
+
+Install Git, Docker Engine and the Docker Compose plugin. The host needs ports
+80 and 443 available. The default configuration also publishes ports 3000,
+5000, 5174 and 8333; restrict access to those ports with your firewall as
+appropriate. The database container installs `dos2unix` at startup and therefore
+needs package repository access.
+
+## Setup
+
+The interactive `./quick-setup.sh` generates secrets and delegates installation
+to `manage.sh`. For a public deployment, first place your externally provisioned
+certificate and key at `nginx/ssl/cert.pem` and `nginx/ssl/key.pem`; the installer
+does not issue or renew certificates. Review the generated `.env` and nginx
+configuration. Alternatively, configure the stack manually:
+
 ```bash
-./quick-setup.sh
-```
-This script will:
-- Create `.env` file from `.env.example`
-- Auto-generate all security secrets
-- Configure URLs based on your domain
-- Set up SSL certificates (self-signed for localhost, Let's Encrypt for production)
-- Install and start Worklenz
-
-### Option 2: Manual Setup
-```bash
-# 1. Copy environment file
+git clone https://github.com/Worklenz/worklenz.git
+cd worklenz
 cp .env.example .env
-
-# 2. Edit .env and set required values:
-#    - DB_PASSWORD
-#    - SESSION_SECRET (generate with: openssl rand -hex 32)
-#    - COOKIE_SECRET (generate with: openssl rand -hex 32)
-#    - JWT_SECRET (generate with: openssl rand -hex 32)
-#    - S3_SECRET_ACCESS_KEY (SeaweedFS secret)
-#    - REDIS_PASSWORD
-
-# 3. Start services (Express mode - includes PostgreSQL, Redis, SeaweedFS)
-docker compose --profile express up -d
-
-# 4. For production with SSL
-docker compose --profile express --profile ssl up -d
 ```
 
-## 📋 What's New
+Replace the example database password, session, cookie and JWT secrets, and
+`S3_SECRET_ACCESS_KEY` in `.env`. Set the domain, application URLs and
+`S3_PUBLIC_URL` to addresses reachable by your users. For production, configure
+CORS and use HTTPS. In particular, the default `http://localhost:8333` storage
+URL only works locally; configure a reachable HTTPS S3 endpoint and certificate
+for remote browsers. The bundled nginx configuration does not proxy SeaweedFS. See the comments in
+`.env.example` for the available values.
 
-### 1. **Production-Ready Docker Compose**
-- **Nginx reverse proxy** with SSL/TLS termination
-- **Redis cache** for session management
-- **Automated database backups** with retention policies
-- **Health checks** for all services
-- **Network isolation** (separate backend/frontend networks)
-- **Security hardening** (non-root users, no-new-privileges)
-- **Profile-based deployment** (express/advanced modes)
+Nginx expects `nginx/ssl/cert.pem` and `nginx/ssl/key.pem` before it starts.
+Provide a certificate valid for your domain. For **local testing only**, create a
+self-signed certificate (browsers will show a warning):
 
-### 2. **Enhanced Dockerfiles**
-
-#### Backend Dockerfile
-- Multi-stage build for smaller images
-- Non-root user (`worklenz`) for security
-- `tini` init system for proper signal handling
-- Health check endpoint
-- `libvips42` for image processing
-- Proper log directory with permissions
-
-#### Frontend Dockerfile
-- Multi-stage build with Alpine Linux
-- Non-root user for security
-- Runtime environment injection (supports reCAPTCHA, Google Login, etc.)
-- `tini` init system
-- Health check endpoint
-- Optimized `serve` configuration
-
-### 3. **Nginx Configuration**
-- **SSL/TLS support** (Let's Encrypt + self-signed)
-- **Rate limiting** (API and login endpoints)
-- **WebSocket support** for Socket.IO
-- **Security headers** (HSTS, CSP, X-Frame-Options, etc.)
-- **Gzip compression**
-- **Static asset caching**
-- **Upstream load balancing**
-
-### 4. **Database Initialization**
-- **Backup restoration** on startup
-- **Migration tracking** system
-- **Proper error handling**
-- **Initialization marker** to prevent re-runs
-
-### 5. **Management Scripts**
-
-#### `manage.sh` - Comprehensive Management
 ```bash
-./manage.sh [command]
-
-Commands:
-  install          Install Worklenz (auto-generates secrets)
-  start            Start all services
-  stop             Stop all services
-  restart          Restart all services
-  status           Show service status
-  logs             View service logs
-  backup           Create database backup
-  restore          Restore from backup
-  upgrade          Upgrade to latest version
-  configure        Interactive configuration
-  auto-configure   Auto-configure from .env DOMAIN
-  ssl              Manage SSL certificates
-  build            Build Docker images locally
-  push             Push images to Docker Hub
-  build-push       Build and push in one step
-```
-
-#### `quick-setup.sh` - Automated Installation
-One-command setup with auto-generated secrets and SSL configuration.
-
-## 🏗️ Architecture
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Nginx (Port 80/443)                  │
-│              SSL/TLS, Rate Limiting, Caching            │
-└────────────────────┬────────────────────────────────────┘
-                     │
-        ┌────────────┴────────────┐
-        │                         │
-┌───────▼────────┐       ┌───────▼────────┐
-│   Frontend     │       │    Backend     │
-│  (Node:22)     │       │   (Node:20)    │
-│  Port: 5000    │       │   Port: 3000   │
-└────────────────┘       └───────┬────────┘
-                                 │
-                    ┌────────────┼────────────┐
-                    │            │            │
-            ┌───────▼──┐   ┌────▼────┐  ┌───▼────┐
-            │PostgreSQL│   │  Redis  │  │SeaweedFS│
-            │  Port:   │   │ Port:   │  │ Port:  │
-            │  5432    │   │  6379   │  │ 8333   │
-            └──────────┘   └─────────┘  └────────┘
-```
-
-## 🔧 Configuration
-
-### Deployment Modes
-
-#### Express Mode (Default)
-All services bundled together - PostgreSQL, Redis, and SeaweedFS included.
-```bash
-docker compose --profile express up -d
-```
-
-#### Advanced Mode
-Use external services (AWS S3, Azure Blob, external PostgreSQL).
-```bash
-# Set in .env:
-DEPLOYMENT_MODE=advanced
-STORAGE_PROVIDER=s3  # or azure
-
+mkdir -p nginx/ssl
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout nginx/ssl/key.pem -out nginx/ssl/cert.pem \
+  -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
 docker compose up -d
 ```
 
-### Environment Variables
+Visit `https://localhost` for a local installation. HTTP requests redirect to
+HTTPS. For a remote server, replace localhost with the configured domain.
 
-Key variables in `.env`:
-- `DOMAIN` - Your domain (localhost for local testing)
-- `DEPLOYMENT_MODE` - express or advanced
-- `STORAGE_PROVIDER` - s3 or azure
-- `ENABLE_SSL` - true/false
-- `BACKUP_RETENTION_DAYS` - Days to keep backups (default: 30)
+The Compose file does not define `express`, `advanced`, `ssl` or `backup`
+profiles: setting `DEPLOYMENT_MODE` or supplying a profile alone does not swap
+bundled services for external ones. Using an external database or storage
+requires adapting the Compose configuration and verifying connectivity.
 
-See `.env.example` for complete documentation.
+## Operations
 
-## 🔐 Security Features
-
-1. **Non-root containers** - All services run as non-root users
-2. **Security options** - `no-new-privileges` enabled
-3. **Network isolation** - Backend network is internal-only
-4. **SSL/TLS** - Let's Encrypt for production, self-signed for localhost
-5. **Rate limiting** - API and login endpoints protected
-6. **Security headers** - HSTS, CSP, X-Frame-Options, etc.
-7. **Secret management** - Auto-generated secure secrets
-
-## 💾 Backup & Restore
-
-### Automated Backups
-Database backups run automatically every 24 hours with configurable retention:
 ```bash
-# Enable backup service
-docker compose --profile backup up -d
-```
-
-### Manual Backup
-```bash
-./manage.sh backup
-```
-
-### Restore from Backup
-```bash
-./manage.sh restore
-```
-
-Backups are stored in `./backups/` directory and compressed with gzip.
-
-## 🌐 SSL/TLS Setup
-
-### Localhost (Self-Signed)
-Automatically configured for localhost testing.
-
-### Production Domain (Let's Encrypt)
-```bash
-# 1. Set domain in .env
-DOMAIN=your-domain.com
-ENABLE_SSL=true
-LETSENCRYPT_EMAIL=your-email@domain.com
-
-# 2. Point DNS A record to your server IP
-
-# 3. Start with SSL profile
-docker compose --profile express --profile ssl up -d
-```
-
-Or use the management script:
-```bash
-./manage.sh ssl
-```
-
-## 📊 Monitoring
-
-### View Service Status
-```bash
-./manage.sh status
-# or
 docker compose ps
+docker compose logs -f
+docker compose stop
+docker compose start
 ```
 
-### View Logs
-```bash
-./manage.sh logs
-# or
-docker compose logs -f [service-name]
-```
+PostgreSQL data and SeaweedFS data use Docker volumes. The `db-backup` service
+writes daily SQL backups to `pg_backups` and removes SQL files older than 30
+days. Those database backups do **not** include attachments in the SeaweedFS
+volume. Back up both data sets off-host and test restoration before relying on
+them. Stopping containers preserves volumes; `docker compose down -v` deletes
+Compose-managed volumes and should be used only when intentionally removing
+data.
 
-### Health Checks
-All services include health checks:
-- Backend: `http://localhost:3000/public/health`
-- Frontend: `http://localhost:5000`
-- PostgreSQL: `pg_isready`
-- Redis: `redis-cli ping`
-- SeaweedFS: master cluster status health check
-
-## 🔄 Upgrading
+For a database backup, use the configured database user and name:
 
 ```bash
-./manage.sh upgrade
+docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > worklenz-backup.sql
 ```
 
-This will:
-1. Create a backup
-2. Pull latest images
-3. Rebuild containers
-4. Restart services
-
-## 🐳 Building Custom Images
-
-### Build Locally
-```bash
-./manage.sh build
-```
-
-### Push to Docker Hub
-```bash
-./manage.sh push
-```
-
-### Build and Push
-```bash
-./manage.sh build-push
-```
-
-## 📁 Directory Structure
-
-```
-worklenz/
-├── docker-compose.yml           # Main compose file
-├── .env.example                 # Environment template
-├── manage.sh                    # Management script
-├── quick-setup.sh              # Quick setup script
-├── nginx/                      # Nginx configuration
-│   ├── nginx.conf
-│   ├── conf.d/
-│   │   └── worklenz.conf
-│   └── ssl/                    # SSL certificates
-├── scripts/                    # Database scripts
-│   └── db-init-wrapper.sh
-├── backups/                    # Database backups
-├── worklenz-backend/
-│   └── Dockerfile              # Backend Dockerfile
-└── worklenz-frontend/
-    └── Dockerfile              # Frontend Dockerfile
-```
-
-## ❓ FAQ
-
-### What if Docker is not installed?
-You must install Docker and Docker Desktop (for Windows/Mac) or Docker Engine (for Linux). Follow the official [Docker installation guide](https://docs.docker.com/get-docker/).
-
-### How do I install Docker Compose?
-Modern Docker installations (Docker Desktop and latest Docker Engine) include Docker Compose by default. You can check by running `docker compose version`. If you need to install it separately, see the [Compose installation guide](https://docs.docker.com/compose/install/).
-
-### Why do I get "permission denied" errors on Linux?
-On Linux, you may need to run Docker commands with `sudo` or add your user to the `docker` group:
-```bash
-sudo usermod -aG docker $USER
-```
-*Note: You may need to log out and back in for this change to take effect.*
-
-### I'm on Windows, why isn't it working?
-For the best experience on Windows, we recommend using **WSL2** (Windows Subsystem for Linux).
-1. Install [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install).
-2. Install [Docker Desktop for Windows](https://docs.docker.com/desktop/install/windows-install/).
-3. Enable WSL2 integration in Docker Desktop Settings -> Resources -> WSL Integration.
-
-### How do I check if my hardware supports virtualization?
-- **Windows**: Check Performance tab in Task Manager. Look for "Virtualization: Enabled".
-- **Linux**: Run `lscpu | grep Virtualization`.
-
-## 🆘 Troubleshooting
-
-### Services won't start
-```bash
-# Check logs
-docker compose logs
-
-# Check service status
-docker compose ps
-
-# Restart services
-./manage.sh restart
-```
-
-### Database initialization fails
-```bash
-# Check database logs
-docker compose logs postgres
-
-# Verify database scripts exist
-ls -la worklenz-backend/database/sql/
-```
-
-### SSL certificate issues
-```bash
-# For Let's Encrypt
-./manage.sh ssl
-
-# Check certificate info
-openssl x509 -in nginx/ssl/cert.pem -text -noout
-```
-
-### Port conflicts
-```bash
-# Change ports in .env
-HTTP_PORT=8080
-HTTPS_PORT=8443
-```
-
-## 📝 Migration from Old Setup
-
-If you're migrating from the old `docker-compose.yml`:
-
-1. **Backup your data**:
-   ```bash
-   docker compose exec db pg_dump -U postgres worklenz_db > backup.sql
-   ```
-
-2. **Stop old containers**:
-   ```bash
-   docker compose -f docker-compose.yml down
-   ```
-
-3. **Copy your `.env` files** to the new structure
-
-4. **Start new setup**:
-   ```bash
-   docker compose --profile express up -d
-   ```
-
-5. **Restore data if needed**:
-   ```bash
-   ./manage.sh restore
-   ```
-
-## 🤝 Contributing
-
-When making changes to Docker configuration:
-1. Test with both express and advanced modes
-2. Verify health checks work
-3. Test SSL setup for both localhost and production
-4. Update this documentation
+See [SELF_HOSTING.md](SELF_HOSTING.md) for licensing and
+[README.md](README.md) for configuration and analytics information.
