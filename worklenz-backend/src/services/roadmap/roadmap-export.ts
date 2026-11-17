@@ -67,6 +67,10 @@ export interface RoadmapDependencyLink {
 const MAX_ROWS = 500;
 const MAX_TEXT = 500;
 const MAX_TIMELINE_COLUMNS = 52;
+/** Cap dependency expansion so one dense dependencies cell cannot explode export size. */
+const MAX_DEPENDENCY_LINKS_PER_ROW = 25;
+/** Hard ceiling across the whole export (Excel Dependencies sheet + PDF page). */
+const MAX_DEPENDENCY_LINKS = 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DETAIL_HEADERS = [
@@ -394,20 +398,29 @@ export const timelinePeriods = (window: TimelineWindow): TimelinePeriod[] => {
   return periods.slice(0, MAX_TIMELINE_COLUMNS);
 };
 
-const splitDependencyParts = (value: string): string[] => {
+const splitDependencyParts = (value: string, maxParts = MAX_DEPENDENCY_LINKS_PER_ROW): string[] => {
   const trimmed = value.trim();
   if (!trimmed) return [];
-  if (trimmed.includes(";")) {
-    return trimmed.split(";").map(part => part.trim()).filter(Boolean);
+  const raw = trimmed.includes(";") ? trimmed.split(";") : trimmed.split(",");
+  const parts: string[] = [];
+  for (const part of raw) {
+    const cleaned = part.trim();
+    if (!cleaned) continue;
+    parts.push(cleaned);
+    if (parts.length >= maxParts) break;
   }
-  return trimmed.split(",").map(part => part.trim()).filter(Boolean);
+  return parts;
 };
 
 export const parseDependencyLinks = (rows: RoadmapExportRow[]): RoadmapDependencyLink[] => {
   const links: RoadmapDependencyLink[] = [];
   for (const row of rows) {
+    if (links.length >= MAX_DEPENDENCY_LINKS) break;
     if (row.kind === "group" || !row.dependencies.trim()) continue;
-    for (const part of splitDependencyParts(row.dependencies)) {
+
+    const remaining = MAX_DEPENDENCY_LINKS - links.length;
+    const perRowCap = Math.min(MAX_DEPENDENCY_LINKS_PER_ROW, remaining);
+    for (const part of splitDependencyParts(row.dependencies, perRowCap)) {
       const typed = /^(.*)\s*\[([^\]]+)\]\s*$/.exec(part);
       links.push({
         from: row.name,
@@ -416,6 +429,7 @@ export const parseDependencyLinks = (rows: RoadmapExportRow[]): RoadmapDependenc
         kind: row.kind,
         relation: typed ? typed[2].trim() : "depends on",
       });
+      if (links.length >= MAX_DEPENDENCY_LINKS) break;
     }
   }
   return links;

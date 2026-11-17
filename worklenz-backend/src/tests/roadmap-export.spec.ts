@@ -152,6 +152,25 @@ describe("roadmap export", () => {
     ]);
   });
 
+  it("caps dependency-link expansion per row and across the export", () => {
+    const manyDeps = Array.from({ length: 80 }, (_, index) => `Dep${index}`).join("; ");
+    const perRow = parseDependencyLinks([
+      row({ name: "Crowded task", dependencies: manyDeps }),
+    ]);
+    expect(perRow).toHaveLength(25);
+    expect(perRow[0].to).toBe("Dep0");
+    expect(perRow[24].to).toBe("Dep24");
+
+    const rows = Array.from({ length: 60 }, (_, index) =>
+      row({
+        name: `Task ${index}`,
+        dependencies: Array.from({ length: 30 }, (_, dep) => `D${index}-${dep}`).join(", "),
+      })
+    );
+    const capped = parseDependencyLinks(rows);
+    expect(capped).toHaveLength(1000);
+  });
+
   it("writes Timeline, Tasks, and Dependencies Excel sheets", async () => {
     const prepared = prepareRoadmapExport({
       format: "xlsx",
