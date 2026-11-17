@@ -25,3 +25,4 @@ export { AnalyticsScheduleAction } from './schedule/AnalyticsScheduleAction';
 export type { AnalyticsScheduleActionProps } from './schedule/AnalyticsScheduleAction';
 export { ScheduleReportModal } from './schedule/ScheduleReportModal';
 export type { ScheduleReportModalProps } from './schedule/ScheduleReportModal';
+export { ScheduledReportsHubPanel } from './schedule/ScheduledReportsHubPanel';

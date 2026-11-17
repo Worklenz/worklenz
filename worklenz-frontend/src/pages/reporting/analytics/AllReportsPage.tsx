@@ -27,6 +27,7 @@ import { analyticsPlannedVsActualMilestonesApiService } from '@/api/reporting/an
 import { analyticsCfdApiService } from '@/api/reporting/analytics-cfd.api.service';
 import { analyticsTimeInStatusApiService } from '@/api/reporting/analytics-time-in-status.api.service';
 import { ReportCardPreview } from '@/components/reporting/analytics/ReportCardPreview';
+import { ScheduledReportsHubPanel } from '@/components/reporting/analytics/schedule/ScheduledReportsHubPanel';
 import {
   syncTemplatesToCustomReports,
   useAnalyticsCustomReports,
@@ -473,25 +474,7 @@ const AllReportsPage: React.FC = () => {
       </div>
 
       {tab === 'scheduled' ? (
-        <div className="all-reports-hub__empty" style={{ borderColor, background: cardBg }}>
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={
-              <>
-                <Text strong>
-                  {t('hubNoScheduledTitle', { defaultValue: 'No scheduled reports yet' })}
-                </Text>
-                <br />
-                <Text type="secondary">
-                  {t('hubNoScheduledHint', {
-                    defaultValue:
-                      'Open any report and choose Schedule to email it on a recurring basis.',
-                  })}
-                </Text>
-              </>
-            }
-          />
-        </div>
+        <ScheduledReportsHubPanel />
       ) : tab === 'custom' ? (
         <div className="all-reports-hub__cards">
           {customReports.map(report => (
