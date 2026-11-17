@@ -152,7 +152,7 @@
   "clientFilter": "Cliente",
   "searchLabels": "Buscar etiquetas...",
   "noLabels": "Nenhuma etiqueta encontrada",
-  "labelFilter": "Etiquetas"
-,
-  "rowsPerPage": "Linhas por página:"
+  "labelFilter": "Etiquetas",
+  "rowsPerPage": "Linhas por página:",
+  "searchProjects": "Pesquisar projetos"
 }

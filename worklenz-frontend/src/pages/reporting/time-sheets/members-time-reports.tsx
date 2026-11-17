@@ -4,15 +4,19 @@ import MembersTimeSheet, {
 } from '@/components/reporting/time-reports/sheets/MembersTimeSheet';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { IRPTTimeTotals } from '@/types/reporting/reporting.types';
 import TimeReportingRightHeader from './components/time-reporting-right-header/TimeReportingRightHeader';
 import TimeReportPageHeader from '@/components/reporting/time-reports/page-header/TimeReportPageHeader';
 import TotalTimeUtilization from '@/components/reporting/time-reports/total-time-utilization/total-time-utilization';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { fetchWorkPolicySettings } from '@/features/admin-center/admin-center.slice';
 
 const MembersTimeReports = () => {
   const { t } = useTranslation('time-report');
+  const dispatch = useAppDispatch();
+  useEffect(() => { void dispatch(fetchWorkPolicySettings()); }, [dispatch]);
   const { token } = theme.useToken();
   const chartRef = useRef<MembersTimeSheetRef>(null);
   const [totals, setTotals] = useState<IRPTTimeTotals>({

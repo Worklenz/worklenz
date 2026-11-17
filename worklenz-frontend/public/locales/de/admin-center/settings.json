@@ -29,5 +29,17 @@
   "workingDay": "Arbeitstag",
   "holiday": "Feiertag",
   "today": "Heute",
-  "cannotEditOfficialHoliday": "Offizielle Feiertage können nicht bearbeitet werden"
+  "cannotEditOfficialHoliday": "Offizielle Feiertage können nicht bearbeitet werden",
+  "workPolicySaved": "Einstellungen für Arbeitsrichtlinien gespeichert",
+  "errorSavingWorkPolicy": "Arbeitsrichtlinien konnten nicht gespeichert werden",
+  "errorLoadingWorkPolicy": "Auslastungseinstellungen konnten nicht geladen werden.",
+  "retry": "Erneut versuchen",
+  "utilizationThresholdHelp": "Legen Sie den optimalen Auslastungsbereich fest. Werte unter dem Minimum gelten als Unterauslastung, Werte über dem Maximum als Überauslastung.",
+  "optimalMinThreshold": "Optimal min (%)",
+  "optimalMaxThreshold": "Optimales Maximum (%)",
+  "thresholdOrder": "Das Maximum muss größer als das Minimum sein",
+  "saveUtilizationSettings": "Auslastungseinstellungen speichern",
+  "generalSettingsTab": "Allgemein",
+  "utilizationSettingsTab": "Einstellungen",
+  "workingScheduleTab": "Arbeitszeit und Feiertage"
 }

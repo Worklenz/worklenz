@@ -23,5 +23,17 @@
   "autoSyncHolidays": "Automatically sync official holidays",
   "saveHolidaySettings": "Save Holiday Settings",
   "holidaySettingsSaved": "Holiday settings saved successfully",
-  "errorSavingHolidaySettings": "Error saving holiday settings"
+  "errorSavingHolidaySettings": "Error saving holiday settings",
+  "workPolicySaved": "Work policy settings saved successfully",
+  "errorSavingWorkPolicy": "Error saving work policy settings",
+  "errorLoadingWorkPolicy": "Unable to load utilization settings.",
+  "retry": "Retry",
+  "utilizationThresholdHelp": "Set the optimal utilization range. Under is below the minimum and over is above the maximum.",
+  "optimalMinThreshold": "Optimal min (%)",
+  "optimalMaxThreshold": "Optimal max (%)",
+  "thresholdOrder": "Maximum must be greater than minimum",
+  "saveUtilizationSettings": "Save Utilization Settings",
+  "generalSettingsTab": "General",
+  "utilizationSettingsTab": "Utilization Settings",
+  "workingScheduleTab": "Working Schedule & Holidays"
 }

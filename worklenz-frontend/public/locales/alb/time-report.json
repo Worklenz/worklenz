@@ -201,5 +201,8 @@
   "noDataMatchingFilters": "Nuk ka të dhëna që përputhen me filtrat e zgjedhur",
   "holidaysExcluded": "Pushimet përjashtohen",
   "reportSettings": "Cilësimet e raportit",
-  "Members Time Sheet": "Fleta e kohës së anëtarëve"
+  "Members Time Sheet": "Fleta e kohës së anëtarëve",
+  "underUtilizedRange": "Nënshfrytëzuar (nën {{min}}%)",
+  "optimalUtilizedRange": "Shfrytëzim optimal ({{min}}%–{{max}}%)",
+  "overUtilizedRange": "Mbishfrytëzuar (mbi {{max}}%)"
 }

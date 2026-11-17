@@ -26,6 +26,14 @@ const Utilization: React.FC = () => {
   const { utilization, loadingUtilization } = useAppSelector(
     state => state.timeReportsOverviewReducer
   );
+  const settings = useAppSelector(state => state.adminCenterReducer.workPolicySettings);
+  const min = settings?.utilization_optimal_min_threshold_percent ?? 90;
+  const max = settings?.utilization_optimal_max_threshold_percent ?? 110;
+  const getLabel = (id: string) => {
+    if (id === 'under') return t('underUtilizedRange', { defaultValue: 'Under-utilized (Under {{min}}%)', min });
+    if (id === 'optimal') return t('optimalUtilizedRange', { defaultValue: 'Optimal-utilized ({{min}}%-{{max}}%)', min, max });
+    return t('overUtilizedRange', { defaultValue: 'Over-utilized (Over {{max}}%)', max });
+  };
   const { token } = theme.useToken();
 
   const [searchText, setSearchText] = useState('');
@@ -42,7 +50,7 @@ const Utilization: React.FC = () => {
 
   // Filter members based on search text
   const filteredItems = utilization.filter(item => {
-    const translatedName = item.nameKey ? t(item.nameKey, { defaultValue: item.nameKey }) : item.name;
+    const translatedName = getLabel(item.id);
     return translatedName.toLowerCase().includes(searchText.toLowerCase());
   });
 
@@ -191,7 +199,7 @@ const Utilization: React.FC = () => {
                   onChange={e => handleCheckboxChange(ut.id, e.target.checked)}
                   style={{ fontSize: '14px' }}
                 >
-                  <span style={{ marginLeft: '2px', fontSize: '14px' }}>{t(ut.nameKey, { defaultValue: ut.nameKey })}</span>
+                  <span style={{ marginLeft: '2px', fontSize: '14px' }}>{getLabel(ut.id)}</span>
                 </Checkbox>
                 {ut.selected && (
                   <CheckCircleFilled

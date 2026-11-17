@@ -29,5 +29,17 @@
   "workingDay": "工作日",
   "holiday": "假期",
   "today": "今天",
-  "cannotEditOfficialHoliday": "无法编辑官方假期"
+  "cannotEditOfficialHoliday": "无法编辑官方假期",
+  "workPolicySaved": "工作政策设置已保存",
+  "errorSavingWorkPolicy": "保存工作政策设置失败",
+  "errorLoadingWorkPolicy": "无法加载利用率设置。",
+  "retry": "重试",
+  "utilizationThresholdHelp": "设置最佳利用率范围。低于最小值为利用不足，高于最大值为利用过度。",
+  "optimalMinThreshold": "Optimal min (%)",
+  "optimalMaxThreshold": "最佳范围上限（%）",
+  "thresholdOrder": "最大值必须大于最小值",
+  "saveUtilizationSettings": "保存利用率设置",
+  "generalSettingsTab": "常规",
+  "utilizationSettingsTab": "设置",
+  "workingScheduleTab": "工作时间与假期"
 }

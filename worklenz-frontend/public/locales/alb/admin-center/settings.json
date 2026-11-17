@@ -29,5 +29,17 @@
   "workingDay": "Ditë Pune",
   "holiday": "Festë",
   "today": "Sot",
-  "cannotEditOfficialHoliday": "Nuk mund të redaktoni festat zyrtare"
+  "cannotEditOfficialHoliday": "Nuk mund të redaktoni festat zyrtare",
+  "workPolicySaved": "Cilësimet e politikave të punës u ruajtën",
+  "errorSavingWorkPolicy": "Gabim gjatë ruajtjes së politikave të punës",
+  "errorLoadingWorkPolicy": "Cilësimet e shfrytëzimit nuk mund të ngarkohen.",
+  "retry": "Provo përsëri",
+  "utilizationThresholdHelp": "Përcaktoni intervalin optimal të shfrytëzimit. Nën minimumin është nënshfrytëzim dhe mbi maksimumin është mbishfrytëzim.",
+  "optimalMinThreshold": "Optimal min (%)",
+  "optimalMaxThreshold": "Maksimumi optimal (%)",
+  "thresholdOrder": "Maksimumi duhet të jetë më i madh se minimumi",
+  "saveUtilizationSettings": "Ruaj cilësimet e shfrytëzimit",
+  "generalSettingsTab": "Të Përgjithshme",
+  "utilizationSettingsTab": "Cilësimet",
+  "workingScheduleTab": "Orari i punës dhe festat"
 }

@@ -153,5 +153,6 @@
   "searchLabels": "Cerca etichette...",
   "noLabels": "Nessuna etichetta trovata",
   "labelFilter": "Etichette",
-  "rowsPerPage": "Righe per pagina:"
+  "rowsPerPage": "Righe per pagina:",
+  "searchProjects": "Cerca progetti"
 }

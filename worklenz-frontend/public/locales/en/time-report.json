@@ -201,5 +201,8 @@
   "noDataMatchingFilters": "No data matching the selected filters",
   "holidaysExcluded": "Holidays excluded",
   "reportSettings": "Report Settings",
-  "Members Time Sheet": "Members Time Sheet"
+  "Members Time Sheet": "Members Time Sheet",
+  "underUtilizedRange": "Under-utilized (Under {{min}}%)",
+  "optimalUtilizedRange": "Optimal-utilized ({{min}}%-{{max}}%)",
+  "overUtilizedRange": "Over-utilized (Over {{max}}%)"
 }

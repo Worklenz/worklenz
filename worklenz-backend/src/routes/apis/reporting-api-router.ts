@@ -1,3 +1,6 @@
+import { validateOrganizationReport } from "../../middlewares/validators/organization-report-validator";
+import ReportingEfficiencyController from "../../controllers/reporting/reporting-efficiency-controller";
+import ReportingMonthEndController from "../../controllers/reporting/reporting-month-end-controller";
 import express from "express";
 
 import ReportingController from "../../controllers/reporting-controller";
@@ -172,6 +175,10 @@ reportingApiRouter.get("/time-logs/members", teamOwnerOrAdminValidator, safeCont
 reportingApiRouter.get("/time-logs/projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingTimeLogsController.getTimeLogProjects));
 
 reportingApiRouter.post("/time-reports/projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.getProjectTimeSheets));
+reportingApiRouter.post("/efficiency", teamOwnerOrAdminValidator, validateOrganizationReport, safeControllerFunction(ReportingEfficiencyController.getEfficiency));
+reportingApiRouter.post("/efficiency/export", teamOwnerOrAdminValidator, validateOrganizationReport, safeControllerFunction(ReportingEfficiencyController.exportExcel));
+reportingApiRouter.post("/month-end", teamOwnerOrAdminValidator, validateOrganizationReport, safeControllerFunction(ReportingMonthEndController.getMonthEndSummary));
+reportingApiRouter.post("/month-end/export", teamOwnerOrAdminValidator, validateOrganizationReport, safeControllerFunction(ReportingMonthEndController.exportExcel));
 reportingApiRouter.post("/time-reports/members", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.getMemberTimeSheets));
 reportingApiRouter.post("/time-reports/estimated-vs-actual", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.getEstimatedVsActual));
 

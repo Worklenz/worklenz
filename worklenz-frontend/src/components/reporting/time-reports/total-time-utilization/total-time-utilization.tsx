@@ -37,7 +37,7 @@ const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({
   const { t } = useTranslation('time-report');
   const isDark = useAppSelector(state => state.themeReducer.mode) === 'dark';
   const workPolicySettings = useAppSelector(
-    state => (state.adminCenterReducer as any)?.workPolicySettings
+    state => state.adminCenterReducer.workPolicySettings
   );
   const utilizationMinThreshold =
     workPolicySettings?.utilization_optimal_min_threshold_percent ?? 90;

@@ -152,7 +152,7 @@
   "clientFilter": "Clientèle",
   "searchLabels": "Rechercher des étiquettes...",
   "noLabels": "Aucune étiquette trouvée",
-  "labelFilter": "Étiquettes"
-,
-  "rowsPerPage": "Lignes par page :"
+  "labelFilter": "Étiquettes",
+  "rowsPerPage": "Lignes par page :",
+  "searchProjects": "Rechercher des projets"
 }

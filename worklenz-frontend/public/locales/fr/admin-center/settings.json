@@ -23,5 +23,17 @@
   "autoSyncHolidays": "Synchronisez automatiquement les jours fériés",
   "saveHolidaySettings": "Enregistrer les paramètres de vacances",
   "holidaySettingsSaved": "Paramètres de vacances enregistrés avec succès",
-  "errorSavingHolidaySettings": "Erreur lors de l'enregistrement des paramètres de vacances"
+  "errorSavingHolidaySettings": "Erreur lors de l'enregistrement des paramètres de vacances",
+  "workPolicySaved": "Paramètres de politique de travail enregistrés",
+  "errorSavingWorkPolicy": "Échec de l’enregistrement des politiques de travail",
+  "errorLoadingWorkPolicy": "Impossible de charger les paramètres d’utilisation.",
+  "retry": "Réessayer",
+  "utilizationThresholdHelp": "Définissez la plage optimale d’utilisation. En dessous du minimum, il y a sous-utilisation ; au-dessus du maximum, il y a surutilisation.",
+  "optimalMinThreshold": "Optimal min (%)",
+  "optimalMaxThreshold": "Maximum optimal (%)",
+  "thresholdOrder": "Le maximum doit être supérieur au minimum",
+  "saveUtilizationSettings": "Enregistrer les paramètres d’utilisation",
+  "generalSettingsTab": "Général",
+  "utilizationSettingsTab": "Paramètres d'utilisation",
+  "workingScheduleTab": "Horaires de travail et jours fériés"
 }

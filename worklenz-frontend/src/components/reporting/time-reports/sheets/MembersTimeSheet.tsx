@@ -156,15 +156,9 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
         return Number(loggedTimeInHours.toFixed(2));
       });
       const colors = visibleData.map(item => {
-        const utilizationPercent = parseFloat(item.utilization_percent || '0');
-
-        if (utilizationPercent < 90) {
-          return '#faad14'; // Orange for under-utilized (< 90%)
-        } else if (utilizationPercent <= 110) {
-          return '#52c41a'; // Green for optimal utilization (90-110%)
-        } else {
-          return '#ef4444'; // Red for over-utilized (> 110%)
-        }
+        if (item.utilization_state === 'under') return '#faad14';
+        if (item.utilization_state === 'optimal') return '#52c41a';
+        return '#ef4444';
       });
 
       return { labels, dataValues, colors };

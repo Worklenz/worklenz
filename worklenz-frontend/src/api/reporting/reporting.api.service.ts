@@ -1,3 +1,4 @@
+import { IRPTEfficiencyRequest, IRPTEfficiencyRow, IRPTMonthEndRequest, IRPTMonthEndSummary } from '@/types/reporting/reporting.types';
 import { IServerResponse } from '@/types/common.types';
 import apiClient from '../api-client';
 import { API_BASE_URL } from '@/shared/constants';
@@ -304,6 +305,35 @@ export const reportingApiService = {
     const q = toQueryString(body);
     const url = `${rootUrl}/members/single-member-projects${q}`;
     const response = await apiClient.get<IServerResponse<IMemberProjectsResonse>>(url);
+    return response.data;
+  },
+  // Efficiency report (#4) — Estimated ÷ Actual time at member/team/project/company level
+  getEfficiency: async (
+    body: IRPTEfficiencyRequest
+  ): Promise<IServerResponse<IRPTEfficiencyRow[]>> => {
+    const url = `${rootUrl}/efficiency`;
+    const response = await apiClient.post<IServerResponse<IRPTEfficiencyRow[]>>(url, body);
+    return response.data;
+  },
+
+  exportEfficiency: async (body: IRPTEfficiencyRequest): Promise<Blob> => {
+    const url = `${rootUrl}/efficiency/export`;
+    const response = await apiClient.post(url, body, { responseType: 'blob' });
+    return response.data;
+  },
+
+  // Month-End Summary report (#15)
+  getMonthEndSummary: async (
+    body: IRPTMonthEndRequest
+  ): Promise<IServerResponse<IRPTMonthEndSummary>> => {
+    const url = `${rootUrl}/month-end`;
+    const response = await apiClient.post<IServerResponse<IRPTMonthEndSummary>>(url, body);
+    return response.data;
+  },
+
+  exportMonthEndSummary: async (body: IRPTMonthEndRequest): Promise<Blob> => {
+    const url = `${rootUrl}/month-end/export`;
+    const response = await apiClient.post(url, body, { responseType: 'blob' });
     return response.data;
   },
 };

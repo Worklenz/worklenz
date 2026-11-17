@@ -1,3 +1,4 @@
+import { UtilizationSettings } from './UtilizationSettings';
 import React, { useEffect, useState, useMemo } from 'react';
 import {
   Button,
@@ -12,6 +13,7 @@ import {
   message,
   Select,
   Switch,
+  Tabs,
 } from '@/shared/antd-imports';
 import WorklenzPageHeader from '@/components/common/WorklenzPageHeader';
 import { useTranslation } from 'react-i18next';
@@ -170,7 +172,15 @@ const SettingsPage: React.FC = () => {
     <div style={{ width: '100%' }}>
       <WorklenzPageHeader title={<span>{t('settings')}</span>} style={{ padding: '16px 0' }} />
 
-      <Space direction="vertical" style={{ width: '100%' }} size={22}>
+      <Tabs items={[
+        { key: 'general', label: t('generalSettingsTab', { defaultValue: 'General' }), children: (organization && (
+          <OrganizationCalculationMethod
+            organization={organization}
+            refetch={getAdminCenterSettings}
+          />
+        )) },
+        { key: 'utilization', label: t('utilizationSettingsTab', { defaultValue: 'Utilization Settings' }), children: <UtilizationSettings /> },
+        { key: 'schedule', label: t('workingScheduleTab', { defaultValue: 'Working Schedule & Holidays' }), children: (      <Space direction="vertical" style={{ width: '100%' }} size={22}>
         <Card>
           <Typography.Title level={5} style={{ margin: 0 }}>
             {t('organizationWorkingDaysAndHours') || 'Organization Working Days & Hours'}
@@ -223,13 +233,6 @@ const SettingsPage: React.FC = () => {
             </Form.Item>
           </Form>
         </Card>
-
-        {organization && (
-          <OrganizationCalculationMethod
-            organization={organization}
-            refetch={getAdminCenterSettings}
-          />
-        )}
 
         <Card>
           <Typography.Title level={5} style={{ margin: 0 }}>
@@ -312,7 +315,8 @@ const SettingsPage: React.FC = () => {
         </Card>
 
         <HolidayCalendar themeMode={themeMode} workingDays={workingDays} />
-      </Space>
+      </Space>) },
+      ]} />
     </div>
   );
 };

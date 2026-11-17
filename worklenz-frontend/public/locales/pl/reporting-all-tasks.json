@@ -152,7 +152,7 @@
   "clientFilter": "Klient",
   "searchLabels": "Wyszukaj etykiety...",
   "noLabels": "Nie znaleziono etykiet",
-  "labelFilter": "Etykiety"
-,
-  "rowsPerPage": "Wierszy na stronę:"
+  "labelFilter": "Etykiety",
+  "rowsPerPage": "Wierszy na stronę:",
+  "searchProjects": "Szukaj projektów"
 }

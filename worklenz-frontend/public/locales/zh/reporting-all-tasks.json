@@ -152,7 +152,7 @@
   "clientFilter": "客户",
   "searchLabels": "搜索标签...",
   "noLabels": "未找到标签",
-  "labelFilter": "标签"
-,
-  "rowsPerPage": "每页行数："
+  "labelFilter": "标签",
+  "rowsPerPage": "每页行数：",
+  "searchProjects": "搜索项目"
 }

@@ -152,7 +152,7 @@
   "clientFilter": "Kunde",
   "searchLabels": "Labels suchen...",
   "noLabels": "Keine Labels gefunden",
-  "labelFilter": "Bezeichnungen"
-,
-  "rowsPerPage": "Zeilen pro Seite:"
+  "labelFilter": "Bezeichnungen",
+  "rowsPerPage": "Zeilen pro Seite:",
+  "searchProjects": "Projekte suchen"
 }
