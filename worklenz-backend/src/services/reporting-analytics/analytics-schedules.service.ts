@@ -716,3 +716,87 @@ export async function deleteSchedule(
     throw new ScheduleServiceError("Schedule not found", 404);
   }
 }
+
+/** Due schedules for the send cron (oldest due first). */
+export async function listDueSchedules(limit = 20): Promise<AnalyticsScheduleRow[]> {
+  const result = await db.query(
+    `SELECT ${SELECT_COLS}
+     FROM analytics_report_schedules
+     WHERE paused IS FALSE
+       AND next_send_at IS NOT NULL
+       AND next_send_at <= CURRENT_TIMESTAMP
+     ORDER BY next_send_at ASC
+     LIMIT $1`,
+    [Math.max(1, Math.min(limit, 100))]
+  );
+  return result.rows.map(mapRow);
+}
+
+/**
+ * Claim a due row, stamp last_sent_at, and advance next_send_at.
+ * Returns null when another worker already claimed/advanced it.
+ */
+export async function markScheduleSent(
+  schedule: AnalyticsScheduleRow,
+  sentAt: Date = new Date()
+): Promise<AnalyticsScheduleRow | null> {
+  const nextSendAt = computeNextSendAt(
+    toCadence(
+      schedule.schedule_type,
+      schedule.days_of_week,
+      schedule.day_of_month,
+      schedule.date_of_month,
+      schedule.week_of_month,
+      schedule.interval_days,
+      schedule.interval_weeks,
+      schedule.interval_months,
+      schedule.send_time,
+      schedule.timezone
+    ),
+    sentAt,
+    { includeCurrentSlot: false }
+  );
+
+  const result = await db.query(
+    `UPDATE analytics_report_schedules
+     SET last_sent_at = $2,
+         next_send_at = $3,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = $1::UUID
+       AND paused IS FALSE
+       AND next_send_at IS NOT NULL
+       AND next_send_at <= $2
+     RETURNING ${SELECT_COLS}`,
+    [schedule.id, sentAt, nextSendAt]
+  );
+  return result.rows[0] ? mapRow(result.rows[0]) : null;
+}
+
+/** Push next_send_at forward without marking a successful send (after a hard failure). */
+export async function bumpScheduleNextSend(
+  schedule: AnalyticsScheduleRow,
+  from: Date = new Date()
+): Promise<void> {
+  const nextSendAt = computeNextSendAt(
+    toCadence(
+      schedule.schedule_type,
+      schedule.days_of_week,
+      schedule.day_of_month,
+      schedule.date_of_month,
+      schedule.week_of_month,
+      schedule.interval_days,
+      schedule.interval_weeks,
+      schedule.interval_months,
+      schedule.send_time,
+      schedule.timezone
+    ),
+    from,
+    { includeCurrentSlot: false }
+  );
+  await db.query(
+    `UPDATE analytics_report_schedules
+     SET next_send_at = $2, updated_at = CURRENT_TIMESTAMP
+     WHERE id = $1::UUID`,
+    [schedule.id, nextSendAt]
+  );
+}
