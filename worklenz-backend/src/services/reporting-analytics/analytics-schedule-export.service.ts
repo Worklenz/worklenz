@@ -1,7 +1,7 @@
 import { CSV_UTF8_BOM, formatCsvCell } from "../../shared/csv-utils";
 import { resolveScheduleOwnerAccessibleProjectIds } from "./analytics-schedule-access";
 import {
-  renderScheduleChartPng,
+  renderScheduleChartPngs,
   ScheduleChartSource,
 } from "./analytics-schedule-charts";
 import {
@@ -224,20 +224,20 @@ export async function buildLiveScheduleExport(input: {
     };
   }
 
-  const chartPng = chartSource ? await renderScheduleChartPng(chartSource) : null;
+  const chartPngs = chartSource ? await renderScheduleChartPngs(chartSource) : [];
 
   if (input.format === "Excel") {
     return {
       filename: `${base}-${date}.xlsx`,
       contentType:
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      content: await csvToExcelBuffer(csv, input.reportName, chartPng),
+      content: await csvToExcelBuffer(csv, input.reportName, chartPngs),
     };
   }
 
   return {
     filename: `${base}-${date}.pdf`,
     contentType: "application/pdf",
-    content: await csvToPdfBuffer(input.reportName, csv, chartPng),
+    content: await csvToPdfBuffer(input.reportName, csv, chartPngs),
   };
 }

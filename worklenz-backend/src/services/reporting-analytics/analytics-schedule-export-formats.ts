@@ -52,38 +52,54 @@ export function parseCsvRows(csv: string): string[][] {
   return rows.filter(r => r.some(c => c.trim().length > 0));
 }
 
+function normalizeChartPngs(chartPngs?: Buffer[] | Buffer | null): Buffer[] {
+  if (!chartPngs) return [];
+  if (Array.isArray(chartPngs)) return chartPngs.filter(buf => !!buf?.length);
+  return chartPngs.length ? [chartPngs] : [];
+}
+
 export async function csvToExcelBuffer(
   csv: string,
   sheetName = "Report",
-  chartPng?: Buffer | null
+  chartPngs?: Buffer[] | Buffer | null
 ): Promise<Buffer> {
   const workbook = new Excel.Workbook();
   const sheet = workbook.addWorksheet(sheetName.slice(0, 31) || "Report");
   const rows = parseCsvRows(csv);
+  const charts = normalizeChartPngs(chartPngs);
 
-  if (chartPng?.length) {
+  let spacerRows = 0;
+  if (charts.length) {
     try {
-      const imageId = workbook.addImage({
-        buffer: chartPng,
-        extension: "png",
-      });
-      sheet.addImage(imageId, {
-        tl: { col: 0, row: 0 },
-        ext: { width: 720, height: 320 },
-      });
-      // Leave room under the chart before the table header.
-      for (let i = 0; i < 18; i++) {
+      let rowCursor = 0;
+      for (const chartPng of charts) {
+        const imageId = workbook.addImage({
+          buffer: chartPng,
+          extension: "png",
+        });
+        const height = charts.length > 1 && chartPng === charts[charts.length - 1] ? 260 : 320;
+        const width = charts.length > 1 && chartPng === charts[charts.length - 1] ? 420 : 720;
+        sheet.addImage(imageId, {
+          tl: { col: 0, row: rowCursor },
+          ext: { width, height },
+        });
+        const rowsUsed = Math.ceil(height / 18) + 1;
+        rowCursor += rowsUsed;
+        spacerRows += rowsUsed;
+      }
+      for (let i = 0; i < spacerRows; i++) {
         sheet.addRow([]);
       }
     } catch {
       // Still export the table if the image cannot be embedded.
+      spacerRows = 0;
     }
   }
 
   for (const r of rows) {
     sheet.addRow(r);
   }
-  const headerRowIndex = chartPng?.length ? 19 : 1;
+  const headerRowIndex = spacerRows > 0 ? spacerRows + 1 : 1;
   const headerRow = sheet.getRow(headerRowIndex);
   if (headerRow && rows[0]) {
     headerRow.font = { bold: true };
@@ -98,9 +114,9 @@ export async function csvToExcelBuffer(
 export async function csvToPdfBuffer(
   title: string,
   csv: string,
-  chartPng?: Buffer | null
+  chartPngs?: Buffer[] | Buffer | null
 ): Promise<Buffer> {
-  return renderSchedulePdf(title, parseCsvRows(csv), chartPng);
+  return renderSchedulePdf(title, parseCsvRows(csv), chartPngs);
 }
 
 export function slugFilename(name: string): string {

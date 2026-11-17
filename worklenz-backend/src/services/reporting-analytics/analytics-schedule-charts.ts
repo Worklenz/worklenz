@@ -133,7 +133,14 @@ function pvaMilestonesConfig(data: PlannedVsActualMilestonesResult): ChartConfig
   };
 }
 
-function projectHealthConfig(data: ProjectHealthResult): ChartConfig | null {
+const PROJECT_HEALTH_TONE_COLORS = {
+  on_track: "#52c41a",
+  at_risk: "#faad14",
+  off_track: "#ff4d4f",
+  not_set: "#8c8c8c",
+} as const;
+
+function projectHealthBarConfig(data: ProjectHealthResult): ChartConfig | null {
   const projects = data.projects.slice(0, MAX_BARS);
   if (!projects.length) return null;
   return {
@@ -154,6 +161,49 @@ function projectHealthConfig(data: ProjectHealthResult): ChartConfig | null {
       ],
     },
     options: baseOptions(),
+  };
+}
+
+/** Matches the on-screen Project Health donut (KPI tone counts). */
+function projectHealthDonutConfig(data: ProjectHealthResult): ChartConfig | null {
+  const slices = (
+    [
+      { key: "on_track", label: "On track" },
+      { key: "at_risk", label: "At risk" },
+      { key: "off_track", label: "Off track" },
+      { key: "not_set", label: "Not set" },
+    ] as const
+  )
+    .map(slice => ({
+      ...slice,
+      count: data.kpis[slice.key] ?? 0,
+      color: PROJECT_HEALTH_TONE_COLORS[slice.key],
+    }))
+    .filter(slice => slice.count > 0);
+
+  if (!slices.length) return null;
+
+  return {
+    type: "doughnut",
+    data: {
+      labels: slices.map(s => s.label),
+      datasets: [
+        {
+          data: slices.map(s => s.count),
+          backgroundColor: slices.map(s => s.color),
+          borderWidth: 2,
+        },
+      ],
+    },
+    options: {
+      plugins: {
+        legend: {
+          display: true,
+          position: "right",
+        },
+      },
+      cutout: "62%",
+    },
   };
 }
 
@@ -297,51 +347,84 @@ export type ScheduleChartSource =
   | { kind: "cumulative-flow"; data: CfdSeriesResult }
   | { kind: "time-in-status"; data: TimeInStatusResult };
 
-function configForSource(source: ScheduleChartSource): ChartConfig | null {
+function configsForSource(source: ScheduleChartSource): ChartConfig[] {
   switch (source.kind) {
     case "velocity":
-      return velocityConfig(source.data);
+      return [velocityConfig(source.data)].filter(Boolean) as ChartConfig[];
     case "planned-vs-actual-tasks":
-      return pvaTasksConfig(source.data);
+      return [pvaTasksConfig(source.data)].filter(Boolean) as ChartConfig[];
     case "planned-vs-actual-milestones":
-      return pvaMilestonesConfig(source.data);
+      return [pvaMilestonesConfig(source.data)].filter(Boolean) as ChartConfig[];
     case "project-health":
-      return projectHealthConfig(source.data);
+      // UI shows bar + donut; scheduled PDF/Excel should include both.
+      return [
+        projectHealthBarConfig(source.data),
+        projectHealthDonutConfig(source.data),
+      ].filter(Boolean) as ChartConfig[];
     case "utilization":
-      return utilizationConfig(source.data);
+      return [utilizationConfig(source.data)].filter(Boolean) as ChartConfig[];
     case "time-report":
-      return timeReportConfig(source.data);
+      return [timeReportConfig(source.data)].filter(Boolean) as ChartConfig[];
     case "budget-tracking":
-      return budgetTrackingConfig(source.data);
+      return [budgetTrackingConfig(source.data)].filter(Boolean) as ChartConfig[];
     case "cumulative-flow":
-      return cfdConfig(source.data);
+      return [cfdConfig(source.data)].filter(Boolean) as ChartConfig[];
     case "time-in-status":
-      return timeInStatusConfig(source.data);
+      return [timeInStatusConfig(source.data)].filter(Boolean) as ChartConfig[];
     default:
-      return null;
+      return [];
   }
 }
 
-/**
- * Renders a Chart.js config to a PNG buffer via QuickChart (chartjs-to-image).
- * Returns null when there is no data or rendering fails — callers still send the table.
- */
-export async function renderScheduleChartPng(
-  source: ScheduleChartSource
+async function renderChartConfigPng(
+  config: ChartConfig,
+  size?: { width?: number; height?: number }
 ): Promise<Buffer | null> {
-  const config = configForSource(source);
-  if (!config) return null;
-
   try {
     const chart = new ChartJsImage();
     chart.setConfig(config);
     chart.setChartJsVersion("4");
-    chart.setWidth(CHART_WIDTH);
-    chart.setHeight(CHART_HEIGHT);
+    chart.setWidth(size?.width ?? CHART_WIDTH);
+    chart.setHeight(size?.height ?? CHART_HEIGHT);
     chart.setBackgroundColor("white");
     const binary = await chart.toBinary();
     return Buffer.isBuffer(binary) ? binary : Buffer.from(binary);
   } catch {
     return null;
   }
+}
+
+/**
+ * Renders Chart.js configs to PNG buffers via QuickChart (chartjs-to-image).
+ * Empty when there is no data or rendering fails — callers still send the table.
+ */
+export async function renderScheduleChartPngs(
+  source: ScheduleChartSource
+): Promise<Buffer[]> {
+  const configs = configsForSource(source);
+  if (!configs.length) return [];
+
+  const buffers = await Promise.all(
+    configs.map((config, index) => {
+      const isDonut = config.type === "doughnut";
+      return renderChartConfigPng(
+        config,
+        isDonut
+          ? { width: 520, height: 360 }
+          : index > 0
+            ? { width: CHART_WIDTH, height: CHART_HEIGHT }
+            : undefined
+      );
+    })
+  );
+
+  return buffers.filter((buf): buf is Buffer => !!buf?.length);
+}
+
+/** @deprecated Prefer renderScheduleChartPngs for multi-chart reports. */
+export async function renderScheduleChartPng(
+  source: ScheduleChartSource
+): Promise<Buffer | null> {
+  const buffers = await renderScheduleChartPngs(source);
+  return buffers[0] ?? null;
 }
