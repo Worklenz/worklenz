@@ -355,6 +355,22 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
       });
     }, []);
 
+    // Synchronize scroll position when the virtualized viewport is recreated
+    useEffect(() => {
+      if (scrollTimerRef.current) {
+        cancelAnimationFrame(scrollTimerRef.current);
+        scrollTimerRef.current = null;
+      }
+
+      const scrollContainer = scrollContainerRef.current;
+
+      setScrollTop(
+        shouldVirtualize && scrollContainer
+          ? scrollContainer.scrollTop
+          : 0
+      );
+    }, [shouldVirtualize]);
+
     // Cleanup rAF on unmount
     useEffect(() => {
       return () => {
