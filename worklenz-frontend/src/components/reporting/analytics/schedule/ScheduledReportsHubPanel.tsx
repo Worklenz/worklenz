@@ -55,8 +55,11 @@ export const ScheduledReportsHubPanel: React.FC = () => {
   const borderColor = token.colorBorderSecondary;
   const cardBg = token.colorBgContainer;
 
-  const loadSchedules = useCallback(async () => {
-    setLoading(true);
+  const loadSchedules = useCallback(async (opts?: { silent?: boolean }) => {
+    // Avoid full-table spinner on refresh when rows are already visible.
+    if (!opts?.silent) {
+      setLoading(true);
+    }
     try {
       const res = await analyticsSchedulesApiService.listSchedules();
       if (res.done && Array.isArray(res.body)) {
@@ -83,7 +86,7 @@ export const ScheduledReportsHubPanel: React.FC = () => {
       if (res.done) {
         message.success(t('scheduleSaved', { defaultValue: 'Schedule saved' }));
         setEditing(null);
-        await loadSchedules();
+        await loadSchedules({ silent: true });
       } else {
         message.error(
           res.message || t('scheduleSaveFailed', { defaultValue: 'Failed to save schedule' })
@@ -104,7 +107,7 @@ export const ScheduledReportsHubPanel: React.FC = () => {
       if (res.done) {
         message.success(t('scheduleRemoved', { defaultValue: 'Schedule removed' }));
         setEditing(null);
-        await loadSchedules();
+        await loadSchedules({ silent: true });
       } else {
         message.error(
           res.message ||

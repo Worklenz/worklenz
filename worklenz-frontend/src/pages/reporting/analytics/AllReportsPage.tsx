@@ -177,6 +177,10 @@ const AllReportsPage: React.FC = () => {
 
   const [tab, setTab] = useState<HubTab>('reports');
   const [metricsByKey, setMetricsByKey] = useState<Record<string, CardMetrics>>({});
+  /** Keep Scheduled mounted after first visit so tab switches don't re-fetch/spinner. */
+  const [scheduledVisited, setScheduledVisited] = useState(false);
+  /** Hub card preview metrics are heavy — only load while Reports tab is active. */
+  const [metricsLoaded, setMetricsLoaded] = useState(false);
 
   // Backfill Custom reports from API (all report kinds).
   useEffect(() => {
@@ -205,6 +209,12 @@ const AllReportsPage: React.FC = () => {
     }
   }, [tab, hasCustomReports]);
 
+  useEffect(() => {
+    if (tab === 'scheduled') {
+      setScheduledVisited(true);
+    }
+  }, [tab]);
+
   const cards: HubCardDef[] = useMemo(
     () =>
       ANALYTICS_NAV.groups.flatMap(group =>
@@ -232,55 +242,30 @@ const AllReportsPage: React.FC = () => {
   useEffect(() => {
     // Wait for View finance before preview fetches — Project Health / Budget Tracking
     // require it; calling them without it triggers Access Denied toasts.
-    if (isFinancePermissionLoading) return;
+    // Only load while Reports is active, with low concurrency, so Scheduled/Custom
+    // are not starved by ~9 parallel heavy series calls.
+    if (tab !== 'reports' || metricsLoaded || isFinancePermissionLoading) return;
 
     let cancelled = false;
-    void (async () => {
-      const next: Record<string, CardMetrics> = {};
 
-      const settle = async <T,>(promise: Promise<T>): Promise<T | null> => {
-        try {
-          return await promise;
-        } catch {
-          return null;
-        }
-      };
+    const settle = async <T,>(promise: Promise<T>): Promise<T | null> => {
+      try {
+        return await promise;
+      } catch {
+        return null;
+      }
+    };
 
-      const [
-        healthRes,
-        timeRes,
-        budgetRes,
-        utilRes,
-        velocityRes,
-        pvaTasksRes,
-        pvaMsRes,
-        cfdRes,
-        tisRes,
-      ] = await Promise.all([
-        canPreviewFinance
-          ? settle(analyticsProjectHealthApiService.getSeries({}))
-          : Promise.resolve(null),
-        settle(analyticsTimeReportApiService.getSeries({})),
-        canPreviewFinance
-          ? settle(analyticsBudgetTrackingApiService.getSeries({}))
-          : Promise.resolve(null),
-        settle(analyticsUtilizationApiService.getSeries({})),
-        canAdvancedReporting
-          ? settle(analyticsVelocityApiService.getSeries({ view_by: 'project' }))
-          : Promise.resolve(null),
-        settle(analyticsPlannedVsActualTasksApiService.getSeries({})),
-        settle(analyticsPlannedVsActualMilestonesApiService.getSeries({})),
-        canAdvancedReporting
-          ? settle(analyticsCfdApiService.getSeries({}))
-          : Promise.resolve(null),
-        canAdvancedReporting
-          ? settle(analyticsTimeInStatusApiService.getSeries({ view_mode: 'aggregate' }))
-          : Promise.resolve(null),
-      ]);
-
+    const apply = (key: string, metrics: CardMetrics) => {
       if (cancelled) return;
+      setMetricsByKey(prev => ({ ...prev, [key]: metrics }));
+    };
 
-      if (healthRes?.done && healthRes.body) {
+    const jobs: Array<() => Promise<void>> = [
+      async () => {
+        if (!canPreviewFinance) return;
+        const healthRes = await settle(analyticsProjectHealthApiService.getSeries({}));
+        if (!healthRes?.done || !healthRes.body) return;
         const kpis = healthRes.body.kpis;
         const attention = (kpis.at_risk ?? 0) + (kpis.off_track ?? 0);
         const counted =
@@ -289,7 +274,7 @@ const AllReportsPage: React.FC = () => {
           (kpis.off_track ?? 0) +
           (kpis.not_set ?? 0);
         const total = counted || healthRes.body.meta?.project_count || 0;
-        next['project-health'] = {
+        apply('project-health', {
           primary: t('hubProjectHealthMetric', {
             defaultValue: '{{attention}} of {{total}}',
             attention,
@@ -299,75 +284,87 @@ const AllReportsPage: React.FC = () => {
             [kpis.on_track, kpis.at_risk, kpis.off_track, kpis.not_set].map(n => n ?? 0),
             REPORT_CARD_META['project-health'].sparkHeights
           ),
-        };
-      }
-
-      if (timeRes?.done && timeRes.body) {
-        next['time-report'] = {
+        });
+      },
+      async () => {
+        const timeRes = await settle(analyticsTimeReportApiService.getSeries({}));
+        if (!timeRes?.done || !timeRes.body) return;
+        apply('time-report', {
           primary: formatHours(timeRes.body.kpis.billable_hours ?? 0),
           spark: toSpark(
             (timeRes.body.projects ?? []).map(p => p.logged_hours || 0),
             REPORT_CARD_META['time-report'].sparkHeights
           ),
-        };
-      }
-
-      if (budgetRes?.done && budgetRes.body) {
-        next['budget-tracking'] = {
+        });
+      },
+      async () => {
+        if (!canPreviewFinance) return;
+        const budgetRes = await settle(analyticsBudgetTrackingApiService.getSeries({}));
+        if (!budgetRes?.done || !budgetRes.body) return;
+        apply('budget-tracking', {
           primary: formatPct(budgetRes.body.kpis.utilization_pct ?? 0),
           spark: toSpark(
             (budgetRes.body.projects ?? []).map(p => p.burn_pct || 0),
             REPORT_CARD_META['budget-tracking'].sparkHeights
           ),
-        };
-      }
-
-      if (utilRes?.done && utilRes.body) {
-        next.utilization = {
+        });
+      },
+      async () => {
+        const utilRes = await settle(analyticsUtilizationApiService.getSeries({}));
+        if (!utilRes?.done || !utilRes.body) return;
+        apply('utilization', {
           primary: formatPct(utilRes.body.kpis.avg_utilization_pct ?? 0),
           spark: toSpark(
             (utilRes.body.members ?? []).map(m => m.utilization_pct || 0),
             REPORT_CARD_META.utilization.sparkHeights
           ),
-        };
-      }
-
-      if (velocityRes?.done && velocityRes.body) {
-        const kpis = velocityRes.body.kpis;
-        next.velocity = {
-          primary: `${Math.round(kpis.avg_velocity ?? 0)}`,
+        });
+      },
+      async () => {
+        if (!canAdvancedReporting) return;
+        const velocityRes = await settle(
+          analyticsVelocityApiService.getSeries({ view_by: 'project' })
+        );
+        if (!velocityRes?.done || !velocityRes.body) return;
+        apply('velocity', {
+          primary: `${Math.round(velocityRes.body.kpis.avg_velocity ?? 0)}`,
           spark: toSpark(
             (velocityRes.body.series ?? []).map(s => s.completed ?? 0),
             REPORT_CARD_META.velocity.sparkHeights
           ),
-        };
-      }
-
-      if (pvaTasksRes?.done && pvaTasksRes.body) {
+        });
+      },
+      async () => {
+        const pvaTasksRes = await settle(analyticsPlannedVsActualTasksApiService.getSeries({}));
+        if (!pvaTasksRes?.done || !pvaTasksRes.body) return;
         const kpis = pvaTasksRes.body.kpis;
         const planned = kpis.planned ?? 0;
         const completed = kpis.completed ?? 0;
-        next['planned-vs-actual-tasks'] = {
+        apply('planned-vs-actual-tasks', {
           primary: planned > 0 ? `${completed}/${planned}` : `${completed}`,
           spark: toSpark(
             (pvaTasksRes.body.projects ?? []).map(p => p.completed ?? 0),
             REPORT_CARD_META['planned-vs-actual-tasks'].sparkHeights
           ),
-        };
-      }
-
-      if (pvaMsRes?.done && pvaMsRes.body) {
-        const kpis = pvaMsRes.body.kpis;
-        next['planned-vs-actual-milestones'] = {
-          primary: `${kpis.late ?? 0}`,
+        });
+      },
+      async () => {
+        const pvaMsRes = await settle(
+          analyticsPlannedVsActualMilestonesApiService.getSeries({})
+        );
+        if (!pvaMsRes?.done || !pvaMsRes.body) return;
+        apply('planned-vs-actual-milestones', {
+          primary: `${pvaMsRes.body.kpis.late ?? 0}`,
           spark: toSpark(
             (pvaMsRes.body.milestones ?? []).map(m => Math.abs(m.variance_days ?? 0)),
             REPORT_CARD_META['planned-vs-actual-milestones'].sparkHeights
           ),
-        };
-      }
-
-      if (cfdRes?.done && cfdRes.body) {
+        });
+      },
+      async () => {
+        if (!canAdvancedReporting) return;
+        const cfdRes = await settle(analyticsCfdApiService.getSeries({}));
+        if (!cfdRes?.done || !cfdRes.body) return;
         const { indicators, series, dates } = cfdRes.body;
         const pointCount = dates?.length ?? 0;
         const sparkValues =
@@ -377,15 +374,19 @@ const AllReportsPage: React.FC = () => {
                 return (series ?? []).reduce((sum, row) => sum + (row.values[index] ?? 0), 0);
               })
             : [];
-        next['cumulative-flow'] = {
+        apply('cumulative-flow', {
           primary: `${indicators.current_wip ?? 0}`,
           spark: toSpark(sparkValues, REPORT_CARD_META['cumulative-flow'].sparkHeights),
-        };
-      }
-
-      if (tisRes?.done && tisRes.body) {
+        });
+      },
+      async () => {
+        if (!canAdvancedReporting) return;
+        const tisRes = await settle(
+          analyticsTimeInStatusApiService.getSeries({ view_mode: 'aggregate' })
+        );
+        if (!tisRes?.done || !tisRes.body) return;
         const cycleDays = tisRes.body.summary.avg_cycle_days;
-        next['time-in-status'] = {
+        apply('time-in-status', {
           primary:
             cycleDays == null || !Number.isFinite(cycleDays)
               ? '—'
@@ -394,16 +395,33 @@ const AllReportsPage: React.FC = () => {
             (tisRes.body.aggregate ?? []).map(row => row.avg_days ?? 0),
             REPORT_CARD_META['time-in-status'].sparkHeights
           ),
-        };
-      }
+        });
+      },
+    ];
 
-      setMetricsByKey(next);
+    void (async () => {
+      const queue = [...jobs];
+      const workers = Array.from({ length: 2 }, async () => {
+        while (!cancelled && queue.length > 0) {
+          const job = queue.shift();
+          if (job) await job();
+        }
+      });
+      await Promise.all(workers);
+      if (!cancelled) setMetricsLoaded(true);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [t, canAdvancedReporting, canPreviewFinance, isFinancePermissionLoading]);
+  }, [
+    tab,
+    metricsLoaded,
+    t,
+    canAdvancedReporting,
+    canPreviewFinance,
+    isFinancePermissionLoading,
+  ]);
 
   const borderColor = isDark ? '#303030' : '#f0f0f0';
   const cardBg = token.colorBgContainer;
@@ -473,9 +491,16 @@ const AllReportsPage: React.FC = () => {
         </div>
       </div>
 
-      {tab === 'scheduled' ? (
-        <ScheduledReportsHubPanel />
-      ) : tab === 'custom' ? (
+      {scheduledVisited ? (
+        <div
+          style={{ display: tab === 'scheduled' ? undefined : 'none' }}
+          aria-hidden={tab !== 'scheduled'}
+        >
+          <ScheduledReportsHubPanel />
+        </div>
+      ) : null}
+
+      {tab === 'custom' ? (
         <div className="all-reports-hub__cards">
           {customReports.map(report => (
             <button
@@ -505,7 +530,9 @@ const AllReportsPage: React.FC = () => {
             </button>
           ))}
         </div>
-      ) : (
+      ) : null}
+
+      {tab === 'reports' ? (
         <div className="all-reports-hub__cards">
           {cards.map(card => {
             const metrics = getMetrics(card);
@@ -598,7 +625,7 @@ const AllReportsPage: React.FC = () => {
             );
           })}
         </div>
-      )}
+      ) : null}
 
       <Text className="all-reports-hub__footnote" style={{ color: pageMuted }}>
         {t('hubFootnote', {
