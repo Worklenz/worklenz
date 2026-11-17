@@ -17,6 +17,7 @@ import { reportingTimesheetApiService } from '@/api/reporting/reporting.timeshee
 import { IRPTTimeMember } from '@/types/reporting/reporting.types';
 import logger from '@/utils/errorLogger';
 import { format } from 'date-fns';
+import { formatUtilizationRange, getUtilizationColor } from './utilization-display';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
 
@@ -68,6 +69,9 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
       showOnlyMembersWithTimeLogs,
     } = useAppSelector(state => state.timeReportsOverviewReducer);
     const { duration, dateRange } = useAppSelector(state => state.reportingReducer);
+    const workPolicySettings = useAppSelector(state => state.adminCenterReducer.workPolicySettings);
+    const minThreshold = workPolicySettings?.utilization_optimal_min_threshold_percent ?? 90;
+    const maxThreshold = workPolicySettings?.utilization_optimal_max_threshold_percent ?? 110;
 
     const [loading, setLoading] = useState(false);
     const [jsonData, setJsonData] = useState<IRPTTimeMember[]>([]);
@@ -155,11 +159,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
         const loggedTimeInHours = parseFloat(item.logged_time || '0') / 3600;
         return Number(loggedTimeInHours.toFixed(2));
       });
-      const colors = visibleData.map(item => {
-        if (item.utilization_state === 'under') return '#faad14';
-        if (item.utilization_state === 'optimal') return '#52c41a';
-        return '#ef4444';
-      });
+      const colors = visibleData.map(item => getUtilizationColor(item.utilization_state));
 
       return { labels, dataValues, colors };
     }, [visibleData]);
@@ -259,30 +259,12 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
               const percent = parseFloat(member?.utilization_percent || '0.00');
               const overUnder = parseFloat(member?.over_under_utilized_hours || '0');
 
-              let statusText = '';
-              let criteriaText = '';
-              switch (member?.utilization_state) {
-                case 'under':
-                  statusText = 'Under-Utilized';
-                  criteriaText = '(< 90%)';
-                  break;
-                case 'optimal':
-                  statusText = 'Optimally Utilized';
-                  criteriaText = '(90% - 110%)';
-                  break;
-                case 'over':
-                  statusText = 'Over-Utilized';
-                  criteriaText = '(> 110%)';
-                  break;
-                default:
-                  statusText = 'Unknown';
-                  criteriaText = '';
-              }
+              const statusText = formatUtilizationRange(t, member?.utilization_state, minThreshold, maxThreshold);
 
               return [
                 `${context.dataset.label}: ${formatHours(hours)}`,
                 `Utilization: ${percent.toFixed(1)}%`,
-                `${statusText} ${criteriaText}`,
+                statusText,
                 `Variance: ${formatHours(Math.abs(overUnder))}${overUnder < 0 ? ' (under)' : overUnder > 0 ? ' (over)' : ''}`,
               ];
             },
@@ -333,7 +315,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
           },
         },
       },
-    }), [themeMode, shouldShowDatalabels, visibleData, formatHours, t]);
+    }), [themeMode, shouldShowDatalabels, visibleData, formatHours, t, minThreshold, maxThreshold]);
 
     // Scroll handler with requestAnimationFrame for smooth performance
     const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
@@ -601,12 +583,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
         const loggedTimeInHours = parseFloat(item.logged_time || '0') / 3600;
         return loggedTimeInHours.toFixed(2);
       });
-      const fullColors = jsonData.map(item => {
-        const pct = parseFloat(item.utilization_percent || '0');
-        if (pct < 90) return '#faad14';
-        if (pct <= 110) return '#52c41a';
-        return '#ef4444';
-      });
+      const fullColors = jsonData.map(item => getUtilizationColor(item.utilization_state));
 
       // Create an offscreen canvas and render the full chart
       const offscreenCanvas = document.createElement('canvas');
