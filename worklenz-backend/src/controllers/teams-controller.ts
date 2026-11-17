@@ -123,7 +123,7 @@ export default class TeamsController extends WorklenzControllerBase {
     // workspace back while in-flight project prefetches (e.g. projects list
     // hover) complete against the previous team.
     if (req.user?.id) {
-      suppressAutoTeamSwitch(req.user.id);
+      await suppressAutoTeamSwitch(req.user.id);
     }
 
     // Refresh the user session with updated team data to ensure the new active_team

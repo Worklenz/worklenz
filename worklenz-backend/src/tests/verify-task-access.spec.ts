@@ -10,6 +10,15 @@ jest.mock("../config/db", () => ({
   },
 }));
 
+jest.mock("../redis/client", () => ({
+  redisClient: {
+    isOpen: false,
+    get: jest.fn(),
+    setEx: jest.fn(),
+    del: jest.fn(),
+  },
+}));
+
 jest.mock("../shared/utils", () => ({
   log_error: jest.fn(),
 }));
@@ -43,7 +52,7 @@ const TARGET_TEAM_ID = "team-b";
 
 const activateTeamWasCalled = () =>
   mockedDb.query.mock.calls.some((call) =>
-    String(call[0]).includes("activate_team")
+    String(call[0]).includes("SET active_team")
   );
 
 const mockCrossTeamMemberLookup = () => {
@@ -115,7 +124,7 @@ describe("verifyTaskAccess auto team switch", () => {
 
   it("activates the target team only after task detail access is allowed", async () => {
     mockCrossTeamMemberLookup();
-    mockedDb.query.mockResolvedValueOnce(createQueryResult([{ activate_team: null }]));
+    mockedDb.query.mockResolvedValueOnce(createQueryResult([{ id: "user-1" }]));
     mockedCanAccess.mockImplementation(async (_userId, _taskId, session) => {
       expect(activateTeamWasCalled()).toBe(false);
       expect(session?.team_id).toBe(TARGET_TEAM_ID);
@@ -133,9 +142,9 @@ describe("verifyTaskAccess auto team switch", () => {
     expect(next).toHaveBeenCalled();
     expect(activateTeamWasCalled()).toBe(true);
     const activateCall = mockedDb.query.mock.calls.find((call) =>
-      String(call[0]).includes("activate_team")
+      String(call[0]).includes("SET active_team")
     );
-    expect(activateCall?.[1]).toEqual([TARGET_TEAM_ID, "user-1"]);
+    expect(activateCall?.[1]).toEqual([TARGET_TEAM_ID, "user-1", SOURCE_TEAM_ID]);
     expect(req.user.team_id).toBe(TARGET_TEAM_ID);
     expect(req.user.team_member_id).toBe("tm-b");
     expect(req.user.owner).toBe(false);

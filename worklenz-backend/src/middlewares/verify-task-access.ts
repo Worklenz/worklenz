@@ -137,12 +137,40 @@ const sessionForTaskProjectTeam = (
   is_guest: context.isGuest,
 });
 
+/**
+ * Activates the task's project team only when:
+ * - manual-switch suppression is not active, and
+ * - users.active_team still matches `fromTeamId` (the team this request saw).
+ * Returns false when the write is skipped so callers can 403 without mutating session.
+ */
 const activateTaskProjectTeam = async (
   req: IWorkLenzRequest,
   userId: string,
-  context: TaskProjectTeamContext
-): Promise<void> => {
-  await db.query(`SELECT activate_team($1, $2)`, [context.projectTeamId, userId]);
+  context: TaskProjectTeamContext,
+  fromTeamId: string
+): Promise<boolean> => {
+  if (await isAutoTeamSwitchSuppressed(userId)) {
+    return false;
+  }
+
+  // Conditional update — a concurrent manual switch moves active_team away
+  // from `fromTeamId`, so this becomes a no-op instead of overwriting it.
+  const activateResult = await db.query(
+    `UPDATE users
+     SET active_team = $1
+     WHERE id = $2
+       AND active_team IS NOT DISTINCT FROM $3
+       AND EXISTS (
+         SELECT 1 FROM team_members
+         WHERE team_id = $1 AND user_id = $2 AND active = TRUE
+       )
+     RETURNING id`,
+    [context.projectTeamId, userId, fromTeamId]
+  );
+
+  if (!activateResult.rowCount) {
+    return false;
+  }
 
   if (req.user) {
     req.user.team_id = context.projectTeamId;
@@ -152,6 +180,8 @@ const activateTaskProjectTeam = async (
     req.user.role_name = context.roleName ?? undefined;
     req.user.is_guest = context.isGuest;
   }
+
+  return true;
 };
 
 /**
@@ -230,7 +260,7 @@ export default function verifyTaskAccess(
       if (projectTeamId !== teamId) {
         // A manual team switch just happened — do not undo it for an
         // in-flight task/project request from the previous workspace.
-        if (isAutoTeamSwitchSuppressed(userId)) {
+        if (await isAutoTeamSwitchSuppressed(userId)) {
           return res.status(403).send(
             new ServerResponse(false, null, "You do not have permission to access this task")
           );
@@ -282,8 +312,21 @@ export default function verifyTaskAccess(
       }
 
       if (pendingTeam) {
+        // Recheck immediately before the write — suppression can land during
+        // the access checks above.
+        if (await isAutoTeamSwitchSuppressed(userId)) {
+          return res.status(403).send(
+            new ServerResponse(false, null, "You do not have permission to access this task")
+          );
+        }
+
         try {
-          await activateTaskProjectTeam(req, userId, pendingTeam);
+          const switched = await activateTaskProjectTeam(req, userId, pendingTeam, teamId);
+          if (!switched) {
+            return res.status(403).send(
+              new ServerResponse(false, null, "You do not have permission to access this task")
+            );
+          }
         } catch (switchError) {
           log_error(switchError);
           console.error(

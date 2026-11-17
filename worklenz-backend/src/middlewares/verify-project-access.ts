@@ -110,7 +110,7 @@ export default function verifyProjectAccess(
           if (hasProjectAccessInTeam) {
             // A manual team switch just happened — do not undo it for an
             // in-flight prefetch / stale project request.
-            if (isAutoTeamSwitchSuppressed(userId)) {
+            if (await isAutoTeamSwitchSuppressed(userId)) {
               logUnauthorizedAccess(userId, teamId, "project", projectId, req.path, "SUPPRESSED_AUTO_TEAM_SWITCH");
               return res.status(403).send(
                 new ServerResponse(false, null, "You do not have permission to access this project")
@@ -118,9 +118,37 @@ export default function verifyProjectAccess(
             }
 
             try {
-              // Call the activate_team database function to switch teams
-              const activateTeamQuery = `SELECT activate_team($1, $2)`;
-              await db.query(activateTeamQuery, [projectTeamId, userId]);
+              // Recheck immediately before the write — suppression can land
+              // during the access checks above.
+              if (await isAutoTeamSwitchSuppressed(userId)) {
+                logUnauthorizedAccess(userId, teamId, "project", projectId, req.path, "SUPPRESSED_AUTO_TEAM_SWITCH");
+                return res.status(403).send(
+                  new ServerResponse(false, null, "You do not have permission to access this project")
+                );
+              }
+
+              // Conditional update: only overwrite if the DB still shows the
+              // team this request observed. A concurrent manual switch moves
+              // active_team away from `teamId`, so this write becomes a no-op.
+              const activateResult = await db.query(
+                `UPDATE users
+                 SET active_team = $1
+                 WHERE id = $2
+                   AND active_team IS NOT DISTINCT FROM $3
+                   AND EXISTS (
+                     SELECT 1 FROM team_members
+                     WHERE team_id = $1 AND user_id = $2 AND active = TRUE
+                   )
+                 RETURNING id`,
+                [projectTeamId, userId, teamId]
+              );
+
+              if (!activateResult.rowCount) {
+                logUnauthorizedAccess(userId, teamId, "project", projectId, req.path, "SUPPRESSED_AUTO_TEAM_SWITCH");
+                return res.status(403).send(
+                  new ServerResponse(false, null, "You do not have permission to access this project")
+                );
+              }
 
               // Update the request user's team_id to reflect the new active team
               if (req.user) {

@@ -35,6 +35,12 @@ describe('getPostTeamSwitchLocation', () => {
     );
   });
 
+  it('redirects comment short links to the projects list', () => {
+    expect(getPostTeamSwitchLocation('/worklenz/c/comment-123')).toBe(
+      '/worklenz/projects/all-projects'
+    );
+  });
+
   it('keeps home, planner, and finance pages in place', () => {
     expect(getPostTeamSwitchLocation('/worklenz/home')).toBe('/worklenz/home');
     expect(getPostTeamSwitchLocation('/worklenz/planner/schedule')).toBe(

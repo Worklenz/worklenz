@@ -26,7 +26,10 @@ import { useAuthService } from '@/hooks/useAuth';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { fetchTeams, setActiveTeam } from '@/features/teams/teamSlice';
+import { verifyAuthentication } from '@/features/auth/authSlice';
+import { setUser } from '@/features/user/userSlice';
 import { navigateAfterTeamSwitch } from '@/utils/team-switch-navigation';
+import { setSession } from '@/utils/session-helper';
 import CustomAvatar from '@/components/CustomAvatar';
 import { colors } from '@/styles/colors';
 import './LicenseExpiredModal.css';
@@ -79,10 +82,16 @@ export const LicenseExpiredModal = ({
     if (session?.team_id === id) return;
 
     try {
-      // Persist then hard-navigate immediately. Skipping verify/setUser here
-      // avoids in-flight project requests flipping the session back via
-      // verify-project-access before the reload.
+      // setActiveTeam only returns { subdomain } — not session fields — so
+      // refresh via verify after activate. Safe here: license-expired has no
+      // project-view / getProject prefetch race that the navbar switch guards
+      // against. Persist localStorage before the hard navigate.
       await dispatch(setActiveTeam(id)).unwrap();
+      const authResult = await dispatch(verifyAuthentication()).unwrap();
+      if (authResult.authenticated && authResult.user) {
+        dispatch(setUser(authResult.user));
+        setSession(authResult.user);
+      }
       navigateAfterTeamSwitch(window.location.pathname);
     } catch (error) {
       console.error('Failed to switch team:', error);

@@ -5,39 +5,79 @@
  * switch the user just made (common on the projects list because of hover
  * prefetches).
  *
- * This process-local TTL gate blocks that auto-switch for a short window
- * after a manual activate. It must be set synchronously in the activate
- * handler before the response is sent so concurrent requests on the same
- * Node process see it even if they already loaded a stale session.
+ * Suppression is stored in Redis (shared across replicas) with an in-memory
+ * fallback when Redis is unavailable. Callers must await these helpers.
  */
 
-const DEFAULT_SUPPRESS_MS = 15_000;
+import { redisClient } from "../redis/client";
 
+const DEFAULT_SUPPRESS_MS = 15_000;
+const REDIS_KEY_PREFIX = "manual-team-switch-suppress:";
+
+/** Process-local fallback when Redis is down or not yet connected. */
 const suppressUntilByUserId = new Map<string, number>();
 
-export function suppressAutoTeamSwitch(
-  userId: string,
-  durationMs: number = DEFAULT_SUPPRESS_MS
-): void {
-  if (!userId) return;
-  suppressUntilByUserId.set(userId, Date.now() + durationMs);
-}
+const redisKey = (userId: string) => `${REDIS_KEY_PREFIX}${userId}`;
 
-export function isAutoTeamSwitchSuppressed(userId: string): boolean {
-  if (!userId) return false;
-
+const readMemory = (userId: string): boolean => {
   const until = suppressUntilByUserId.get(userId);
   if (until === undefined) return false;
-
   if (Date.now() >= until) {
     suppressUntilByUserId.delete(userId);
     return false;
   }
-
   return true;
+};
+
+export async function suppressAutoTeamSwitch(
+  userId: string,
+  durationMs: number = DEFAULT_SUPPRESS_MS
+): Promise<void> {
+  if (!userId) return;
+
+  const until = Date.now() + durationMs;
+  suppressUntilByUserId.set(userId, until);
+
+  try {
+    if (redisClient?.isOpen) {
+      await redisClient.setEx(redisKey(userId), Math.ceil(durationMs / 1000), String(until));
+    }
+  } catch {
+    // Memory fallback already set — keep serving this process.
+  }
 }
 
-/** Test helper — clears all suppress windows. */
-export function clearAutoTeamSwitchSuppressions(): void {
+export async function isAutoTeamSwitchSuppressed(userId: string): Promise<boolean> {
+  if (!userId) return false;
+
+  try {
+    if (redisClient?.isOpen) {
+      const raw = await redisClient.get(redisKey(userId));
+      if (raw != null) {
+        const until = Number(raw);
+        if (Number.isFinite(until) && Date.now() < until) {
+          return true;
+        }
+        return false;
+      }
+    }
+  } catch {
+    // Fall through to memory.
+  }
+
+  return readMemory(userId);
+}
+
+/** Test helper — clears suppress windows in memory and Redis (best-effort). */
+export async function clearAutoTeamSwitchSuppressions(): Promise<void> {
+  const userIds = [...suppressUntilByUserId.keys()];
   suppressUntilByUserId.clear();
+
+  try {
+    if (redisClient?.isOpen && userIds.length > 0) {
+      await redisClient.del(userIds.map(redisKey));
+    }
+  } catch {
+    // ignore
+  }
 }
