@@ -5,6 +5,8 @@ import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import WorklenzControllerBase from "../worklenz-controller-base";
 import { limitPlannerProjects } from "../../shared/planner-project-visibility";
+import { QueryResult } from "pg";
+import { withReadOnlyWithoutJit } from "../../shared/without-jit";
 
 interface DailyCapacity {
     date: string;
@@ -43,6 +45,22 @@ interface MemberCapacity {
         days_overallocated: number;
         days_available: number;
     };
+}
+
+async function queryDailyCapacities(
+    memberIds: string[], startDate: string, endDate: string, projectIds: string[] | null
+): Promise<QueryResult[]> {
+    if (!memberIds.length) return [];
+    return withReadOnlyWithoutJit(async client => {
+        const results: QueryResult[] = [];
+        for (const memberId of memberIds) {
+            results.push(await client.query(
+                "SELECT * FROM calculate_member_capacity_scoped($1::UUID, $2::DATE, $3::DATE, $4::UUID[])",
+                [memberId, startDate, endDate, projectIds]
+            ));
+        }
+        return results;
+    });
 }
 
 export default class CapacityController extends WorklenzControllerBase {
@@ -109,22 +127,13 @@ export default class CapacityController extends WorklenzControllerBase {
         // Calculate capacity for each member
         const capacityData: MemberCapacity[] = [];
 
-        for (const member of membersResult.rows) {
-            const capacityQuery = `
-                SELECT * FROM calculate_member_capacity_scoped(
-                    $1::UUID,
-                    $2::DATE,
-                    $3::DATE,
-                    $4::UUID[]
-                )
-            `;
+        const capacityResults = await queryDailyCapacities(
+            membersResult.rows.map(member => member.team_member_id),
+            startDate, endDate, req.plannerVisibleProjectIds ?? null
+        );
 
-            const capacityResult = await db.query(capacityQuery, [
-                member.team_member_id,
-                startDate,
-                endDate,
-                req.plannerVisibleProjectIds ?? null
-            ]);
+        for (const [index, member] of membersResult.rows.entries()) {
+            const capacityResult = capacityResults[index];
 
             const dailyCapacity: DailyCapacity[] = capacityResult.rows.map((row: any) => ({
                 date: row.date,
@@ -238,7 +247,7 @@ export default class CapacityController extends WorklenzControllerBase {
             WHERE working_hours > 0
         `;
 
-        const result = await db.query(summaryQuery, [activeTeamId, startDate, endDate, req.plannerVisibleProjectIds ?? null]);
+        const result = await withReadOnlyWithoutJit(client => client.query(summaryQuery, [activeTeamId, startDate, endDate, req.plannerVisibleProjectIds ?? null]));
 
         return res.status(200).send(new ServerResponse(true, result.rows[0]));
     }
@@ -318,7 +327,7 @@ export default class CapacityController extends WorklenzControllerBase {
             ORDER BY date, member_name
         `;
 
-        const result = await db.query(conflictsQuery, [activeTeamId, startDate, endDate, req.plannerVisibleProjectIds ?? null]);
+        const result = await withReadOnlyWithoutJit(client => client.query(conflictsQuery, [activeTeamId, startDate, endDate, req.plannerVisibleProjectIds ?? null]));
 
         const conflicts = result.rows.map(row => ({
             type: 'overallocation',

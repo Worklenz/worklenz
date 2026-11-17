@@ -1,4 +1,5 @@
 import db from "../../config/db";
+import { withReadOnlyWithoutJit } from "../../shared/without-jit";
 import HandleExceptions from "../../decorators/handle-exceptions";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
@@ -447,7 +448,7 @@ export default class WorkloadController extends WorklenzControllerBase {
             : [startDate, endDate, organizationId, hoursPerDay];
         params.push(req.plannerVisibleProjectIds ?? null);
 
-        const result = await db.query(reportQuery, params);
+        const result = await withReadOnlyWithoutJit(client => client.query(reportQuery, params));
         const report = result.rows[0]?.report || {};
 
         return res.status(200).send(new ServerResponse(true, report));
