@@ -47,5 +47,6 @@
   "archiveSuccessMessage": "{{action}}: {{parentCount}} attività e {{subtaskCount}} sottoattività.",
   "SET_START_DATE": "Imposta la data di inizio",
   "Unarchive": "Annulla l'archiviazione",
-  "Archive": "Archivio"
+  "Archive": "Archivio",
+  "moveToProject": "Sposta nel progetto"
 }

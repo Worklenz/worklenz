@@ -22,6 +22,7 @@ const TaskTimeTracking: React.FC<TaskTimeTrackingProps> = React.memo(({ taskId, 
       handleStopTimer={disabled ? undefined : handleStopTimer}
       timeString={timeString}
       disabled={disabled}
+      deferLogPopover
     />
   );
 });

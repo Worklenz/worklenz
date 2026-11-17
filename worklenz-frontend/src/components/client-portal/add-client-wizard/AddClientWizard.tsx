@@ -39,10 +39,14 @@ export const AddClientWizard = ({ open, preset = null, onClose, canCreate, onUpg
   const [shareLink, setShareLink] = useState<{ link: string; email: string } | null>(null);
   const [addClient, { isLoading }] = useAddPortalClientMutation();
 
-  // Started from an organization: skip the choice of method and organization.
+  // Started from an organization, or from a preview empty-state action: skip the method choice.
   useEffect(() => {
     if (!open || !preset) return;
-    dispatch({ type: 'startForOrganization', organization: preset.company });
+    if (preset.method === 'user') {
+      dispatch({ type: 'startForOrganization', organization: preset.company });
+      return;
+    }
+    dispatch({ type: 'startWithMethod', method: preset.method });
   }, [open, preset]);
 
   const role = getEffectiveRole(state);

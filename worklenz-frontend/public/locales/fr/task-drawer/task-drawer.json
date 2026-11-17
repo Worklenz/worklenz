@@ -266,7 +266,8 @@
       "attachment": "pièce jointe",
       "comment": "commentaire",
       "assignee": "assigné",
-      "archive": "archiver"
+      "archive": "archiver",
+      "project": "projet"
     },
     "historyLockedBoundary": "L'historique des activités est limité aux 90 derniers jours sur ce forfait",
     "historyLockedTitle": "Historique d'activité verrouillé",

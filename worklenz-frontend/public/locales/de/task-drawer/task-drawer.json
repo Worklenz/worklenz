@@ -266,7 +266,8 @@
       "attachment": "Anhang",
       "comment": "Kommentar",
       "assignee": "Zugewiesener",
-      "archive": "Archiv"
+      "archive": "Archiv",
+      "project": "Projekt"
     },
     "historyLockedBoundary": "Aktivitätsverlauf ist in diesem Plan auf die letzten 90 Tage begrenzt",
     "historyLockedTitle": "Aktivitätsverlauf gesperrt",

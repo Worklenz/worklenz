@@ -9,9 +9,11 @@ import HandleExceptions from "../../decorators/handle-exceptions";
 import {
   buildCfdCsvMatrix,
   CfdSeriesFilters,
+  CfdSeriesResult,
   getCfdSeries,
   parseCfdFilters,
 } from "../../services/reporting-analytics/cfd-series.service";
+import { CfdSnapshotLockBusyError } from "../../services/reporting-analytics/cfd-snapshot.service";
 
 type AnalyticsRequest = IWorkLenzRequest & {
   analyticsAccessibleProjectIds?: string[];
@@ -20,6 +22,17 @@ type AnalyticsRequest = IWorkLenzRequest & {
 /** Trust middleware-resolved project scope; do not re-expand (overwrites project filters). */
 function accessibleProjectIds(req: IWorkLenzRequest): string[] {
   return (req as AnalyticsRequest).analyticsAccessibleProjectIds ?? [];
+}
+
+/** Send a retryable service-unavailable response for snapshot lock contention. */
+function handleSnapshotLockBusy(
+  error: unknown,
+  res: IWorkLenzResponse
+): boolean {
+  if (!(error instanceof CfdSnapshotLockBusyError)) return false;
+  res.setHeader("Retry-After", "1");
+  res.status(503).send(new ServerResponse(false, null, error.message));
+  return true;
 }
 
 export default class CfdController extends WorklenzControllerBase {
@@ -48,7 +61,13 @@ export default class CfdController extends WorklenzControllerBase {
       }
       throw error;
     }
-    const data = await getCfdSeries(filters);
+    let data: CfdSeriesResult;
+    try {
+      data = await getCfdSeries(filters);
+    } catch (error) {
+      if (handleSnapshotLockBusy(error, res)) return res;
+      throw error;
+    }
     return res.status(200).send(new ServerResponse(true, data));
   }
 
@@ -77,7 +96,13 @@ export default class CfdController extends WorklenzControllerBase {
       }
       throw error;
     }
-    const data = await getCfdSeries(filters);
+    let data: CfdSeriesResult;
+    try {
+      data = await getCfdSeries(filters);
+    } catch (error) {
+      if (handleSnapshotLockBusy(error, res)) return;
+      throw error;
+    }
     const csv = buildCfdCsvMatrix(data);
 
     const exportDate = moment().format("YYYY-MM-DD");

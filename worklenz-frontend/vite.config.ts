@@ -11,6 +11,7 @@ export default defineConfig(({ command, mode }) => {
 
   const env = loadEnv(mode, process.cwd(), '');
   const hasSentryToken = Boolean(env.VITE_SENTRY_AUTH_TOKEN);
+  const isReactProfilingEnabled = isProduction && env.VITE_REACT_PROFILING === 'true';
   const shouldGenerateSourcemap =
     hasSentryToken || env.VITE_GENERATE_SOURCEMAP === 'true';
 
@@ -106,6 +107,10 @@ export default defineConfig(({ command, mode }) => {
     // **Resolve**
     resolve: {
       alias: [
+        ...(isReactProfilingEnabled ? [{
+          find: /^react-dom$/,
+          replacement: path.resolve(__dirname, 'node_modules/react-dom/profiling.js'),
+        }] : []),
         // Using an array with objects for clarity and easier management
         { find: '@', replacement: path.resolve(__dirname, './src') },
         { find: '@components', replacement: path.resolve(__dirname, './src/components') },
@@ -210,8 +215,13 @@ export default defineConfig(({ command, mode }) => {
       cssCodeSplit: true,
 
       // **Sourcemaps**
-      // Generate hidden sourcemaps in production only when Sentry upload is active or explicitly requested
-      sourcemap: !isProduction ? 'inline' : shouldGenerateSourcemap ? 'hidden' : false,
+      // Explicit local profiling builds need a sourceMappingURL for DevTools.
+      // Sentry-only builds keep maps hidden from the browser.
+      sourcemap: !isProduction
+        ? 'inline'
+        : env.VITE_GENERATE_SOURCEMAP === 'true'
+          ? true
+          : shouldGenerateSourcemap ? 'hidden' : false,
 
       // **Module Preload Polyfill** - Helps with chunk loading reliability
       modulePreload: {

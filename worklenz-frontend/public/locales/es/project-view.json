@@ -98,7 +98,7 @@
   "terminology": {
     "issue": "Problema",
     "issues": "Problemas",
-    "createIssue": "Crear problema",
+    "createIssue": "Crear elemento de trabajo",
     "issueList": "Lista",
     "backlog": "Trabajo pendiente",
     "sprint": "Iteración",

@@ -1,3 +1,5 @@
+// Temporary: antd 5 static methods (Modal.confirm, message.*) need this on React 19; drop with antd 6
+import '@ant-design/v5-patch-for-react-19';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';

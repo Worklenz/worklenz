@@ -606,38 +606,60 @@ export default abstract class ReportingControllerBase extends WorklenzController
                             FROM task_activity_logs tal
                             JOIN tasks activity_task ON activity_task.id = tal.task_id
                             WHERE activity_task.project_id = p.id) AS last_activity_at,
-                           (SELECT tmiv.name
+                           (SELECT COALESCE(u.name, invitation.name)
                             FROM project_members pm
-                            JOIN team_member_info_view tmiv ON tmiv.team_member_id = pm.team_member_id
-                              AND tmiv.team_id = p.team_id
+                            JOIN team_members tm ON tm.id = pm.team_member_id
+                              AND tm.team_id = p.team_id
+                            LEFT JOIN users u ON u.id = tm.user_id
+                            LEFT JOIN LATERAL (
+                              SELECT ei.name
+                              FROM email_invitations ei
+                              WHERE ei.team_member_id = tm.id
+                                AND ei.team_id = tm.team_id
+                              ORDER BY ei.updated_at DESC, ei.id DESC
+                              LIMIT 1
+                            ) invitation ON true
+                            JOIN project_access_levels pal
+                              ON pal.id = pm.project_access_level_id
+                              AND pal.key = 'PROJECT_MANAGER'
                             WHERE pm.project_id = p.id
-                              AND pm.project_access_level_id = (
-                                SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'
-                              )
+                            ORDER BY pm.team_member_id
                             LIMIT 1) AS project_manager_name,
 
                            TO_CHAR(p.start_date::DATE, 'YYYY-MM-DD') AS start_date,
                            TO_CHAR(p.end_date::DATE, 'YYYY-MM-DD') AS end_date,
 
                            (SELECT COALESCE(ROW_TO_JSON(pm), '{}'::JSON)
-                           FROM (SELECT team_member_id AS id,
-                                       (SELECT COALESCE(ROW_TO_JSON(pmi), '{}'::JSON)
-                                         FROM (SELECT name,
-                                                     email,
-                                                     avatar_url
-                                               FROM team_member_info_view tmiv
-                                               WHERE tmiv.team_member_id = pm.team_member_id
-                                                 AND tmiv.team_id = (SELECT team_id FROM projects WHERE id = p.id)) pmi) AS project_manager_info,
-                                       EXISTS(SELECT email
-                                               FROM email_invitations
-                                               WHERE team_member_id = pm.team_member_id
-                                                 AND email_invitations.team_id = (SELECT team_id
-                                                                                 FROM team_member_info_view
-                                                                                 WHERE team_member_id = pm.team_member_id)) AS pending_invitation,
-                                       (SELECT active FROM team_members WHERE id = pm.team_member_id)
-                                                FROM project_members pm
-                                                WHERE project_id =p.id
-                                                  AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER')) pm) AS project_manager,
+                           FROM (SELECT pm.team_member_id AS id,
+                                        ROW_TO_JSON(info) AS project_manager_info,
+                                        EXISTS(SELECT 1
+                                               FROM email_invitations ei
+                                               WHERE ei.team_member_id = tm.id
+                                                 AND ei.team_id = p.team_id) AS pending_invitation,
+                                        tm.active
+                                 FROM project_members pm
+                                 JOIN team_members tm ON tm.id = pm.team_member_id
+                                   AND tm.team_id = p.team_id
+                                 LEFT JOIN users u ON u.id = tm.user_id
+                                 LEFT JOIN LATERAL (
+                                   SELECT ei.name, ei.email
+                                   FROM email_invitations ei
+                                   WHERE ei.team_member_id = tm.id
+                                     AND ei.team_id = tm.team_id
+                                   ORDER BY ei.updated_at DESC, ei.id DESC
+                                   LIMIT 1
+                                 ) invitation ON true
+                                 CROSS JOIN LATERAL (
+                                   SELECT COALESCE(u.name, invitation.name) AS name,
+                                          COALESCE(u.email, invitation.email) AS email,
+                                          u.avatar_url
+                                 ) info
+                                 JOIN project_access_levels pal
+                                   ON pal.id = pm.project_access_level_id
+                                   AND pal.key = 'PROJECT_MANAGER'
+                                 WHERE pm.project_id = p.id
+                                 ORDER BY pm.team_member_id
+                                 LIMIT 1) pm) AS project_manager,
 
                            (SELECT COALESCE(SUM(total_minutes), 0)
                             FROM tasks

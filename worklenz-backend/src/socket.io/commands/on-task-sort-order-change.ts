@@ -7,8 +7,8 @@ import {logPhaseChange, logPriorityChange, logStatusChange} from "../../services
 import {GroupBy} from "../../controllers/tasks-controller-base";
 import {UNMAPPED} from "../../shared/constants";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
-import { assignMemberIfNot } from "./on-quick-assign-or-remove";
 import { verifyNonGuestProjectAccessSocket, logUnauthorizedSocketAccess } from "../authorization";
+import { PROJECT_ROLE_PERMISSIONS } from "../../shared/organization-permissions";
 import { canUserEditTask, isAssigneeScopeEditRestrictedForTask } from "../../shared/assignee-task-scope";
 import { ISocketSession } from "../../interfaces/socket-session";
 import { IPassportSession } from "../../interfaces/passport-session";
@@ -92,7 +92,7 @@ function updateUnmappedStatus(config: Config) {
 
 export async function on_task_sort_order_change(_io: Server, socket: Socket, data: ChangeRequest) {
   try {
-    if (!(await verifyNonGuestProjectAccessSocket(socket, data.project_id))) {
+    if (!(await verifyNonGuestProjectAccessSocket(socket, data.project_id, PROJECT_ROLE_PERMISSIONS.EDIT_TASKS))) {
       logUnauthorizedSocketAccess(socket, "TASK_SORT_ORDER_CHANGE", "project", data.project_id);
       return;
     }
@@ -177,16 +177,6 @@ export async function on_task_sort_order_change(_io: Server, socket: Socket, dat
 
       await db.query(q, [JSON.stringify(config)]);
       await emitSortOrderChange(data, socket);
-    }
-
-    // Common post-processing logic for both approaches
-    if (data.group_by === GroupBy.STATUS) {
-      const userId = getLoggedInUserIdFromSocket(socket);
-      const isAlreadyAssigned = await TasksControllerV2.checkUserAssignedToTask(data.task.id, userId as string, data.team_id);
-
-      if (!isAlreadyAssigned) {
-        await assignMemberIfNot(data.task.id, userId as string, data.team_id, _io, socket);
-      }
     }
 
     if (data.group_by === GroupBy.PHASE) {

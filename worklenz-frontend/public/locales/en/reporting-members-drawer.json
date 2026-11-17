@@ -30,6 +30,8 @@
   "billableButton": "Billable",
   "billableText": "Billable",
   "nonBillableText": "Non Billable",
+  "billableAndNonBillableText": "All",
+  "noneSelected": "None selected",
   "timeLogsEmptyPlaceholder": "No time logs to show",
   "loggedText": "Logged",
   "forText": "for",

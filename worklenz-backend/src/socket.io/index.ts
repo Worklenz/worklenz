@@ -64,17 +64,19 @@ import { on_subtask_sort_order_change } from "./commands/on-subtask-sort-order-c
 
 // Client Portal imports
 import { on_client_connect } from "../socket.io/commands/client-portal/on-client-connect";
+import { on_join_client_portal_room } from "../socket.io/commands/client-portal/on-join-client-portal-room";
 import { on_chat_send_message } from "../socket.io/commands/client-portal/on-chat-send-message";
 import { on_chat_join } from "../socket.io/commands/client-portal/on-chat-join";
 import { on_chat_leave } from "../socket.io/commands/client-portal/on-chat-leave";
 import { on_chat_typing } from "../socket.io/commands/client-portal/on-chat-typing";
 import { on_chat_mark_read } from "../socket.io/commands/client-portal/on-chat-mark-read";
+import { CLIENT_PORTAL_SOCKET } from "./client-portal-room";
 
 export function register(io: any, socket: Socket) {
   log(socket.id, "client registered");
 
   socket.on(SocketEvents.LOGIN.toString(), id => on_login(io, socket, id));
-  socket.on(SocketEvents.QUICK_TASK.toString(), data => on_quick_task(io, socket, data));
+  socket.on(SocketEvents.QUICK_TASK.toString(), (data, acknowledge) => on_quick_task(io, socket, data, acknowledge));
   socket.on(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), data => on_quick_assign_or_remove(io, socket, data));
   socket.on(SocketEvents.TASK_STATUS_CHANGE.toString(), data => on_task_status_change(io, socket, data));
   socket.on(SocketEvents.TASK_PRIORITY_CHANGE.toString(), data => on_task_priority_change(io, socket, data));
@@ -134,6 +136,7 @@ export function register(io: any, socket: Socket) {
   
   // Client Portal events
   socket.on("client_portal:connect", data => on_client_connect(io, socket, data));
+  socket.on(CLIENT_PORTAL_SOCKET.JOIN_ROOM, data => on_join_client_portal_room(io, socket, data));
   socket.on(SocketEvents.CHAT_SEND_MESSAGE.toString(), data => on_chat_send_message(io, socket, data));
   socket.on(SocketEvents.CHAT_JOIN.toString(), data => on_chat_join(io, socket, data));
   socket.on(SocketEvents.CHAT_LEAVE.toString(), data => on_chat_leave(io, socket, data));

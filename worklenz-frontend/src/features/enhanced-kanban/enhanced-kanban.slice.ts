@@ -354,6 +354,7 @@ export const fetchEnhancedKanbanGroups = createAsyncThunk(
         isSubtasksInclude: enhancedKanbanReducer.isSubtasksInclude,
         labels: selectedLabels,
         priorities: enhancedKanbanReducer.priorities.join(' '),
+        category_order: enhancedKanbanReducer.groupBy === IGroupBy.STATUS,
       };
 
       // Use V3 API for better performance and consistency with TaskListV2

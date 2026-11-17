@@ -151,5 +151,16 @@
   "linkPlaceholder": "https://przyklad.pl",
   "apply": "Zastosuj",
   "link": "Łącze",
-  "textColor": "Kolor tekstu"
+  "textColor": "Kolor tekstu",
+  "sidebarTrialDays_one": "{{count}} dzień",
+  "sidebarTrialDays_other": "{{count}} dni",
+  "sidebarTrialLabel": "Okres próbny",
+  "sidebarUpgradeLabel": "ULEPSZ",
+  "sidebarUpgradeTooltip": "Ulepsz plan",
+  "sidebarTrialTooltip_one": "Pozostał {{count}} dzień okresu próbnego",
+  "sidebarTrialTooltip_other": "Pozostało {{count}} dni okresu próbnego",
+  "sidebarTrialDays_few": "{{count}} dni",
+  "sidebarTrialDays_many": "{{count}} dni",
+  "sidebarTrialTooltip_few": "Pozostały {{count}} dni okresu próbnego",
+  "sidebarTrialTooltip_many": "Pozostało {{count}} dni okresu próbnego"
 }

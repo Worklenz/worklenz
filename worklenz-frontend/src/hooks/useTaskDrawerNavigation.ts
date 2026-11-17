@@ -8,19 +8,32 @@ import { getTaskIdsFromGroups, getTaskIdsFromArray } from '@/utils/task-navigati
  * Hook to automatically set navigation context when task drawer opens
  * This ensures navigation works regardless of how the task drawer was opened
  */
+const EMPTY_TASKS: never[] = [];
+
 const useTaskDrawerNavigation = () => {
   const dispatch = useAppDispatch();
-  const { showTaskDrawer, selectedTaskId, navigationContext } = useAppSelector(
-    state => state.taskDrawerReducer
-  );
-  const { projectId } = useAppSelector(state => state.projectReducer);
+  const showTaskDrawer = useAppSelector(state => state.taskDrawerReducer.showTaskDrawer);
+  const selectedTaskId = useAppSelector(state => state.taskDrawerReducer.selectedTaskId);
+  const navigationContext = useAppSelector(state => state.taskDrawerReducer.navigationContext);
+  const projectId = useAppSelector(state => state.projectReducer.projectId);
+  const needsNavigation = showTaskDrawer && !navigationContext;
 
-  // Get task groups from different sources
-  const taskManagementGroups = useAppSelector(state => state.taskManagement?.groups || []);
-  const taskGroups = useAppSelector(state => state.taskReducer?.taskGroups || []);
-  const boardGroups = useAppSelector(state => state.boardReducer?.taskGroups || []);
-  const kanbanGroups = useAppSelector(state => state.enhancedKanbanReducer?.taskGroups || []);
-  const homeTasks = useAppSelector(state => state.homePageReducer?.model?.tasks || []);
+  // Closed drawers and already initialized navigation do not need list updates.
+  const taskManagementGroups = useAppSelector(state =>
+    needsNavigation ? state.taskManagement.groups : EMPTY_TASKS
+  );
+  const taskGroups = useAppSelector(state =>
+    needsNavigation ? state.taskReducer.taskGroups : EMPTY_TASKS
+  );
+  const boardGroups = useAppSelector(state =>
+    needsNavigation ? state.boardReducer.taskGroups : EMPTY_TASKS
+  );
+  const kanbanGroups = useAppSelector(state =>
+    needsNavigation ? state.enhancedKanbanReducer.taskGroups : EMPTY_TASKS
+  );
+  const homeTasks = useAppSelector(state =>
+    needsNavigation ? state.homePageReducer.model?.tasks || EMPTY_TASKS : EMPTY_TASKS
+  );
 
   useEffect(() => {
     // Only set navigation context if:
@@ -34,7 +47,7 @@ const useTaskDrawerNavigation = () => {
 
       // Determine which view we're in and extract task IDs
       if (taskManagementGroups.length > 0) {
-        taskIds = getTaskIdsFromGroups(taskManagementGroups as any, false);
+        taskIds = taskManagementGroups.flatMap(group => group.taskIds);
         sourceView = 'task-list';
       } else if (taskGroups.length > 0) {
         taskIds = getTaskIdsFromGroups(taskGroups, false);

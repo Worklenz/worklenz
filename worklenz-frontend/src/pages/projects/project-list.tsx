@@ -11,7 +11,7 @@ import ProjectGroupList from '@/components/project-list/project-group/project-gr
 import { ProjectSettingsModal } from '@/components/projects/project-settings-modal/ProjectSettingsModal';
 import TablePagination from '@/components/TablePagination';
 
-import { useGetProjectsQuery } from '@/api/projects/projects.v1.api.service';
+import { projectsApi, useGetProjectsQuery } from '@/api/projects/projects.v1.api.service';
 import { setGroupBy, setViewMode } from '@features/project/project-view-slice';
 import { setProject, setProjectId } from '@/features/project/project.slice';
 import {
@@ -134,6 +134,7 @@ const ProjectList: React.FC = () => {
   const filteredCategories = useAppSelector(state => state.projectsReducer.filteredCategories);
   const filteredPriorities = useAppSelector(state => state.projectsReducer.filteredPriorities);
   const filteredClients = useAppSelector(state => state.projectsReducer.filteredClients);
+  const filteredProjectTypes = useAppSelector(state => state.projectsReducer.filteredProjectTypes);
   const projectListFields = useAppSelector(state => state.projectListFieldsReducer.fields);
 
   const [searchValue, setSearchValue] = useState('');
@@ -271,6 +272,7 @@ const ProjectList: React.FC = () => {
       categories: filteredCategories,
       priorities: filteredPriorities,
       clients: filteredClients,
+      project_types: filteredProjectTypes,
     };
     return FILTERABLE_COLUMNS.reduce((acc, { columnKey, param }) => {
       // antd's own filter state wins once the user has touched a dropdown; the
@@ -278,7 +280,14 @@ const ProjectList: React.FC = () => {
       acc[columnKey] = filteredInfo[columnKey] ?? persisted[param];
       return acc;
     }, {} as ColumnFilterValues);
-  }, [filteredInfo, filteredStatuses, filteredCategories, filteredPriorities, filteredClients]);
+  }, [
+    filteredInfo,
+    filteredStatuses,
+    filteredCategories,
+    filteredPriorities,
+    filteredClients,
+    filteredProjectTypes,
+  ]);
 
   const tableColumns = useProjectListColumns({
     filterOptions,
@@ -442,6 +451,7 @@ const ProjectList: React.FC = () => {
         categories: current.categories,
         priorities: current.priorities,
         clients: current.clients,
+        project_types: current.project_types,
       });
       dispatch(setGroupedRequestParams(groupedParams));
       dispatch(fetchGroupedProjects(groupedParams));
@@ -503,17 +513,40 @@ const ProjectList: React.FC = () => {
   // Warm the project view chunk on first hover only — the dynamic import is
   // cached, but re-entering it on every mouseenter is pointless work.
   const hasPrefetchedProjectView = useRef(false);
-  const prefetchProjectView = useCallback(() => {
-    if (hasPrefetchedProjectView.current) return;
-    hasPrefetchedProjectView.current = true;
-    import('@/pages/projects/projectView/project-view').catch(() => { });
-  }, []);
+  const projectMetadataPrefetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prefetchProjectView = useCallback(
+    (projectId?: string) => {
+      if (!hasPrefetchedProjectView.current) {
+        hasPrefetchedProjectView.current = true;
+        import('@/pages/projects/projectView/project-view').catch(() => {});
+      }
+
+      if (projectMetadataPrefetchTimer.current) {
+        clearTimeout(projectMetadataPrefetchTimer.current);
+      }
+      if (projectId) {
+        projectMetadataPrefetchTimer.current = setTimeout(() => {
+          dispatch(projectsApi.util.prefetch('getProject', projectId, { ifOlderThan: 5 }));
+        }, 150);
+      }
+    },
+    [dispatch]
+  );
+
+  useEffect(
+    () => () => {
+      if (projectMetadataPrefetchTimer.current) {
+        clearTimeout(projectMetadataPrefetchTimer.current);
+      }
+    },
+    []
+  );
 
   const handleRow = useCallback(
     (record: IProjectViewModel) => ({
       onClick: () =>
         navigateToProject(record.id, record.team_member_default_view, record.project_type),
-      onMouseEnter: prefetchProjectView,
+      onMouseEnter: () => prefetchProjectView(record.id),
     }),
     [navigateToProject, prefetchProjectView]
   );
@@ -577,6 +610,7 @@ const ProjectList: React.FC = () => {
           categories: null,
           priorities: null,
           clients: null,
+          project_types: null,
           field: isPriority ? DEFAULT_GROUPED_PROJECT_SORT_FIELD : DEFAULT_PROJECT_SORT_FIELD,
           order: isPriority ? DEFAULT_GROUPED_PROJECT_SORT_ORDER : DEFAULT_PROJECT_SORT_ORDER,
         })
@@ -753,7 +787,6 @@ const ProjectList: React.FC = () => {
                 onArchive={noop}
                 isOwnerOrAdmin={isOwnerOrAdmin}
                 loading={groupedProjects.loading}
-                t={t}
               />
             </div>
             {!groupedProjects.loading && hasGroups && (

@@ -6,6 +6,8 @@ export interface IOrgConfig {
   base_currency: string;
   /** How far back a manual time log may be dated. 0 means no limit. */
   timelog_backdate_limit_days: number;
+  /** Whether the 24-hour daily time tracking limit is enforced across the organization. */
+  enforce_daily_time_limit: boolean;
 }
 
 interface OrgConfigState extends IOrgConfig {
@@ -19,6 +21,7 @@ const initialState: OrgConfigState = {
   restrict_task_creation: false,
   base_currency: 'USD',
   timelog_backdate_limit_days: 0,
+  enforce_daily_time_limit: false,
   isLoading: false,
   isInitialized: false,
   error: null,
@@ -56,6 +59,7 @@ const orgConfigSlice = createSlice({
       state.restrict_task_creation = action.payload.restrict_task_creation;
       state.base_currency = action.payload.base_currency || 'USD';
       state.timelog_backdate_limit_days = Number(action.payload.timelog_backdate_limit_days) || 0;
+      state.enforce_daily_time_limit = Boolean(action.payload.enforce_daily_time_limit);
     },
   },
   extraReducers: builder => {
@@ -70,6 +74,7 @@ const orgConfigSlice = createSlice({
         state.restrict_task_creation = action.payload.restrict_task_creation;
         state.base_currency = action.payload.base_currency || 'USD';
         state.timelog_backdate_limit_days = Number(action.payload.timelog_backdate_limit_days) || 0;
+        state.enforce_daily_time_limit = Boolean(action.payload.enforce_daily_time_limit);
       })
       .addCase(fetchOrgConfig.rejected, (state, action) => {
         state.isLoading = false;
@@ -80,6 +85,7 @@ const orgConfigSlice = createSlice({
         state.restrict_task_creation = action.payload.restrict_task_creation;
         state.base_currency = action.payload.base_currency || 'USD';
         state.timelog_backdate_limit_days = Number(action.payload.timelog_backdate_limit_days) || 0;
+        state.enforce_daily_time_limit = Boolean(action.payload.enforce_daily_time_limit);
       });
   },
 });

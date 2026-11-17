@@ -19,6 +19,7 @@ export interface IActivityLogsStatus {
 
 export enum IActivityLogAttributeTypes {
   NAME = 'name',
+  PROJECT = 'project',
   STATUS = 'status',
   ASSIGNEES = 'assignee',
   END_DATE = 'end_date',

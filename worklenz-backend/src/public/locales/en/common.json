@@ -40,5 +40,12 @@
   "linkPlaceholder": "https://example.com",
   "apply": "Apply",
   "link": "Link",
-  "textColor": "Text color"
+  "textColor": "Text color",
+  "sidebarTrialDays_one": "{{count}} day",
+  "sidebarTrialDays_other": "{{count}} days",
+  "sidebarTrialLabel": "Trial",
+  "sidebarUpgradeLabel": "UPGRADE",
+  "sidebarUpgradeTooltip": "Upgrade your plan",
+  "sidebarTrialTooltip_one": "{{count}} day left in your trial",
+  "sidebarTrialTooltip_other": "{{count}} days left in your trial"
 }

@@ -1418,6 +1418,10 @@ export default class ReportingMembersController extends ReportingControllerBaseW
   public static async getMemberTimelogs(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { team_member_id, team_id, duration, date_range, archived, billable } = req.body;
 
+    if (billable && !billable.billable && !billable.nonBillable) {
+      return res.status(200).send(new ServerResponse(true, []));
+    }
+
     // Get user timezone for proper date filtering
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
     // $1 => team_id, $2 => team_member_id, so date params start at $3

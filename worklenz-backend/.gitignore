@@ -65,3 +65,5 @@ dist-sdk
 # Security-sensitive files (Apple Sign-In, etc.)
 *.p8
 keys/*.p8
+
+debug.json

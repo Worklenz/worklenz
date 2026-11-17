@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../api-client', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
+vi.mock('@/config/env', () => ({ default: { apiUrl: 'https://runtime-api.example.com' } }));
 
 import apiClient from '../api-client';
 import {
@@ -18,7 +19,7 @@ describe('buildTimeLogsExportUrl', () => {
     const { path } = parse(
       buildTimeLogsExportUrl({ format: 'xlsx', mode: 'filtered', filters: {} })
     );
-    expect(path).toMatch(/\/reporting-export\/time-logs\/export$/);
+    expect(path).toBe('https://runtime-api.example.com/api/v1/reporting-export/time-logs/export');
   });
 
   it('sends every filter in filtered mode, with lists comma-separated', () => {

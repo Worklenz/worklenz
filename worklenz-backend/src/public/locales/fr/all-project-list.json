@@ -58,5 +58,11 @@
     "loadFailed": "Échec du chargement des projets. Veuillez réessayer."
   },
   "groups": "groupes",
-  "members": "Membres"
+  "members": "Membres",
+  "expandAll": "Développer tout",
+  "collapseAll": "Réduire tout",
+  "unnamedGroup": "Groupe sans nom",
+  "projectCount_one": "{{count}} projet",
+  "projectCount_many": "{{count}} de projets",
+  "projectCount_other": "{{count}} projets"
 }

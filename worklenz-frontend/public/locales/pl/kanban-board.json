@@ -53,7 +53,7 @@
   "errorLoadingTasks": "Błąd ładowania zadań",
   "noTasksFound": "Nie znaleziono żadnych zadań",
   "noIssuesFound": "Nie znaleziono żadnych problemów",
-  "createIssue": "Utwórz problem",
+  "createIssue": "Utwórz element pracy",
   "newIssueNamePlaceholder": "Napisz tytuł problemu",
   "loadingFilters": "Ładowanie filtrów...",
   "failedToUpdateColumnOrder": "Nie udało się zaktualizować kolejności kolumn",

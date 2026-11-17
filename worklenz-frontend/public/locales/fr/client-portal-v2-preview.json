@@ -189,7 +189,12 @@
     "poweredBy": "Propulsé par Worklenz",
     "projects": "Projets"
   },
-  "noUsers": "Aucun utilisateur client actif avec un projet pour le moment. Invitez un utilisateur et attribuez un projet pour prévisualiser le portail.",
+  "addClient": "Ajouter un client",
+  "addClientUser": "Ajouter un utilisateur client",
+  "noClientUsers": "Aucun utilisateur client pour le moment. Ajoutez un client et un utilisateur client, puis attribuez un projet pour prévisualiser le portail.",
+  "noUsers": "Aucun utilisateur client avec un projet pour le moment. Invitez un utilisateur et attribuez un projet pour prévisualiser le portail.",
+  "noUsersWithProject": "Aucun utilisateur client avec un projet pour le moment. Invitez un utilisateur et attribuez un projet pour prévisualiser le portail.",
+  "pendingInvite": "Invitation en attente",
   "previewAs": "Aperçu en tant que",
   "project": {
     "back": "← Projets",
@@ -267,6 +272,7 @@
     "filter": "Filter"
   },
   "userOption": "{{name}} · {{role}}",
+  "userOptionPending": "{{name}} · {{role}} · Invitation en attente",
   "usersFailed": "Les utilisateurs clients n'ont pas pu être chargés.",
   "openPortal": "Open the client portal"
 }

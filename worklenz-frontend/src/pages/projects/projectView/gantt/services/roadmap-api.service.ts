@@ -47,6 +47,13 @@ export interface RoadmapTasksResponse {
     roadmap_sort_order: number;
     parent_task_id: string;
     phase_id?: string | null; // Keep this for subtasks compatibility
+    status_name?: string | null;
+    priority_name?: string | null;
+    assignees?: Array<{
+      team_member_id: string;
+      assignee_name: string;
+      avatar_url?: string | null;
+    }>;
   }>;
 }
 
@@ -599,8 +606,15 @@ const transformTask = (task: RoadmapTasksResponse, level: number = 0, projectCol
         progress: subtask.done ? 100 : subtask.progress,
         parent_id: subtask.parent_task_id,
         level: level + 1,
-        type: 'task',
+        type: 'task' as const,
         phase_id: subtaskPhaseId,
+        status: subtask.status_name || undefined,
+        priority: subtask.priority_name || undefined,
+        assignees: (subtask.assignees || []).map(assignee => ({
+          team_member_id: assignee.team_member_id,
+          assignee_name: assignee.assignee_name,
+          avatar_url: assignee.avatar_url,
+        })),
       };
     }),
     level,

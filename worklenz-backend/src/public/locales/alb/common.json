@@ -40,5 +40,12 @@
   "linkPlaceholder": "https://shembull.com",
   "apply": "Apliko",
   "link": "Lidhje",
-  "textColor": "Ngjyra e tekstit"
+  "textColor": "Ngjyra e tekstit",
+  "sidebarTrialDays_one": "{{count}} ditë",
+  "sidebarTrialDays_other": "{{count}} ditë",
+  "sidebarTrialLabel": "Provë",
+  "sidebarUpgradeLabel": "PËRMIRËSO",
+  "sidebarUpgradeTooltip": "Përmirëso planin",
+  "sidebarTrialTooltip_one": "Ka mbetur {{count}} ditë provë",
+  "sidebarTrialTooltip_other": "Kanë mbetur {{count}} ditë provë"
 }

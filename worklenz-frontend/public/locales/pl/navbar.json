@@ -81,7 +81,12 @@
     "stopAndStart": "Zatrzymaj się i zacznij",
     "cancel": "Anuluj",
     "logTime": "Rejestruj czas",
-    "openTimeLogPanel": "Dziennik czasu otwarcia dla {{taskName}}"
+    "openTimeLogPanel": "Dziennik czasu otwarcia dla {{taskName}}",
+    "dailyLimitExceededTitle": "Przekroczono dzienny limit czasu",
+    "dailyLimitExceededDesc": "Łączny zarejestrowany czas nie może przekroczyć 24 godzin na dobę. Ten stoper działał przez {{elapsed}}, ale dla dnia {{day}} pozostało Ci tylko {{remaining}}.",
+    "logRemainingAllowance": "Zarejestruj pozostały czas ({{remaining}})",
+    "discardTimer": "Odrzuć stoper",
+    "keepRunning": "Pozostaw uruchomiony"
   },
   "ownerRole": "Właściciel",
   "adminRole": "Administrator",

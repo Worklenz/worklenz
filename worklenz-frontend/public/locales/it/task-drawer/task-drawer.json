@@ -266,7 +266,8 @@
       "attachment": "attaccamento",
       "comment": "commento",
       "assignee": "assegnatario",
-      "archive": "archivio"
+      "archive": "archivio",
+      "project": "progetto"
     },
     "historyLockedBoundary": "La cronologia delle attività è limitata agli ultimi 90 giorni in questo piano",
     "historyLockedTitle": "Cronologia attività bloccata",

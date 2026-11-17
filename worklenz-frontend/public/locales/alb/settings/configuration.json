@@ -13,5 +13,8 @@
   "limitTimelogBackdatingTooltip": "Kur aktivizohet, anëtarët nuk mund të krijojnë një regjistrim kohe me datë më të hershme se numri i lejuar i ditëve. Zbatohet për të gjithë, përfshirë Pronarët dhe Administratorët. Kronometrat në punë dhe regjistrimet e importuara nuk preken.",
   "timelogBackdateLimitDays": "Ditët maksimale që një regjistrim kohe mund të datohet prapa",
   "timelogBackdateLimitNote": "Shënim: Regjistrimet ekzistuese të kohës nuk ndryshohen kurrë. Redaktimi i një regjistrimi tashmë të vjetër mbetet i mundur për sa kohë data e tij nuk ndryshon.",
-  "days": "ditë"
+  "days": "ditë",
+  "enforceDailyTimeLimit": "Zbato kufirin ditor prej 24 orësh",
+  "enforceDailyTimeLimitTooltip": "Kur aktivizohet, anëtarët nuk mund të regjistrojnë më shumë se 24 orë punë në ditë në të gjitha detyrat.",
+  "enforceDailyTimeLimitNote": "Shënim: Hyrjet historike ekzistuese që tejkalojnë 24 orë ruhen. Modifikimi i një hyrjeje ekzistuese lejohet për sa kohë që kohëzgjatja zvogëlohet."
 }

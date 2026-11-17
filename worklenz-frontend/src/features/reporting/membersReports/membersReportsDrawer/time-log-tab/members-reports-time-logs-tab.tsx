@@ -22,6 +22,7 @@ type MembersReportsTimeLogsTabProps = {
 const MembersReportsTimeLogsTab = ({ memberId = null }: MembersReportsTimeLogsTabProps) => {
   const { t } = useTranslation('reporting-members-drawer');
   const currentSession = useAuthService().getCurrentSession();
+  const teamId = currentSession?.team_id;
 
   const [timeLogsData, setTimeLogsData] = useState<ISingleMemberLogs[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -33,37 +34,42 @@ const MembersReportsTimeLogsTab = ({ memberId = null }: MembersReportsTimeLogsTa
     nonBillable: true,
   });
 
-  const fetchTimeLogsData = async () => {
-    if (!memberId || !currentSession?.team_id) return;
-    try {
-      setLoading(true);
-      const body = {
-        team_member_id: memberId,
-        team_id: currentSession?.team_id as string,
-        duration: duration,
-        date_range: dateRange,
-        archived: archived,
-        billable: billable,
-      };
-      const response = await reportingApiService.getSingleMemberTimeLogs(body);
-      if (response.done) {
-        response.body.sort((a: any, b: any) => {
-          const dateA = new Date(a.log_day);
-          const dateB = new Date(b.log_day);
-          return dateB.getTime() - dateA.getTime();
-        });
-        setTimeLogsData(response.body);
-      }
-    } catch (error) {
-      logger.error('fetchTimeLogsData', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    let isCurrentRequest = true;
+    const fetchTimeLogsData = async () => {
+      if (!memberId || !teamId) {
+        setLoading(false);
+        setTimeLogsData([]);
+        return;
+      }
+      try {
+        setLoading(true);
+        const body = {
+          team_member_id: memberId,
+          team_id: teamId,
+          duration,
+          date_range: dateRange,
+          archived,
+          billable,
+        };
+        const response = await reportingApiService.getSingleMemberTimeLogs(body);
+        if (isCurrentRequest && response.done) {
+          response.body.sort((a: ISingleMemberLogs, b: ISingleMemberLogs) =>
+            new Date(b.log_day).getTime() - new Date(a.log_day).getTime()
+          );
+          setTimeLogsData(response.body);
+        }
+      } catch (error) {
+        if (isCurrentRequest) logger.error('fetchTimeLogsData', error);
+      } finally {
+        if (isCurrentRequest) setLoading(false);
+      }
+    };
     fetchTimeLogsData();
-  }, [memberId, duration, dateRange, archived, billable]);
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, [memberId, teamId, duration, dateRange, archived, billable]);
 
   return (
     <Flex vertical gap={24}>

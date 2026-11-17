@@ -81,7 +81,12 @@
     "stopAndStart": "Parar e Iniciar",
     "cancel": "Cancelar",
     "logTime": "Registrar tempo",
-    "openTimeLogPanel": "Registro de horário aberto para {{taskName}}"
+    "openTimeLogPanel": "Registro de horário aberto para {{taskName}}",
+    "dailyLimitExceededTitle": "Limite de tempo diário excedido",
+    "dailyLimitExceededDesc": "O tempo total registrado não pode exceder 24 horas por dia. Este cronômetro funcionou por {{elapsed}}, mas você só tem {{remaining}} restantes para {{day}}.",
+    "logRemainingAllowance": "Registrar restante ({{remaining}})",
+    "discardTimer": "Descartar cronômetro",
+    "keepRunning": "Continuar em execução"
   },
   "ownerRole": "Proprietário",
   "adminRole": "Administrador",

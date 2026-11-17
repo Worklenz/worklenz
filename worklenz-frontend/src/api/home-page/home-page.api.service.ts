@@ -306,6 +306,7 @@ export const {
   useGetTaskStatsQuery,
   useGetPersonalTasksQuery,
   useGetProjectsQuery,
+  useLazyGetProjectsQuery,
   useGetProjectsByTeamQuery,
   useGetHomeMentionsQuery,
   useGetClientsLookupQuery,

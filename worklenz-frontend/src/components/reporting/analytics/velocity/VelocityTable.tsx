@@ -38,13 +38,6 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({
     borderBottom: `1px solid ${token.colorBorder}`,
   };
 
-  const bucketColumnTitle =
-    bucket === 'phase'
-      ? t('colPhase', { defaultValue: 'Phase' })
-      : bucket === 'mixed'
-        ? t('colSprintOrPhase', { defaultValue: 'Sprint / Phase' })
-        : t('colSprint', { defaultValue: 'Sprint' });
-
   const defaultEmptyText =
     bucket === 'phase'
       ? t('velocityChartEmptyPhases', {
@@ -76,7 +69,7 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({
 
   const columns: ColumnsType<VelocityRow> = [
     {
-      title: bucketColumnTitle,
+      title: t('colSprintOrPhase', { defaultValue: 'Sprint / Phase' }),
       dataIndex: 'sprint_name',
       key: 'sprint_name',
       width: 150,

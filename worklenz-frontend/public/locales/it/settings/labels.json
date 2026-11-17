@@ -31,5 +31,7 @@
   "createLabelSuccessMessage": "Etichetta creata con successo",
   "createLabelErrorMessage": "Impossibile creare l'etichetta",
   "updateLabelSuccessMessage": "Etichetta aggiornata con successo",
-  "updateLabelErrorMessage": "Impossibile aggiornare l'etichetta"
+  "updateLabelErrorMessage": "Impossibile aggiornare l'etichetta",
+  "rowsPerPage": "Righe per pagina:",
+  "paginationSummary": "{{range}} di {{total}}"
 }

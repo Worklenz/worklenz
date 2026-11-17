@@ -358,8 +358,13 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
 
     setSubmitting(true);
     try {
-      for (const reqBody of entries) {
-        await taskTimeLogsApiService.create(reqBody);
+      if (entries.length > 1) {
+        await taskTimeLogsApiService.create({
+          id: selectedTaskId,
+          entries,
+        });
+      } else if (entries.length === 1) {
+        await taskTimeLogsApiService.create(entries[0]);
       }
       onSuccess();
       onClose();

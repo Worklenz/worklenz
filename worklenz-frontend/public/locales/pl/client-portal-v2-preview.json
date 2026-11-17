@@ -189,7 +189,12 @@
     "poweredBy": "Obsługiwane przez Worklenz",
     "projects": "Projekty"
   },
-  "noUsers": "Nie ma jeszcze aktywnych użytkowników klienta z projektem. Zaproś użytkownika i przypisz projekt do podglądu portalu.",
+  "addClient": "Dodaj klienta",
+  "addClientUser": "Dodaj użytkownika klienta",
+  "noClientUsers": "Nie ma jeszcze użytkowników klienta. Dodaj klienta i użytkownika klienta, a następnie przypisz projekt, aby wyświetlić podgląd portalu.",
+  "noUsers": "Nie ma jeszcze użytkowników klienta z projektem. Zaproś użytkownika i przypisz projekt, aby wyświetlić podgląd portalu.",
+  "noUsersWithProject": "Nie ma jeszcze użytkowników klienta z projektem. Zaproś użytkownika i przypisz projekt, aby wyświetlić podgląd portalu.",
+  "pendingInvite": "Oczekujące zaproszenie",
   "previewAs": "Podgląd jako",
   "project": {
     "back": "← Projekty",
@@ -267,6 +272,7 @@
     "filter": "Filter"
   },
   "userOption": "{{name}} · {{role}}",
+  "userOptionPending": "{{name}} · {{role}} · Oczekujące zaproszenie",
   "usersFailed": "Nie można załadować użytkowników klienta.",
   "openPortal": "Open the client portal"
 }

@@ -180,9 +180,15 @@ const CustomColumnsSettingsSection = ({
               render: (_, record) => {
                 const fieldType = record.custom_column_obj?.fieldType;
                 if (!fieldType) return null;
+                const displayType =
+                  fieldType === 'selection' && record.custom_column_obj?.parentColumnId
+                    ? 'dependent_selection'
+                    : fieldType;
                 return (
                   <Tag style={{ margin: 0 }}>
-                    {tTable(`customColumns.fieldTypes.${fieldType}`, { defaultValue: fieldType })}
+                    {tTable(`customColumns.fieldTypes.${displayType}`, {
+                      defaultValue: displayType,
+                    })}
                   </Tag>
                 );
               },

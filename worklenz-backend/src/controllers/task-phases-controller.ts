@@ -182,6 +182,7 @@ export default class TaskPhasesController extends WorklenzControllerBase {
       WHERE project_phases.id = $1
         AND project_phases.project_id = $2
         AND p.id = project_phases.project_id
+        AND p.phase_assignees_enabled IS TRUE
         AND (
           $3::UUID IS NULL
           OR EXISTS (

@@ -13,6 +13,10 @@ import {
   updateCustomColumnPinned,
   toggleColumnVisibility,
 } from '@/features/tasks/tasks.slice';
+import {
+  fetchTasksV3,
+  toggleColumnVisibility as toggleTaskManagementColumnVisibility,
+} from '@/features/task-management/task-management.slice';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
@@ -208,6 +212,7 @@ const ShowFieldsFilterDropdown = () => {
 
       if (col.key) {
         dispatch(toggleColumnVisibility(col.key));
+        dispatch(toggleTaskManagementColumnVisibility(col.key));
       }
 
       if (col.id) {
@@ -221,6 +226,10 @@ const ShowFieldsFilterDropdown = () => {
         });
       } else {
         dispatch(updateCustomColumnPinned({ columnKey: col.key, isVisible: !col.pinned }));
+      }
+
+      if (!col.pinned) {
+        dispatch(fetchTasksV3({ projectId, silent: true }));
       }
     } else {
       if (col.key) {

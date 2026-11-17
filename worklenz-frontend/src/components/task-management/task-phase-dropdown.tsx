@@ -4,12 +4,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { Task } from '@/types/task-management.types';
-import { ClearOutlined, CheckOutlined, Tooltip } from '@/shared/antd-imports';
-import { Avatar, Checkbox } from '@/components';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/app/store';
-import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.types';
-import { sortTeamMembers } from '@/utils/sort-team-members';
+import { ClearOutlined, Tooltip } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { isSoftwareProjectType } from '@/lib/project/software-project';
 import { getContrastColor } from '@/utils/colorUtils';
@@ -19,10 +14,6 @@ interface TaskPhaseDropdownProps {
   projectId: string;
   isDarkMode?: boolean;
   disabled?: boolean;
-}
-
-interface PhaseTab {
-  type: 'phases' | 'assignee';
 }
 
 // Fallback constants - should match CSS max-height/max-width
@@ -44,19 +35,14 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
     width: DROPDOWN_WIDTH,
     height: DROPDOWN_HEIGHT,
   });
-  const [activeTab, setActiveTab] = useState<'phases' | 'assignee'>('phases');
-  const [teamMembers, setTeamMembers] = useState<ITeamMembersViewModel>({ data: [], total: 0 });
-  const [searchQuery, setSearchQuery] = useState('');
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const rafIdRef = useRef<number | null>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { t } = useTranslation('task-list-table');
-  const { phaseList } = useAppSelector(state => state.phaseReducer);
+  const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
   const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
   const isSoftwareProject = isSoftwareProjectType(projectType);
-  const members = useSelector((state: RootState) => state.teamMembersReducer.teamMembers);
 
   // Find current phase details - task.phase can be phase ID or phase name
   const currentPhase = useMemo(() => {
@@ -93,12 +79,6 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
     if (status === 'completed') return t('sprintStatusCompleted', { defaultValue: 'Completed' });
     return t('sprintStatusPlanned', { defaultValue: 'Planned' });
   };
-
-  const filteredMembers = useMemo(() => {
-    return teamMembers?.data?.filter(member =>
-      member.name?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [teamMembers, searchQuery]);
 
   // Measure actual dropdown dimensions when it opens
   useLayoutEffect(() => {
@@ -245,9 +225,7 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
 
     if (isOpen && buttonRef.current) {
       // Use requestAnimationFrame to ensure DOM is ready
-      requestAnimationFrame(() => {
-        calculateDropdownPosition();
-      });
+      throttledCalculatePosition();
 
       document.addEventListener('mousedown', handleClickOutside);
 
@@ -297,52 +275,56 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
         : '#9ca3af';
   const phaseTextColor = getContrastColor(phaseBackgroundColor);
 
+  const phaseButton = (
+    <button
+      ref={buttonRef}
+      onClick={e => {
+        if (disabled) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setIsOpen(!isOpen);
+      }}
+      disabled={disabled}
+      className={`
+        inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium
+        transition-all duration-200 hover:opacity-80 border-0 min-w-[70px] justify-center
+        ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
+      `}
+      style={{
+        backgroundColor: phaseBackgroundColor,
+        color: phaseTextColor,
+        maxWidth: '100%',
+      }}
+    >
+      <span
+        style={{
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          maxWidth: '100%',
+        }}
+      >
+        {hasPhase && currentPhase ? formatPhaseName(currentPhase.name || '') : placeholderLabel}
+      </span>
+      <svg
+        className={`w-3 h-3 transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    </button>
+  );
+
   return (
     <>
       {/* Phase Container */}
       <div className="inline-flex items-center gap-1 w-full justify-center">
         {/* Phase Button */}
-        <Tooltip title={hasPhase && currentPhase ? currentPhase.name : ''} placement="top">
-          <button
-            ref={buttonRef}
-            onClick={e => {
-              if (disabled) return;
-              e.preventDefault();
-              e.stopPropagation();
-              setIsOpen(!isOpen);
-            }}
-            disabled={disabled}
-            className={`
-              inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium
-              transition-all duration-200 hover:opacity-80 border-0 min-w-[70px] justify-center
-              ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
-            `}
-            style={{
-              backgroundColor: phaseBackgroundColor,
-              color: phaseTextColor,
-              maxWidth: '100%',
-            }}
-          >
-            <span 
-              style={{ 
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                maxWidth: '100%',
-              }}
-            >
-              {hasPhase && currentPhase ? formatPhaseName(currentPhase.name || '') : placeholderLabel}
-            </span>
-            <svg
-              className={`w-3 h-3 transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-        </Tooltip>
+        {hasPhase && currentPhase?.name ? (
+          <Tooltip title={currentPhase.name} placement="top">{phaseButton}</Tooltip>
+        ) : phaseButton}
 
       </div>
 

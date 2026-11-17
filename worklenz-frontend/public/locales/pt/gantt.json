@@ -63,7 +63,14 @@
     "viewBy": "Ver por",
     "sortBy": "Ordenar por",
     "sortManual": "Manuais",
-    "sortChronological": "Cronológico"
+    "sortChronological": "Cronológico",
+    "export": "Exportar",
+    "exportPdf": "PDF",
+    "exportExcel": "Excel",
+    "exportRoadmap": "Exportar roteiro",
+    "exportRoadmapHint": "Baixar este roteiro como PDF ou Excel",
+    "exportFailed": "Não foi possível exportar o roteiro. Tente novamente.",
+    "exportEmpty": "Ainda não há nada para exportar."
   },
   "viewMode": {
     "day": "Dia",

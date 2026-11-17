@@ -63,7 +63,14 @@
     "viewBy": "查看方式",
     "sortBy": "排序方式",
     "sortManual": "手动",
-    "sortChronological": "时间顺序"
+    "sortChronological": "时间顺序",
+    "export": "导出",
+    "exportPdf": "PDF",
+    "exportExcel": "Excel",
+    "exportRoadmap": "导出路线图",
+    "exportRoadmapHint": "将此路线图下载为 PDF 或 Excel 文件",
+    "exportFailed": "无法导出路线图，请重试。",
+    "exportEmpty": "暂无可导出的内容。"
   },
   "viewMode": {
     "day": "日",

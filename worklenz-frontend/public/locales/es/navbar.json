@@ -81,7 +81,12 @@
     "stopAndStart": "Detener e Iniciar",
     "cancel": "Cancelar",
     "logTime": "Registrar tiempo",
-    "openTimeLogPanel": "Abrir registro de tiempo para {{taskName}}"
+    "openTimeLogPanel": "Abrir registro de tiempo para {{taskName}}",
+    "dailyLimitExceededTitle": "Límite diario superado",
+    "dailyLimitExceededDesc": "El tiempo total registrado no puede exceder las 24 horas por día. Este temporizador funcionó por {{elapsed}}, pero solo te quedan {{remaining}} para {{day}}.",
+    "logRemainingAllowance": "Registrar tiempo restante ({{remaining}})",
+    "discardTimer": "Descartar temporizador",
+    "keepRunning": "Continuar ejecución"
   },
   "ownerRole": "Propietario",
   "adminRole": "Administrador",

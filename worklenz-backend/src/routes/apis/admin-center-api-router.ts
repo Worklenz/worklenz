@@ -12,9 +12,125 @@ import organizationSettingsValidator from "../../middlewares/validators/organiza
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
 import auditLogAccessValidator, { auditLogOwnerValidator } from "../../middlewares/validators/audit-log-access-validator";
 import phoneNumberValidator from "../../middlewares/validators/phone-number-validator";
+import idParamValidator from "../../middlewares/validators/id-param-validator";
 import { requireFeature } from "../../shared/entitlements/gates";
+import PermissionSchemesController from "../../controllers/permission-schemes-controller";
 
 const adminCenterApiRouter = express.Router();
+
+// Current user's own grants. Session auth only — ordinary members call these
+// for route and list gates, so they must not use the owner/admin validator.
+adminCenterApiRouter.get(
+  "/my-organization-permissions",
+  safeControllerFunction(PermissionSchemesController.getMyOrganizationPermissions)
+);
+adminCenterApiRouter.get(
+  "/my-default-project-permissions",
+  safeControllerFunction(PermissionSchemesController.getMyDefaultProjectPermissions)
+);
+
+// permission schemes
+adminCenterApiRouter.get(
+  "/permission-schemes",
+  teamOwnerOrAdminValidator,
+  safeControllerFunction(PermissionSchemesController.getSchemes)
+);
+adminCenterApiRouter.post(
+  "/permission-schemes",
+  teamOwnerOrAdminValidator,
+  safeControllerFunction(PermissionSchemesController.createScheme)
+);
+adminCenterApiRouter.get(
+  "/permission-schemes/:id",
+  teamOwnerOrAdminValidator,
+  idParamValidator,
+  safeControllerFunction(PermissionSchemesController.getScheme)
+);
+adminCenterApiRouter.put(
+  "/permission-schemes/:id",
+  teamOwnerOrAdminValidator,
+  idParamValidator,
+  safeControllerFunction(PermissionSchemesController.updateScheme)
+);
+adminCenterApiRouter.delete(
+  "/permission-schemes/:id",
+  teamOwnerOrAdminValidator,
+  idParamValidator,
+  safeControllerFunction(PermissionSchemesController.deleteScheme)
+);
+adminCenterApiRouter.put(
+  "/permission-schemes/:id/grants",
+  teamOwnerOrAdminValidator,
+  idParamValidator,
+  safeControllerFunction(PermissionSchemesController.updateGrants)
+);
+adminCenterApiRouter.put(
+  "/permission-schemes/:id/permissions",
+  teamOwnerOrAdminValidator,
+  idParamValidator,
+  safeControllerFunction(PermissionSchemesController.addSchemePermissions)
+);
+adminCenterApiRouter.put(
+  "/permission-schemes/:id/permissions/remove",
+  teamOwnerOrAdminValidator,
+  idParamValidator,
+  safeControllerFunction(PermissionSchemesController.removeSchemePermissions)
+);
+
+// permission groups
+adminCenterApiRouter.get(
+  "/permission-groups",
+  teamOwnerOrAdminValidator,
+  safeControllerFunction(PermissionSchemesController.getGroups)
+);
+adminCenterApiRouter.post(
+  "/permission-groups",
+  teamOwnerOrAdminValidator,
+  safeControllerFunction(PermissionSchemesController.createGroup)
+);
+adminCenterApiRouter.put(
+  "/permission-groups/:id",
+  teamOwnerOrAdminValidator,
+  idParamValidator,
+  safeControllerFunction(PermissionSchemesController.updateGroup)
+);
+adminCenterApiRouter.delete(
+  "/permission-groups/:id",
+  teamOwnerOrAdminValidator,
+  idParamValidator,
+  safeControllerFunction(PermissionSchemesController.deleteGroup)
+);
+
+// permission scheme project assignments
+adminCenterApiRouter.get(
+  "/permission-scheme-projects",
+  teamOwnerOrAdminValidator,
+  safeControllerFunction(PermissionSchemesController.getTeamProjectSchemes)
+);
+adminCenterApiRouter.get(
+  "/projects/:id/scheme",
+  teamOwnerOrAdminValidator,
+  idParamValidator,
+  safeControllerFunction(PermissionSchemesController.getProjectScheme)
+);
+adminCenterApiRouter.put(
+  "/projects/:id/scheme",
+  teamOwnerOrAdminValidator,
+  idParamValidator,
+  safeControllerFunction(PermissionSchemesController.assignProjectScheme)
+);
+adminCenterApiRouter.post(
+  "/projects/:id/scheme/members",
+  teamOwnerOrAdminValidator,
+  idParamValidator,
+  safeControllerFunction(PermissionSchemesController.addSchemeMember)
+);
+adminCenterApiRouter.delete(
+  "/projects/:id/scheme/members/:memberId",
+  teamOwnerOrAdminValidator,
+  idParamValidator,
+  safeControllerFunction(PermissionSchemesController.removeSchemeMember)
+);
 
 // overview
 adminCenterApiRouter.get("/settings", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterOrganizationController.getAdminCenterSettings));

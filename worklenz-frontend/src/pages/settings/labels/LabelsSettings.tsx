@@ -13,6 +13,9 @@ import {
   SearchOutlined,
   EditOutlined,
   Modal,
+  Dropdown,
+  CaretDownFilled,
+  theme,
 } from '@/shared/antd-imports';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -41,6 +44,11 @@ const LabelsSettings = () => {
   const [labels, setLabels] = useState<ITaskLabel[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const { token } = theme.useToken();
+
   const filteredData = useMemo(
     () =>
       labels.filter(record =>
@@ -50,6 +58,79 @@ const LabelsSettings = () => {
       ),
     [labels, searchQuery]
   );
+
+  const totalCount = filteredData.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const safePage = Math.min(page, totalPages);
+
+  useEffect(() => {
+    setPage(currentPage => Math.min(currentPage, totalPages));
+  }, [totalPages]);
+
+  const paginatedData = useMemo(
+    () =>
+      filteredData.slice(
+        (safePage - 1) * pageSize,
+        safePage * pageSize
+      ),
+    [filteredData, safePage, pageSize]
+  );
+
+  const pageNumbers = useMemo(() => {
+    const nums: (number | '…')[] = [];
+
+    const pages = Array.from({ length: totalPages }, (_, i) => i + 1)
+      .filter(
+        p =>
+          p === 1 ||
+          p === totalPages ||
+          Math.abs(p - safePage) <= 1
+      );
+
+    pages.forEach((p, i) => {
+      if (i > 0 && p - (pages[i - 1] as number) > 1) {
+        nums.push('…');
+      }
+
+      nums.push(p);
+    });
+
+    return nums;
+  }, [totalPages, safePage]);
+
+  // Pagination button styles
+  const btnStyle = (active: boolean): React.CSSProperties => ({
+    minWidth: 28,
+    height: 28,
+    border: `1px solid ${token.colorBorder}`,
+    borderRadius: 5,
+    cursor: 'pointer',
+    fontSize: 12,
+    fontWeight: active ? 600 : 400,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: active ? token.colorPrimary : 'transparent',
+    color: active ? token.colorTextLightSolid : token.colorText,
+    transition: 'all .1s',
+    padding: '0 4px',
+  });
+
+  const navBtnStyle = (enabled: boolean): React.CSSProperties => ({
+    minWidth: 28,
+    height: 28,
+    border: `1px solid ${token.colorBorder}`,
+    borderRadius: 5,
+    cursor: enabled ? 'pointer' : 'not-allowed',
+    fontSize: 13,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'transparent',
+    color: enabled ? token.colorText : token.colorTextDisabled,
+    transition: 'all .1s',
+    padding: '0 4px',
+  });
 
   const getLabels = useMemo(() => {
     setLoading(true);
@@ -222,7 +303,10 @@ const LabelsSettings = () => {
           <Flex gap={8} align="center" justify="flex-end" style={{ width: '100%', maxWidth: 400 }}>
             <Input
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={e => {
+                setSearchQuery(e.target.value);
+                setPage(1);
+              }}
               placeholder={t('search', { defaultValue: 'Search' })}
               style={{ maxWidth: 232 }}
               suffix={<SearchOutlined />}
@@ -248,20 +332,158 @@ const LabelsSettings = () => {
         }}
         loading={loading}
         className="custom-two-colors-row-table"
-        dataSource={filteredData}
+        dataSource={paginatedData}
         columns={columns}
         rowKey={record => record.id!}
         onRow={record => ({
           style: { cursor: 'pointer' },
           onClick: () => handleEditClick(record),
         })}
-        pagination={{
-          showSizeChanger: true,
-          defaultPageSize: 20,
-          pageSizeOptions: ['10', '20', '50', '100'],
-          size: 'small',
-        }}
+        pagination={false}
       />
+
+      {/* Custom Pagination */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 8,
+          padding: '10px 16px',
+          borderTop: `1px solid ${token.colorBorderSecondary}`,
+        }}
+      >
+        {/* Rows per page and count */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span
+            style={{
+              fontSize: 12,
+              color: token.colorTextSecondary,
+            }}
+          >
+            {t('rowsPerPage', { defaultValue: 'Rows per page' })}
+          </span>
+
+          <Dropdown
+            trigger={['click']}
+            menu={{
+              items: [10, 20, 50, 100].map(n => ({
+                key: String(n),
+                label: String(n),
+              })),
+              selectedKeys: [String(pageSize)],
+              onClick: info => {
+                setPageSize(Number(info.key));
+                setPage(1);
+              },
+            }}
+          >
+            <Button size="small">
+              {pageSize} <CaretDownFilled />
+            </Button>
+          </Dropdown>
+
+          <span
+            style={{
+              fontSize: 12,
+              color: token.colorTextSecondary,
+              marginLeft: 4,
+            }}
+          >
+            {t('paginationSummary', {
+              range:
+                totalCount === 0
+                  ? '0'
+                  : `${(safePage - 1) * pageSize + 1} – ${Math.min(
+                    safePage * pageSize,
+                    totalCount
+                  )}`,
+              total: totalCount,
+              defaultValue: '{{range}} of {{total}}',
+            })}
+          </span>
+        </div>
+
+        {/* Page navigation */}
+        <nav
+          aria-label={t('common:paginationNavigation')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 3,
+            flexWrap: 'wrap',
+          }}
+        >
+          <button
+            type="button"
+            aria-label={t('common:firstPage')}
+            style={navBtnStyle(safePage > 1)}
+            disabled={safePage === 1}
+            onClick={() => setPage(1)}
+          >
+            «
+          </button>
+
+          <button
+            type="button"
+            aria-label={t('common:previousPage')}
+            style={navBtnStyle(safePage > 1)}
+            disabled={safePage === 1}
+            onClick={() => setPage(Math.max(1, safePage - 1))}
+          >
+            ‹
+          </button>
+
+          {pageNumbers.map((p, i) =>
+            typeof p === 'number' ? (
+              <button
+                type="button"
+                key={i}
+                aria-current={p === safePage ? 'page' : undefined}
+                style={btnStyle(p === safePage)}
+                onClick={() => setPage(p)}
+              >
+                {p}
+              </button>
+            ) : (
+              <span
+                key={i}
+                aria-hidden="true"
+                style={{
+                  fontSize: 12,
+                  padding: '0 4px',
+                  opacity: 0.5,
+                }}
+              >
+                …
+              </span>
+            )
+          )}
+
+          <button
+            type="button"
+            aria-label={t('common:nextPage')}
+            style={navBtnStyle(safePage < totalPages)}
+            disabled={safePage === totalPages}
+            onClick={() =>
+              setPage(p => Math.min(totalPages, p + 1))
+            }
+          >
+            ›
+          </button>
+
+          <button
+            type="button"
+            aria-label={t('common:lastPage')}
+            style={navBtnStyle(safePage < totalPages)}
+            disabled={safePage === totalPages}
+            onClick={() => setPage(totalPages)}
+          >
+            »
+          </button>
+        </nav>
+      </div>
 
       <LabelsDrawer
         drawerOpen={showDrawer}

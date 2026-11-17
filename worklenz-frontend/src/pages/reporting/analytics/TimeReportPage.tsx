@@ -1,11 +1,13 @@
+import { useScopedAnalyticsSeriesData } from '@/hooks/useScopedAnalyticsSeriesData';
+import { useLatestAnalyticsSeriesRequest } from '@/hooks/useLatestAnalyticsSeriesRequest';
+import { useScopedAnalyticsProjectSeed } from '@/hooks/useScopedAnalyticsProjectSeed';
+import { areAnalyticsProjectResponsesComplete, useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import quarterOfYear from 'dayjs/plugin/quarterOfYear';
 import { jsPDF } from 'jspdf';
-
-dayjs.extend(quarterOfYear);
+import { BOUNDED_ANALYTICS_DATE_PRESETS, resolveAnalyticsDateBounds } from '@/utils/date-presets';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -22,7 +24,6 @@ import {
   ReportErrorState,
   ReportLoadingSkeleton,
   ReportPageShell,
-  type AnalyticsDatePreset,
   type AnalyticsExportFormat,
 } from '@/components/reporting/analytics';
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
@@ -33,6 +34,9 @@ import {
 import { TimeReportKpiTiles } from '@/components/reporting/analytics/time-report/TimeReportKpiTiles';
 import { TimeReportTable } from '@/components/reporting/analytics/time-report/TimeReportTable';
 import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
+import {
+  usePersistedAnalyticsFilters,
+} from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import {
@@ -77,31 +81,45 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
   });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
 
-  const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
-  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
-  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
-  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const {
+    datePreset,
+    customRange,
+    setDateFilter,
+    selectedProjectIds,
+    setSelectedProjectIds,
+    setAutomaticProjectIds,
+    setAutomaticTeamIds,
+    selectedTeamIds,
+    setSelectedTeamIds,
+    selectedMemberIds,
+    setSelectedMemberIds,
+    hasRestoredFilters,
+  } = usePersistedAnalyticsFilters({
+    reportKind: 'time-report',
+    customTemplateId,
+  });
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
   const [teamOptions, setTeamOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<TimeReportSeriesResponse | null>(null);
 
   const chartRef = useRef<TimeReportChartHandle>(null);
   /** Tracks team keys we already seeded with the latest-20 project default. */
-  const seededProjectsForTeamsRef = useRef<string>('');
+  const projectOptionsScope = JSON.stringify([session?.team_id, session?.id, customTemplateId]);
+  const seededProjectsForTeamsRef = useScopedAnalyticsProjectSeed(projectOptionsScope);
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
+  const skipDefaultTemplate = hasRestoredFilters;
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {
       setSelectedProjectIds,
       setSelectedMemberIds,
       setSelectedTeamIds,
-      setDatePreset,
+      setDateFilter,
     });
-  }, []);
+  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds, setDateFilter]);
 
   const {
     templates,
@@ -116,11 +134,14 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
     reportKind: 'time-report',
     customTemplateId,
     onApply: applyTemplateFilters,
+    skipDefaultTemplate,
+    wasRestored: hasRestoredFilters,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       member_ids: selectedMemberIds,
       team_ids: selectedTeamIds,
       date_preset: datePreset,
+      custom_range: customRange,
     }),
   });
 
@@ -137,20 +158,15 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
       }));
   }, [teamMembersState]);
 
-  const dateBounds = useMemo(() => {
-    const end = dayjs();
-    let start = end.subtract(30, 'day');
-    if (datePreset === 'last_7_days') start = end.subtract(7, 'day');
-    if (datePreset === 'last_14_days') start = end.subtract(14, 'day');
-    if (datePreset === 'last_30_days') start = end.subtract(30, 'day');
-    if (datePreset === 'last_60_days') start = end.subtract(60, 'day');
-    if (datePreset === 'last_90_days') start = end.subtract(90, 'day');
-    if (datePreset === 'this_quarter') start = end.startOf('quarter');
-    return {
-      date_from: start.startOf('day').toISOString(),
-      date_to: end.endOf('day').toISOString(),
-    };
-  }, [datePreset]);
+  const defaultTeamIds = useMemo(() => {
+    const id = session?.team_id ? String(session.team_id) : teamOptions[0]?.value;
+    return id ? [id] : [];
+  }, [session?.team_id, teamOptions]);
+
+  const dateBounds = useMemo(
+    () => resolveAnalyticsDateBounds(datePreset, customRange),
+    [datePreset, customRange]
+  );
 
   const filters: TimeReportFilters = useMemo(
     () => ({
@@ -188,7 +204,7 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
           : [];
       setTeamOptions(teams);
       const sessionTeamId = session?.team_id ? String(session.team_id) : teams[0]?.value;
-      setSelectedTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
+      setAutomaticTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
     } catch {
       message.error(
         t('errorDescription', {
@@ -200,7 +216,7 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
     }
   }, [dispatch, session?.team_id, t]);
 
-  const loadProjectsForTeams = useCallback(async (teamIds: string[]) => {
+  const loadProjectsForTeams = useCallback(async (teamIds: string[], isCurrent: () => boolean) => {
     if (teamIds.length === 0) {
       setProjectOptions([]);
       return;
@@ -209,6 +225,7 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
       const projectResponses = await Promise.all(
         teamIds.map(teamId => reportingApiService.getOverviewProjectsByTeam(teamId))
       );
+      if (!isCurrent() || !areAnalyticsProjectResponsesComplete(projectResponses)) return;
       const projects: FilterOption[] = [];
       const projectsWithUpdatedAt: Array<{ id: string; updated_at?: string | null }> = [];
       const seen = new Set<string>();
@@ -231,7 +248,7 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
       setProjectOptions(projects);
 
       const teamKey = [...teamIds].sort().join(',');
-      setSelectedProjectIds(prev => {
+      setAutomaticProjectIds(prev => {
         const allowed = new Set(projects.map(p => p.value));
         const kept = prev.filter(id => allowed.has(id));
         if (kept.length > 0) {
@@ -247,12 +264,18 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
         return topIds;
       });
     } catch {
-      setProjectOptions([]);
+      // Preserve existing selections and options when a team request fails.
     }
-  }, []);
+  }, [seededProjectsForTeamsRef]);
+
+  const seriesRequestKey = JSON.stringify([projectOptionsScope, filters]);
+  const { data, matchingData, setData } = useScopedAnalyticsSeriesData<TimeReportSeriesResponse>(projectOptionsScope, seriesRequestKey);
+  const beginSeriesRequest = useLatestAnalyticsSeriesRequest(seriesRequestKey);
 
   const loadSeries = useCallback(async () => {
+    const isCurrent = beginSeriesRequest();
     if (!hasSelection) {
+      setLoading(false);
       setData(null);
       return;
     }
@@ -260,6 +283,7 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
     setError(null);
     try {
       const res = await analyticsTimeReportApiService.getSeries(filters);
+      if (!isCurrent()) return;
       if (res.done && res.body) {
         setData(res.body);
       } else {
@@ -272,6 +296,7 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
         setData(null);
       }
     } catch {
+      if (!isCurrent()) return;
       setError(
         t('errorDescription', {
           defaultValue: 'We could not load this report. Please try again.',
@@ -279,17 +304,19 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
       );
       setData(null);
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
-  }, [filters, hasSelection, t]);
+  }, [filters, hasSelection, t, beginSeriesRequest, setData]);
 
   useEffect(() => {
     void loadTeams();
   }, [loadTeams]);
 
-  useEffect(() => {
-    void loadProjectsForTeams(selectedTeamIds);
-  }, [selectedTeamIds, loadProjectsForTeams]);
+  useAnalyticsProjectOptionsLoader(
+    selectedTeamIds,
+    projectOptionsScope,
+    loadProjectsForTeams
+  );
 
   useEffect(() => {
     void loadSeries();
@@ -302,14 +329,14 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
       seededProjectsForTeamsRef.current = teamKey;
       return;
     }
-    if (!data?.projects?.length) return;
+    if (!matchingData?.projects?.length) return;
     if (seededProjectsForTeamsRef.current === teamKey) return;
 
-    const topIds = latestUpdatedProjectIds(data.projects);
+    const topIds = latestUpdatedProjectIds(matchingData.projects);
     if (topIds.length === 0) return;
     seededProjectsForTeamsRef.current = teamKey;
-    setSelectedProjectIds(topIds);
-  }, [data, selectedProjectIds.length, selectedTeamIds]);
+    setAutomaticProjectIds(topIds);
+  }, [matchingData, selectedProjectIds.length, selectedTeamIds, seededProjectsForTeamsRef, setAutomaticProjectIds]);
 
   const handleExport = async (format: AnalyticsExportFormat) => {
     if (!data) return;
@@ -393,16 +420,11 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
         teamOptions={teamOptions}
         selectedTeamIds={selectedTeamIds}
         onTeamsChange={setSelectedTeamIds}
+        defaultTeamIds={defaultTeamIds}
         datePreset={datePreset}
-        onDatePresetChange={setDatePreset}
-        availableDatePresets={[
-          'last_7_days',
-          'last_14_days',
-          'last_30_days',
-          'last_60_days',
-          'last_90_days',
-          'this_quarter',
-        ]}
+        customRange={customRange}
+        onDateChange={setDateFilter}
+        availableDatePresets={BOUNDED_ANALYTICS_DATE_PRESETS}
         loading={filtersLoading}
       />
     </Flex>

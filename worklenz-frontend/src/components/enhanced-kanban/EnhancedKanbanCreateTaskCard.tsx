@@ -46,7 +46,7 @@ const EnhancedKanbanCreateTaskCard: React.FC<EnhancedKanbanCreateTaskCardProps> 
   const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
   const isSoftwareProject = isSoftwareProjectType(projectType);
   const addTaskLabel = isSoftwareProject
-    ? t('createIssue', { defaultValue: 'Create Issue' })
+    ? t('createIssue', { defaultValue: 'Create work item' })
     : t('addTask', { defaultValue: 'Add Task' });
 
   useEffect(() => {

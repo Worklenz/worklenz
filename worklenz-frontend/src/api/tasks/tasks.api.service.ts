@@ -31,19 +31,25 @@ export interface ITaskListConfigV2 {
   count?: boolean;
   parent_task?: string;
   group?: string;
+  /** Apply the project status-category order to task-list status groups. */
+  category_order?: boolean;
   isSubtasksInclude: boolean;
   include_empty?: string; // Include empty groups in response
   customColumns?: boolean; // Include custom column values in response
+  custom_column_ids?: string;
+  include_attachments?: boolean;
+  include_latest_comment?: boolean;
+  group_tasks?: boolean;
 }
 
 export interface ITaskListV3Response {
   groups: Array<{
     id: string;
     title: string;
-    groupType: 'status' | 'priority' | 'phase';
+    groupType: 'status' | 'priority' | 'phase' | 'assignee';
     groupValue: string;
     collapsed: boolean;
-    tasks: any[];
+    tasks?: any[];
     taskIds: string[];
     color: string;
   }>;
@@ -62,6 +68,30 @@ export interface IQuickTaskSearchResult {
   project_name: string;
   project_key: string;
 }
+
+export interface IMoveTasksToProjectPayload {
+  task_ids: string[];
+  source_project_id: string;
+  destination_project_id: string;
+  mapping: {
+    status: Record<string, string>;
+    phase?: Record<string, string>;
+    custom_fields?: Record<string, string>;
+  };
+  options: {
+    move_subtasks: boolean;
+    keep_assignees_if_member_exists: boolean;
+    keep_labels_by_name: boolean;
+  };
+}
+
+export interface IMoveTasksToProjectResponse {
+  moved_task_ids: string[];
+  unmoved_task_ids: string[];
+  warnings: Array<{ task_id: string; code: string; message: string }>;
+  destination_refresh_hint: { project_id: string };
+}
+
 
 export const tasksApiService = {
   getTaskList: async (config: ITaskListConfigV2): Promise<IServerResponse<ITaskListGroup[]>> => {
@@ -236,6 +266,14 @@ export const tasksApiService = {
       group_value: params.groupValue,
       project_id: params.projectId,
     });
+    return response.data;
+  },
+
+  /** Submit task IDs, destination mappings, and move options to the server. */
+  moveTasksToProject: async (
+    payload: IMoveTasksToProjectPayload
+  ): Promise<IServerResponse<IMoveTasksToProjectResponse>> => {
+    const response = await apiClient.post(`${rootUrl}/move-project`, payload);
     return response.data;
   },
 };

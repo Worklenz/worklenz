@@ -174,5 +174,12 @@
   "clearAll": "Deseleziona tutto",
   "connection-lost": "Impossibile connettersi al server. Controlla la connessione Internet.",
   "connection-restored": "Connessione al server ripristinata",
-  "reconnecting": "Disconnesso dal server."
+  "reconnecting": "Disconnesso dal server.",
+  "sidebarTrialDays_one": "{{count}} giorno",
+  "sidebarTrialDays_other": "{{count}} giorni",
+  "sidebarTrialLabel": "Prova",
+  "sidebarUpgradeLabel": "PASSA A PRO",
+  "sidebarUpgradeTooltip": "Passa a un piano superiore",
+  "sidebarTrialTooltip_one": "Resta {{count}} giorno di prova",
+  "sidebarTrialTooltip_other": "Restano {{count}} giorni di prova"
 }

@@ -9,6 +9,7 @@ export type CustomFieldsTypes =
   | 'number'
   | 'date'
   | 'selection'
+  | 'dependent_selection'
   | 'checkbox'
   | 'labels'
   | 'key'
@@ -19,6 +20,21 @@ export type CustomFieldNumberTypes = 'formatted' | 'unformatted' | 'percentage' 
 export type ExpressionType = 'add' | 'substract' | 'divide' | 'multiply';
 
 export const NEW_PARENT_COLUMN_ID = '__new_parent__';
+
+/** Maps the Edit-field Type UI value to the API/stored field_type. */
+export const toApiCustomFieldType = (
+  fieldType: CustomFieldsTypes
+): Exclude<CustomFieldsTypes, 'dependent_selection'> =>
+  fieldType === 'dependent_selection' ? 'selection' : fieldType;
+
+/** Maps a stored selection column (+ optional parent) back to the Edit-field Type UI value. */
+export const toUiCustomFieldType = (
+  fieldType: string | null | undefined,
+  parentColumnId?: string | null
+): CustomFieldsTypes => {
+  if (fieldType === 'selection' && parentColumnId) return 'dependent_selection';
+  return (fieldType as CustomFieldsTypes) || 'text';
+};
 
 export interface INewParentFieldDraft {
   name: string;
@@ -47,8 +63,8 @@ type TaskListCustomColumnsState = {
   secondNumericColumn: CustomTableColumnsType | null;
   labelsList: LabelType[];
   selectionsList: SelectionType[];
-  // Selection field whose value scopes this Selection field's options (cascading field).
-  // NEW_PARENT_COLUMN_ID means save creates only `newParentField` as a standalone parent column.
+  // For Dependent Selection: which Selection column scopes this field's options.
+  // NEW_PARENT_COLUMN_ID means save creates `newParentField` then this child together.
   parentColumnId: string | null;
   newParentField: INewParentFieldDraft | null;
   hiddenCustomColumnIds: string[]; // IDs of custom columns the user has hidden

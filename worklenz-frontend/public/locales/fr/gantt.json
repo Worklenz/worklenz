@@ -63,7 +63,14 @@
     "viewBy": "Afficher par",
     "sortBy": "Trier par",
     "sortManual": "Manuel",
-    "sortChronological": "Chronologique"
+    "sortChronological": "Chronologique",
+    "export": "Exporter",
+    "exportPdf": "PDF",
+    "exportExcel": "Excel",
+    "exportRoadmap": "Exporter la feuille de route",
+    "exportRoadmapHint": "Télécharger cette feuille de route en PDF ou Excel",
+    "exportFailed": "Impossible d'exporter la feuille de route. Réessayez.",
+    "exportEmpty": "Rien à exporter pour l'instant."
   },
   "viewMode": {
     "day": "Jour",

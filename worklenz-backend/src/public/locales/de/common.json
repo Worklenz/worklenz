@@ -40,5 +40,12 @@
   "linkPlaceholder": "https://beispiel.de",
   "apply": "Anwenden",
   "link": "Link",
-  "textColor": "Textfarbe"
+  "textColor": "Textfarbe",
+  "sidebarTrialDays_one": "{{count}} Tag",
+  "sidebarTrialDays_other": "{{count}} Tage",
+  "sidebarTrialLabel": "Testphase",
+  "sidebarUpgradeLabel": "TARIFWECHSEL",
+  "sidebarUpgradeTooltip": "Tarif upgraden",
+  "sidebarTrialTooltip_one": "Noch {{count}} Tag in der Testphase",
+  "sidebarTrialTooltip_other": "Noch {{count}} Tage in der Testphase"
 }

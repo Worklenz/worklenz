@@ -57,7 +57,7 @@ vi.mock('@/hooks/useAuth', () => ({
 vi.mock('@/hooks/useProjectPermissions', () => ({
   default: () => ({ permissions: { finance: false } }),
 }));
-vi.mock('@/utils/subscription-utils', () => ({ hasBusinessFeatureAccess: () => false }));
+vi.mock('@/utils/subscription-utils', () => ({ canUseFeature: () => false }));
 
 const SUCCESS_TITLE = 'Template Created';
 const SUCCESS_DESCRIPTION =

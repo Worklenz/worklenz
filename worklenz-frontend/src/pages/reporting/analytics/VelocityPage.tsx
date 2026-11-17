@@ -1,4 +1,8 @@
+import { useLatestAnalyticsSeriesRequest } from '@/hooks/useLatestAnalyticsSeriesRequest';
+import { useScopedAnalyticsSeriesData } from '@/hooks/useScopedAnalyticsSeriesData';
+import { areAnalyticsProjectResponsesComplete, useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
 import { formatCsvText } from '@/lib/reporting/csv-export';
+import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -8,14 +12,13 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
-import quarterOfYear from 'dayjs/plugin/quarterOfYear';
 import { jsPDF } from 'jspdf';
-
-dayjs.extend(quarterOfYear);
+import { resolveAnalyticsDateBounds } from '@/utils/date-presets';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAuthService } from '@/hooks/useAuth';
+import { usePersistedAnalyticsFilters } from '@/hooks/usePersistedAnalyticsFilters';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { analyticsVelocityApiService } from '@/api/reporting/analytics-velocity.api.service';
 import { analyticsTemplatesApiService } from '@/api/reporting/analytics-templates.api.service';
@@ -35,7 +38,6 @@ import {
   ReportErrorState,
   ReportLoadingSkeleton,
   ReportPageShell,
-  type AnalyticsDatePreset,
   type AnalyticsExportFormat,
 } from '@/components/reporting/analytics';
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
@@ -87,16 +89,28 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
   });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
 
-  const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
-  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
-  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
-  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
+  const {
+    datePreset,
+    customRange,
+    setDateFilter,
+    selectedProjectIds,
+    setSelectedProjectIds,
+    setAutomaticProjectIds,
+    setAutomaticTeamIds,
+    selectedMemberIds,
+    setSelectedMemberIds,
+    selectedTeamIds,
+    setSelectedTeamIds,
+    hasRestoredFilters,
+  } = usePersistedAnalyticsFilters({
+    reportKind: 'velocity',
+    customTemplateId,
+  });
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<VelocitySeriesResponse | null>(null);
   const [saveOpen, setSaveOpen] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
 
@@ -130,17 +144,10 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       }));
   }, [teamMembersState]);
 
-  const dateBounds = useMemo(() => {
-    const end = dayjs();
-    let start = end.subtract(30, 'day');
-    if (datePreset === 'last_7_days') start = end.subtract(7, 'day');
-    if (datePreset === 'last_90_days') start = end.subtract(90, 'day');
-    if (datePreset === 'this_quarter') start = end.startOf('quarter');
-    return {
-      date_from: start.startOf('day').toISOString(),
-      date_to: end.endOf('day').toISOString(),
-    };
-  }, [datePreset]);
+  const dateBounds = useMemo(
+    () => resolveAnalyticsDateBounds(datePreset, customRange),
+    [datePreset, customRange]
+  );
 
   const filters: VelocitySeriesFilters = useMemo(
     () => ({
@@ -186,7 +193,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
           : [];
 
       const sessionTeamId = session?.team_id ? String(session.team_id) : teams[0]?.value;
-      setSelectedTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
+      setAutomaticTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
     } catch {
       message.error(
         t('errorDescription', {
@@ -198,7 +205,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
     }
   }, [dispatch, session?.team_id, t]);
 
-  const loadProjectsForTeams = useCallback(async (teamIds: string[]) => {
+  const loadProjectsForTeams = useCallback(async (teamIds: string[], isCurrent: () => boolean) => {
     if (teamIds.length === 0) {
       setProjectOptions([]);
       return;
@@ -207,6 +214,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       const projectResponses = await Promise.all(
         teamIds.map(teamId => reportingApiService.getOverviewProjectsByTeam(teamId))
       );
+      if (!isCurrent() || !areAnalyticsProjectResponsesComplete(projectResponses)) return;
       const overviewProjects: Array<{ id: string; name: string; project_type?: string }> =
         [];
       const seen = new Set<string>();
@@ -225,21 +233,26 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       const projects = mapOverviewProjectsToVelocityOptions(overviewProjects);
       setProjectOptions(projects);
       // Keep prior picks that are still valid; never auto-select projects.
-      setSelectedProjectIds(prev => {
+      setAutomaticProjectIds(prev => {
         const allowed = new Set(projects.map(p => p.value));
         return prev.filter(id => allowed.has(id));
       });
     } catch {
-      setProjectOptions([]);
+      // Preserve existing selections and options when a team request fails.
     }
   }, []);
 
+  const templateContextRef = useRef({ customTemplateId, hasRestoredFilters });
+  templateContextRef.current = { customTemplateId, hasRestoredFilters };
+
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
-    const f = template.filters_json ?? {};
-    if (Array.isArray(f.project_ids)) setSelectedProjectIds(f.project_ids.map(String));
-    if (Array.isArray(f.member_ids)) setSelectedMemberIds(f.member_ids.map(String));
-    if (Array.isArray(f.team_ids)) setSelectedTeamIds(f.team_ids.map(String));
-  }, []);
+    applyCommonAnalyticsTemplateFilters(template.filters_json, {
+      setSelectedProjectIds,
+      setSelectedMemberIds,
+      setSelectedTeamIds,
+      setDateFilter,
+    });
+  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds, setDateFilter]);
 
   const loadTemplates = useCallback(async () => {
     // Capture before awaits so a workspace switch mid-flight cannot leak templates.
@@ -266,11 +279,12 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
         }
 
         if (!isAnalyticsCustomReportsSessionActive(storageKeyAtFetch)) return;
+        if (templateContextRef.current.customTemplateId !== customTemplateId) return;
         const queryTemplateId = pendingQueryTemplateId.current;
         if (queryTemplateId && appliedQueryTemplate.current !== queryTemplateId) {
           const fromQuery = res.body.find(tpl => tpl.id === queryTemplateId);
           if (fromQuery) {
-            applyTemplateFilters(fromQuery);
+            if (!isCustomTemplateView || !templateContextRef.current.hasRestoredFilters) applyTemplateFilters(fromQuery);
             appliedQueryTemplate.current = queryTemplateId;
             pendingQueryTemplateId.current = null;
             appliedDefaultTemplate.current = true;
@@ -300,9 +314,15 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
     } catch {
       // templates are optional on first load
     }
-  }, [applyTemplateFilters, isCustomTemplateView, searchParams, setSearchParams]);
+  }, [applyTemplateFilters, customTemplateId, isCustomTemplateView, searchParams, setSearchParams, hasRestoredFilters]);
+
+  const seriesScope = JSON.stringify([session?.team_id, session?.id, customTemplateId]);
+  const seriesRequestKey = JSON.stringify([seriesScope, filters]);
+  const { data, setData } = useScopedAnalyticsSeriesData<VelocitySeriesResponse>(seriesScope, seriesRequestKey);
+  const beginSeriesRequest = useLatestAnalyticsSeriesRequest(seriesRequestKey);
 
   const loadSeries = useCallback(async () => {
+    const isCurrent = beginSeriesRequest();
     if (!hasProjectSelection) {
       setData(null);
       setError(null);
@@ -313,6 +333,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
     setError(null);
     try {
       const res = await analyticsVelocityApiService.getSeries(filters);
+      if (!isCurrent()) return;
       if (res.done && res.body) {
         setData(res.body);
       } else {
@@ -325,6 +346,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
         setData(null);
       }
     } catch {
+      if (!isCurrent()) return;
       setError(
         t('errorDescription', {
           defaultValue: 'We could not load this report. Please try again.',
@@ -332,18 +354,20 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       );
       setData(null);
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
-  }, [filters, hasProjectSelection, t]);
+  }, [filters, hasProjectSelection, t, beginSeriesRequest, setData]);
 
   useEffect(() => {
     void loadTeamsAndMembers();
     void loadTemplates();
   }, [loadTeamsAndMembers, loadTemplates]);
 
-  useEffect(() => {
-    void loadProjectsForTeams(selectedTeamIds);
-  }, [selectedTeamIds, loadProjectsForTeams]);
+  useAnalyticsProjectOptionsLoader(
+    selectedTeamIds,
+    JSON.stringify([session?.team_id, session?.id, customTemplateId]),
+    loadProjectsForTeams
+  );
 
   useEffect(() => {
     void loadSeries();
@@ -429,7 +453,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
         name: values.name,
         is_workspace_shared: values.is_workspace_shared,
         is_default: values.is_default,
-        filters: { ...filters },
+        filters: { ...filters, date_preset: datePreset, custom_range: customRange },
       });
       if (res.done) {
         message.success(
@@ -458,8 +482,8 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       selectedMemberIds={selectedMemberIds}
       onMembersChange={setSelectedMemberIds}
       datePreset={datePreset}
-      onDatePresetChange={setDatePreset}
-      availableDatePresets={['last_7_days', 'last_30_days', 'last_90_days', 'this_quarter']}
+      customRange={customRange}
+      onDateChange={setDateFilter}
       loading={filtersLoading}
     />
   );

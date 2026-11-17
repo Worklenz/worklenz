@@ -35,6 +35,11 @@ const ACTIVE_SUBJECT_SQL = `
   AND c.status <> 'inactive'
 `;
 
+// Match client authentication: a missing access row defaults to enabled.
+export const CLIENT_PORTAL_ACCESS_ACTIVE_SQL = `
+  COALESCE((SELECT cpa.is_active FROM client_portal_access cpa WHERE cpa.client_id = c.id LIMIT 1), TRUE)
+`;
+
 const toSubject = (row: any): ClientSubject => ({
   contactId: row.contact_id,
   clientId: row.client_id,
@@ -48,7 +53,7 @@ const toSubject = (row: any): ClientSubject => ({
 /** The subject behind an authenticated client token, or null when they may no longer act. */
 export async function loadClientSubject(
   q: Queryable,
-  input: { clientUserId: string; clientId: string; teamId: string }
+  input: { clientUserId: string; clientId: string; teamId: string; requirePortalAccess?: boolean }
 ): Promise<ClientSubject | null> {
   const result = await q.query(
     `SELECT ${SUBJECT_COLUMNS}
@@ -59,6 +64,7 @@ export async function loadClientSubject(
         AND cc.client_id = $2
         AND cc.team_id = $3
         AND ${ACTIVE_SUBJECT_SQL}
+        ${input.requirePortalAccess ? `AND ${CLIENT_PORTAL_ACCESS_ACTIVE_SQL}` : ""}
       LIMIT 1`,
     [input.clientUserId, input.clientId, input.teamId]
   );
@@ -128,25 +134,3 @@ export async function explainAccessLoss(
   }
 }
 
-/**
- * The subject for a given client user, for the staff-side "Preview as client". Only an Active user
- * can be previewed: an Invited or Deactivated user has nothing to preview.
- */
-export async function loadSubjectByContactId(
-  q: Queryable,
-  teamId: string,
-  contactId: string
-): Promise<ClientSubject | null> {
-  const result = await q.query(
-    `SELECT ${SUBJECT_COLUMNS}
-       FROM client_contacts cc
-       JOIN client_users cu ON cu.id = cc.client_user_id
-       JOIN clients c ON c.id = cc.client_id
-      WHERE cc.id = $1
-        AND cc.team_id = $2
-        AND ${ACTIVE_SUBJECT_SQL}
-      LIMIT 1`,
-    [contactId, teamId]
-  );
-  return result.rows[0] ? toSubject(result.rows[0]) : null;
-}

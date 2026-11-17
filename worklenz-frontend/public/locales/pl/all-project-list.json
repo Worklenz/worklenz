@@ -1,5 +1,10 @@
 {
   "name": "Nazwa projektu",
+  "projectType": "Typ projektu",
+  "projectTypeSoftware": "Projekt oprogramowania",
+  "projectTypeGeneral": "Projekt ogólny",
+  "projectTypeSoftwareTooltip": "Projekt oprogramowania — zgłoszenia, backlog i sprinty",
+  "projectTypeGeneralTooltip": "Projekt ogólny — zadania, fazy i tablice",
   "client": "Klient",
   "category": "Kategoria",
   "status": "Stan",
@@ -60,5 +65,12 @@
   "groups": "grupy",
   "retry": "Spróbuj ponownie",
   "searchProjects": "Wyszukaj według nazwy projektu",
-  "members": "Członkowie"
+  "members": "Członkowie",
+  "expandAll": "Rozwiń wszystko",
+  "collapseAll": "Zwiń wszystko",
+  "unnamedGroup": "Grupa bez nazwy",
+  "projectCount_one": "{{count}} projekt",
+  "projectCount_few": "{{count}} projekty",
+  "projectCount_many": "{{count}} projektów",
+  "projectCount_other": "{{count}} projektu"
 }

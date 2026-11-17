@@ -70,6 +70,7 @@ import labelReducer from '@features/settings/label/labelSlice';
 import adminCenterReducer from '@features/admin-center/admin-center.slice';
 import auditLogReducer from '@features/admin-center/audit-log/audit-log.slice';
 import { auditLogApi } from '@/api/admin-center/audit-log.api.service';
+import { permissionSchemesApi } from '@/api/admin-center/permission-schemes.api.service';
 
 // Features
 import dateReducer from '@features/date/dateSlice';
@@ -99,6 +100,7 @@ import groupingReducer from '@/features/task-management/grouping.slice';
 import selectionReducer from '@/features/task-management/selection.slice';
 import homePageApiService from '@/api/home-page/home-page.api.service';
 import personalOverviewApi from '@/api/personal-overview/personal-overview.api.service';
+import portfolioApi from '@/api/reporting/portfolio.api.service';
 import { projectsApi } from '@/api/projects/projects.v1.api.service';
 import { userActivityApiService } from '@/api/home-page/user-activity.api.service';
 import { roadmapApi } from '@/pages/projects/projectView/gantt/services/roadmap-api.service';
@@ -145,6 +147,7 @@ const coreReducers = {
   homePreferencesReducer: homePreferencesReducer,
   [homePageApiService.reducerPath]: homePageApiService.reducer,
   [personalOverviewApi.reducerPath]: personalOverviewApi.reducer,
+  [portfolioApi.reducerPath]: portfolioApi.reducer,
   [projectsApi.reducerPath]: projectsApi.reducer,
   [clientPortalApi.reducerPath]: clientPortalApi.reducer,
   [roadmapApi.reducerPath]: roadmapApi.reducer,
@@ -253,6 +256,7 @@ const coreReducers = {
 
   // Software projects & audit log
   [auditLogApi.reducerPath]: auditLogApi.reducer,
+  [permissionSchemesApi.reducerPath]: permissionSchemesApi.reducer,
   epicsReducer: epicsReducer,
   releasesReducer: releasesReducer,
   createIssueModalReducer: createIssueModalReducer,
@@ -281,6 +285,7 @@ export const store = configureStore({
       themeDomSyncMiddleware,
       homePageApiService.middleware,
       personalOverviewApi.middleware,
+      portfolioApi.middleware,
       projectsApi.middleware,
       clientPortalApi.middleware,
       userActivityApiService.middleware,
@@ -288,6 +293,7 @@ export const store = configureStore({
       projectWorkloadApi.middleware,
       scheduleApi.middleware,
       auditLogApi.middleware,
+      permissionSchemesApi.middleware,
       ...addonMiddlewares
     ),
   reducer: {

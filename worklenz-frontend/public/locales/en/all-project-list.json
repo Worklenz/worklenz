@@ -1,5 +1,10 @@
 {
   "name": "Project Name",
+  "projectType": "Project Type",
+  "projectTypeSoftware": "Software Project",
+  "projectTypeGeneral": "General Project",
+  "projectTypeSoftwareTooltip": "Software project — issues, backlog, and sprints",
+  "projectTypeGeneralTooltip": "General project — tasks, phases, and boards",
   "client": "Client",
   "category": "Category",
   "status": "Status",
@@ -60,5 +65,10 @@
   "groups": "groups",
   "retry": "Retry",
   "searchProjects": "Search by project name",
-  "members": "Members"
+  "members": "Members",
+  "expandAll": "Expand All",
+  "collapseAll": "Collapse All",
+  "unnamedGroup": "Unnamed Group",
+  "projectCount_one": "{{count}} project",
+  "projectCount_other": "{{count}} projects"
 }

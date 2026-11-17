@@ -189,6 +189,20 @@ const TaskDrawerActivityLog = () => {
           </Flex>
         );
 
+      case IActivityLogAttributeTypes.PROJECT:
+        return (
+          <Flex gap={4} align="center">
+            <Tooltip title={activity.previous || t('taskActivityLogTab.none', { defaultValue: 'None' })}>
+              <Tag color={'default'} tabIndex={0}>{truncateText(activity.previous) || t('taskActivityLogTab.none', { defaultValue: 'None' })}</Tag>
+            </Tooltip>
+            <ArrowRightOutlined />
+            &nbsp;
+            <Tooltip title={activity.current || t('taskActivityLogTab.none', { defaultValue: 'None' })}>
+              <Tag color={'default'} tabIndex={0}>{truncateText(activity.current) || t('taskActivityLogTab.none', { defaultValue: 'None' })}</Tag>
+            </Tooltip>
+          </Flex>
+        );
+
       case IActivityLogAttributeTypes.PROGRESS:
         return (
           <Flex gap={4} align="center">
@@ -261,6 +275,8 @@ const TaskDrawerActivityLog = () => {
         return t('taskActivityLogTab.attributes.comment', { defaultValue: 'comment' });
       case 'assignee':
         return t('taskActivityLogTab.attributes.assignee', { defaultValue: 'assignee' });
+      case 'project':
+        return t('taskActivityLogTab.attributes.project', { defaultValue: 'project' });
       case 'archive':
         return t('taskActivityLogTab.attributes.archive', { defaultValue: 'archive' });
       default:

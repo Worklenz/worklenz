@@ -1,7 +1,14 @@
 import db from "../../config/db";
 import { getClientPortalBaseUrl } from "../../cron_jobs/helpers";
 import { sendEmail } from "../../shared/email";
+import { IO } from "../../shared/io";
 import { htmlToPlainText, log_error, sanitizePlainText } from "../../shared/utils";
+import {
+  CLIENT_PORTAL_SOCKET,
+  ClientPortalDataUpdatedPayload,
+  clientPortalContactRoomName,
+  clientPortalTeamRoomName,
+} from "../../socket.io/client-portal-room";
 import { NotificationsService } from "../notifications/notifications.service";
 import {
   ClientNotificationEvent,
@@ -10,6 +17,7 @@ import {
 } from "./settings.service";
 import { CONTACT_CAN_OPEN_PROJECT_SQL } from "./scope";
 import { Queryable } from "./types";
+import { CLIENT_PORTAL_ACCESS_ACTIVE_SQL } from "./subject";
 
 /**
  * Notifications for Client Portal v2.
@@ -22,6 +30,10 @@ import { Queryable } from "./types";
  * Client side: a client_portal_notifications row (in-app, always on) and, per event, an email to
  * the active client users on the project. Client notifications never contain internal-only text:
  * callers pass only client-visible titles and bodies.
+ *
+ * Both paths also emit `client_portal:data_updated` so open Admin / Client Portal UIs can invalidate
+ * their caches. Active contact rooms receive an identifier-free event. projectId and referenceId
+ * go only to the contact rooms of people allowed to see that item.
  */
 
 export type StaffNotificationKind =
@@ -32,6 +44,160 @@ export type StaffNotificationKind =
   | "Access"
   | "Project";
 
+const STAFF_KIND_TO_TYPE: Record<StaffNotificationKind, string> = {
+  Comment: "discussion",
+  Approval: "approval",
+  "Change Request": "change_request",
+  File: "file",
+  Access: "access",
+  Project: "project_update",
+};
+
+export interface PortalDataUpdatedOptions {
+  staffSocketIds?: Array<string | null | undefined>;
+  /**
+   * Contacts who may receive projectId and referenceId. When set (including an empty list), those
+   * identifiers are delivered only to this set, still limited to contacts who can open the project.
+   * When omitted, a change request goes to its viewers (requester and client admins); any other
+   * event with a project goes to contacts who can open that project. Other contacts never receive the identifiers.
+   */
+  onlyContactIds?: string[];
+}
+
+/** Active contacts hear that something changed without learning which project or item. */
+const identifierFreePayload = (payload: ClientPortalDataUpdatedPayload): ClientPortalDataUpdatedPayload => ({
+  teamId: payload.teamId,
+  clientId: payload.clientId ?? null,
+  type: payload.type,
+  source: payload.source,
+  projectId: null,
+  referenceId: null,
+});
+
+const ACTIVE_CONTACT_SQL = `
+  cc.client_id = $1
+  AND cc.team_id = $2
+  AND cc.disabled_at IS NULL
+  AND cc.activated_at IS NOT NULL
+  AND cu.status = 'active'
+  AND cu.deleted_at IS NULL
+  AND c.deleted_at IS NULL
+  AND c.status <> 'inactive'
+  AND ${CLIENT_PORTAL_ACCESS_ACTIVE_SQL}
+  AND EXISTS (
+    SELECT 1 FROM client_user_organizations cuo
+     WHERE cuo.client_user_id = cu.id AND cuo.team_id = cc.team_id
+  )
+  AND ($3::uuid IS NULL OR ${CONTACT_CAN_OPEN_PROJECT_SQL("cc.id", "$3")})
+`;
+
+/**
+ * Active contacts allowed to learn a portal item's identifiers. `onlyContactIds` null means every
+ * contact who passes the project check; an array (including empty) restricts to that set.
+ */
+async function listIdentifierAudience(input: {
+  clientId: string;
+  teamId: string;
+  projectId: string | null;
+  onlyContactIds: string[] | null;
+  changeRequestId?: string | null;
+}): Promise<string[]> {
+  const changeRequestOnly = Boolean(input.changeRequestId);
+  const result = await db.query(
+    `SELECT DISTINCT cc.id
+       FROM client_contacts cc
+       JOIN client_users cu ON cu.id = cc.client_user_id
+       JOIN clients c ON c.id = cc.client_id
+      WHERE ${ACTIVE_CONTACT_SQL}
+        AND ($4::uuid[] IS NULL OR cc.id = ANY($4::uuid[]))
+        AND (
+          $5::uuid IS NULL
+          OR cc.role = 'admin'
+          OR cc.id = (
+            SELECT r.requester_contact_id
+              FROM client_portal_change_requests r
+             WHERE r.id = $5
+               AND r.client_id = $1
+               AND r.organization_team_id = $2
+             LIMIT 1
+          )
+        )`,
+    [
+      input.clientId,
+      input.teamId,
+      input.projectId,
+      input.onlyContactIds,
+      changeRequestOnly ? input.changeRequestId : null,
+    ]
+  );
+  return result.rows.map(row => row.id as string).filter((id): id is string => Boolean(id));
+}
+
+async function deliverIdentifiersToContacts(
+  payload: ClientPortalDataUpdatedPayload,
+  onlyContactIds: string[] | undefined
+): Promise<void> {
+  const clientId = payload.clientId;
+  if (!clientId) return;
+
+  const explicitAudience = onlyContactIds !== undefined;
+  const privateChangeRequest = !explicitAudience && payload.type === "change_request" && Boolean(payload.referenceId);
+  if (!explicitAudience && !privateChangeRequest && !payload.projectId) return;
+
+  const contactIds = await listIdentifierAudience({
+    clientId,
+    teamId: payload.teamId,
+    projectId: payload.projectId ?? null,
+    onlyContactIds: explicitAudience ? onlyContactIds : null,
+    changeRequestId: privateChangeRequest ? payload.referenceId : null,
+  });
+
+  for (const contactId of contactIds) {
+    IO.emitToRoom(
+      clientPortalContactRoomName(payload.teamId, clientId, contactId),
+      CLIENT_PORTAL_SOCKET.DATA_UPDATED,
+      payload
+    );
+  }
+}
+
+/** Fan-out for open Admin / Client Portal UIs (no DB write). Safe to call after commit. */
+export async function emitPortalDataUpdated(
+  payload: ClientPortalDataUpdatedPayload,
+  options?: PortalDataUpdatedOptions
+): Promise<void> {
+  try {
+    IO.emitToRoom(clientPortalTeamRoomName(payload.teamId), CLIENT_PORTAL_SOCKET.DATA_UPDATED, payload);
+    // Direct emit to staff sockets (same path as the notification toast). Room join is best-effort;
+    // without this, an admin who never joined the portal room sees the bell but not the list refresh.
+    // Staff are workspace owners/admins, so they still receive item identifiers.
+    for (const socketId of options?.staffSocketIds ?? []) {
+      if (socketId) {
+        IO.emit(CLIENT_PORTAL_SOCKET.DATA_UPDATED, socketId, payload);
+      }
+    }
+    if (payload.clientId) {
+      // Recheck access before each delivery; connected sockets may have been revoked since joining.
+      const activeContacts = await listIdentifierAudience({
+        clientId: payload.clientId,
+        teamId: payload.teamId,
+        projectId: null,
+        onlyContactIds: null,
+      });
+      for (const contactId of activeContacts) {
+        IO.emitToRoom(
+          clientPortalContactRoomName(payload.teamId, payload.clientId, contactId),
+          CLIENT_PORTAL_SOCKET.DATA_UPDATED,
+          identifierFreePayload(payload)
+        );
+      }
+      await deliverIdentifiersToContacts(payload, options?.onlyContactIds);
+    }
+  } catch (error) {
+    log_error(error);
+  }
+}
+
 export interface StaffNotificationInput {
   teamId: string;
   kind: StaffNotificationKind;
@@ -40,6 +206,9 @@ export interface StaffNotificationInput {
   /** In-app deep link, e.g. /worklenz/client-portal/approvals/<id>. */
   url: string;
   projectId?: string | null;
+  /** When set, also fans out to the client socket room for live portal sync. */
+  clientId?: string | null;
+  referenceId?: string | null;
   /** When set, the team's email toggle for this event decides whether an email also goes out. */
   emailEvent?: TeamNotificationEvent;
   /** A published project update is created already read so it does not raise the badge. */
@@ -126,6 +295,19 @@ export async function notifyStaff(input: StaffNotificationInput): Promise<void> 
       });
     }
 
+    // Deliver live updates before optional email work can delay or fail them.
+    await emitPortalDataUpdated(
+      {
+        teamId: input.teamId,
+        clientId: input.clientId ?? null,
+        projectId: input.projectId ?? null,
+        type: STAFF_KIND_TO_TYPE[input.kind],
+        referenceId: input.referenceId ?? null,
+        source: "client",
+      },
+      { staffSocketIds: recipients.map(recipient => recipient.socket_id) }
+    );
+
     if (input.emailEvent && !input.alreadyRead) {
       const settings = await getPortalSettingsV2(db, input.teamId);
       if (settings.team_email_events[input.emailEvent]) {
@@ -141,6 +323,7 @@ export async function notifyStaff(input: StaffNotificationInput): Promise<void> 
         );
       }
     }
+
   } catch (error) {
     log_error(error);
   }
@@ -230,34 +413,56 @@ export async function notifyClientUsers(input: ClientNotificationInput): Promise
       ]
     );
 
-    if (!input.emailEvent) return;
-    const settings = await getPortalSettingsV2(db, input.teamId);
-    if (!settings.client_email_events[input.emailEvent]) return;
-
-    const recipients = await db.query(
-      `SELECT DISTINCT cc.email
-         FROM client_contacts cc
-         JOIN client_users cu ON cu.id = cc.client_user_id AND cu.status = 'active'
-        WHERE cc.client_id = $1
-          AND cc.team_id = $2
-          AND cc.disabled_at IS NULL
-          AND cc.activated_at IS NOT NULL
-          AND ($3::uuid IS NULL OR ${CONTACT_CAN_OPEN_PROJECT_SQL("cc.id", "$3")})
-          AND ($4::uuid[] IS NULL OR cc.id = ANY($4::uuid[]))
-          -- Email is disabled by default for clients; a client must explicitly enable it in Settings > Notifications.
-          AND EXISTS (
-                SELECT 1 FROM client_contact_notification_prefs np
-                 WHERE np.contact_id = cc.id AND np.event_type = $5 AND np.email IS TRUE)`,
-      [input.clientId, input.teamId, input.projectId ?? null, input.onlyContactIds ?? null, input.emailEvent]
+    // A failed staff lookup must not suppress the room update or subsequent email work.
+    const staff = await getStaffRecipients(db, input.teamId).catch((error): StaffRecipient[] => {
+      log_error(error);
+      return [];
+    });
+    await emitPortalDataUpdated(
+      {
+        teamId: input.teamId,
+        clientId: input.clientId,
+        projectId: input.projectId ?? null,
+        type: input.type,
+        referenceId: input.referenceId ?? null,
+        source: "staff",
+      },
+      {
+        staffSocketIds: staff.map(recipient => recipient.socket_id),
+        onlyContactIds: input.onlyContactIds,
+      }
     );
 
-    const link = `${getClientPortalBaseUrl()}${input.portalPath ?? ""}`;
-    const html = buildEmailHtml(input.title, plainMessage, link);
-    await Promise.all(
-      recipients.rows.map(row =>
-        sendEmail({ to: [row.email as string], subject: input.title, html }).catch(log_error)
-      )
-    );
+    if (input.emailEvent) {
+      const settings = await getPortalSettingsV2(db, input.teamId);
+      if (settings.client_email_events[input.emailEvent]) {
+        const recipients = await db.query(
+          `SELECT DISTINCT cc.email
+             FROM client_contacts cc
+             JOIN client_users cu ON cu.id = cc.client_user_id AND cu.status = 'active'
+            WHERE cc.client_id = $1
+              AND cc.team_id = $2
+              AND cc.disabled_at IS NULL
+              AND cc.activated_at IS NOT NULL
+              AND ($3::uuid IS NULL OR ${CONTACT_CAN_OPEN_PROJECT_SQL("cc.id", "$3")})
+              AND ($4::uuid[] IS NULL OR cc.id = ANY($4::uuid[]))
+              -- Email is disabled by default for clients; a client must explicitly enable it in Settings > Notifications.
+              AND EXISTS (
+                    SELECT 1 FROM client_contact_notification_prefs np
+                     WHERE np.contact_id = cc.id AND np.event_type = $5 AND np.email IS TRUE)`,
+          [input.clientId, input.teamId, input.projectId ?? null, input.onlyContactIds ?? null, input.emailEvent]
+        );
+
+        const link = `${getClientPortalBaseUrl()}${input.portalPath ?? ""}`;
+        const html = buildEmailHtml(input.title, plainMessage, link);
+        await Promise.all(
+          recipients.rows.map(row =>
+            sendEmail({ to: [row.email as string], subject: input.title, html }).catch(log_error)
+          )
+        );
+      }
+    }
+
   } catch (error) {
     log_error(error);
   }

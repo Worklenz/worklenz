@@ -266,7 +266,8 @@
       "attachment": "attachment",
       "comment": "comment",
       "assignee": "assignee",
-      "archive": "archive"
+      "archive": "archive",
+      "project": "project"
     },
     "historyLockedBoundary": "Activity history is limited to the last 90 days on this plan",
     "historyLockedTitle": "Activity History Locked",
