@@ -50,6 +50,8 @@ The fastest way to get started - no setup, no infrastructure. Just sign up at [w
 ### 🖥️ Self-Host Worklenz
 Prefer full control over your data? Run Worklenz on your own server.
 
+Self-hosted installations send an installation heartbeat by default. Set `WORKLENZ_TELEMETRY_ENABLED=false` before starting to disable it. See [TELEMETRY.md](TELEMETRY.md) for the payload, destination, and retention.
+
 | Method | Guide |
 |--------|-------|
 | 🐳 Docker (Recommended) | [Quick Docker Setup](#quick-start-docker) |
