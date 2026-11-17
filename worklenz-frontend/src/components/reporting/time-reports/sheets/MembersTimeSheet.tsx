@@ -46,6 +46,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
     const scrollTimerRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(null);
     const availableSpaceRef = useRef<HTMLDivElement>(null);
     const fetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const latestFetchRequestIdRef = useRef(0);
 
     const {
       teams,
@@ -364,6 +365,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
     }, []);
 
     const fetchChartData = useCallback(async () => {
+      const requestId = ++latestFetchRequestIdRef.current;
       // The filter option lists (teams, projects, categories, members, ...)
       // are still being fetched — "no selection" right now doesn't mean the
       // user has an empty selection, it means we don't know yet. Resolving
@@ -392,7 +394,6 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
         // Validate dateRange before making API call
         if (!dateRange || dateRange.length !== 2 || !dateRange[0] || !dateRange[1]) {
           console.warn('[MembersTimeSheet] Invalid dateRange, skipping fetch:', dateRange);
-          setLoading(false);
           return;
         }
 
@@ -425,9 +426,9 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
         // Format dates using date-fns
         const formattedDateRange = dateRange
           ? [
-              format(new Date(dateRange[0]), 'yyyy-MM-dd'),
-              format(new Date(dateRange[1]), 'yyyy-MM-dd'),
-            ]
+            format(new Date(dateRange[0]), 'yyyy-MM-dd'),
+            format(new Date(dateRange[1]), 'yyyy-MM-dd'),
+          ]
           : undefined;
 
         const body = {
@@ -446,6 +447,11 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
         };
 
         const res = await reportingTimesheetApiService.getMemberTimeSheets(body, archived);
+
+        // Ignore responses from older requests
+        if (requestId !== latestFetchRequestIdRef.current) {
+          return;
+        }
 
         if (res.done) {
           // Ensure filteredRows is always an array, even if API returns null/undefined
@@ -474,6 +480,10 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
           });
         }
       } catch (error) {
+        if (requestId !== latestFetchRequestIdRef.current) {
+          return;
+        }
+
         console.error('Error fetching chart data:', error);
         logger.error('Error fetching chart data:', error);
         setJsonData([]);
@@ -483,9 +493,12 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
           total_utilization: '0',
         });
       } finally {
-        setLoading(false);
-        onLoadingChange?.(false);
+        if (requestId === latestFetchRequestIdRef.current) {
+          setLoading(false);
+          onLoadingChange?.(false);
+        }
       }
+
     }, [
       onLoadingChange,
       teams,
@@ -732,74 +745,74 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
         ) : (
           <>
             {totalCount > 0 && (
-          <div
-            style={{
-              flexShrink: 0,
-              marginBottom: 12,
-              fontSize: '14px',
-              color: themeMode === 'dark' ? '#a0a0a0' : '#666',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <span>
-              Displaying {totalCount} member{totalCount !== 1 ? 's' : ''}
-              {shouldVirtualize && (
-                <span style={{ marginLeft: 8, fontSize: '12px', opacity: 0.7 }}>
-                  (showing {visibleStart + 1}–{Math.min(visibleEnd, totalCount)} in view)
+              <div
+                style={{
+                  flexShrink: 0,
+                  marginBottom: 12,
+                  fontSize: '14px',
+                  color: themeMode === 'dark' ? '#a0a0a0' : '#666',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <span>
+                  Displaying {totalCount} member{totalCount !== 1 ? 's' : ''}
+                  {shouldVirtualize && (
+                    <span style={{ marginLeft: 8, fontSize: '12px', opacity: 0.7 }}>
+                      (showing {visibleStart + 1}–{Math.min(visibleEnd, totalCount)} in view)
+                    </span>
+                  )}
                 </span>
-              )}
-            </span>
-          </div>
-        )}
+              </div>
+            )}
 
-        {shouldVirtualize ? (
-          /* Virtualized rendering for large datasets — availableSpaceRef fills
-             the remaining height the surrounding layout gives this component,
-             which is what the ResizeObserver above measures into
-             containerHeight, so the scroll box below matches it exactly. */
-          <div ref={availableSpaceRef} style={{ flex: 1, minHeight: 0 }}>
-            <div
-              ref={scrollContainerRef}
-              onScroll={handleScroll}
-              style={{
-                width: '100%',
-                height: `${viewportHeight}px`,
-                overflowY: 'auto',
-                overflowX: 'hidden',
-                position: 'relative',
-              }}
-            >
-              {/* Spacer div to create the full scrollable height */}
-              <div style={{ height: `${totalVirtualHeight}px`, position: 'relative' }}>
-                {/* Chart positioned at the correct offset within the virtual space */}
+            {shouldVirtualize ? (
+              /* Virtualized rendering for large datasets — availableSpaceRef fills
+                 the remaining height the surrounding layout gives this component,
+                 which is what the ResizeObserver above measures into
+                 containerHeight, so the scroll box below matches it exactly. */
+              <div ref={availableSpaceRef} style={{ flex: 1, minHeight: 0 }}>
                 <div
+                  ref={scrollContainerRef}
+                  onScroll={handleScroll}
                   style={{
-                    position: 'absolute',
-                    top: `${chartOffsetTop}px`,
-                    left: 0,
-                    right: 0,
-                    height: `${chartCanvasHeight}px`,
+                    width: '100%',
+                    height: `${viewportHeight}px`,
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
+                    position: 'relative',
                   }}
                 >
-                  <Bar data={data} options={options} ref={chartRef} />
+                  {/* Spacer div to create the full scrollable height */}
+                  <div style={{ height: `${totalVirtualHeight}px`, position: 'relative' }}>
+                    {/* Chart positioned at the correct offset within the virtual space */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: `${chartOffsetTop}px`,
+                        left: 0,
+                        right: 0,
+                        height: `${chartCanvasHeight}px`,
+                      }}
+                    >
+                      <Bar data={data} options={options} ref={chartRef} />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        ) : (
-          /* Standard rendering for small datasets */
-          <div
-            style={{
-              width: '100%',
-              height: `${chartCanvasHeight}px`,
-              overflowX: 'hidden',
-            }}
-          >
-            <Bar data={data} options={options} ref={chartRef} />
-          </div>
-        )}
+            ) : (
+              /* Standard rendering for small datasets */
+              <div
+                style={{
+                  width: '100%',
+                  height: `${chartCanvasHeight}px`,
+                  overflowX: 'hidden',
+                }}
+              >
+                <Bar data={data} options={options} ref={chartRef} />
+              </div>
+            )}
           </>
         )}
       </div>
