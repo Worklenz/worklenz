@@ -218,6 +218,39 @@ describe("verify-project-access middleware", () => {
       expect(req.user.team_id).toBe("team-b"); // auto switched
     });
 
+    it("does not auto-switch teams while a manual switch suppress window is active", async () => {
+      const {
+        suppressAutoTeamSwitch,
+        clearAutoTeamSwitchSuppressions,
+      } = await import("../shared/manual-team-switch-guard");
+      clearAutoTeamSwitchSuppressions();
+      suppressAutoTeamSwitch("u-multi");
+
+      const req = createMockRequest({
+        user: { id: "u-multi", team_id: "team-a" },
+        params: { id: "p-teamb" },
+      });
+      const res = createMockResponse();
+      const next = jest.fn();
+
+      mockedDb.query
+        .mockResolvedValueOnce(createQueryResult([{ id: 1 }])) // active in team-a
+        .mockResolvedValueOnce(createQueryResult([{ team_id: "team-b" }])) // project is in team-b
+        .mockResolvedValueOnce(createQueryResult([{ owner: true, admin_role: false }])); // role in team-b
+
+      const middleware = verifyProjectAccess("params", "id");
+      await middleware(req, res, next);
+
+      expect(res.statusCode).toBe(403);
+      expect(next).not.toHaveBeenCalled();
+      expect(req.user.team_id).toBe("team-a");
+      expect(
+        mockedDb.query.mock.calls.some(call => String(call[0]).includes("activate_team"))
+      ).toBe(false);
+
+      clearAutoTeamSwitchSuppressions();
+    });
+
     it("returns 500 when database throws an error", async () => {
       const req = createMockRequest({
         user: { id: "u-1", team_id: "t-1" },

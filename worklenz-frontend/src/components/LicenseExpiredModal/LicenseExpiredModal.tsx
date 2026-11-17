@@ -10,7 +10,7 @@ import {
   Divider,
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import {
   ClockCircleOutlined,
@@ -26,12 +26,9 @@ import { useAuthService } from '@/hooks/useAuth';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { fetchTeams, setActiveTeam } from '@/features/teams/teamSlice';
-import { verifyAuthentication } from '@/features/auth/authSlice';
-import { setUser } from '@/features/user/userSlice';
 import { navigateAfterTeamSwitch } from '@/utils/team-switch-navigation';
 import CustomAvatar from '@/components/CustomAvatar';
 import { colors } from '@/styles/colors';
-import { createAuthService } from '@/services/auth/auth.service';
 import './LicenseExpiredModal.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -46,11 +43,9 @@ export const LicenseExpiredModal = ({
   subscriptionType = ISUBSCRIPTION_TYPE.TRIAL,
 }: LicenseExpiredModalProps) => {
   const navigate = useNavigate();
-  const location = useLocation();
   const dispatch = useAppDispatch();
   const { t } = useTranslation('common');
   const authService = useAuthService();
-  const authServiceInstance = createAuthService(navigate);
   const isOwnerOrAdmin = authService?.isOwnerOrAdmin() ?? false;
   const [visible, setVisible] = useState(open);
   const [isContactingSupport, setIsContactingSupport] = useState(false);
@@ -79,27 +74,16 @@ export const LicenseExpiredModal = ({
     return teamId === session.team_id;
   };
 
-  const handleVerifyAuth = async () => {
-    const result = await dispatch(verifyAuthentication()).unwrap();
-    if (result.authenticated) {
-      dispatch(setUser(result.user));
-      authServiceInstance.setCurrentSession(result.user);
-    }
-  };
-
   const handleTeamSelect = async (id: string) => {
     if (!id) return;
+    if (session?.team_id === id) return;
 
     try {
-      // Switch team and wait for backend to complete
+      // Persist then hard-navigate immediately. Skipping verify/setUser here
+      // avoids in-flight project requests flipping the session back via
+      // verify-project-access before the reload.
       await dispatch(setActiveTeam(id)).unwrap();
-      
-      // Add delay to ensure database transaction is committed
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Verify authentication with updated session
-      await handleVerifyAuth();
-      navigateAfterTeamSwitch(location.pathname);
+      navigateAfterTeamSwitch(window.location.pathname);
     } catch (error) {
       console.error('Failed to switch team:', error);
     }

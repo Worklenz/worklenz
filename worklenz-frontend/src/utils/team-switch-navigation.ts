@@ -1,4 +1,5 @@
-const PROJECTS_LIST_PATH = '/worklenz/projects';
+/** Concrete projects list route — `/worklenz/projects` is only an index redirect. */
+const PROJECTS_LIST_PATH = '/worklenz/projects/all-projects';
 const TASK_SHORT_LINK_PREFIX = '/worklenz/t/';
 
 /** Team-scoped deep-link params that must not survive a manual team switch. */
@@ -13,8 +14,8 @@ const PROJECT_DETAIL_PATH_REGEX =
  *
  * Project detail URLs (and task short-links that resolve into them) are not
  * valid across teams — reloading them triggers backend auto team-switch back
- * to the project's team. Shared pages (home, projects list, planner, finance)
- * can safely reload in place.
+ * to the project's team via verify-project-access. Shared pages (home,
+ * projects list, planner, finance) can safely reload in place.
  */
 export const getPostTeamSwitchLocation = (pathname: string): string => {
   if (PROJECT_DETAIL_PATH_REGEX.test(pathname)) {
@@ -22,6 +23,12 @@ export const getPostTeamSwitchLocation = (pathname: string): string => {
   }
 
   if (pathname.startsWith(TASK_SHORT_LINK_PREFIX)) {
+    return PROJECTS_LIST_PATH;
+  }
+
+  // Bare `/worklenz/projects` is an index redirect — land on the real list so
+  // a post-switch reload never depends on NavSurfaceIndexRedirect timing.
+  if (pathname === '/worklenz/projects' || pathname === '/worklenz/projects/') {
     return PROJECTS_LIST_PATH;
   }
 

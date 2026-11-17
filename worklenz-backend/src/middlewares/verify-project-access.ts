@@ -7,6 +7,7 @@ import {log_error} from "../shared/utils";
 import {NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE} from "../shared/guest-access-sql";
 import { checkProjectRolePermission } from "../shared/project-role-permissions";
 import { PROJECT_ROLE_PERMISSIONS, ProjectRolePermission } from "../shared/organization-permissions";
+import { isAutoTeamSwitchSuppressed } from "../shared/manual-team-switch-guard";
 
 /**
  * Middleware to verify user has access to a project
@@ -107,6 +108,15 @@ export default function verifyProjectAccess(
           const hasProjectAccessInTeam = await checkProjectAccessInTeam(projectId, userId, projectTeamId, isOwnerOfProjectTeam, isAdminOfProjectTeam);
 
           if (hasProjectAccessInTeam) {
+            // A manual team switch just happened — do not undo it for an
+            // in-flight prefetch / stale project request.
+            if (isAutoTeamSwitchSuppressed(userId)) {
+              logUnauthorizedAccess(userId, teamId, "project", projectId, req.path, "SUPPRESSED_AUTO_TEAM_SWITCH");
+              return res.status(403).send(
+                new ServerResponse(false, null, "You do not have permission to access this project")
+              );
+            }
+
             try {
               // Call the activate_team database function to switch teams
               const activateTeamQuery = `SELECT activate_team($1, $2)`;

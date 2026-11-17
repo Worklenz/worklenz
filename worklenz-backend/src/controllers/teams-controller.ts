@@ -5,6 +5,7 @@ import db from "../config/db";
 import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
+import { suppressAutoTeamSwitch } from "../shared/manual-team-switch-guard";
 
 export default class TeamsController extends WorklenzControllerBase {
   @HandleExceptions()
@@ -117,6 +118,13 @@ export default class TeamsController extends WorklenzControllerBase {
   public static async activate(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const q = `SELECT activate_team($1, $2)`;
     await db.query(q, [req.body.id, req.user?.id ?? null]);
+
+    // Block verify-project-access / verify-task-access from auto-switching the
+    // workspace back while in-flight project prefetches (e.g. projects list
+    // hover) complete against the previous team.
+    if (req.user?.id) {
+      suppressAutoTeamSwitch(req.user.id);
+    }
 
     // Refresh the user session with updated team data to ensure the new active_team
     // is immediately reflected in req.user. Without this, the session remains stale

@@ -15,6 +15,7 @@ import {
 import {userHasProjectAccessInTeam} from "./verify-project-access";
 import { checkProjectRolePermission, checkTaskRolePermission } from "../shared/project-role-permissions";
 import { PROJECT_ROLE_PERMISSIONS, ProjectRolePermission } from "../shared/organization-permissions";
+import { isAutoTeamSwitchSuppressed } from "../shared/manual-team-switch-guard";
 
 export interface VerifyTaskAccessOptions {
   /**
@@ -227,6 +228,14 @@ export default function verifyTaskAccess(
       let pendingTeam: TaskProjectTeamContext | null = null;
 
       if (projectTeamId !== teamId) {
+        // A manual team switch just happened — do not undo it for an
+        // in-flight task/project request from the previous workspace.
+        if (isAutoTeamSwitchSuppressed(userId)) {
+          return res.status(403).send(
+            new ServerResponse(false, null, "You do not have permission to access this task")
+          );
+        }
+
         try {
           pendingTeam = await resolveTaskProjectTeamContext(
             userId,
