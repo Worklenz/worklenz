@@ -10,7 +10,6 @@ import {
   Radio,
   Row,
   Select,
-  Space,
   TimePicker,
   Typography,
   dayjs,
@@ -296,20 +295,43 @@ export const ScheduleReportModal: React.FC<ScheduleReportModalProps> = ({
       </Paragraph>
 
       <Form form={form} layout="vertical" requiredMark={false}>
-        <Form.Item
-          name="schedule_type"
-          label={t('scheduleFrequency', { defaultValue: 'Frequency' })}
-          rules={[
-            {
-              required: true,
-              message: t('scheduleFrequencyRequired', {
-                defaultValue: 'Select a frequency',
-              }),
-            },
-          ]}
-        >
-          <Select options={frequencyOptions} />
-        </Form.Item>
+        <Row gutter={16}>
+          <Col xs={24} sm={12}>
+            <Form.Item
+              name="schedule_type"
+              label={t('scheduleFrequency', { defaultValue: 'Frequency' })}
+              rules={[
+                {
+                  required: true,
+                  message: t('scheduleFrequencyRequired', {
+                    defaultValue: 'Select a frequency',
+                  }),
+                },
+              ]}
+            >
+              <Select options={frequencyOptions} />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Form.Item
+              name="send_time"
+              label={t('scheduleTime', { defaultValue: 'Time' })}
+              rules={[
+                {
+                  required: true,
+                  message: t('scheduleTimeRequired', { defaultValue: 'Select a send time' }),
+                },
+              ]}
+            >
+              <TimePicker
+                format="HH:mm"
+                minuteStep={5}
+                allowClear={false}
+                style={{ width: '100%' }}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
 
         {scheduleType === ITaskRecurring.Weekly && (
           <Form.Item
@@ -360,7 +382,7 @@ export const ScheduleReportModal: React.FC<ScheduleReportModalProps> = ({
                 rules={[{ required: true }]}
               >
                 <Select
-                  style={{ width: 120 }}
+                  style={{ width: '100%' }}
                   options={monthlyDateOptions.map(date => ({
                     label: String(date),
                     value: date,
@@ -368,24 +390,26 @@ export const ScheduleReportModal: React.FC<ScheduleReportModalProps> = ({
                 />
               </Form.Item>
             ) : (
-              <Space wrap size={12} style={{ width: '100%', marginBottom: 16 }}>
-                <Form.Item
-                  name="week_of_month"
-                  label={tRecurring('weekOfMonth', { defaultValue: 'Week of the month' })}
-                  rules={[{ required: true }]}
-                  style={{ marginBottom: 0 }}
-                >
-                  <Select style={{ width: 150 }} options={weekOptions} />
-                </Form.Item>
-                <Form.Item
-                  name="day_of_month"
-                  label={tRecurring('dayOfWeek', { defaultValue: 'Day of the week' })}
-                  rules={[{ required: true }]}
-                  style={{ marginBottom: 0 }}
-                >
-                  <Select style={{ width: 150 }} options={daysOfWeekOptions} />
-                </Form.Item>
-              </Space>
+              <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="week_of_month"
+                    label={tRecurring('weekOfMonth', { defaultValue: 'Week of the month' })}
+                    rules={[{ required: true }]}
+                  >
+                    <Select style={{ width: '100%' }} options={weekOptions} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="day_of_month"
+                    label={tRecurring('dayOfWeek', { defaultValue: 'Day of the week' })}
+                    rules={[{ required: true }]}
+                  >
+                    <Select style={{ width: '100%' }} options={daysOfWeekOptions} />
+                  </Form.Item>
+                </Col>
+              </Row>
             )}
           </>
         )}
@@ -396,7 +420,7 @@ export const ScheduleReportModal: React.FC<ScheduleReportModalProps> = ({
             label={tRecurring('intervalDays', { defaultValue: 'Interval (days)' })}
             rules={[{ required: true }]}
           >
-            <InputNumber min={1} />
+            <InputNumber min={1} style={{ width: '100%' }} />
           </Form.Item>
         )}
         {scheduleType === ITaskRecurring.EveryXWeeks && (
@@ -405,7 +429,7 @@ export const ScheduleReportModal: React.FC<ScheduleReportModalProps> = ({
             label={tRecurring('intervalWeeks', { defaultValue: 'Interval (weeks)' })}
             rules={[{ required: true }]}
           >
-            <InputNumber min={1} />
+            <InputNumber min={1} style={{ width: '100%' }} />
           </Form.Item>
         )}
         {scheduleType === ITaskRecurring.EveryXMonths && (
@@ -414,22 +438,9 @@ export const ScheduleReportModal: React.FC<ScheduleReportModalProps> = ({
             label={tRecurring('intervalMonths', { defaultValue: 'Interval (months)' })}
             rules={[{ required: true }]}
           >
-            <InputNumber min={1} />
+            <InputNumber min={1} style={{ width: '100%' }} />
           </Form.Item>
         )}
-
-        <Form.Item
-          name="send_time"
-          label={t('scheduleTime', { defaultValue: 'Time' })}
-          rules={[
-            {
-              required: true,
-              message: t('scheduleTimeRequired', { defaultValue: 'Select a send time' }),
-            },
-          ]}
-        >
-          <TimePicker format="HH:mm" minuteStep={5} allowClear={false} style={{ width: '100%' }} />
-        </Form.Item>
 
         <Form.Item
           name="recipients"
