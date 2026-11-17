@@ -69,10 +69,32 @@ export const ReportingModePaddle: React.FC<ReportingModePaddleProps> = ({
 
   const options = useMemo(
     () => [
-      { label: advancedLabel, value: 'custom' as const },
-      { label: classicLabel, value: 'classic' as const },
+      {
+        label: (
+          <span
+            style={{
+              color: mode === 'custom' ? '#ffffff' : token.colorTextSecondary,
+            }}
+          >
+            {advancedLabel}
+          </span>
+        ),
+        value: 'custom' as const,
+      },
+      {
+        label: (
+          <span
+            style={{
+              color: mode === 'classic' ? '#ffffff' : token.colorTextSecondary,
+            }}
+          >
+            {classicLabel}
+          </span>
+        ),
+        value: 'classic' as const,
+      },
     ],
-    [advancedLabel, classicLabel]
+    [advancedLabel, classicLabel, mode, token.colorTextSecondary]
   );
 
   const goToMode = useCallback(

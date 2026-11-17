@@ -46,7 +46,6 @@
 .reporting-mode-paddle-segmented .ant-segmented-item {
   min-height: 24px;
   border-radius: 5px;
-  color: var(--ant-color-text-secondary, #595959);
   font-size: 12px;
   transition: background 0.15s ease, color 0.15s ease;
 }
