@@ -1,10 +1,9 @@
-import { SendEmailCommand, SendRawEmailCommand, SESClient } from "@aws-sdk/client-ses";
+import { SendEmailCommand, SESClient } from "@aws-sdk/client-ses";
+import {
+  SendEmailCommand as SendEmailCommandV2,
+  SESv2Client,
+} from "@aws-sdk/client-sesv2";
 import nodemailer from "nodemailer";
-// nodemailer ships MailComposer without a public typed export path
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const MailComposer = require("nodemailer/lib/mail-composer") as new (
-  mail: Record<string, unknown>
-) => { compile: () => { build: () => Promise<Buffer> } };
 import { Validator } from "jsonschema";
 import { QueryResult } from "pg";
 import lodash from "lodash";
@@ -14,6 +13,8 @@ import emailRequestSchema from "../json_schemas/email-request-schema";
 import db from "../config/db";
 
 const sesClient = new SESClient({ region: process.env.AWS_REGION });
+/** SESv2 is used for attachment sends (Simple content + Attachments maps to ses:SendEmail). */
+const sesV2Client = new SESv2Client({ region: process.env.AWS_REGION });
 
 /** SES raw message limit is 10MB; keep headroom for MIME wrappers. */
 export const MAX_EMAIL_ATTACHMENT_BYTES = 9 * 1024 * 1024;
@@ -237,23 +238,20 @@ function toNodemailerAttachments(attachments: IEmailAttachment[]) {
   }));
 }
 
-async function buildRawMimeMessage(input: {
-  from: string;
-  to: string[];
-  subject: string;
-  html: string;
-  text: string;
-  attachments: IEmailAttachment[];
-}): Promise<Buffer> {
-  const mail = new MailComposer({
-    from: input.from,
-    to: input.to.join(", "),
-    subject: input.subject,
-    html: input.html,
-    text: input.text,
-    attachments: toNodemailerAttachments(input.attachments),
+/** Maps app attachments to SESv2 Simple.Attachments (IAM action: ses:SendEmail). */
+function toSesV2Attachments(attachments: IEmailAttachment[]) {
+  return attachments.map(a => {
+    const rawContent =
+      typeof a.content === "string" ? Buffer.from(a.content, "utf8") : a.content;
+    return {
+      FileName: a.filename,
+      ...(a.contentType ? { ContentType: a.contentType } : {}),
+      ContentDisposition: a.cid ? ("INLINE" as const) : ("ATTACHMENT" as const),
+      ...(a.cid ? { ContentId: a.cid } : {}),
+      ContentTransferEncoding: "BASE64" as const,
+      RawContent: rawContent,
+    };
   });
-  return mail.compile().build();
 }
 
 async function removeMails(query: string, emails: string[]) {
@@ -309,6 +307,19 @@ function categorizeError(error: any): {
   message: string;
   details?: any;
 } {
+  if (
+    error.name === "AccessDenied" ||
+    error.Code === "AccessDenied" ||
+    error.$metadata?.httpStatusCode === 403
+  ) {
+    return {
+      code: "SES_ACCESS_DENIED",
+      message:
+        "Amazon SES denied the send. Ensure the IAM identity allows ses:SendEmail (and ses:SendRawEmail if using raw/SMTP).",
+      details: error.message || error.Error?.Message,
+    };
+  }
+
   if (error.name === "MessageRejected") {
     return {
       code: "MESSAGE_REJECTED",
@@ -492,20 +503,22 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
       });
       messageId = response.messageId;
     } else if (attachments.length) {
-      // SES SendEmail API cannot carry attachments; send a raw MIME message.
-      const raw = await buildRawMimeMessage({
-        from,
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-        text: plainText,
-        attachments,
-      });
-      const response = await sesClient.send(
-        new SendRawEmailCommand({
-          RawMessage: { Data: raw },
-          Destinations: options.to,
-          Source: from,
+      // Prefer SESv2 Simple + Attachments so IAM only needs ses:SendEmail
+      // (v1 SendRawEmail is often missing from least-privilege SES policies).
+      const response = await sesV2Client.send(
+        new SendEmailCommandV2({
+          FromEmailAddress: from,
+          Destination: { ToAddresses: options.to },
+          Content: {
+            Simple: {
+              Subject: { Charset: charset, Data: options.subject },
+              Body: {
+                Html: { Charset: charset, Data: options.html },
+                Text: { Charset: charset, Data: plainText },
+              },
+              Attachments: toSesV2Attachments(attachments),
+            },
+          },
         })
       );
       messageId = response.MessageId;
