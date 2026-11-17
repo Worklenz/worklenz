@@ -4,7 +4,7 @@
 # Worklenz Local Management Script
 # ============================================================================
 # This script provides an interactive menu for managing local Worklenz deployment
-# Supports both localhost (self-signed SSL) and production domains (Let's Encrypt)
+# Supports localhost (self-signed SSL) and externally provisioned domain certificates
 # ============================================================================
 
 set -e
@@ -135,6 +135,15 @@ update_env_value() {
 setup_self_signed_ssl() {
     print_info "Setting up self-signed SSL certificates for localhost..."
 
+    if [ -s "$SSL_DIR/cert.pem" ] && [ -s "$SSL_DIR/key.pem" ]; then
+        print_info "Using existing certificate and key in $SSL_DIR"
+        return 0
+    fi
+    if [ -e "$SSL_DIR/cert.pem" ] || [ -e "$SSL_DIR/key.pem" ]; then
+        print_error "Both $SSL_DIR/cert.pem and $SSL_DIR/key.pem are required; existing files were not overwritten."
+        return 1
+    fi
+
     mkdir -p "$SSL_DIR"
 
     if command -v openssl &> /dev/null; then
@@ -142,6 +151,7 @@ setup_self_signed_ssl() {
             -keyout "$SSL_DIR/key.pem" \
             -out "$SSL_DIR/cert.pem" \
             -subj "/C=US/ST=State/L=City/O=Worklenz/CN=localhost" \
+            -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" \
             &> /dev/null
 
         chmod 644 "$SSL_DIR/cert.pem"
@@ -154,6 +164,7 @@ setup_self_signed_ssl() {
             -keyout /certs/key.pem \
             -out /certs/cert.pem \
             -subj "/C=US/ST=State/L=City/O=Worklenz/CN=localhost" \
+            -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" \
             2>/dev/null
 
         chmod 644 "$SSL_DIR/cert.pem"
@@ -164,91 +175,40 @@ setup_self_signed_ssl() {
 }
 
 setup_letsencrypt_ssl() {
-    local domain="${DOMAIN}"
-    local email="${LETSENCRYPT_EMAIL}"
-    local compose_cmd=$(get_compose_cmd)
+    # The Compose stack has no certbot service or ACME webroot mount. Do not
+    # claim to issue or renew certificates until those are configured.
+    print_error "Automatic certificate issuance is not available in the supplied Compose stack."
+    print_info "Provision and renew a certificate for ${DOMAIN:-your domain} externally."
+    print_info "Place the certificate at $SSL_DIR/cert.pem and the key at $SSL_DIR/key.pem."
+    return 1
+}
 
-    if [ -z "$email" ]; then
-        print_error "LETSENCRYPT_EMAIL not set in .env file!"
-        echo ""
-        read -p "Enter email for Let's Encrypt notifications: " email
-        if [ -z "$email" ]; then
-            print_error "Email is required for Let's Encrypt"
-            return 1
-        fi
-        
-        # Update .env file
-        if grep -q "^LETSENCRYPT_EMAIL=" "$ENV_FILE"; then
-            sed -i.bak "s/^LETSENCRYPT_EMAIL=.*/LETSENCRYPT_EMAIL=$email/" "$ENV_FILE"
-        else
-            echo "LETSENCRYPT_EMAIL=$email" >> "$ENV_FILE"
-        fi
-        load_env
-    fi
-
-    print_info "Setting up Let's Encrypt SSL for $domain..."
-    echo ""
-    print_warning "Before continuing, ensure:"
-    echo "  ✓ DNS A record for $domain points to this server IP"
-    echo "  ✓ Port 80 and 443 are accessible from the internet"
-    echo "  ✓ No firewall blocking HTTP/HTTPS traffic"
-    echo ""
-    read -p "Continue? (y/N): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        print_info "SSL setup cancelled"
+require_domain_certificate() {
+    if [ ! -s "$SSL_DIR/cert.pem" ] || [ ! -s "$SSL_DIR/key.pem" ]; then
+        print_error "A production certificate and key are required at $SSL_DIR/cert.pem and $SSL_DIR/key.pem."
+        print_info "Provision and renew them externally before running installation."
         return 1
     fi
-
-    # Start nginx for ACME challenge
-    print_info "Starting nginx for domain verification..."
-    $compose_cmd up -d nginx
-    sleep 5
-
-    # Request certificate
-    print_info "Requesting SSL certificate from Let's Encrypt..."
-    print_info "This may take 1-2 minutes..."
-    echo ""
-
-    $compose_cmd run --rm certbot certonly --webroot \
-        --webroot-path=/var/www/certbot \
-        --email "$email" \
-        --agree-tos \
-        --no-eff-email \
-        -d "$domain" \
-        2>&1 | tee /tmp/certbot.log
-
-    if [ ${PIPESTATUS[0]} -eq 0 ]; then
-        # Update nginx config to use Let's Encrypt certificates
-        print_info "Updating nginx configuration..."
-        
-        cp "$SCRIPT_DIR/nginx/conf.d/worklenz.conf" "$SCRIPT_DIR/nginx/conf.d/worklenz.conf.bak"
-        
-        sed -i.tmp \
-            -e "s|ssl_certificate /etc/nginx/ssl/cert.pem;|ssl_certificate /etc/letsencrypt/live/$domain/fullchain.pem;|" \
-            -e "s|ssl_certificate_key /etc/nginx/ssl/key.pem;|ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;|" \
-            "$SCRIPT_DIR/nginx/conf.d/worklenz.conf"
-        
-        rm -f "$SCRIPT_DIR/nginx/conf.d/worklenz.conf.tmp"
-
-        # Update .env to enable SSL
-        sed -i.bak 's/^ENABLE_SSL=.*/ENABLE_SSL=true/' "$ENV_FILE"
-        
-        print_success "Let's Encrypt SSL certificates obtained successfully!"
-        print_info "Backup saved: nginx/conf.d/worklenz.conf.bak"
-        return 0
-    else
-        print_error "Failed to obtain Let's Encrypt certificate"
-        echo ""
-        print_info "Common issues:"
-        echo "  • DNS not configured properly (test with: dig $domain)"
-        echo "  • Port 80 blocked by firewall"
-        echo "  • Domain not pointing to this server"
-        echo "  • Another service using port 80"
-        echo ""
-        print_info "Check logs: cat /tmp/certbot.log"
+    if ! command -v openssl >/dev/null 2>&1; then
+        print_error "OpenSSL is required to validate the certificate for ${DOMAIN}."
         return 1
     fi
+    if ! openssl x509 -in "$SSL_DIR/cert.pem" -noout -checkend 0 >/dev/null 2>&1 ||
+       ! LC_ALL=C openssl x509 -in "$SSL_DIR/cert.pem" -noout -checkhost "$DOMAIN" 2>/dev/null | grep -q 'does match'; then
+        print_error "The certificate must be unexpired and match ${DOMAIN}."
+        return 1
+    fi
+    local cert_public_key key_public_key
+    cert_public_key=$(openssl x509 -in "$SSL_DIR/cert.pem" -pubkey -noout 2>/dev/null) || return 1
+    key_public_key=$(openssl pkey -in "$SSL_DIR/key.pem" -passin pass: -pubout 2>/dev/null) || {
+        print_error "Unable to read the certificate private key."
+        return 1
+    }
+    if [ "$cert_public_key" != "$key_public_key" ]; then
+        print_error "The certificate and private key do not match."
+        return 1
+    fi
+    print_info "Using existing certificate and key in $SSL_DIR; ensure the certificate is trusted and renewed."
 }
 
 auto_setup_ssl() {
@@ -258,8 +218,7 @@ auto_setup_ssl() {
         sed -i.bak 's/^ENABLE_SSL=.*/ENABLE_SSL=false/' "$ENV_FILE"
     else
         print_info "Detected domain deployment: ${DOMAIN}"
-        print_info "Setting up Let's Encrypt SSL..."
-        setup_letsencrypt_ssl
+        require_domain_certificate
     fi
 }
 
@@ -300,7 +259,7 @@ start_services() {
     if is_localhost; then
         print_info "SSL mode: Self-signed (localhost)"
     else
-        print_info "SSL mode: Let's Encrypt (${DOMAIN})"
+        print_info "SSL mode: externally provisioned certificate (${DOMAIN})"
     fi
     echo ""
 
@@ -752,11 +711,6 @@ configure_env() {
         sed -i.bak "s|^SERVER_CORS=.*|SERVER_CORS=https://$domain|" "$ENV_FILE"
         sed -i.bak "s|^SOCKET_IO_CORS=.*|SOCKET_IO_CORS=https://$domain|" "$ENV_FILE"
 
-        # Ask for Let's Encrypt email
-        echo ""
-        read -p "Enter email for Let's Encrypt: " letsencrypt_email
-        sed -i.bak "s/^# LETSENCRYPT_EMAIL=.*/LETSENCRYPT_EMAIL=$letsencrypt_email/" "$ENV_FILE"
-        sed -i.bak "s/^LETSENCRYPT_EMAIL=.*/LETSENCRYPT_EMAIL=$letsencrypt_email/" "$ENV_FILE"
     fi
 
     rm -f "$ENV_FILE.bak"
@@ -1070,36 +1024,16 @@ install_worklenz() {
     echo "  - For local testing: enter 'localhost'"
     echo "  - For production: enter your domain (e.g., worklenz.example.com)"
     echo ""
-    read -p "Domain [localhost]: " domain
-    domain=${domain:-localhost}
+    load_env
+    local configured_domain="${DOMAIN:-localhost}"
+    read -p "Domain [$configured_domain]: " domain
+    domain=${domain:-$configured_domain}
 
     # Update DOMAIN in .env
     sed -i.bak "s/^DOMAIN=.*/DOMAIN=$domain/" "$ENV_FILE"
     rm -f "$ENV_FILE.bak"
 
     print_success "Domain set to: $domain"
-
-    # If production domain, ask for Let's Encrypt email
-    if [[ "$domain" != "localhost" && "$domain" != "127.0.0.1" && "$domain" != "0.0.0.0" ]]; then
-        echo ""
-        echo -e "${YELLOW}SSL Certificate Setup${NC}"
-        echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-        echo ""
-        echo "For Let's Encrypt SSL certificates, we need an email address."
-        echo "This email will be used for:"
-        echo "  - Certificate expiration notifications"
-        echo "  - Important account updates"
-        echo ""
-        read -p "Enter email for Let's Encrypt: " letsencrypt_email
-
-        if [ -n "$letsencrypt_email" ]; then
-            # Uncomment and set LETSENCRYPT_EMAIL
-            sed -i.bak "s/^# LETSENCRYPT_EMAIL=.*/LETSENCRYPT_EMAIL=$letsencrypt_email/" "$ENV_FILE"
-            sed -i.bak "s/^LETSENCRYPT_EMAIL=.*/LETSENCRYPT_EMAIL=$letsencrypt_email/" "$ENV_FILE"
-            rm -f "$ENV_FILE.bak"
-            print_success "Let's Encrypt email configured"
-        fi
-    fi
 
     # Auto-configure environment (generate secrets and update URLs)
     echo ""
@@ -1291,8 +1225,8 @@ manage_ssl() {
     echo -e "${BLUE}SSL/TLS Management${NC}"
     echo ""
     echo "1. Setup Self-Signed SSL (localhost)"
-    echo "2. Setup Let's Encrypt SSL (domain)"
-    echo "3. Renew Let's Encrypt Certificate"
+    echo "2. Certificate setup instructions (domain)"
+    echo "3. Certificate renewal instructions"
     echo "4. View Certificate Info"
     echo "0. Back"
     echo ""
@@ -1306,15 +1240,11 @@ manage_ssl() {
             ;;
         2)
             load_env
-            setup_letsencrypt_ssl
+            setup_letsencrypt_ssl || true
             read -p "Press Enter to continue..."
             ;;
         3)
-            print_info "Renewing Let's Encrypt certificate..."
-            local compose_cmd=$(get_compose_cmd)
-            $compose_cmd run --rm certbot renew
-            $compose_cmd restart nginx
-            print_success "Certificate renewed"
+            print_info "Renew the certificate externally, update $SSL_DIR/cert.pem and key.pem, then restart nginx."
             read -p "Press Enter to continue..."
             ;;
         4)
@@ -1323,10 +1253,6 @@ manage_ssl() {
                 openssl x509 -in "$SSL_DIR/cert.pem" -text -noout | grep -E "(Subject:|Issuer:|Not Before|Not After)"
             fi
             load_env
-            if [ ! -z "${DOMAIN}" ] && [ -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
-                print_info "Let's Encrypt certificate info:"
-                docker run --rm -v worklenz_certbot_certs:/etc/letsencrypt alpine/openssl x509 -in "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" -text -noout | grep -E "(Subject:|Issuer:|Not Before|Not After)"
-            fi
             read -p "Press Enter to continue..."
             ;;
         0)
@@ -1437,7 +1363,10 @@ main() {
 # Command-line Interface
 # ============================================================================
 
-# Handle command-line arguments
+# Handle command-line arguments only when executed directly.
+if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
+    return
+fi
 if [ $# -gt 0 ]; then
     case "$1" in
         install)

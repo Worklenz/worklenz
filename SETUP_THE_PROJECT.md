@@ -115,23 +115,7 @@ Getting started with development is a breeze! Follow these steps and you'll be c
 
 ## Docker Setup (Alternative)
 
-For an easier setup, you can use Docker and Docker Compose:
-
-1. Make sure you have Docker and Docker Compose installed on your system.
-
-2. From the root directory, run:
-
-   ```bash
-   docker compose up -d
-   ```
-
-3. Access the application:
-   - Frontend: http://localhost:5000 (Docker production build)
-   - Backend API: http://localhost:3000
-   - SeaweedFS S3 API: http://localhost:8333
-
-4. To stop the services:
-
-   ```bash
-   docker compose down
-   ```
+For the current Docker Compose installation, including required secrets,
+certificate setup, service ports and backups, follow [DOCKER_SETUP.md](DOCKER_SETUP.md).
+The Compose stack requires a configured `.env` file and an nginx certificate
+before startup.
