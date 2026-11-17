@@ -19,7 +19,20 @@ setup_self_signed_ssl >/dev/null
 [[ "$original_key" == "$(sha256sum "$SSL_DIR/key.pem")" ]]
 
 DOMAIN=example.com
+if require_domain_certificate >/dev/null; then
+    echo 'A localhost certificate was accepted for a production domain' >&2
+    exit 1
+fi
+openssl req -x509 -nodes -days 1 -newkey rsa:2048 \
+    -keyout "$SSL_DIR/key.pem" -out "$SSL_DIR/cert.pem" \
+    -subj '/CN=example.com' -addext 'subjectAltName=DNS:example.com' >/dev/null 2>&1
 require_domain_certificate >/dev/null
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$SSL_DIR/key.pem" >/dev/null 2>&1
+if require_domain_certificate >/dev/null; then
+    echo 'A mismatched production key was accepted' >&2
+    exit 1
+fi
+original_cert=$(sha256sum "$SSL_DIR/cert.pem")
 rm "$SSL_DIR/key.pem"
 if require_domain_certificate >/dev/null; then
     echo 'Missing production key was accepted' >&2

@@ -178,9 +178,13 @@ services:
     command: >
            bash -c 'while true; do
               sleep 86400;
-              PGPASSWORD=$$POSTGRES_PASSWORD pg_dump -h worklenz_db -U $$POSTGRES_USER -d $$POSTGRES_DB \
-              > /pg_backups/worklenz_db_$$(date +%Y-%m-%d_%H-%M-%S).sql;
-              find /pg_backups -type f -name "*.sql" -mtime +30 -delete;
+              backup_file=/pg_backups/worklenz_db_$$(date +%Y-%m-%d_%H-%M-%S).sql;
+              if PGPASSWORD="$$POSTGRES_PASSWORD" pg_dump -h worklenz_db -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" > "$$backup_file.tmp" && mv "$$backup_file.tmp" "$$backup_file"; then
+                find /pg_backups -type f -name "*.sql" -mtime +30 -delete;
+              else
+                rm -f "$$backup_file.tmp";
+                echo "Database backup failed; retaining existing backups" >&2;
+              fi;
             done'
     restart: unless-stopped
     networks:

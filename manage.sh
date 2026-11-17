@@ -189,7 +189,26 @@ require_domain_certificate() {
         print_info "Provision and renew them externally before running installation."
         return 1
     fi
-    print_info "Using existing certificate and key in $SSL_DIR; ensure they match ${DOMAIN} and are renewed."
+    if ! command -v openssl >/dev/null 2>&1; then
+        print_error "OpenSSL is required to validate the certificate for ${DOMAIN}."
+        return 1
+    fi
+    if ! openssl x509 -in "$SSL_DIR/cert.pem" -noout -checkend 0 >/dev/null 2>&1 ||
+       ! LC_ALL=C openssl x509 -in "$SSL_DIR/cert.pem" -noout -checkhost "$DOMAIN" 2>/dev/null | grep -q 'does match'; then
+        print_error "The certificate must be unexpired and match ${DOMAIN}."
+        return 1
+    fi
+    local cert_public_key key_public_key
+    cert_public_key=$(openssl x509 -in "$SSL_DIR/cert.pem" -pubkey -noout 2>/dev/null) || return 1
+    key_public_key=$(openssl pkey -in "$SSL_DIR/key.pem" -passin pass: -pubout 2>/dev/null) || {
+        print_error "Unable to read the certificate private key."
+        return 1
+    }
+    if [ "$cert_public_key" != "$key_public_key" ]; then
+        print_error "The certificate and private key do not match."
+        return 1
+    fi
+    print_info "Using existing certificate and key in $SSL_DIR; ensure the certificate is trusted and renewed."
 }
 
 auto_setup_ssl() {

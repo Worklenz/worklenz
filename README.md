@@ -122,7 +122,6 @@ _**Client Portal**_
 | **Frontend** | React + Ant Design |
 | **Backend** | TypeScript + Express.js |
 | **Database** | PostgreSQL |
-| **Storage** | SeaweedFS (S3-compatible) / AWS S3 / Azure Blob |
 | **Storage** | SeaweedFS (S3-compatible), AWS S3, or Azure Blob |
 | **Proxy** | Nginx |
 
@@ -435,7 +434,7 @@ export const S3_SECRET_ACCESS_KEY = process.env.S3_SECRET_ACCESS_KEY || "";
 Worklenz is built with security in mind:
 
 - 🔐 Non-root Docker containers
-- 🌐 Compose networking (the default file also publishes backend, frontend, and storage ports; restrict access at your firewall)
+- 🌐 Compose networking (the default file also publishes backend, frontend, client-portal, and storage ports; restrict access at your firewall)
 - 🔑 SSL/TLS (provide and renew a certificate for production; self-signed for localhost)
 - 🛡️ Rate limiting on API and login endpoints
 - 🔒 Security headers (HSTS, CSP, X-Frame-Options, etc.)
@@ -455,7 +454,7 @@ Worklenz-operated deployments use Google Analytics, Mixpanel, and Microsoft Clar
 - 💻 Browser and device information
 
 **Privacy and consent:**
-- Google Analytics loads only on Worklenz-operated production and test hosts. Microsoft Clarity is restricted to the production host and uses the cookie consent setting.
+- Google Analytics loads only on Worklenz-operated production and test hosts, without waiting for the cookie choice. Microsoft Clarity is restricted to the production host and uses the cookie consent setting.
 - Mixpanel initializes when a valid `VITE_MIXPANEL_TOKEN` is included in the frontend build, including on self-hosted installations. Leave it unset when building to disable Mixpanel. Its initialization does not wait for the cookie banner choice.
 - 🔎 Analytics data may include identifiers such as cookies, IP-derived location, and device details. Data is handled according to the providers' policies, including [Google's Privacy Policy](https://policies.google.com/privacy).
 <br/>
