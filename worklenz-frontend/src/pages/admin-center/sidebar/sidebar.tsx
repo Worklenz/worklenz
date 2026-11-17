@@ -22,7 +22,7 @@ const AdminCenterSidebar: React.FC = () => {
 
   const menuItems = adminCenterItems.filter(item => {
     if (item.key === 'settings') {
-      return isBusinessPlan(currentSession);
+      return currentSession?.deployment_mode === 'self_hosted' || isBusinessPlan(currentSession);
     }
     if (item.selfHostedExcluded && isSelfHosted) {
       return false;

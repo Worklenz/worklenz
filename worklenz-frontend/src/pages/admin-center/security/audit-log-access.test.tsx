@@ -91,3 +91,22 @@ describe('Security > Audit Log access (task 8.2)', () => {
     }
   );
 });
+
+describe('Admin Center utilization settings navigation', () => {
+  it.each([
+    { deployment_mode: 'self_hosted' as const, subscription_type: 'FREE' },
+    { deployment_mode: 'cloud' as const, subscription_type: 'SELF_HOSTED' },
+  ])('shows settings for self-hosted sessions', session => {
+    signInAs('owner');
+    mockSession.current = { ...mockSession.current, ...session } as ILocalSession;
+    renderSidebar();
+    expect(screen.getByRole('link', { name: 'Settings' })).toBeInTheDocument();
+  });
+
+  it('keeps settings hidden for cloud users without Business access', () => {
+    signInAs('owner');
+    mockSession.current = { ...mockSession.current, deployment_mode: 'cloud', subscription_type: 'FREE' } as ILocalSession;
+    renderSidebar();
+    expect(screen.queryByRole('link', { name: 'Settings' })).not.toBeInTheDocument();
+  });
+});
