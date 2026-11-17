@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Segmented, Tooltip, Button, RetweetOutlined, theme } from '@/shared/antd-imports';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
+import { FILTER_PILL_CONTROL_STYLE } from '@/components/common/filters/MultiSelectFilterPill';
 import './reporting-mode-paddle.css';
+
 
 /** `custom` = analytics (new), `classic` = legacy reporting (old). */
 export type ReportingMode = 'custom' | 'classic';
@@ -141,8 +143,9 @@ export const ReportingModePaddle: React.FC<ReportingModePaddleProps> = ({
   return (
     <div className={className} style={{ padding: '0 4px 10px' }}>
       <Segmented
+        className="reporting-mode-paddle-segmented"
         block
-        size="small"
+        style={FILTER_PILL_CONTROL_STYLE}
         value={mode}
         options={options}
         onChange={value => goToMode(value as ReportingMode)}

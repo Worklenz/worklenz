@@ -60,7 +60,7 @@ export const SaveAnalyticsTemplateModal: React.FC<SaveAnalyticsTemplateModalProp
   return (
     <Modal
       open={open}
-      title={t('saveAsTemplate', { defaultValue: 'Save as Template' })}
+      title={t('saveReport', { defaultValue: 'Save Report' })}
       onCancel={onCancel}
       onOk={handleOk}
       confirmLoading={confirmLoading || submitting}
