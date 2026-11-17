@@ -2,6 +2,15 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { nanoid } from 'nanoid';
 import { useTranslation } from 'react-i18next';
 import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import {
   Badge,
   Button,
   Flex,
@@ -21,6 +30,8 @@ import { ITaskCustomColumn, ITaskCustomColumnSelectionOption } from '@/types/tas
 import { getTaskCustomFieldDisplayName } from '@/utils/task-custom-columns';
 import { SelectionType } from '../selection-type-column/selection-type-column';
 import SelectionColorPicker from '../SelectionColorPicker';
+import { SortableSelectionOptionRow } from '../sortable-selection-option-row';
+import { reorderSelectionsInGroup } from './reorder-selections-in-group';
 
 const splitOptionLabels = (raw: string) =>
   raw
@@ -42,6 +53,11 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
   const [draftByParentId, setDraftByParentId] = useState<Record<string, string>>({});
   const inputRefs = useRef<Record<string, InputRef | null>>({});
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    })
+  );
 
   useEffect(() => {
     if (!pendingFocusId) return;
@@ -127,6 +143,21 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
     }
   };
 
+  const handleGroupDragEnd = (groupIds: string[]) => (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const nextSelections = reorderSelectionsInGroup(
+      selections,
+      groupIds,
+      String(active.id),
+      String(over.id)
+    );
+    if (nextSelections) {
+      updateSelections(nextSelections);
+    }
+  };
+
   if (!parentColumn) {
     return (
       <Typography.Text type="secondary">
@@ -137,72 +168,92 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
     );
   }
 
+  const dragHandleLabel = t('customColumns.dependentSelection.reorderOption', {
+    defaultValue: 'Drag to reorder option',
+  });
+
   const renderSelectionRow = (
     selection: SelectionType,
     isUnassigned: boolean,
     parentOption?: ITaskCustomColumnSelectionOption
-  ) => (
-    <Flex gap={8} align="center" key={selection.selection_id}>
-      <Input
-        ref={element => {
-          inputRefs.current[selection.selection_id] = element;
-        }}
-        value={selection.selection_name}
-        onChange={event =>
-          updateSelection(selection.selection_id, { selection_name: event.target.value })
-        }
-        onPressEnter={event => {
-          if (isUnassigned || !parentOption) {
-            event.preventDefault();
-            return;
+  ) => {
+    const rowContent = (
+      <>
+        <Input
+          ref={element => {
+            inputRefs.current[selection.selection_id] = element;
+          }}
+          value={selection.selection_name}
+          onChange={event =>
+            updateSelection(selection.selection_id, { selection_name: event.target.value })
           }
-          handleGroupSelectionEnter(event, parentOption, selection);
-        }}
-        placeholder={t('customColumns.dependentSelection.optionPlaceholder', {
-          defaultValue: 'Type an option and press Enter',
-        })}
-        style={{ flex: 1, minWidth: 0 }}
-        aria-label={t('customColumns.dependentSelection.optionNameLabel', {
-          defaultValue: 'Option name',
-        })}
-      />
-      <SelectionColorPicker
-        value={selection.selection_color}
-        onChange={color => updateSelection(selection.selection_id, { selection_color: color })}
-        ariaLabel={t('customColumns.dependentSelection.optionColorLabel', {
-          defaultValue: 'Option color',
-        })}
-      />
-      {isUnassigned && (
-        <Select
-          size="small"
-          style={{ width: 128 }}
-          placeholder={t('customColumns.dependentSelection.moveTo', { defaultValue: 'Move to…' })}
-          options={moveToOptions}
-          onChange={value => updateSelection(selection.selection_id, { parent_selection_id: value })}
-          aria-label={t('customColumns.dependentSelection.moveToLabel', {
-            defaultValue: 'Move option to another {{parent}} group',
-            parent: parentName,
+          onPressEnter={event => {
+            if (isUnassigned || !parentOption) {
+              event.preventDefault();
+              return;
+            }
+            handleGroupSelectionEnter(event, parentOption, selection);
+          }}
+          placeholder={t('customColumns.dependentSelection.optionPlaceholder', {
+            defaultValue: 'Type an option and press Enter',
           })}
-          popupMatchSelectWidth={false}
+          style={{ flex: 1, minWidth: 0 }}
+          aria-label={t('customColumns.dependentSelection.optionNameLabel', {
+            defaultValue: 'Option name',
+          })}
         />
-      )}
-      <Tooltip
-        title={t('customColumns.dependentSelection.removeOption', { defaultValue: 'Remove option' })}
-      >
-        <Button
-          type="text"
-          size="small"
-          htmlType="button"
-          icon={<CloseCircleOutlined />}
-          onClick={() => handleRemoveSelection(selection.selection_id)}
-          aria-label={t('customColumns.dependentSelection.removeOption', {
+        <SelectionColorPicker
+          value={selection.selection_color}
+          onChange={color => updateSelection(selection.selection_id, { selection_color: color })}
+          ariaLabel={t('customColumns.dependentSelection.optionColorLabel', {
+            defaultValue: 'Option color',
+          })}
+        />
+        {isUnassigned && (
+          <Select
+            size="small"
+            style={{ width: 128 }}
+            placeholder={t('customColumns.dependentSelection.moveTo', { defaultValue: 'Move to…' })}
+            options={moveToOptions}
+            onChange={value =>
+              updateSelection(selection.selection_id, { parent_selection_id: value })
+            }
+            aria-label={t('customColumns.dependentSelection.moveToLabel', {
+              defaultValue: 'Move option to another {{parent}} group',
+              parent: parentName,
+            })}
+            popupMatchSelectWidth={false}
+          />
+        )}
+        <Tooltip
+          title={t('customColumns.dependentSelection.removeOption', {
             defaultValue: 'Remove option',
           })}
-        />
-      </Tooltip>
-    </Flex>
-  );
+        >
+          <Button
+            type="text"
+            size="small"
+            htmlType="button"
+            icon={<CloseCircleOutlined />}
+            onClick={() => handleRemoveSelection(selection.selection_id)}
+            aria-label={t('customColumns.dependentSelection.removeOption', {
+              defaultValue: 'Remove option',
+            })}
+          />
+        </Tooltip>
+      </>
+    );
+
+    return (
+      <SortableSelectionOptionRow
+        key={selection.selection_id}
+        id={selection.selection_id}
+        dragHandleLabel={dragHandleLabel}
+      >
+        {rowContent}
+      </SortableSelectionOptionRow>
+    );
+  };
 
   return (
     <Flex vertical gap={8} style={{ maxWidth: '100%' }}>
@@ -226,6 +277,7 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
               const groupSelections = selections.filter(
                 selection => selection.parent_selection_id === parentOption.selection_id
               );
+              const groupIds = groupSelections.map(selection => selection.selection_id);
               const draftValue = draftByParentId[parentOption.selection_id] || '';
               const addFocusKey = addInputFocusId(parentOption.selection_id);
 
@@ -244,9 +296,19 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
                       <Typography.Text strong>{parentOption.selection_name}</Typography.Text>
                     </Flex>
 
-                    {groupSelections.map(selection =>
-                      renderSelectionRow(selection, false, parentOption)
-                    )}
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleGroupDragEnd(groupIds)}
+                    >
+                      <SortableContext items={groupIds} strategy={verticalListSortingStrategy}>
+                        <Flex vertical gap={8}>
+                          {groupSelections.map(selection =>
+                            renderSelectionRow(selection, false, parentOption)
+                          )}
+                        </Flex>
+                      </SortableContext>
+                    </DndContext>
 
                     <Flex gap={6}>
                       <Input
@@ -314,7 +376,22 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
                   })}
                 </Typography.Text>
               </Flex>
-              {unassignedSelections.map(selection => renderSelectionRow(selection, true))}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleGroupDragEnd(
+                  unassignedSelections.map(selection => selection.selection_id)
+                )}
+              >
+                <SortableContext
+                  items={unassignedSelections.map(selection => selection.selection_id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <Flex vertical gap={8}>
+                    {unassignedSelections.map(selection => renderSelectionRow(selection, true))}
+                  </Flex>
+                </SortableContext>
+              </DndContext>
             </Flex>
           </div>
         )}

@@ -247,6 +247,7 @@
       "addSelection": "+ Añadir una selección",
       "selectionPlaceholder": "Escribe una selección y pulsa Enter",
       "selectionNameLabel": "Nombre de la selección",
+      "reorderSelection": "Arrastra para reordenar la selección",
       "labels": "Etiquetas",
       "addLabel": "+ Añadir una etiqueta",
       "keyLabelPlaceholder": "ej: MK"
@@ -289,6 +290,7 @@
       "optionPlaceholder": "Escribe una opción y pulsa Enter",
       "optionNameLabel": "Nombre de la opción",
       "optionColorLabel": "Color de la opción",
+      "reorderOption": "Arrastra para reordenar la opción",
       "moveTo": "Mover a…",
       "moveToLabel": "Mover la opción a otro grupo de {{parent}}",
       "removeOption": "Eliminar opción",
