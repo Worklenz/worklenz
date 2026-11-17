@@ -484,6 +484,17 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
       onExport={handleExport}
       exportLoading={exporting}
       exportDisabled={!data || data.projects.length === 0}
+      schedule={{
+        reportKind: 'planned-vs-actual-tasks',
+        reportName: title,
+        templateId: customTemplateId,
+        getFilters: () => ({
+          project_ids: selectedProjectIds,
+          member_ids: selectedMemberIds,
+          team_ids: selectedTeamIds,
+          date_preset: datePreset,
+        }),
+      }}
       actions={
         !isCustomTemplateView ? (
           <AnalyticsTemplateActions

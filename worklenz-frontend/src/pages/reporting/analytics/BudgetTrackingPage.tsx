@@ -484,6 +484,16 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
       onExport={handleExport}
       exportLoading={exporting}
       exportDisabled={!data || data.projects.length === 0}
+      schedule={{
+        reportKind: 'budget-tracking',
+        reportName: title,
+        templateId: customTemplateId,
+        getFilters: () => ({
+          project_ids: selectedProjectIds,
+          member_ids: selectedMemberIds,
+          team_ids: selectedTeamIds,
+        }),
+      }}
       actions={
         !isCustomTemplateView ? (
           <AnalyticsTemplateActions

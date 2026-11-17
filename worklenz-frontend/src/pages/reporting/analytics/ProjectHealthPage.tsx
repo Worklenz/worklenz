@@ -533,6 +533,18 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       onExport={handleExport}
       exportLoading={exporting}
       exportDisabled={!data || data.projects.length === 0}
+      schedule={{
+        reportKind: 'project-health',
+        reportName: title,
+        templateId: customTemplateId,
+        getFilters: () => ({
+          project_ids: selectedProjectIds,
+          member_ids: selectedMemberIds,
+          team_ids: selectedTeamIds,
+          health_ids: selectedHealthIds,
+          date_preset: datePreset,
+        }),
+      }}
       actions={
         !isCustomTemplateView ? (
           <AnalyticsTemplateActions

@@ -365,6 +365,17 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
       onExport={hasProjectSelection ? handleExport : undefined}
       exportLoading={exporting}
       exportDisabled={!data || !hasProjectSelection || data.milestones.length === 0}
+      schedule={{
+        reportKind: 'planned-vs-actual-milestones',
+        reportName: title,
+        templateId: customTemplateId,
+        getFilters: () => ({
+          project_ids: selectedProjectIds,
+          member_ids: selectedMemberIds,
+          team_ids: selectedTeamIds,
+          date_preset: datePreset,
+        }),
+      }}
       actions={
         !isCustomTemplateView ? (
           <AnalyticsTemplateActions

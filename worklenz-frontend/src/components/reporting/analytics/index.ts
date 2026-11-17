@@ -1,6 +1,9 @@
 export { AnalyticsSidebar } from './AnalyticsSidebar';
 export { ReportPageShell } from './ReportPageShell';
-export type { ReportPageShellProps } from './ReportPageShell';
+export type {
+  ReportPageShellProps,
+  ReportPageShellScheduleConfig,
+} from './ReportPageShell';
 export { ChartTableWrapper } from './ChartTableWrapper';
 export {
   AnalyticsExportMenu,

@@ -489,6 +489,18 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
       onExport={handleExport}
       exportLoading={exporting}
       exportDisabled={!data || data.rows.length === 0}
+      schedule={{
+        reportKind: 'time-report',
+        reportName: title,
+        templateId: customTemplateId,
+        getFilters: () => ({
+          project_ids: selectedProjectIds,
+          member_ids: selectedMemberIds,
+          team_ids: selectedTeamIds,
+          date_preset: datePreset,
+          custom_range: customRange,
+        }),
+      }}
       actions={
         !isCustomTemplateView ? (
           <AnalyticsTemplateActions

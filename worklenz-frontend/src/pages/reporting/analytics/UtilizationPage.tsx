@@ -412,6 +412,18 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
       onExport={handleExport}
       exportLoading={exporting}
       exportDisabled={!data || data.members.length === 0}
+      schedule={{
+        reportKind: 'utilization',
+        reportName: title,
+        templateId: customTemplateId,
+        getFilters: () => ({
+          project_ids: selectedProjectIds,
+          member_ids: selectedMemberIds,
+          team_ids: selectedTeamIds,
+          date_preset: datePreset,
+          custom_range: customRange,
+        }),
+      }}
       actions={
         !isCustomTemplateView ? (
           <AnalyticsTemplateActions

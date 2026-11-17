@@ -506,6 +506,18 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
       exportDisabled={!data}
       exportFormats={['csv', 'pdf', 'png', 'svg']}
       exportLoading={exporting}
+      schedule={{
+        reportKind: 'time-in-status',
+        reportName: title,
+        templateId: customTemplateId,
+        getFilters: () => ({
+          project_ids: selectedProjectIds,
+          member_ids: selectedMemberIds,
+          team_ids: selectedTeamIds,
+          date_preset: datePreset,
+          custom_range: customRange,
+        }),
+      }}
       actions={
         !isCustomTemplateView ? (
           <AnalyticsTemplateActions

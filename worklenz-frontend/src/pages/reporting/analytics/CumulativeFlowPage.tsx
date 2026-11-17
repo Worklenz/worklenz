@@ -403,6 +403,17 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
       exportDisabled={!data}
       exportFormats={['csv', 'pdf', 'png', 'svg']}
       exportLoading={exporting}
+      schedule={{
+        reportKind: 'cumulative-flow',
+        reportName: title,
+        templateId: customTemplateId,
+        getFilters: () => ({
+          project_ids: selectedProjectIds,
+          team_ids: selectedTeamIds,
+          date_preset: datePreset,
+          custom_range: customRange,
+        }),
+      }}
       actions={
         !isCustomTemplateView ? (
           <AnalyticsTemplateActions

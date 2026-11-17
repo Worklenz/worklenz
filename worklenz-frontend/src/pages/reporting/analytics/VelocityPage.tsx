@@ -496,6 +496,16 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       exportDisabled={!data || !hasProjectSelection}
       exportFormats={['excel', 'pdf', 'png', 'svg', 'csv']}
       exportLoading={exporting}
+      schedule={{
+        reportKind: 'velocity',
+        reportName: title,
+        templateId: customTemplateId,
+        getFilters: () => ({
+          ...filters,
+          date_preset: datePreset,
+          custom_range: customRange,
+        }),
+      }}
       actions={
         isCustomTemplateView ? undefined : (
           <AnalyticsTemplateActions
