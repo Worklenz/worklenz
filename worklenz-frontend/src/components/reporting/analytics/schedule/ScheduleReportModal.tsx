@@ -323,12 +323,7 @@ export const ScheduleReportModal: React.FC<ScheduleReportModalProps> = ({
                 },
               ]}
             >
-              <TimePicker
-                format="HH:mm"
-                minuteStep={5}
-                allowClear={false}
-                style={{ width: '100%' }}
-              />
+              <TimePicker format="HH:mm" allowClear={false} style={{ width: '100%' }} />
             </Form.Item>
           </Col>
         </Row>
