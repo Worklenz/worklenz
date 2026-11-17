@@ -18,3 +18,7 @@ export {
 export { AnalyticsTemplateActions } from './templates/AnalyticsTemplateActions';
 export { SaveAnalyticsTemplateModal } from './templates/SaveAnalyticsTemplateModal';
 export type { SaveAnalyticsTemplateValues } from './templates/SaveAnalyticsTemplateModal';
+export { AnalyticsScheduleAction } from './schedule/AnalyticsScheduleAction';
+export type { AnalyticsScheduleActionProps } from './schedule/AnalyticsScheduleAction';
+export { ScheduleReportModal } from './schedule/ScheduleReportModal';
+export type { ScheduleReportModalProps } from './schedule/ScheduleReportModal';
