@@ -23,5 +23,17 @@
   "autoSyncHolidays": "Automatycznie synchronizuj oficjalne święta",
   "saveHolidaySettings": "Zapisz ustawienia urlopowe",
   "holidaySettingsSaved": "Ustawienia urlopowe zostały pomyślnie zapisane",
-  "errorSavingHolidaySettings": "Błąd podczas zapisywania ustawień urlopowych"
+  "errorSavingHolidaySettings": "Błąd podczas zapisywania ustawień urlopowych",
+  "workPolicySaved": "Zapisano ustawienia zasad pracy",
+  "errorSavingWorkPolicy": "Nie udało się zapisać zasad pracy",
+  "errorLoadingWorkPolicy": "Nie udało się wczytać ustawień wykorzystania.",
+  "retry": "Spróbuj ponownie",
+  "utilizationThresholdHelp": "Ustaw optymalny zakres wykorzystania. Poniżej minimum występuje niedostateczne wykorzystanie, a powyżej maksimum przeciążenie.",
+  "optimalMinThreshold": "Optimal min (%)",
+  "optimalMaxThreshold": "Optymalne maksimum (%)",
+  "thresholdOrder": "Maksimum musi być większe niż minimum",
+  "saveUtilizationSettings": "Zapisz ustawienia wykorzystania",
+  "generalSettingsTab": "Generał",
+  "utilizationSettingsTab": "Ustawienia użytkowania",
+  "workingScheduleTab": "Harmonogram pracy i dni wolne"
 }

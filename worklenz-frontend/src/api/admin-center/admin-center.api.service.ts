@@ -41,7 +41,20 @@ export interface IOrganizationTeamRequestParams {
   search: string | null;
 }
 
+export interface IUtilizationSettings {
+  utilization_optimal_min_threshold_percent: number;
+  utilization_optimal_max_threshold_percent: number;
+}
+
 export const adminCenterApiService = {
+  async getUtilizationSettings(): Promise<IServerResponse<IUtilizationSettings>> {
+    const response = await apiClient.get<IServerResponse<IUtilizationSettings>>(`${rootUrl}/organization/work-policy-settings`);
+    return response.data;
+  },
+  async updateUtilizationSettings(settings: IUtilizationSettings): Promise<IServerResponse<IUtilizationSettings>> {
+    const response = await apiClient.put<IServerResponse<IUtilizationSettings>>(`${rootUrl}/organization/work-policy-settings`, settings);
+    return response.data;
+  },
   async getOrganizationDetails(): Promise<IServerResponse<IOrganization>> {
     const response = await apiClient.get<IServerResponse<IOrganization>>(`${rootUrl}/organization`);
     return response.data;

@@ -35,6 +35,9 @@ const PortfolioDashboard = lazy(
   () => import('@/pages/reporting/portfolio/PortfolioDashboard')
 );
 
+const EfficiencyReports = lazy(() => import('@/pages/reporting/efficiency/efficiency-reports'));
+const MonthEndSummary = lazy(() => import('@/pages/reporting/month-end/month-end-summary'));
+
 // Type definition for a menu item
 export type ReportingMenuItems = {
   key: string;
@@ -96,6 +99,8 @@ export const reportingsItems: ReportingMenuItems[] = [
     element: React.createElement(PortfolioDashboard),
     icon: React.createElement(PieChartOutlined),
   },
+  { key: 'efficiency', name: 'efficiency', defaultValue: 'Efficiency', endpoint: 'efficiency', element: React.createElement(EfficiencyReports), icon: React.createElement(BarChartOutlined) },
+  { key: 'month-end', name: 'monthEndSummary', defaultValue: 'Month-End Summary', endpoint: 'month-end', element: React.createElement(MonthEndSummary), icon: React.createElement(CalendarOutlined) },
   {
     key: 'time-sheet',
     name: 'timeReports',

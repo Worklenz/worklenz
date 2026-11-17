@@ -201,5 +201,8 @@
   "noDataMatchingFilters": "No hay datos que coincidan con los filtros seleccionados.",
   "holidaysExcluded": "Vacaciones excluidas",
   "reportSettings": "Configuración de informes",
-  "Members Time Sheet": "Hoja de tiempo de miembros"
+  "Members Time Sheet": "Hoja de tiempo de miembros",
+  "underUtilizedRange": "Infrautilizado (menos del {{min}} %)",
+  "optimalUtilizedRange": "Utilización óptima ({{min}} %–{{max}} %)",
+  "overUtilizedRange": "Sobreutilizado (más del {{max}} %)"
 }

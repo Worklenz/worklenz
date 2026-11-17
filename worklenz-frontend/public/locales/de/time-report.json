@@ -201,5 +201,8 @@
   "noDataMatchingFilters": "Keine Daten, die den ausgewählten Filtern entsprechen",
   "holidaysExcluded": "Feiertage ausgeschlossen",
   "reportSettings": "Berichtseinstellungen",
-  "Members Time Sheet": "Mitglieder-Zeiterfassung"
+  "Members Time Sheet": "Mitglieder-Zeiterfassung",
+  "underUtilizedRange": "Unterausgelastet (unter {{min}} %)",
+  "optimalUtilizedRange": "Optimal ausgelastet ({{min}} %–{{max}} %)",
+  "overUtilizedRange": "Überausgelastet (über {{max}} %)"
 }

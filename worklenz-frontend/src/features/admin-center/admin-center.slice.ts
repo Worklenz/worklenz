@@ -1,4 +1,4 @@
-import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
+import { adminCenterApiService, IUtilizationSettings } from '@/api/admin-center/admin-center.api.service';
 import { createSelector } from '@reduxjs/toolkit';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
@@ -29,6 +29,7 @@ interface UpgradePromptState {
 }
 
 interface adminCenterState {
+  workPolicySettings: IUtilizationSettings | null;
   isRedeemCodeDrawerOpen: boolean;
   isUpgradeModalOpen: boolean;
   upgradeModalVariant: UpgradeModalVariant;
@@ -53,6 +54,7 @@ interface adminCenterState {
 }
 
 const initialState: adminCenterState = {
+  workPolicySettings: null,
   isRedeemCodeDrawerOpen: false,
   isUpgradeModalOpen: false,
   upgradeModalVariant: 'default',
@@ -75,6 +77,18 @@ const initialState: adminCenterState = {
   holidaysDateRange: null,
   holidaysCountryCode: null,
 };
+
+export const fetchWorkPolicySettings = createAsyncThunk('adminCenter/fetchWorkPolicySettings', async () => {
+  const response = await adminCenterApiService.getUtilizationSettings();
+  if (!response.done) throw new Error('Unable to load utilization settings');
+  return response.body;
+});
+
+export const updateWorkPolicySettings = createAsyncThunk('adminCenter/updateWorkPolicySettings', async (settings: IUtilizationSettings) => {
+  const response = await adminCenterApiService.updateUtilizationSettings(settings);
+  if (!response.done) throw new Error('Unable to save utilization settings');
+  return response.body;
+});
 
 export const fetchBillingInfo = createAsyncThunk('adminCenter/fetchBillingInfo', async () => {
   const res = await adminCenterApiService.getBillingAccountInfo();
@@ -272,6 +286,8 @@ const adminCenterSlice = createSlice({
       state.loadingOrganization = false;
     });
 
+    builder.addCase(fetchWorkPolicySettings.fulfilled, (state, action) => { state.workPolicySettings = action.payload; });
+    builder.addCase(updateWorkPolicySettings.fulfilled, (state, action) => { state.workPolicySettings = action.payload; });
     builder.addCase(fetchAdminCenterSettings.pending, (state, action) => {
       state.loadingOrganization = true;
     });

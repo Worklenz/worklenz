@@ -23,5 +23,17 @@
   "autoSyncHolidays": "Sincronizza automaticamente le festività ufficiali",
   "saveHolidaySettings": "Salva impostazioni delle festività",
   "holidaySettingsSaved": "Impostazioni delle festività salvate",
-  "errorSavingHolidaySettings": "Errore durante il salvataggio delle impostazioni delle festività"
+  "errorSavingHolidaySettings": "Errore durante il salvataggio delle impostazioni delle festività",
+  "workPolicySaved": "Impostazioni delle politiche di lavoro salvate",
+  "errorSavingWorkPolicy": "Errore durante il salvataggio delle politiche di lavoro",
+  "errorLoadingWorkPolicy": "Impossibile caricare le impostazioni di utilizzo.",
+  "retry": "Riprova",
+  "utilizationThresholdHelp": "Imposta l’intervallo di utilizzo ottimale. Sotto il minimo si ha sottoutilizzo; sopra il massimo si ha sovrautilizzo.",
+  "optimalMinThreshold": "Optimal min (%)",
+  "optimalMaxThreshold": "Massimo ottimale (%)",
+  "thresholdOrder": "Il massimo deve essere maggiore del minimo",
+  "saveUtilizationSettings": "Salva impostazioni di utilizzo",
+  "generalSettingsTab": "Generale",
+  "utilizationSettingsTab": "Impostazioni di utilizzo",
+  "workingScheduleTab": "Orario di lavoro e festività"
 }

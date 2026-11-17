@@ -201,5 +201,8 @@
   "noDataMatchingFilters": "Brak danych pasujących do wybranych filtrów",
   "holidaysExcluded": "Święta wyłączone",
   "reportSettings": "Ustawienia raportu",
-  "Members Time Sheet": "Arkusz czasu pracy członków"
+  "Members Time Sheet": "Arkusz czasu pracy członków",
+  "underUtilizedRange": "Niedostateczne wykorzystanie (poniżej {{min}}%)",
+  "optimalUtilizedRange": "Optymalne wykorzystanie ({{min}}%–{{max}}%)",
+  "overUtilizedRange": "Przeciążenie (powyżej {{max}}%)"
 }

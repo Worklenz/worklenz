@@ -201,5 +201,8 @@
   "noDataMatchingFilters": "Aucune donnée correspondant aux filtres sélectionnés",
   "holidaysExcluded": "Jours fériés exclus",
   "reportSettings": "Paramètres du rapport",
-  "Members Time Sheet": "Feuille de temps des membres"
+  "Members Time Sheet": "Feuille de temps des membres",
+  "underUtilizedRange": "Sous-utilisé (moins de {{min}} %)",
+  "optimalUtilizedRange": "Utilisation optimale ({{min}} %–{{max}} %)",
+  "overUtilizedRange": "Surutilisé (plus de {{max}} %)"
 }

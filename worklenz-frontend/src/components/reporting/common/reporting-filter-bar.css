@@ -1,0 +1,15 @@
+/* Compact filter button bar — matches the all-tasks-reports-filters sizing */
+.reporting-filter-bar .ant-btn {
+  font-size: 13px;
+  height: 30px;
+  padding: 0 10px;
+}
+
+.reporting-filter-bar .ant-picker {
+  font-size: 13px;
+  height: 30px;
+}
+
+.reporting-filter-bar .ant-segmented {
+  font-size: 13px;
+}

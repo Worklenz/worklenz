@@ -1,4 +1,5 @@
 import moment from "moment";
+import { classifyUtilization, getUtilizationThresholds } from "../admin-center/utilization-settings-controller";
 import db from "../../config/db";
 import HandleExceptions from "../../decorators/handle-exceptions";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
@@ -989,6 +990,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
       return total;
     };
 
+    const thresholds = await getUtilizationThresholds(req.user?.organization_id);
     // calculate utilization state
     for (let i = 0, len = result.rows.length; i < len; i++) {
       const member = result.rows[i];
@@ -1032,13 +1034,11 @@ export default class ReportingAllocationController extends ReportingControllerBa
       member.utilized_hours = utilizedHours.toFixed(2);
       member.over_under_utilized_hours = overUnder.toFixed(2);
 
-      if (utilizationPercent < 90) {
-        member.utilization_state = 'under';
-      } else if (utilizationPercent <= 110) {
-        member.utilization_state = 'optimal';
-      } else {
-        member.utilization_state = 'over';
-      }
+      member.utilization_state = classifyUtilization(
+        utilizationPercent,
+        thresholds.utilization_optimal_min_threshold_percent,
+        thresholds.utilization_optimal_max_threshold_percent
+      );
     }
 
     // Apply utilization filter

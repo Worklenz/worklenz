@@ -203,5 +203,8 @@
   "noDataMatchingFilters": "没有与所选过滤器匹配的数据",
   "holidaysExcluded": "节假日除外",
   "reportSettings": "报告设置",
-  "Members Time Sheet": "成员时间表"
+  "Members Time Sheet": "成员时间表",
+  "underUtilizedRange": "利用不足（低于 {{min}}%）",
+  "optimalUtilizedRange": "最佳利用率（{{min}}%-{{max}}%）",
+  "overUtilizedRange": "利用过度（高于 {{max}}%）"
 }

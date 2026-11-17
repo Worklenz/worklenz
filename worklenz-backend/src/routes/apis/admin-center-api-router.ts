@@ -1,4 +1,5 @@
 import express from "express";
+import { getUtilizationSettings, updateUtilizationSettings } from "../../controllers/admin-center/utilization-settings-controller";
 
 import AdminCenterOrganizationController from "../../controllers/admin-center/admin-center-organization-controller";
 import AdminCenterTeamsController from "../../controllers/admin-center/admin-center-teams-controller";
@@ -17,6 +18,8 @@ import { requireFeature } from "../../shared/entitlements/gates";
 const adminCenterApiRouter = express.Router();
 
 // overview
+adminCenterApiRouter.get("/organization/work-policy-settings", teamOwnerOrAdminValidator, safeControllerFunction(getUtilizationSettings));
+adminCenterApiRouter.put("/organization/work-policy-settings", teamOwnerOrAdminValidator, safeControllerFunction(updateUtilizationSettings));
 adminCenterApiRouter.get("/settings", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterOrganizationController.getAdminCenterSettings));
 adminCenterApiRouter.get("/organization", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterOrganizationController.getOrganizationDetails));
 adminCenterApiRouter.get("/organization/admins", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterOrganizationController.getOrganizationAdmins));

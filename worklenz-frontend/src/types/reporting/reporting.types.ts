@@ -460,3 +460,56 @@ export interface IGetProjectsRequestBody {
   clients?: string[];
   priorities?: string[];
 }
+
+export type IRPTEfficiencyLevel = 'member' | 'team' | 'project' | 'company';
+
+export interface IRPTEfficiencyRow {
+  group_id: string | null;
+  group_name: string;
+  color_code?: string | null;
+  estimated_seconds: number;
+  logged_seconds: number;
+  estimated_string: string;
+  logged_string: string;
+  efficiency_percent: number | null;
+}
+
+export interface IRPTEfficiencyRequest {
+  level: IRPTEfficiencyLevel;
+  teams: string[];
+  projects: string[];
+  duration?: string;
+  date_range?: string[];
+  archived?: boolean;
+}
+
+// Month-End Summary report (#15)
+export interface IRPTMonthEndBreakdownRow {
+  id: string | null;
+  name: string;
+  color_code?: string | null;
+  tasks_completed: number;
+  estimated_seconds: number;
+  logged_seconds: number;
+  efficiency_percent: number | null;
+}
+
+export interface IRPTMonthEndSummary {
+  month: string;
+  hours_per_day: number;
+  logged_hours: number;
+  tasks_completed: number;
+  budget_man_days: number;
+  actual_man_days: number;
+  variance_man_days: number;
+  efficiency_percent: number | null;
+  members: IRPTMonthEndBreakdownRow[];
+  projects: IRPTMonthEndBreakdownRow[];
+}
+
+export interface IRPTMonthEndRequest {
+  month: string;
+  teams: string[];
+  projects: string[];
+  archived?: boolean;
+}

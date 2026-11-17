@@ -29,5 +29,17 @@
   "workingDay": "Día Laboral",
   "holiday": "Día Festivo",
   "today": "Hoy",
-  "cannotEditOfficialHoliday": "No se pueden editar los días festivos oficiales"
+  "cannotEditOfficialHoliday": "No se pueden editar los días festivos oficiales",
+  "workPolicySaved": "Configuración de políticas de trabajo guardada",
+  "errorSavingWorkPolicy": "Error al guardar las políticas de trabajo",
+  "errorLoadingWorkPolicy": "No se pudo cargar la configuración de utilización.",
+  "retry": "Reintentar",
+  "utilizationThresholdHelp": "Defina el intervalo óptimo de utilización. Por debajo del mínimo hay infrautilización y por encima del máximo hay sobreutilización.",
+  "optimalMinThreshold": "Optimal min (%)",
+  "optimalMaxThreshold": "Máximo óptimo (%)",
+  "thresholdOrder": "El máximo debe ser mayor que el mínimo",
+  "saveUtilizationSettings": "Guardar configuración de utilización",
+  "generalSettingsTab": "generales",
+  "utilizationSettingsTab": "Configuración",
+  "workingScheduleTab": "Horario laboral y festivos"
 }
