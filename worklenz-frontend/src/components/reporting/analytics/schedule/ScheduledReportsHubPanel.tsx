@@ -1,16 +1,17 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Button,
+  Dropdown,
   Empty,
   Flex,
-  Space,
+  MoreOutlined,
   Table,
   Tag,
   Typography,
   message,
   theme,
 } from '@/shared/antd-imports';
-import type { TableColumnsType } from '@/shared/antd-imports';
+import type { MenuProps, TableColumnsType } from '@/shared/antd-imports';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { analyticsSchedulesApiService } from '@/api/reporting/analytics-schedules.api.service';
@@ -165,29 +166,43 @@ export const ScheduledReportsHubPanel: React.FC = () => {
     {
       title: t('rowActions', { defaultValue: 'Actions' }),
       key: 'actions',
-      width: 220,
-      render: (_, row) => (
-        <Space wrap size={4}>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => navigate(reportOpenPath(row))}
-          >
-            {t('actionOpen', { defaultValue: 'Open' })}
-          </Button>
-          <Button type="link" size="small" onClick={() => setEditing(row)}>
-            {t('scheduleEdit', { defaultValue: 'Edit schedule' })}
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            danger
-            onClick={() => void handleRemove(row)}
-          >
-            {t('scheduleRemove', { defaultValue: 'Remove schedule' })}
-          </Button>
-        </Space>
-      ),
+      width: 72,
+      align: 'center',
+      render: (_, row) => {
+        const items: MenuProps['items'] = [
+          {
+            key: 'open',
+            label: t('actionOpen', { defaultValue: 'Open' }),
+            onClick: () => navigate(reportOpenPath(row)),
+          },
+          {
+            key: 'edit',
+            label: t('scheduleEdit', { defaultValue: 'Edit schedule' }),
+            onClick: () => setEditing(row),
+          },
+          { type: 'divider' },
+          {
+            key: 'remove',
+            label: t('scheduleRemove', { defaultValue: 'Remove schedule' }),
+            danger: true,
+            onClick: () => void handleRemove(row),
+          },
+        ];
+
+        return (
+          <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight">
+            <Button
+              type="text"
+              size="small"
+              icon={<MoreOutlined />}
+              aria-label={t('rowActionsMenuAria', {
+                defaultValue: 'Actions for {{name}}',
+                name: row.report_name,
+              })}
+            />
+          </Dropdown>
+        );
+      },
     },
   ];
 

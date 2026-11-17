@@ -183,6 +183,7 @@
   "scheduleActive": "Active",
   "schedulePaused": "Paused",
   "rowActions": "Actions",
+  "rowActionsMenuAria": "Actions for {{name}}",
   "noReportsFound": "No reports found",
   "noScheduledHint": "Open any report and choose Schedule to email it on a recurring basis.",
   "noReportsHint": "Try a different search or create a custom report.",

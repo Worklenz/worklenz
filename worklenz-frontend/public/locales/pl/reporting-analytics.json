@@ -183,6 +183,7 @@
   "scheduleActive": "Aktywny",
   "schedulePaused": "Wstrzymany",
   "rowActions": "Akcje",
+  "rowActionsMenuAria": "Akcje dla {{name}}",
   "noReportsFound": "Nie znaleziono raportów",
   "noScheduledHint": "Otwórz dowolny raport i wybierz opcję Zaplanuj, aby wysyłać go cyklicznie pocztą elektroniczną.",
   "noReportsHint": "Spróbuj innego wyszukiwania lub utwórz raport niestandardowy.",

@@ -183,6 +183,7 @@
   "scheduleActive": "Aktiv",
   "schedulePaused": "Pausiert",
   "rowActions": "Aktionen",
+  "rowActionsMenuAria": "Aktionen für {{name}}",
   "noReportsFound": "Keine Berichte gefunden",
   "noScheduledHint": "Öffnen Sie einen beliebigen Bericht und wählen Sie „Planen“, um ihn regelmäßig per E-Mail zu versenden.",
   "noReportsHint": "Versuchen Sie eine andere Suche oder erstellen Sie einen benutzerdefinierten Bericht.",

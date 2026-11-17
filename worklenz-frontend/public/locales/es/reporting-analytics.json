@@ -183,6 +183,7 @@
   "scheduleActive": "Activa",
   "schedulePaused": "Pausada",
   "rowActions": "Acciones",
+  "rowActionsMenuAria": "Acciones para {{name}}",
   "noReportsFound": "No se encontraron informes",
   "noScheduledHint": "Abra cualquier informe y elija Programar para enviarlo por correo electrónico de forma recurrente.",
   "noReportsHint": "Pruebe una búsqueda diferente o cree un informe personalizado.",

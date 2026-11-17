@@ -183,6 +183,7 @@
   "scheduleActive": "启用",
   "schedulePaused": "已暂停",
   "rowActions": "操作",
+  "rowActionsMenuAria": "{{name}} 的操作",
   "noReportsFound": "没有找到报告",
   "noScheduledHint": "打开任何报告并选择计划定期通过电子邮件发送。",
   "noReportsHint": "尝试不同的搜索或创建自定义报告。",

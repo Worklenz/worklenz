@@ -183,6 +183,7 @@
   "scheduleActive": "Ativo",
   "schedulePaused": "Pausado",
   "rowActions": "Ações",
+  "rowActionsMenuAria": "Ações para {{name}}",
   "noReportsFound": "Nenhum relatório encontrado",
   "noScheduledHint": "Abra qualquer relatório e escolha Agendar para enviá-lo por e-mail de forma recorrente.",
   "noReportsHint": "Experimente uma pesquisa diferente ou crie um relatório personalizado.",

@@ -183,6 +183,7 @@
   "scheduleActive": "Aktiv",
   "schedulePaused": "Në pauzë",
   "rowActions": "Veprimet",
+  "rowActionsMenuAria": "Veprimet për {{name}}",
   "noReportsFound": "Nuk u gjet asnjë raport",
   "noScheduledHint": "Hapni çdo raport dhe zgjidhni Orari për t'i dërguar email në mënyrë periodike.",
   "noReportsHint": "Provoni një kërkim tjetër ose krijoni një raport të personalizuar.",
