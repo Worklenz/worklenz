@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import {
   Alert,
   Button,
@@ -6,6 +6,7 @@ import {
   Flex,
   Form,
   InputNumber,
+  Spin,
   Switch,
   Tooltip,
   Typography,
@@ -19,6 +20,7 @@ import { fetchOrgConfig, updateOrgConfig } from '@/features/org-config/org-confi
 import { useAuthService } from '@/hooks/useAuth';
 import { canUseFeature, hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { getAddonSlotItems } from '@/addons/addon-slots';
 
 const ConfigurationSettings = () => {
   const { t } = useTranslation('settings/configuration');
@@ -297,6 +299,14 @@ const ConfigurationSettings = () => {
           })}
         </Typography.Text>
       </Card>
+      {getAddonSlotItems('configurationSettings').map(item => {
+        const AddonComponent = item.component;
+        return AddonComponent ? (
+          <Suspense key={item.key} fallback={<Spin />}>
+            <AddonComponent />
+          </Suspense>
+        ) : null;
+      })}
     </Flex>
   );
 };
