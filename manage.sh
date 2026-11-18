@@ -136,12 +136,16 @@ ssl_openssl() {
     if command -v openssl >/dev/null 2>&1; then
         openssl "$@"
     else
-        docker run --rm -v "$SSL_DIR:$SSL_DIR:ro" alpine/openssl "$@"
+        docker run --rm -i -v "$SSL_DIR:$SSL_DIR:ro" alpine/openssl "$@"
     fi
 }
 
 validate_certificate_pair() {
     local cert_public_key key_public_key
+    if [ -L "$SSL_DIR/cert.pem" ] || [ -L "$SSL_DIR/key.pem" ]; then
+        print_error "Install regular certificate and key files in $SSL_DIR; symlinks may not be readable by nginx."
+        return 1
+    fi
     # Trust the supplied leaf only for checking its validity dates, not its CA chain.
     if ! ssl_openssl verify -partial_chain -trusted "$SSL_DIR/cert.pem" "$SSL_DIR/cert.pem" >/dev/null 2>&1; then
         print_error "The certificate is invalid, expired, or not yet valid."
@@ -152,6 +156,11 @@ validate_certificate_pair() {
         print_error "Unable to read the certificate private key."
         return 1
     }
+    # EC keys can encode the same point in compressed or uncompressed form.
+    cert_public_key=$(printf '%s\n' "$cert_public_key" | ssl_openssl pkey -pubin -pubout -ec_conv_form uncompressed 2>/dev/null) ||
+        cert_public_key=$(ssl_openssl x509 -in "$SSL_DIR/cert.pem" -pubkey -noout 2>/dev/null) || return 1
+    key_public_key=$(printf '%s\n' "$key_public_key" | ssl_openssl pkey -pubin -pubout -ec_conv_form uncompressed 2>/dev/null) ||
+        key_public_key=$(ssl_openssl pkey -in "$SSL_DIR/key.pem" -passin pass: -pubout 2>/dev/null) || return 1
     if [ "$cert_public_key" != "$key_public_key" ]; then
         print_error "The certificate and private key do not match."
         return 1
@@ -161,6 +170,10 @@ validate_certificate_pair() {
 setup_self_signed_ssl() {
     print_info "Setting up self-signed SSL certificates for localhost..."
 
+    if [ -L "$SSL_DIR/cert.pem" ] || [ -L "$SSL_DIR/key.pem" ]; then
+        print_error "Install regular certificate and key files in $SSL_DIR; symlinks may not be readable by nginx."
+        return 1
+    fi
     if [ -s "$SSL_DIR/cert.pem" ] && [ -s "$SSL_DIR/key.pem" ]; then
         if ! validate_certificate_pair ||
            ! LC_ALL=C ssl_openssl x509 -in "$SSL_DIR/cert.pem" -noout -checkhost localhost 2>/dev/null | grep -q 'does match' ||
@@ -176,7 +189,7 @@ setup_self_signed_ssl() {
         return 1
     fi
 
-    mkdir -p "$SSL_DIR"
+    mkdir -p "$SSL_DIR" || return 1
 
     if command -v openssl &> /dev/null; then
         openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
@@ -184,10 +197,10 @@ setup_self_signed_ssl() {
             -out "$SSL_DIR/cert.pem" \
             -subj "/C=US/ST=State/L=City/O=Worklenz/CN=localhost" \
             -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" \
-            &> /dev/null
+            &> /dev/null || { print_error "Certificate generation failed."; return 1; }
 
-        chmod 644 "$SSL_DIR/cert.pem"
-        chmod 600 "$SSL_DIR/key.pem"
+        chmod 644 "$SSL_DIR/cert.pem" || return 1
+        chmod 600 "$SSL_DIR/key.pem" || return 1
 
         print_success "Self-signed SSL certificates generated"
     else
@@ -197,10 +210,10 @@ setup_self_signed_ssl() {
             -out /certs/cert.pem \
             -subj "/C=US/ST=State/L=City/O=Worklenz/CN=localhost" \
             -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" \
-            2>/dev/null
+            2>/dev/null || { print_error "Certificate generation failed."; return 1; }
 
-        chmod 644 "$SSL_DIR/cert.pem"
-        chmod 600 "$SSL_DIR/key.pem"
+        chmod 644 "$SSL_DIR/cert.pem" || return 1
+        chmod 600 "$SSL_DIR/key.pem" || return 1
 
         print_success "Self-signed SSL certificates generated (using Docker)"
     fi
@@ -232,13 +245,13 @@ require_domain_certificate() {
         print_error "The certificate must match ${DOMAIN}."
         return 1
     fi
-    print_info "Using existing certificate and key in $SSL_DIR; ensure the certificate is trusted and renewed."
+    print_info "Using existing certificate and key in $SSL_DIR; ensure cert.pem includes the required intermediate certificates, is trusted, and is renewed."
 }
 
 auto_setup_ssl() {
     if is_localhost; then
         print_info "Detected localhost deployment - using self-signed SSL"
-        setup_self_signed_ssl
+        setup_self_signed_ssl || return 1
         sed -i.bak 's/^ENABLE_SSL=.*/ENABLE_SSL=false/' "$ENV_FILE"
     else
         print_info "Detected domain deployment: ${DOMAIN}"
@@ -627,7 +640,7 @@ auto_configure_env() {
     fi
 
     # Update URLs based on domain
-    if [[ "$domain" == "localhost" ]]; then
+    if is_localhost; then
         print_info "Configuring URLs for localhost..."
         sed -i.bak "s|^VITE_API_URL=.*|VITE_API_URL=https://localhost|" "$ENV_FILE"
         sed -i.bak "s|^VITE_SOCKET_URL=.*|VITE_SOCKET_URL=wss://localhost|" "$ENV_FILE"
@@ -1259,7 +1272,7 @@ manage_ssl() {
 
     case $ssl_choice in
         1)
-            setup_self_signed_ssl
+            setup_self_signed_ssl || print_error "SSL setup failed; existing files were not overwritten."
             read -p "Press Enter to continue..."
             ;;
         2)

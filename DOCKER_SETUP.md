@@ -48,7 +48,10 @@ for remote browsers. The bundled nginx configuration does not proxy SeaweedFS. S
 `.env.example` for the available values.
 
 Nginx expects `nginx/ssl/cert.pem` and `nginx/ssl/key.pem` before it starts.
-Provide a certificate valid for your domain. For **local testing only**, create a
+For a domain, put the server certificate followed by any required intermediate
+certificates in `cert.pem` and use regular files for both PEM paths. The installer
+does not verify that clients trust the chain; verify it and renew it externally.
+For **local testing only**, create a
 self-signed certificate (browsers will show a warning):
 
 ```bash
