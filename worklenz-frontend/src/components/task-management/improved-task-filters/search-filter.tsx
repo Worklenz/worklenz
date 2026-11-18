@@ -173,7 +173,7 @@ const CollapsibleSearchFilter = ({
           onClick={handleToggle}
           title={t('search', { defaultValue: 'Search' })}
           aria-label={t('search', { defaultValue: 'Search' })}
-          className={`inline-flex h-8 box-border items-center gap-1.5 px-3 py-0 text-xs font-semibold rounded-md  ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`}
+          className={`inline-flex h-8 box-border items-center gap-1.5 px-3 py-0 text-xs font-semibold rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset active:ring-0 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`}
         >
           <SearchOutlined className="w-3.5 h-3.5" />
           <span>{t('search', { defaultValue: 'Search' })}</span>
