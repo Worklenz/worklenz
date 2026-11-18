@@ -41,7 +41,6 @@ import {
 } from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
 import { buildAnalyticsScheduleFilters } from '@/lib/reporting/analytics-schedule-filters';
-import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import {
   getAnalyticsDashboardPermissions,
   resolveAnalyticsActorRole,
@@ -53,6 +52,7 @@ import {
   resolveAnalyticsDisplayProjects,
 } from '@/lib/reporting/analytics-chart-projects';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
+import { BOUNDED_ANALYTICS_DATE_PRESETS, resolveAnalyticsDateBounds } from '@/utils/date-presets';
 import type {
   ProjectHealthFilters,
   ProjectHealthSeriesResponse,
@@ -87,7 +87,8 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
 
   const {
     datePreset,
-    setDatePreset,
+    customRange,
+    setDateFilter,
     selectedProjectIds,
     setSelectedProjectIds,
     setAutomaticProjectIds,
@@ -123,15 +124,20 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       setSelectedMemberIds,
       setSelectedTeamIds,
       setSelectedHealthIds,
-      setDatePreset,
+      setDateFilter,
     });
   }, [
     setSelectedProjectIds,
     setSelectedMemberIds,
     setSelectedTeamIds,
     setSelectedHealthIds,
-    setDatePreset,
+    setDateFilter,
   ]);
+
+  const dateBounds = useMemo(
+    () => resolveAnalyticsDateBounds(datePreset, customRange),
+    [datePreset, customRange]
+  );
 
   const {
     templates,
@@ -156,7 +162,10 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
         selectedTeamIds,
         selectedHealthIds,
         datePreset,
+        dateFrom: dateBounds.date_from,
+        dateTo: dateBounds.date_to,
         forceLiveProjectScope: true,
+        extra: { custom_range: customRange },
       }),
   });
 
@@ -190,14 +199,18 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
 
   // Load the full team set for KPIs / health donut / table.
   // Projects selection only scopes the Progress & budget bar chart (latest 20 by default).
+  // Date range keeps projects whose effective span overlaps the selected range
+  // (start_date ?? created_at → end_date ?? updated_at).
   const filters: ProjectHealthFilters = useMemo(
     () => ({
       project_ids: [],
       team_ids: selectedTeamIds,
       health_ids: selectedHealthIds,
       member_ids: selectedMemberIds,
+      date_from: dateBounds.date_from,
+      date_to: dateBounds.date_to,
     }),
-    [selectedTeamIds, selectedHealthIds, selectedMemberIds]
+    [selectedTeamIds, selectedHealthIds, selectedMemberIds, dateBounds]
   );
 
   const loadTeams = useCallback(async () => {
@@ -453,6 +466,10 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
         selectedStatusIds={selectedHealthIds}
         onStatusesChange={setSelectedHealthIds}
         statusFilterLabel={t('filterHealth', { defaultValue: 'Health' })}
+        datePreset={datePreset}
+        customRange={customRange}
+        onDateChange={setDateFilter}
+        availableDatePresets={BOUNDED_ANALYTICS_DATE_PRESETS}
         loading={filtersLoading}
       />
     </Flex>
@@ -549,7 +566,10 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
             selectedTeamIds,
             selectedHealthIds,
             datePreset,
+            dateFrom: dateBounds.date_from,
+            dateTo: dateBounds.date_to,
             forceLiveProjectScope: true,
+            extra: { custom_range: customRange },
           }),
       }}
       actions={
