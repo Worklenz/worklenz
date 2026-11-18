@@ -159,7 +159,7 @@ export const SavedViewControls: React.FC = () => {
           ' '
         }
       >
-        {t('saveAsNewTab', { defaultValue: 'Save as a new tab' })}
+        {t('NewTab', { defaultValue: ' New tab' })}
       </Button>
     </Tooltip>
   );
