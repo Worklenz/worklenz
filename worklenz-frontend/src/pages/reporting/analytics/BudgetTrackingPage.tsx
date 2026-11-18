@@ -37,7 +37,6 @@ import {
   usePersistedAnalyticsFilters,
 } from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
-import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import {
   getAnalyticsDashboardPermissions,
   resolveAnalyticsActorRole,
@@ -50,6 +49,7 @@ import {
 } from '@/lib/reporting/analytics-chart-projects';
 import { buildAnalyticsScheduleFilters } from '@/lib/reporting/analytics-schedule-filters';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
+import { BOUNDED_ANALYTICS_DATE_PRESETS, resolveAnalyticsDateBounds } from '@/utils/date-presets';
 import type {
   BudgetTrackingFilters,
   BudgetTrackingSeriesResponse,
@@ -88,6 +88,9 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
 
   const {
+    datePreset,
+    customRange,
+    setDateFilter,
     selectedProjectIds,
     setSelectedProjectIds,
     setAutomaticProjectIds,
@@ -120,8 +123,14 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
       setSelectedProjectIds,
       setSelectedMemberIds,
       setSelectedTeamIds,
+      setDateFilter,
     });
-  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds]);
+  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds, setDateFilter]);
+
+  const dateBounds = useMemo(
+    () => resolveAnalyticsDateBounds(datePreset, customRange),
+    [datePreset, customRange]
+  );
 
   const {
     templates,
@@ -145,7 +154,9 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
         selectedMemberIds,
         selectedTeamIds,
         datePreset,
-
+        dateFrom: dateBounds.date_from,
+        dateTo: dateBounds.date_to,
+        extra: { custom_range: customRange },
       }),
   });
 
@@ -167,13 +178,17 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
     return id ? [id] : [];
   }, [session?.team_id, teamOptions]);
 
+  // Date range keeps projects whose effective span overlaps the selected range
+  // (start_date ?? created_at → end_date ?? updated_at).
   const filters: BudgetTrackingFilters = useMemo(
     () => ({
       project_ids: selectedProjectIds,
       team_ids: selectedTeamIds,
       member_ids: selectedMemberIds,
+      date_from: dateBounds.date_from,
+      date_to: dateBounds.date_to,
     }),
-    [selectedProjectIds, selectedTeamIds, selectedMemberIds]
+    [selectedProjectIds, selectedTeamIds, selectedMemberIds, dateBounds]
   );
 
   const seriesRequestKey = JSON.stringify([projectOptionsScope, filters]);
@@ -425,6 +440,10 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
         selectedTeamIds={selectedTeamIds}
         onTeamsChange={setSelectedTeamIds}
         defaultTeamIds={defaultTeamIds}
+        datePreset={datePreset}
+        customRange={customRange}
+        onDateChange={setDateFilter}
+        availableDatePresets={BOUNDED_ANALYTICS_DATE_PRESETS}
         loading={filtersLoading}
       />
     </Flex>
@@ -494,14 +513,16 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
         reportName: title,
         templateId: customTemplateId,
         getFilters: () =>
-      buildAnalyticsScheduleFilters({
-        selectedProjectIds,
-        projectOptionsCount: projectOptions.length,
-        selectedMemberIds,
-        selectedTeamIds,
-        datePreset,
-
-      }),
+          buildAnalyticsScheduleFilters({
+            selectedProjectIds,
+            projectOptionsCount: projectOptions.length,
+            selectedMemberIds,
+            selectedTeamIds,
+            datePreset,
+            dateFrom: dateBounds.date_from,
+            dateTo: dateBounds.date_to,
+            extra: { custom_range: customRange },
+          }),
       }}
       actions={
         !isCustomTemplateView ? (
