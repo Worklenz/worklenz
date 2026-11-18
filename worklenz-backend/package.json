@@ -75,6 +75,7 @@
     "bcrypt": "^5.1.0",
     "bluebird": "^3.7.2",
     "chartjs-to-image": "^1.2.1",
+    "chartsheet": "^0.3.2",
     "compression": "^1.8.2",
     "connect-flash": "^0.1.1",
     "connect-pg-simple": "^10.0.0",

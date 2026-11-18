@@ -235,7 +235,7 @@ async function buildLivePayload(
 /**
  * Generate a live export file for a saved schedule using current data and
  * the filters captured when the schedule was saved.
- * PDF/Excel include a chart image plus the data table; CSV is table-only.
+ * PDF includes chart images; Excel uses native chart objects; CSV is table-only.
  */
 export async function buildLiveScheduleExport(input: {
   reportKind: string;
@@ -267,16 +267,17 @@ export async function buildLiveScheduleExport(input: {
     };
   }
 
-  const chartPngs = chartSource ? await renderScheduleChartPngs(chartSource) : [];
-
   if (input.format === "Excel") {
     return {
       filename: `${base}-${date}.xlsx`,
       contentType:
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      content: await csvToExcelBuffer(csv, input.reportName, chartPngs),
+      // Native Excel charts bound to ChartData cells (not PNG images).
+      content: await csvToExcelBuffer(csv, input.reportName, chartSource),
     };
   }
+
+  const chartPngs = chartSource ? await renderScheduleChartPngs(chartSource) : [];
 
   return {
     filename: `${base}-${date}.pdf`,

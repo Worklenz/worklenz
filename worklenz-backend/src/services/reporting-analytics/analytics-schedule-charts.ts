@@ -373,6 +373,11 @@ export type ScheduleChartSource =
   | { kind: "cumulative-flow"; data: CfdSeriesResult }
   | { kind: "time-in-status"; data: TimeInStatusResult };
 
+/** Chart.js configs used for PDF PNGs and native Excel chart data. */
+export function getScheduleChartConfigs(source: ScheduleChartSource): ChartConfig[] {
+  return configsForSource(source);
+}
+
 function configsForSource(source: ScheduleChartSource): ChartConfig[] {
   switch (source.kind) {
     case "velocity":

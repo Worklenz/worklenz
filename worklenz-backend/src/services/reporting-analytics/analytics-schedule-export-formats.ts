@@ -1,6 +1,9 @@
 import Excel from "exceljs";
+import { addCharts } from "chartsheet";
 import { CSV_UTF8_BOM, formatCsvCell } from "../../shared/csv-utils";
 import { decodeHtmlEntities } from "../../shared/html-entity-utils";
+import type { ScheduleChartSource } from "./analytics-schedule-charts";
+import { buildExcelNativeChartPlan } from "./analytics-schedule-excel-charts";
 import { renderSchedulePdf } from "./analytics-schedule-pdf";
 
 export interface ScheduleExportFile {
@@ -79,27 +82,73 @@ function normalizeChartPngs(chartPngs?: Buffer[] | Buffer | null): Buffer[] {
   return chartPngs.length ? [chartPngs] : [];
 }
 
+function coerceExcelCell(value: string): string | number {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  // Keep IDs / codes with leading zeros as text.
+  if (/^0\d+$/.test(trimmed)) return trimmed;
+  const asNum = Number(trimmed);
+  if (Number.isFinite(asNum) && /^-?\d+(\.\d+)?$/.test(trimmed)) return asNum;
+  return value;
+}
+
+/**
+ * Build an .xlsx with the report table and native Excel charts (not images).
+ * Charts bind to a hidden ChartData sheet derived from the live series.
+ */
 export async function csvToExcelBuffer(
   csv: string,
   sheetName = "Report",
-  chartPngs?: Buffer[] | Buffer | null
+  chartPngsOrSource?: Buffer[] | Buffer | ScheduleChartSource | null
 ): Promise<Buffer> {
   const workbook = new Excel.Workbook();
-  const sheet = workbook.addWorksheet(sheetName.slice(0, 31) || "Report");
+  const reportName = sheetName.slice(0, 31) || "Report";
+  const sheet = workbook.addWorksheet(reportName);
   const rows = parseCsvRows(csv);
-  const charts = normalizeChartPngs(chartPngs);
+
+  const chartSource =
+    chartPngsOrSource &&
+    !Buffer.isBuffer(chartPngsOrSource) &&
+    !Array.isArray(chartPngsOrSource) &&
+    typeof chartPngsOrSource === "object" &&
+    "kind" in chartPngsOrSource
+      ? (chartPngsOrSource as ScheduleChartSource)
+      : null;
+
+  const plan = buildExcelNativeChartPlan(chartSource, reportName);
+
+  // Legacy path: embedded PNG images (kept for callers that still pass buffers).
+  const chartPngs = chartSource
+    ? []
+    : normalizeChartPngs(chartPngsOrSource as Buffer[] | Buffer | null | undefined);
 
   let spacerRows = 0;
-  if (charts.length) {
+
+  if (plan) {
+    const dataSheet = workbook.addWorksheet(plan.dataSheetName);
+    dataSheet.state = "hidden";
+    for (const r of plan.dataRows) {
+      dataSheet.addRow(r);
+    }
+    dataSheet.getRow(1).font = { bold: true };
+    dataSheet.columns.forEach(col => {
+      col.width = 16;
+    });
+
+    spacerRows = Math.max(0, plan.tableStartRow - 1);
+    for (let i = 0; i < spacerRows; i++) {
+      sheet.addRow([]);
+    }
+  } else if (chartPngs.length) {
     try {
       let rowCursor = 0;
-      for (const chartPng of charts) {
+      for (const chartPng of chartPngs) {
         const imageId = workbook.addImage({
           buffer: chartPng,
           extension: "png",
         });
-        const height = charts.length > 1 && chartPng === charts[charts.length - 1] ? 260 : 320;
-        const width = charts.length > 1 && chartPng === charts[charts.length - 1] ? 420 : 720;
+        const height = chartPngs.length > 1 && chartPng === chartPngs[chartPngs.length - 1] ? 260 : 320;
+        const width = chartPngs.length > 1 && chartPng === chartPngs[chartPngs.length - 1] ? 420 : 720;
         sheet.addImage(imageId, {
           tl: { col: 0, row: rowCursor },
           ext: { width, height },
@@ -112,13 +161,12 @@ export async function csvToExcelBuffer(
         sheet.addRow([]);
       }
     } catch {
-      // Still export the table if the image cannot be embedded.
       spacerRows = 0;
     }
   }
 
   for (const r of rows) {
-    sheet.addRow(r);
+    sheet.addRow(r.map(coerceExcelCell));
   }
   const headerRowIndex = spacerRows > 0 ? spacerRows + 1 : 1;
   const headerRow = sheet.getRow(headerRowIndex);
@@ -128,8 +176,19 @@ export async function csvToExcelBuffer(
   sheet.columns.forEach(col => {
     col.width = 18;
   });
-  const arrayBuffer = await workbook.xlsx.writeBuffer();
-  return Buffer.from(arrayBuffer);
+
+  let arrayBuffer = await workbook.xlsx.writeBuffer();
+  let buffer = Buffer.from(arrayBuffer);
+
+  if (plan?.charts.length) {
+    try {
+      buffer = Buffer.from(await addCharts(buffer, plan.charts));
+    } catch {
+      // Keep the workbook/table even if native chart injection fails.
+    }
+  }
+
+  return buffer;
 }
 
 export async function csvToPdfBuffer(
