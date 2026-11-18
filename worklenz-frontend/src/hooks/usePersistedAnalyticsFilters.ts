@@ -285,6 +285,8 @@ export const usePersistedAnalyticsFilters = (
     setIncludeDone,
     wasRestored,
     hasRestoredFilters,
+    /** True when the user (or schedule Open) explicitly set project picks — not auto-seeded. */
+    explicitProjects: current.explicitProjects,
   };
 };
 

@@ -49,7 +49,7 @@ import {
   DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT,
   latestUpdatedOptionIds,
   latestUpdatedProjectIds,
-  resolveAnalyticsDisplayProjects,
+  sortProjectsByUpdatedAtDesc,
 } from '@/lib/reporting/analytics-chart-projects';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
 import { BOUNDED_ANALYTICS_DATE_PRESETS, resolveAnalyticsDateBounds } from '@/utils/date-presets';
@@ -110,6 +110,11 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * When set, Progress & budget is narrowed to these ids (user Projects pick).
+   * Cleared whenever the filtered series changes so the bar tracks table/donut.
+   */
+  const [barProjectOverrideIds, setBarProjectOverrideIds] = useState<string[] | null>(null);
 
   const chartRef = useRef<ProjectHealthChartHandle>(null);
   /** Tracks team keys we already seeded with the latest-20 project default. */
@@ -359,22 +364,24 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     void loadSeries();
   }, [loadSeries]);
 
-  // Default project filter: latest updated 20 (once per team selection).
+  // Drop manual Projects override on every series-filter change (date/health/members/teams),
+  // even when the resulting project id set is unchanged — otherwise the bar stays stuck
+  // on a prior single-project pick while the table/donut show the full series.
   useEffect(() => {
-    const teamKey = [...selectedTeamIds].sort().join(',');
-    if (selectedProjectIds.length > 0) {
-      seededProjectsForTeamsRef.current = teamKey;
-      return;
-    }
-    if (!matchingData?.projects?.length) return;
-    if (seededProjectsForTeamsRef.current === teamKey) return;
+    setBarProjectOverrideIds(null);
+  }, [seriesRequestKey]);
 
+  useEffect(() => {
+    if (!matchingData?.projects?.length) return;
     const topIds = latestUpdatedProjectIds(matchingData.projects);
     if (topIds.length === 0) return;
-    seededProjectsForTeamsRef.current = teamKey;
+    const seriesProjectKey = matchingData.projects
+      .map(project => project.project_id)
+      .sort()
+      .join(',');
+    seededProjectsForTeamsRef.current = seriesProjectKey;
     setAutomaticProjectIds(topIds);
-  }, [matchingData, selectedProjectIds.length, selectedTeamIds, seededProjectsForTeamsRef, setAutomaticProjectIds]);
-
+  }, [matchingData, seededProjectsForTeamsRef, setAutomaticProjectIds]);
   const handleExport = async (format: AnalyticsExportFormat) => {
     if (!data) return;
     setExporting(true);
@@ -430,22 +437,35 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     }
   };
 
-  // Progress & budget bar only: latest 20 by default; all after Select all / custom picks.
+  // Progress & budget: same filtered series as the table by default (latest 20).
+  // Only narrow when the user picks Projects after the latest series load.
   const isSelectAllProjects =
     projectOptions.length > 0 && selectedProjectIds.length >= projectOptions.length;
 
   const barChartProjects = useMemo(() => {
     if (!data?.projects?.length) return [];
-    return resolveAnalyticsDisplayProjects(data.projects, {
-      selectedProjectIds,
-      projectOptionsCount: projectOptions.length,
-      limit: DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT,
-    });
-  }, [data?.projects, selectedProjectIds, projectOptions.length]);
+    const sorted = sortProjectsByUpdatedAtDesc(data.projects);
+    if (barProjectOverrideIds && barProjectOverrideIds.length > 0 && !isSelectAllProjects) {
+      const selected = new Set(barProjectOverrideIds);
+      const filtered = sorted.filter(project => selected.has(project.project_id));
+      if (filtered.length > 0) return filtered;
+    }
+    return sorted.slice(0, DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT);
+  }, [data?.projects, barProjectOverrideIds, isSelectAllProjects]);
 
   const chartProjectIds = useMemo(
     () => barChartProjects.map(p => p.project_id),
     [barChartProjects]
+  );
+
+  const handleProjectsChange = useCallback(
+    (ids: string[]) => {
+      setSelectedProjectIds(ids);
+      const isSelectAll =
+        projectOptions.length > 0 && ids.length >= projectOptions.length;
+      setBarProjectOverrideIds(ids.length === 0 || isSelectAll ? null : ids);
+    },
+    [projectOptions.length, setSelectedProjectIds]
   );
 
   const filterBar = (
@@ -453,7 +473,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       <AnalyticsFilterBar
         projectOptions={projectOptions}
         selectedProjectIds={selectedProjectIds}
-        onProjectsChange={setSelectedProjectIds}
+        onProjectsChange={handleProjectsChange}
         indicatedProjectIds={chartProjectIds}
         memberOptions={memberOptions}
         selectedMemberIds={selectedMemberIds}
@@ -527,7 +547,11 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
                       })}
                     </Text>
                   )}
-                <ProjectHealthChart ref={chartRef} projects={barChartProjects} />
+                <ProjectHealthChart
+                  key={chartProjectIds.join('|') || 'empty'}
+                  ref={chartRef}
+                  projects={barChartProjects}
+                />
               </div>
               <div style={{ flex: '1 1 280px', minWidth: 260, maxWidth: 420 }}>
                 <ProjectHealthDonutChart kpis={data.kpis} />
