@@ -13,6 +13,21 @@ const MAX_BARS = 20;
 const CHART_WIDTH = 960;
 const CHART_HEIGHT = 420;
 
+interface WithUpdatedAt {
+  updated_at?: string | null;
+}
+
+/** Match on-screen analytics charts: latest updated N, not first N by name. */
+function latestUpdatedSlice<T extends WithUpdatedAt>(rows: T[], limit = MAX_BARS): T[] {
+  return [...rows]
+    .sort((a, b) => {
+      const aTs = a.updated_at ? Date.parse(String(a.updated_at)) : 0;
+      const bTs = b.updated_at ? Date.parse(String(b.updated_at)) : 0;
+      return bTs - aTs;
+    })
+    .slice(0, limit);
+}
+
 const COLORS = {
   primary: "#1890ff",
   secondary: "#722ed1",
@@ -86,7 +101,7 @@ function velocityConfig(data: VelocitySeriesResult): ChartConfig | null {
 }
 
 function pvaTasksConfig(data: PlannedVsActualTasksResult): ChartConfig | null {
-  const projects = data.projects.slice(0, MAX_BARS);
+  const projects = latestUpdatedSlice(data.projects);
   if (!projects.length) return null;
   return {
     type: "bar",
@@ -141,8 +156,9 @@ const PROJECT_HEALTH_TONE_COLORS = {
 } as const;
 
 function projectHealthBarConfig(data: ProjectHealthResult): ChartConfig | null {
-  const projects = data.projects.slice(0, MAX_BARS);
+  const projects = latestUpdatedSlice(data.projects);
   if (!projects.length) return null;
+  const options = baseOptions();
   return {
     type: "bar",
     data: {
@@ -160,7 +176,17 @@ function projectHealthBarConfig(data: ProjectHealthResult): ChartConfig | null {
         },
       ],
     },
-    options: baseOptions(),
+    options: {
+      ...options,
+      scales: {
+        ...(options.scales as Record<string, unknown>),
+        y: {
+          beginAtZero: true,
+          suggestedMax: 100,
+          ticks: { callback: (value: string | number) => `${value}%` },
+        },
+      },
+    },
   };
 }
 
@@ -232,7 +258,7 @@ function utilizationConfig(data: UtilizationResult): ChartConfig | null {
 }
 
 function timeReportConfig(data: TimeReportResult): ChartConfig | null {
-  const projects = data.projects.slice(0, MAX_BARS);
+  const projects = latestUpdatedSlice(data.projects);
   if (!projects.length) return null;
   return {
     type: "bar",
@@ -256,7 +282,7 @@ function timeReportConfig(data: TimeReportResult): ChartConfig | null {
 }
 
 function budgetTrackingConfig(data: BudgetTrackingResult): ChartConfig | null {
-  const projects = data.projects.slice(0, MAX_BARS);
+  const projects = latestUpdatedSlice(data.projects);
   if (!projects.length) return null;
   return {
     type: "bar",

@@ -41,6 +41,7 @@ import {
   getAnalyticsDashboardPermissions,
   resolveAnalyticsActorRole,
 } from '@/lib/reporting/analytics-permissions';
+import { buildAnalyticsScheduleFilters } from '@/lib/reporting/analytics-schedule-filters';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
 import type {
   PlannedVsActualMilestonesFilters,
@@ -127,12 +128,15 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
     wasRestored: hasRestoredFilters,
-    getFilters: () => ({
-      project_ids: selectedProjectIds,
-      member_ids: selectedMemberIds,
-      team_ids: selectedTeamIds,
-      date_preset: datePreset,
-    }),
+    getFilters: () =>
+      buildAnalyticsScheduleFilters({
+        selectedProjectIds,
+        projectOptionsCount: projectOptions.length,
+        selectedMemberIds,
+        selectedTeamIds,
+        datePreset,
+
+      }),
   });
 
   const title = (isCustomTemplateView && customTemplateName?.trim()) || baseTitle;
@@ -369,12 +373,15 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
         reportKind: 'planned-vs-actual-milestones',
         reportName: title,
         templateId: customTemplateId,
-        getFilters: () => ({
-          project_ids: selectedProjectIds,
-          member_ids: selectedMemberIds,
-          team_ids: selectedTeamIds,
-          date_preset: datePreset,
-        }),
+        getFilters: () =>
+      buildAnalyticsScheduleFilters({
+        selectedProjectIds,
+        projectOptionsCount: projectOptions.length,
+        selectedMemberIds,
+        selectedTeamIds,
+        datePreset,
+
+      }),
       }}
       actions={
         !isCustomTemplateView ? (

@@ -49,6 +49,7 @@ import {
   getAnalyticsDashboardPermissions,
   resolveAnalyticsActorRole,
 } from '@/lib/reporting/analytics-permissions';
+import { buildAnalyticsScheduleFilters } from '@/lib/reporting/analytics-schedule-filters';
 import type {
   TimeInStatusFilters,
   TimeInStatusSeriesResponse,
@@ -141,13 +142,17 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
     wasRestored: hasRestoredFilters,
-    getFilters: () => ({
-      project_ids: selectedProjectIds,
-      member_ids: selectedMemberIds,
-      team_ids: selectedTeamIds,
-      date_preset: datePreset,
-      custom_range: customRange,
-    }),
+    getFilters: () =>
+      buildAnalyticsScheduleFilters({
+        selectedProjectIds,
+        projectOptionsCount: projectOptions.length,
+        selectedMemberIds,
+        selectedTeamIds,
+        datePreset,
+        dateFrom: dateBounds.date_from,
+        dateTo: dateBounds.date_to,
+        extra: { custom_range: customRange },
+      }),
   });
 
   const title = (isCustomTemplateView && customTemplateName?.trim()) || baseTitle;
@@ -510,13 +515,17 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
         reportKind: 'time-in-status',
         reportName: title,
         templateId: customTemplateId,
-        getFilters: () => ({
-          project_ids: selectedProjectIds,
-          member_ids: selectedMemberIds,
-          team_ids: selectedTeamIds,
-          date_preset: datePreset,
-          custom_range: customRange,
-        }),
+        getFilters: () =>
+      buildAnalyticsScheduleFilters({
+        selectedProjectIds,
+        projectOptionsCount: projectOptions.length,
+        selectedMemberIds,
+        selectedTeamIds,
+        datePreset,
+        dateFrom: dateBounds.date_from,
+        dateTo: dateBounds.date_to,
+        extra: { custom_range: customRange },
+      }),
       }}
       actions={
         !isCustomTemplateView ? (

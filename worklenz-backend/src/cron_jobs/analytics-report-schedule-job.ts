@@ -1,4 +1,5 @@
 import { CronJob } from "cron";
+import type { PoolClient } from "pg";
 import sanitizeHtmlLib from "sanitize-html";
 import db from "../config/db";
 import { sendEmail } from "../shared/email";
@@ -84,11 +85,16 @@ export async function onAnalyticsReportScheduleTick(): Promise<void> {
     return;
   }
 
+  // Session advisory locks must stay on one pooled client for acquire + release.
+  // Using db.query() for both can unlock on a different connection and leave the
+  // lock stuck — every later tick then logs "Another instance holds the lock".
   let hasLock = false;
+  let lockClient: PoolClient | null = null;
   isRunning = true;
 
   try {
-    const lockResult = await db.query(
+    lockClient = await db.connect();
+    const lockResult = await lockClient.query(
       "SELECT pg_try_advisory_lock(hashtext($1)) AS locked;",
       [LOCK_KEY]
     );
@@ -124,13 +130,14 @@ export async function onAnalyticsReportScheduleTick(): Promise<void> {
   } catch (error) {
     log_error(error);
   } finally {
-    if (hasLock) {
+    if (hasLock && lockClient) {
       try {
-        await db.query("SELECT pg_advisory_unlock(hashtext($1));", [LOCK_KEY]);
+        await lockClient.query("SELECT pg_advisory_unlock(hashtext($1));", [LOCK_KEY]);
       } catch (err) {
         log_error(err);
       }
     }
+    lockClient?.release();
     isRunning = false;
   }
 }

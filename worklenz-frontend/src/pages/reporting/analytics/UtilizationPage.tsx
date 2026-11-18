@@ -42,6 +42,7 @@ import {
   getAnalyticsDashboardPermissions,
   resolveAnalyticsActorRole,
 } from '@/lib/reporting/analytics-permissions';
+import { buildAnalyticsScheduleFilters } from '@/lib/reporting/analytics-schedule-filters';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
 import type {
   UtilizationFilters,
@@ -126,13 +127,17 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
     wasRestored: hasRestoredFilters,
-    getFilters: () => ({
-      project_ids: selectedProjectIds,
-      member_ids: selectedMemberIds,
-      team_ids: selectedTeamIds,
-      date_preset: datePreset,
-      custom_range: customRange,
-    }),
+    getFilters: () =>
+      buildAnalyticsScheduleFilters({
+        selectedProjectIds,
+        projectOptionsCount: projectOptions.length,
+        selectedMemberIds,
+        selectedTeamIds,
+        datePreset,
+        dateFrom: dateBounds.date_from,
+        dateTo: dateBounds.date_to,
+        extra: { custom_range: customRange },
+      }),
   });
 
   const title = (isCustomTemplateView && customTemplateName?.trim()) || baseTitle;
@@ -416,13 +421,17 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
         reportKind: 'utilization',
         reportName: title,
         templateId: customTemplateId,
-        getFilters: () => ({
-          project_ids: selectedProjectIds,
-          member_ids: selectedMemberIds,
-          team_ids: selectedTeamIds,
-          date_preset: datePreset,
-          custom_range: customRange,
-        }),
+        getFilters: () =>
+      buildAnalyticsScheduleFilters({
+        selectedProjectIds,
+        projectOptionsCount: projectOptions.length,
+        selectedMemberIds,
+        selectedTeamIds,
+        datePreset,
+        dateFrom: dateBounds.date_from,
+        dateTo: dateBounds.date_to,
+        extra: { custom_range: customRange },
+      }),
       }}
       actions={
         !isCustomTemplateView ? (

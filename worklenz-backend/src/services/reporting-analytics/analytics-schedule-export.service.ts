@@ -1,4 +1,5 @@
 import { CSV_UTF8_BOM, formatCsvCell } from "../../shared/csv-utils";
+import db from "../../config/db";
 import { resolveScheduleOwnerAccessibleProjectIds } from "./analytics-schedule-access";
 import {
   renderScheduleChartPngs,
@@ -7,6 +8,7 @@ import {
 import {
   csvToExcelBuffer,
   csvToPdfBuffer,
+  normalizeScheduleExportCsv,
   ScheduleExportFile,
   slugFilename,
 } from "./analytics-schedule-export-formats";
@@ -70,6 +72,37 @@ function normalizeFilterInput(filters: Record<string, unknown>): Record<string, 
   return { ...nested, ...filters };
 }
 
+/** Re-pick the N most recently updated projects at send time (matches UI default seed). */
+async function resolveLatestUpdatedProjectIds(
+  accessible: string[],
+  limit: number
+): Promise<string[]> {
+  if (!accessible.length || limit <= 0) return [];
+  const result = await db.query(
+    `SELECT id
+     FROM projects
+     WHERE id = ANY($1::UUID[])
+     ORDER BY updated_at DESC NULLS LAST, LOWER(name) ASC
+     LIMIT $2`,
+    [accessible, limit]
+  );
+  return result.rows.map((row: { id: string }) => String(row.id));
+}
+
+async function resolveExportProjectIds(
+  input: Record<string, unknown>,
+  accessible: string[]
+): Promise<string[]> {
+  if (input.project_scope === "latest") {
+    const limit = Math.max(
+      1,
+      Math.min(100, Number(input.chart_project_limit) || 20)
+    );
+    return resolveLatestUpdatedProjectIds(accessible, limit);
+  }
+  return accessible;
+}
+
 function buildVelocityCsv(data: Awaited<ReturnType<typeof getVelocitySeries>>): string {
   const header = [
     "Sprint",
@@ -112,8 +145,9 @@ async function buildLivePayload(
     input
   );
 
-  // Force export scope to the intersection resolved for the owner.
-  const scopedInput: Record<string, unknown> = { ...input, project_ids: accessible };
+  // Live = all accessible; latest = re-pick top N by updated_at; explicit = frozen IDs.
+  const projectIds = await resolveExportProjectIds(input, accessible);
+  const scopedInput: Record<string, unknown> = { ...input, project_ids: projectIds };
 
   switch (reportKind) {
     case "planned-vs-actual-tasks": {
@@ -207,12 +241,14 @@ export async function buildLiveScheduleExport(input: {
   format: AnalyticsScheduleFormat;
   filtersJson: Record<string, unknown>;
 }): Promise<ScheduleExportFile> {
-  const { csv, chartSource } = await buildLivePayload(
+  const { csv: rawCsv, chartSource } = await buildLivePayload(
     input.reportKind,
     input.ownerId,
     input.teamId,
     input.filtersJson
   );
+  // Shared by CSV / Excel / PDF so project names decode the same in every format.
+  const csv = normalizeScheduleExportCsv(rawCsv);
   const base = slugFilename(input.reportName);
   const date = new Date().toISOString().slice(0, 10);
 

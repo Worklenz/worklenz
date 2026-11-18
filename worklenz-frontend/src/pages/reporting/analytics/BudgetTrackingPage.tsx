@@ -48,6 +48,7 @@ import {
   latestUpdatedProjectIds,
   projectsForAnalyticsChart,
 } from '@/lib/reporting/analytics-chart-projects';
+import { buildAnalyticsScheduleFilters } from '@/lib/reporting/analytics-schedule-filters';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
 import type {
   BudgetTrackingFilters,
@@ -137,11 +138,15 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
     wasRestored: hasRestoredFilters,
-    getFilters: () => ({
-      project_ids: selectedProjectIds,
-      member_ids: selectedMemberIds,
-      team_ids: selectedTeamIds,
-    }),
+    getFilters: () =>
+      buildAnalyticsScheduleFilters({
+        selectedProjectIds,
+        projectOptionsCount: projectOptions.length,
+        selectedMemberIds,
+        selectedTeamIds,
+        datePreset,
+
+      }),
   });
 
   const title = (isCustomTemplateView && customTemplateName?.trim()) || baseTitle;
@@ -488,11 +493,15 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
         reportKind: 'budget-tracking',
         reportName: title,
         templateId: customTemplateId,
-        getFilters: () => ({
-          project_ids: selectedProjectIds,
-          member_ids: selectedMemberIds,
-          team_ids: selectedTeamIds,
-        }),
+        getFilters: () =>
+      buildAnalyticsScheduleFilters({
+        selectedProjectIds,
+        projectOptionsCount: projectOptions.length,
+        selectedMemberIds,
+        selectedTeamIds,
+        datePreset,
+
+      }),
       }}
       actions={
         !isCustomTemplateView ? (

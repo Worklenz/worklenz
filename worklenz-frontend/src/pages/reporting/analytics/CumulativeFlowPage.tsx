@@ -36,6 +36,7 @@ import {
   getAnalyticsDashboardPermissions,
   resolveAnalyticsActorRole,
 } from '@/lib/reporting/analytics-permissions';
+import { buildAnalyticsScheduleFilters } from '@/lib/reporting/analytics-schedule-filters';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
 import type {
   CfdSeriesFilters,
@@ -119,12 +120,16 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
     wasRestored: hasRestoredFilters,
-    getFilters: () => ({
-      project_ids: selectedProjectIds,
-      team_ids: selectedTeamIds,
-      date_preset: datePreset,
-      custom_range: customRange,
-    }),
+    getFilters: () =>
+      buildAnalyticsScheduleFilters({
+        selectedProjectIds,
+        projectOptionsCount: projectOptions.length,
+        selectedTeamIds,
+        datePreset,
+        dateFrom: dateBounds.date_from,
+        dateTo: dateBounds.date_to,
+        extra: { custom_range: customRange },
+      }),
   });
 
   const title = (isCustomTemplateView && customTemplateName?.trim()) || baseTitle;
@@ -407,12 +412,16 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
         reportKind: 'cumulative-flow',
         reportName: title,
         templateId: customTemplateId,
-        getFilters: () => ({
-          project_ids: selectedProjectIds,
-          team_ids: selectedTeamIds,
-          date_preset: datePreset,
-          custom_range: customRange,
-        }),
+        getFilters: () =>
+      buildAnalyticsScheduleFilters({
+        selectedProjectIds,
+        projectOptionsCount: projectOptions.length,
+        selectedTeamIds,
+        datePreset,
+        dateFrom: dateBounds.date_from,
+        dateTo: dateBounds.date_to,
+        extra: { custom_range: customRange },
+      }),
       }}
       actions={
         !isCustomTemplateView ? (

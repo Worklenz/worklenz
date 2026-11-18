@@ -49,6 +49,7 @@ import {
   getAnalyticsDashboardPermissions,
   resolveAnalyticsActorRole,
 } from '@/lib/reporting/analytics-permissions';
+import { buildAnalyticsScheduleFilters } from '@/lib/reporting/analytics-schedule-filters';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
 import type {
   AnalyticsReportTemplate,
@@ -500,11 +501,17 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
         reportKind: 'velocity',
         reportName: title,
         templateId: customTemplateId,
-        getFilters: () => ({
-          ...filters,
-          date_preset: datePreset,
-          custom_range: customRange,
-        }),
+        getFilters: () =>
+          buildAnalyticsScheduleFilters({
+            selectedProjectIds,
+            projectOptionsCount: projectOptions.length,
+            selectedMemberIds,
+            selectedTeamIds,
+            datePreset,
+            dateFrom: dateBounds.date_from,
+            dateTo: dateBounds.date_to,
+            extra: { custom_range: customRange },
+          }),
       }}
       actions={
         isCustomTemplateView ? undefined : (

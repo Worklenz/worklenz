@@ -110,9 +110,11 @@ export async function resolveScheduleOwnerAccessibleProjectIds(
           .filter(Boolean)
       : [];
 
+  // Empty project_ids = live team/scope at send time (includes projects added later).
   if (requested.length === 0) return accessible;
 
   const allowed = new Set(accessible);
-  const intersected = requested.filter(id => allowed.has(id));
-  return intersected.length > 0 ? intersected : accessible;
+  // Never fall back to "all accessible" when a frozen list no longer intersects —
+  // that silently swaps in unrelated projects (wrong chart vs the UI).
+  return requested.filter(id => allowed.has(id));
 }

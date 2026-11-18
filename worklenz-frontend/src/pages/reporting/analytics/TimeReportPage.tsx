@@ -49,6 +49,7 @@ import {
   latestUpdatedProjectIds,
   projectsForAnalyticsChart,
 } from '@/lib/reporting/analytics-chart-projects';
+import { buildAnalyticsScheduleFilters } from '@/lib/reporting/analytics-schedule-filters';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
 import type {
   TimeReportFilters,
@@ -136,13 +137,17 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
     wasRestored: hasRestoredFilters,
-    getFilters: () => ({
-      project_ids: selectedProjectIds,
-      member_ids: selectedMemberIds,
-      team_ids: selectedTeamIds,
-      date_preset: datePreset,
-      custom_range: customRange,
-    }),
+    getFilters: () =>
+      buildAnalyticsScheduleFilters({
+        selectedProjectIds,
+        projectOptionsCount: projectOptions.length,
+        selectedMemberIds,
+        selectedTeamIds,
+        datePreset,
+        dateFrom: dateBounds.date_from,
+        dateTo: dateBounds.date_to,
+        extra: { custom_range: customRange },
+      }),
   });
 
   const title = (isCustomTemplateView && customTemplateName?.trim()) || baseTitle;
@@ -493,13 +498,17 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
         reportKind: 'time-report',
         reportName: title,
         templateId: customTemplateId,
-        getFilters: () => ({
-          project_ids: selectedProjectIds,
-          member_ids: selectedMemberIds,
-          team_ids: selectedTeamIds,
-          date_preset: datePreset,
-          custom_range: customRange,
-        }),
+        getFilters: () =>
+      buildAnalyticsScheduleFilters({
+        selectedProjectIds,
+        projectOptionsCount: projectOptions.length,
+        selectedMemberIds,
+        selectedTeamIds,
+        datePreset,
+        dateFrom: dateBounds.date_from,
+        dateTo: dateBounds.date_to,
+        extra: { custom_range: customRange },
+      }),
       }}
       actions={
         !isCustomTemplateView ? (

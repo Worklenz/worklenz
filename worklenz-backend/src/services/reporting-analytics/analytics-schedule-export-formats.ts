@@ -1,11 +1,22 @@
 import Excel from "exceljs";
-import { CSV_UTF8_BOM } from "../../shared/csv-utils";
+import { CSV_UTF8_BOM, formatCsvCell } from "../../shared/csv-utils";
+import { decodeHtmlEntities } from "../../shared/html-entity-utils";
 import { renderSchedulePdf } from "./analytics-schedule-pdf";
 
 export interface ScheduleExportFile {
   filename: string;
   contentType: string;
   content: Buffer;
+}
+
+function decodeExportCell(value: string): string {
+  let text = value ?? "";
+  for (let i = 0; i < 3; i++) {
+    const next = decodeHtmlEntities(text);
+    if (next === text) break;
+    text = next;
+  }
+  return text;
 }
 
 export function parseCsvRows(csv: string): string[][] {
@@ -49,7 +60,17 @@ export function parseCsvRows(csv: string): string[][] {
     row.push(cell);
     rows.push(row);
   }
-  return rows.filter(r => r.some(c => c.trim().length > 0));
+  return rows
+    .filter(r => r.some(c => c.trim().length > 0))
+    .map(r => r.map(decodeExportCell));
+}
+
+/** Decode HTML entities in CSV cells for scheduled CSV/Excel/PDF exports. */
+export function normalizeScheduleExportCsv(csv: string): string {
+  const rows = parseCsvRows(csv);
+  if (!rows.length) return csv.startsWith(CSV_UTF8_BOM) ? csv : `${CSV_UTF8_BOM}${csv}`;
+  const lines = rows.map(row => row.map(formatCsvCell).join(","));
+  return `${CSV_UTF8_BOM}${lines.join("\n")}`;
 }
 
 function normalizeChartPngs(chartPngs?: Buffer[] | Buffer | null): Buffer[] {

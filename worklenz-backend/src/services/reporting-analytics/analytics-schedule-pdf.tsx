@@ -10,6 +10,17 @@ import {
   renderToBuffer,
 } from "@react-pdf/renderer";
 import { registerPdfFonts } from "../../shared/pdf/fonts";
+import { decodeHtmlEntities } from "../../shared/html-entity-utils";
+
+function decodeCell(value: string): string {
+  let text = value ?? "";
+  for (let i = 0; i < 3; i++) {
+    const next = decodeHtmlEntities(text);
+    if (next === text) break;
+    text = next;
+  }
+  return text;
+}
 
 const pdfStyles = StyleSheet.create({
   page: {
@@ -86,7 +97,7 @@ const SchedulePdfDocument = ({
             <View style={[pdfStyles.row, pdfStyles.header]} wrap={false}>
               {header.map((cell, i) => (
                 <Text key={`h-${i}`} style={pdfStyles.cell}>
-                  {cell}
+                  {decodeCell(cell)}
                 </Text>
               ))}
             </View>
@@ -94,7 +105,7 @@ const SchedulePdfDocument = ({
               <View key={`r-${ri}`} style={pdfStyles.row} wrap={false}>
                 {header.map((_, ci) => (
                   <Text key={`c-${ri}-${ci}`} style={pdfStyles.cell}>
-                    {r[ci] ?? ""}
+                    {decodeCell(r[ci] ?? "")}
                   </Text>
                 ))}
               </View>

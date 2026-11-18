@@ -40,6 +40,7 @@ import {
   usePersistedAnalyticsFilters,
 } from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
+import { buildAnalyticsScheduleFilters } from '@/lib/reporting/analytics-schedule-filters';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import {
   getAnalyticsDashboardPermissions,
@@ -147,13 +148,16 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
     wasRestored: hasRestoredFilters,
-    getFilters: () => ({
-      project_ids: selectedProjectIds,
-      member_ids: selectedMemberIds,
-      team_ids: selectedTeamIds,
-      health_ids: selectedHealthIds,
-      date_preset: datePreset,
-    }),
+    getFilters: () =>
+      buildAnalyticsScheduleFilters({
+        selectedProjectIds,
+        projectOptionsCount: projectOptions.length,
+        selectedMemberIds,
+        selectedTeamIds,
+        selectedHealthIds,
+        datePreset,
+        forceLiveProjectScope: true,
+      }),
   });
 
   const title = (isCustomTemplateView && customTemplateName?.trim()) || baseTitle;
@@ -537,13 +541,16 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
         reportKind: 'project-health',
         reportName: title,
         templateId: customTemplateId,
-        getFilters: () => ({
-          project_ids: selectedProjectIds,
-          member_ids: selectedMemberIds,
-          team_ids: selectedTeamIds,
-          health_ids: selectedHealthIds,
-          date_preset: datePreset,
-        }),
+        getFilters: () =>
+          buildAnalyticsScheduleFilters({
+            selectedProjectIds,
+            projectOptionsCount: projectOptions.length,
+            selectedMemberIds,
+            selectedTeamIds,
+            selectedHealthIds,
+            datePreset,
+            forceLiveProjectScope: true,
+          }),
       }}
       actions={
         !isCustomTemplateView ? (
