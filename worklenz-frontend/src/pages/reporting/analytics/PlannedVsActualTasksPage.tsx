@@ -37,7 +37,6 @@ import {
   usePersistedAnalyticsFilters,
 } from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
-import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import {
   getAnalyticsDashboardPermissions,
   resolveAnalyticsActorRole,
@@ -50,6 +49,7 @@ import {
 } from '@/lib/reporting/analytics-chart-projects';
 import { buildAnalyticsScheduleFilters } from '@/lib/reporting/analytics-schedule-filters';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
+import { BOUNDED_ANALYTICS_DATE_PRESETS, resolveAnalyticsDateBounds } from '@/utils/date-presets';
 import type {
   PlannedVsActualTasksFilters,
   PlannedVsActualTasksSeriesResponse,
@@ -83,7 +83,8 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
 
   const {
     datePreset,
-    setDatePreset,
+    customRange,
+    setDateFilter,
     selectedProjectIds,
     setSelectedProjectIds,
     setAutomaticProjectIds,
@@ -116,9 +117,14 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
       setSelectedProjectIds,
       setSelectedMemberIds,
       setSelectedTeamIds,
-      setDatePreset,
+      setDateFilter,
     });
-  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds, setDatePreset]);
+  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds, setDateFilter]);
+
+  const dateBounds = useMemo(
+    () => resolveAnalyticsDateBounds(datePreset, customRange),
+    [datePreset, customRange]
+  );
 
   const {
     templates,
@@ -142,7 +148,10 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
         selectedMemberIds,
         selectedTeamIds,
         datePreset,
+        dateFrom: dateBounds.date_from,
+        dateTo: dateBounds.date_to,
         forceLiveProjectScope: true,
+        extra: { custom_range: customRange },
       }),
   });
 
@@ -166,13 +175,17 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
 
   // Load the full team set for KPIs / table.
   // Projects selection only scopes the bar chart (latest 20 by default).
+  // Date range keeps projects whose effective span overlaps the selected range
+  // (start_date ?? created_at → end_date ?? updated_at).
   const filters: PlannedVsActualTasksFilters = useMemo(
     () => ({
       project_ids: [],
       team_ids: selectedTeamIds,
       member_ids: selectedMemberIds,
+      date_from: dateBounds.date_from,
+      date_to: dateBounds.date_to,
     }),
-    [selectedTeamIds, selectedMemberIds]
+    [selectedTeamIds, selectedMemberIds, dateBounds]
   );
 
   const loadTeams = useCallback(async () => {
@@ -420,6 +433,10 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
         selectedTeamIds={selectedTeamIds}
         onTeamsChange={setSelectedTeamIds}
         defaultTeamIds={defaultTeamIds}
+        datePreset={datePreset}
+        customRange={customRange}
+        onDateChange={setDateFilter}
+        availableDatePresets={BOUNDED_ANALYTICS_DATE_PRESETS}
         loading={filtersLoading}
       />
     </Flex>
@@ -499,7 +516,10 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
             selectedMemberIds,
             selectedTeamIds,
             datePreset,
+            dateFrom: dateBounds.date_from,
+            dateTo: dateBounds.date_to,
             forceLiveProjectScope: true,
+            extra: { custom_range: customRange },
           }),
       }}
       actions={
