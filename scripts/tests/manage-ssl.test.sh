@@ -87,6 +87,13 @@ if setup_self_signed_ssl >/dev/null; then
     echo 'A localhost certificate without an IP subject alternative name was accepted' >&2
     exit 1
 fi
+openssl req -x509 -nodes -days 1 -newkey rsa:2048 \
+    -keyout "$SSL_DIR/key.pem" -out "$SSL_DIR/cert.pem" \
+    -subj '/CN=localhost' -addext 'subjectAltName=IP:127.0.0.1' >/dev/null 2>&1
+if setup_self_signed_ssl >/dev/null; then
+    echo 'A localhost certificate without a DNS subject alternative name was accepted' >&2
+    exit 1
+fi
 
 DOMAIN=example.com
 if require_domain_certificate >/dev/null; then
@@ -162,18 +169,22 @@ if setup_self_signed_ssl >/dev/null; then
     exit 1
 fi
 [[ "$original_cert" == "$(sha256sum "$SSL_DIR/cert.pem")" ]]
-rm "$SSL_DIR/cert.pem"
-ln -s "$test_dir/missing-cert.pem" "$SSL_DIR/cert.pem"
-if setup_self_signed_ssl >/dev/null; then
-    echo 'A broken certificate symlink was accepted' >&2
-    exit 1
-fi
-[[ -L "$SSL_DIR/cert.pem" ]]
+(
+    SSL_DIR="$test_dir/dangling-link"
+    mkdir "$SSL_DIR"
+    ln -s "$test_dir/missing-cert.pem" "$SSL_DIR/cert.pem"
+    if setup_self_signed_ssl >/dev/null; then
+        echo 'A broken certificate symlink was accepted' >&2
+        exit 1
+    fi
+    [[ -L "$SSL_DIR/cert.pem" && ! -e "$SSL_DIR/key.pem" && ! -e "$test_dir/missing-cert.pem" ]]
+)
 
 # Wildcard bind addresses are not usable URLs; the installer advertises localhost.
 ENV_FILE="$test_dir/.env"
 cp "$repo_dir/.env.example" "$ENV_FILE"
 sed -i 's/^DOMAIN=.*/DOMAIN=0.0.0.0/' "$ENV_FILE"
+sed -i 's|^VITE_API_URL=.*|VITE_API_URL=https://0.0.0.0|; s|^FRONTEND_URL=.*|FRONTEND_URL=https://0.0.0.0|' "$ENV_FILE"
 auto_configure_env >/dev/null
 grep -qx 'VITE_API_URL=https://localhost' "$ENV_FILE"
 grep -qx 'FRONTEND_URL=https://localhost' "$ENV_FILE"

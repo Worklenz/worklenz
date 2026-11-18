@@ -176,6 +176,7 @@ setup_self_signed_ssl() {
     fi
     if [ -s "$SSL_DIR/cert.pem" ] && [ -s "$SSL_DIR/key.pem" ]; then
         if ! validate_certificate_pair ||
+           ! LC_ALL=C ssl_openssl x509 -in "$SSL_DIR/cert.pem" -noout -ext subjectAltName </dev/null 2>/dev/null | grep -Eiq '(^|[[:space:],])DNS:localhost([[:space:],]|$)' ||
            ! LC_ALL=C ssl_openssl x509 -in "$SSL_DIR/cert.pem" -noout -checkhost localhost </dev/null 2>/dev/null | grep -q 'does match' ||
            ! LC_ALL=C ssl_openssl x509 -in "$SSL_DIR/cert.pem" -noout -checkip 127.0.0.1 </dev/null 2>/dev/null | grep -q 'does match'; then
             print_error "The existing certificate must be valid and match localhost and 127.0.0.1; existing files were not overwritten."
