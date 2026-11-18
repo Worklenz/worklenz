@@ -36,13 +36,13 @@ import {
   usePersistedAnalyticsFilters,
 } from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
-import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import {
   getAnalyticsDashboardPermissions,
   resolveAnalyticsActorRole,
 } from '@/lib/reporting/analytics-permissions';
 import { buildAnalyticsScheduleFilters } from '@/lib/reporting/analytics-schedule-filters';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
+import { BOUNDED_ANALYTICS_DATE_PRESETS, resolveAnalyticsDateBounds } from '@/utils/date-presets';
 import type {
   PlannedVsActualMilestonesFilters,
   PlannedVsActualMilestonesSeriesResponse,
@@ -78,7 +78,8 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
 
   const {
     datePreset,
-    setDatePreset,
+    customRange,
+    setDateFilter,
     selectedProjectIds,
     setSelectedProjectIds,
     setAutomaticProjectIds,
@@ -109,9 +110,14 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
       setSelectedProjectIds,
       setSelectedMemberIds,
       setSelectedTeamIds,
-      setDatePreset,
+      setDateFilter,
     });
-  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds, setDatePreset]);
+  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds, setDateFilter]);
+
+  const dateBounds = useMemo(
+    () => resolveAnalyticsDateBounds(datePreset, customRange),
+    [datePreset, customRange]
+  );
 
   const {
     templates,
@@ -135,7 +141,9 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
         selectedMemberIds,
         selectedTeamIds,
         datePreset,
-
+        dateFrom: dateBounds.date_from,
+        dateTo: dateBounds.date_to,
+        extra: { custom_range: customRange },
       }),
   });
 
@@ -157,13 +165,16 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
     return id ? [id] : [];
   }, [session?.team_id, teamOptions]);
 
+  // Date range keeps milestones whose planned date falls in the selected range.
   const filters: PlannedVsActualMilestonesFilters = useMemo(
     () => ({
       project_ids: selectedProjectIds,
       team_ids: selectedTeamIds,
       member_ids: selectedMemberIds,
+      date_from: dateBounds.date_from,
+      date_to: dateBounds.date_to,
     }),
-    [selectedProjectIds, selectedTeamIds, selectedMemberIds]
+    [selectedProjectIds, selectedTeamIds, selectedMemberIds, dateBounds]
   );
 
   const loadTeams = useCallback(async () => {
@@ -358,6 +369,10 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
       selectedTeamIds={selectedTeamIds}
       onTeamsChange={setSelectedTeamIds}
       defaultTeamIds={defaultTeamIds}
+      datePreset={datePreset}
+      customRange={customRange}
+      onDateChange={setDateFilter}
+      availableDatePresets={BOUNDED_ANALYTICS_DATE_PRESETS}
       loading={filtersLoading}
     />
   );
@@ -374,14 +389,16 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
         reportName: title,
         templateId: customTemplateId,
         getFilters: () =>
-      buildAnalyticsScheduleFilters({
-        selectedProjectIds,
-        projectOptionsCount: projectOptions.length,
-        selectedMemberIds,
-        selectedTeamIds,
-        datePreset,
-
-      }),
+          buildAnalyticsScheduleFilters({
+            selectedProjectIds,
+            projectOptionsCount: projectOptions.length,
+            selectedMemberIds,
+            selectedTeamIds,
+            datePreset,
+            dateFrom: dateBounds.date_from,
+            dateTo: dateBounds.date_to,
+            extra: { custom_range: customRange },
+          }),
       }}
       actions={
         !isCustomTemplateView ? (
