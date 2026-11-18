@@ -417,12 +417,23 @@ export async function listSchedules(
   return result.rows.map(mapRow);
 }
 
+/** @deprecated Prefer listSchedulesByReport — multiple schedules per report are allowed. */
 export async function getScheduleByReport(
   teamId: string,
   userId: string,
   reportKind: string,
   templateId?: string | null
 ): Promise<AnalyticsScheduleRow | null> {
+  const rows = await listSchedulesByReport(teamId, userId, reportKind, templateId);
+  return rows[0] ?? null;
+}
+
+export async function listSchedulesByReport(
+  teamId: string,
+  userId: string,
+  reportKind: string,
+  templateId?: string | null
+): Promise<AnalyticsScheduleRow[]> {
   if (!ANALYTICS_REPORT_KINDS.some(k => k === reportKind)) {
     throw new ScheduleServiceError(
       i18next.t("analyticsSchedules.unsupportedReportKind", {
@@ -441,10 +452,10 @@ export async function getScheduleByReport(
        WHERE team_id = $1::UUID
          AND owner_id = $2::UUID
          AND template_id = $3::UUID
-       LIMIT 1`,
+       ORDER BY created_at DESC`,
       [teamId, userId, templateId]
     );
-    return result.rows[0] ? mapRow(result.rows[0]) : null;
+    return result.rows.map(mapRow);
   }
 
   const result = await db.query(
@@ -454,10 +465,10 @@ export async function getScheduleByReport(
        AND owner_id = $2::UUID
        AND report_kind = $3
        AND template_id IS NULL
-     LIMIT 1`,
+     ORDER BY created_at DESC`,
     [teamId, userId, reportKind]
   );
-  return result.rows[0] ? mapRow(result.rows[0]) : null;
+  return result.rows.map(mapRow);
 }
 
 async function assertTemplateBelongsToTeam(
@@ -480,14 +491,20 @@ async function assertTemplateBelongsToTeam(
   }
 }
 
-export async function upsertSchedule(
-  user: IPassportSession,
-  input: UpsertScheduleInput
-): Promise<AnalyticsScheduleRow> {
-  const teamId = user.team_id;
-  const userId = user.id;
-  if (!teamId || !userId) throw new ScheduleServiceError("Unauthorized", 401);
+interface NormalizedScheduleFields {
+  reportKind: string;
+  reportName: string;
+  templateId: string | null;
+  recipients: string[];
+  filters: Record<string, unknown>;
+  format: AnalyticsScheduleFormat;
+  message: string | null;
+  paused: boolean;
+  cadence: ReturnType<typeof normalizeCadence>;
+  nextSendAt: Date | null;
+}
 
+function normalizeScheduleFields(input: UpsertScheduleInput): NormalizedScheduleFields {
   if (!ANALYTICS_REPORT_KINDS.some(k => k === input.reportKind)) {
     throw new ScheduleServiceError(
       i18next.t("analyticsSchedules.unsupportedReportKind", {
@@ -514,14 +531,8 @@ export async function upsertSchedule(
     typeof input.templateId === "string" && input.templateId.trim()
       ? input.templateId.trim()
       : null;
-  if (templateId) {
-    if (!isValidUuid(templateId)) {
-      throw new ScheduleServiceError("Invalid template id", 400);
-    }
-    await assertTemplateBelongsToTeam(teamId, userId, templateId, input.reportKind);
-  }
 
-  const nextSendAt = paused
+  const pausedNext = paused
     ? null
     : computeNextSendAt(
         toCadence(
@@ -538,68 +549,36 @@ export async function upsertSchedule(
         )
       );
 
-  const existing = templateId
-    ? await db.query(
-        `SELECT id FROM analytics_report_schedules
-         WHERE owner_id = $1::UUID AND template_id = $2::UUID
-         LIMIT 1`,
-        [userId, templateId]
-      )
-    : await db.query(
-        `SELECT id FROM analytics_report_schedules
-         WHERE owner_id = $1::UUID AND report_kind = $2 AND template_id IS NULL
-         LIMIT 1`,
-        [userId, input.reportKind]
-      );
+  return {
+    reportKind: input.reportKind,
+    reportName,
+    templateId,
+    recipients,
+    filters,
+    format: input.format,
+    message: input.message?.trim() || null,
+    paused,
+    cadence,
+    nextSendAt: pausedNext,
+  };
+}
 
-  if (existing.rows[0]) {
-    const updated = await db.query(
-      `UPDATE analytics_report_schedules SET
-         report_kind = $3,
-         report_name = $4,
-         schedule_type = $5::SCHEDULE_TYPE,
-         days_of_week = $6::INT[],
-         day_of_month = $7,
-         date_of_month = $8,
-         week_of_month = $9,
-         interval_days = $10,
-         interval_weeks = $11,
-         interval_months = $12,
-         send_time = $13::TIME,
-         timezone = $14,
-         recipients = $15::TEXT[],
-         format = $16,
-         message = $17,
-         filters_json = $18::jsonb,
-         paused = $19,
-         next_send_at = $20,
-         updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1::UUID AND owner_id = $2::UUID
-       RETURNING ${SELECT_COLS}`,
-      [
-        existing.rows[0].id,
-        userId,
-        input.reportKind,
-        reportName,
-        cadence.scheduleType,
-        cadence.daysOfWeek,
-        cadence.dayOfMonth,
-        cadence.dateOfMonth,
-        cadence.weekOfMonth,
-        cadence.intervalDays,
-        cadence.intervalWeeks,
-        cadence.intervalMonths,
-        cadence.sendTime,
-        cadence.timezone,
-        recipients,
-        input.format,
-        input.message?.trim() || null,
-        JSON.stringify(filters),
-        paused,
-        nextSendAt,
-      ]
-    );
-    return mapRow(updated.rows[0]);
+/** Always creates a new schedule (multiple per report kind / project filters allowed). */
+export async function upsertSchedule(
+  user: IPassportSession,
+  input: UpsertScheduleInput
+): Promise<AnalyticsScheduleRow> {
+  const teamId = user.team_id;
+  const userId = user.id;
+  if (!teamId || !userId) throw new ScheduleServiceError("Unauthorized", 401);
+
+  const fields = normalizeScheduleFields(input);
+
+  if (fields.templateId) {
+    if (!isValidUuid(fields.templateId)) {
+      throw new ScheduleServiceError("Invalid template id", 400);
+    }
+    await assertTemplateBelongsToTeam(teamId, userId, fields.templateId, fields.reportKind);
   }
 
   const inserted = await db.query(
@@ -620,25 +599,25 @@ export async function upsertSchedule(
     [
       teamId,
       userId,
-      input.reportKind,
-      reportName,
-      templateId,
-      cadence.scheduleType,
-      cadence.daysOfWeek,
-      cadence.dayOfMonth,
-      cadence.dateOfMonth,
-      cadence.weekOfMonth,
-      cadence.intervalDays,
-      cadence.intervalWeeks,
-      cadence.intervalMonths,
-      cadence.sendTime,
-      cadence.timezone,
-      recipients,
-      input.format,
-      input.message?.trim() || null,
-      JSON.stringify(filters),
-      paused,
-      nextSendAt,
+      fields.reportKind,
+      fields.reportName,
+      fields.templateId,
+      fields.cadence.scheduleType,
+      fields.cadence.daysOfWeek,
+      fields.cadence.dayOfMonth,
+      fields.cadence.dateOfMonth,
+      fields.cadence.weekOfMonth,
+      fields.cadence.intervalDays,
+      fields.cadence.intervalWeeks,
+      fields.cadence.intervalMonths,
+      fields.cadence.sendTime,
+      fields.cadence.timezone,
+      fields.recipients,
+      fields.format,
+      fields.message,
+      JSON.stringify(fields.filters),
+      fields.paused,
+      fields.nextSendAt,
     ]
   );
   return mapRow(inserted.rows[0]);
@@ -687,8 +666,55 @@ export async function updateSchedule(
     paused: input.paused !== undefined ? input.paused : existing.paused,
   };
 
-  // Reuse upsert path so validation + next_send_at stay consistent
-  return upsertSchedule(user, merged);
+  const fields = normalizeScheduleFields(merged);
+
+  const updated = await db.query(
+    `UPDATE analytics_report_schedules SET
+       report_kind = $3,
+       report_name = $4,
+       schedule_type = $5::SCHEDULE_TYPE,
+       days_of_week = $6::INT[],
+       day_of_month = $7,
+       date_of_month = $8,
+       week_of_month = $9,
+       interval_days = $10,
+       interval_weeks = $11,
+       interval_months = $12,
+       send_time = $13::TIME,
+       timezone = $14,
+       recipients = $15::TEXT[],
+       format = $16,
+       message = $17,
+       filters_json = $18::jsonb,
+       paused = $19,
+       next_send_at = $20,
+       updated_at = CURRENT_TIMESTAMP
+     WHERE id = $1::UUID AND owner_id = $2::UUID
+     RETURNING ${SELECT_COLS}`,
+    [
+      scheduleId,
+      user.id,
+      fields.reportKind,
+      fields.reportName,
+      fields.cadence.scheduleType,
+      fields.cadence.daysOfWeek,
+      fields.cadence.dayOfMonth,
+      fields.cadence.dateOfMonth,
+      fields.cadence.weekOfMonth,
+      fields.cadence.intervalDays,
+      fields.cadence.intervalWeeks,
+      fields.cadence.intervalMonths,
+      fields.cadence.sendTime,
+      fields.cadence.timezone,
+      fields.recipients,
+      fields.format,
+      fields.message,
+      JSON.stringify(fields.filters),
+      fields.paused,
+      fields.nextSendAt,
+    ]
+  );
+  return mapRow(updated.rows[0]);
 }
 
 export async function setSchedulePaused(

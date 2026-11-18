@@ -10,6 +10,7 @@ import {
   deleteSchedule,
   getScheduleByReport,
   listSchedules,
+  listSchedulesByReport,
   setSchedulePaused,
   updateSchedule,
   upsertSchedule,
@@ -91,7 +92,18 @@ export default class AnalyticsSchedulesController extends WorklenzControllerBase
         typeof req.query.template_id === "string" && req.query.template_id
           ? req.query.template_id
           : null;
+      const listAll =
+        req.query.all === "1" ||
+        req.query.all === "true" ||
+        req.query.list === "1" ||
+        req.query.list === "true";
 
+      if (listAll) {
+        const rows = await listSchedulesByReport(teamId, userId, reportKind, templateId);
+        return res.status(200).send(new ServerResponse(true, rows));
+      }
+
+      // Legacy single-row response (most recent schedule for this report).
       const row = await getScheduleByReport(teamId, userId, reportKind, templateId);
       return res.status(200).send(new ServerResponse(true, row));
     } catch (error) {

@@ -81,9 +81,11 @@ export const ScheduledReportsHubPanel: React.FC = () => {
   }, [loadSchedules]);
 
   const handleSave = async (payload: AnalyticsScheduleUpsertPayload) => {
+    if (!editing?.id) return;
     try {
       setSaving(true);
-      const res = await analyticsSchedulesApiService.upsertSchedule(payload);
+      // Hub always edits an existing row by id (POST creates a new schedule).
+      const res = await analyticsSchedulesApiService.updateSchedule(editing.id, payload);
       if (res.done) {
         message.success(t('scheduleSaved', { defaultValue: 'Schedule saved' }));
         setEditing(null);
