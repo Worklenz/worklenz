@@ -164,9 +164,8 @@ export const Filters: React.FC<FilterOptionsProps> = ({
           </span>
           {appliedFilterCount > 0 && (
             <span
-              className={`inline-flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-bold rounded-full ${
-                isDarkMode ? 'bg-gray-600 text-white' : 'bg-gray-200 text-gray-800'
-              }`}
+              className={`inline-flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-bold rounded-full ${isDarkMode ? 'bg-gray-600 text-white' : 'bg-gray-200 text-gray-800'
+                }`}
             >
               {appliedFilterCount}
             </span>
@@ -218,9 +217,8 @@ export const Filters: React.FC<FilterOptionsProps> = ({
                     </span>
                   )}
                   <DownOutlined
-                    className={`w-3 h-3 shrink-0 transition-transform duration-200 ${
-                      isExpanded ? 'rotate-180' : ''
-                    } ${summary ? '' : 'ml-auto'} ${themeClasses.secondaryText}`}
+                    className={`w-3 h-3 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''
+                      } ${summary ? '' : 'ml-auto'} ${themeClasses.secondaryText}`}
                   />
                 </button>
 
@@ -238,14 +236,12 @@ export const Filters: React.FC<FilterOptionsProps> = ({
                             }))
                           }
                           placeholder={t('search', { defaultValue: 'Search' })}
-                          aria-label={`${t('search', { defaultValue: 'Search' })} - ${
-                            section.label
-                          }`}
-                          className={`w-full pl-8 pr-2 py-1 text-xs rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${
-                            isDarkMode
-                              ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
-                              : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
-                          }`}
+                          aria-label={`${t('search', { defaultValue: 'Search' })} - ${section.label
+                            }`}
+                          className={`w-full pl-8 pr-2 py-1 text-xs rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${isDarkMode
+                            ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
+                            : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
+                            }`}
                         />
                       </div>
                     )}
@@ -364,9 +360,9 @@ export const Filters: React.FC<FilterOptionsProps> = ({
           }
           aria-expanded={isOpen}
           className={`
-            inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium
-            ${themeClasses.buttonText}
-            focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-inset
+            inline-flex h-8 box-border items-center gap-1.5 px-3 py-0 text-xs font-semibold
+${themeClasses.buttonText}
+focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 active:ring-0
           `}
         >
           <FilterOutlined className="w-3.5 h-3.5" />
@@ -374,9 +370,8 @@ export const Filters: React.FC<FilterOptionsProps> = ({
           {appliedFilterCount > 0 && (
             <span
               aria-hidden="true"
-              className={`inline-flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-bold rounded-full ${
-                isDarkMode ? 'bg-gray-600 text-white' : 'bg-gray-200 text-gray-800'
-              }`}
+              className={`inline-flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-bold rounded-full ${isDarkMode ? 'bg-gray-600 text-white' : 'bg-gray-200 text-gray-800'
+                }`}
             >
               {appliedFilterCount}
             </span>
@@ -430,12 +425,11 @@ const OptionRow: React.FC<OptionRowProps> = ({
       className={`
         w-full min-h-8 flex items-center gap-2 px-2 py-1.5 text-xs rounded
         transition-colors duration-150 text-left
-        ${
-          isSelected
-            ? isDarkMode
-              ? 'bg-gray-700 text-white'
-              : 'bg-gray-100 text-gray-900 font-semibold'
-            : `${themeClasses.optionText} ${themeClasses.optionHover}`
+        ${isSelected
+          ? isDarkMode
+            ? 'bg-gray-700 text-white'
+            : 'bg-gray-100 text-gray-900 font-semibold'
+          : `${themeClasses.optionText} ${themeClasses.optionHover}`
         }
       `}
     >
@@ -443,10 +437,9 @@ const OptionRow: React.FC<OptionRowProps> = ({
         aria-hidden="true"
         className={`
           flex items-center justify-center w-3.5 h-3.5 border rounded shrink-0
-          ${
-            isSelected
-              ? 'bg-gray-600 border-gray-700 text-white'
-              : 'border-gray-300 dark:border-gray-600'
+          ${isSelected
+            ? 'bg-gray-600 border-gray-700 text-white'
+            : 'border-gray-300 dark:border-gray-600'
           }
         `}
       >
