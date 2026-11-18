@@ -204,7 +204,9 @@ echo ""
 domain=$(sed -n 's/^DOMAIN=//p' "$ENV_FILE" | tail -n 1)
 domain=${domain:-localhost}
 if [[ "$domain" == "localhost" || "$domain" == "127.0.0.1" || "$domain" == "0.0.0.0" ]]; then
-    echo -e "  ${GREEN}Access Worklenz at:${NC} ${BLUE}https://localhost${NC}"
+    local_url_domain="$domain"
+    [[ "$domain" == "0.0.0.0" ]] && local_url_domain=localhost
+    echo -e "  ${GREEN}Access Worklenz at:${NC} ${BLUE}https://${local_url_domain}${NC}"
     echo ""
     echo -e "  ${YELLOW}Note:${NC} You'll see a browser warning about the self-signed certificate."
     echo "  This is normal for localhost. Click 'Advanced' and 'Proceed' to access."

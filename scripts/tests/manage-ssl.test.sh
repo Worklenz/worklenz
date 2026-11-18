@@ -10,6 +10,7 @@ distinguished_name = dn
 [ dn ]
 EOF
 export OPENSSL_CONF="$test_dir/openssl.cnf"
+openssl_path=$(command -v openssl)
 # Source the functions without starting the interactive CLI.
 source "$repo_dir/manage.sh"
 SSL_DIR="$test_dir/ssl"
@@ -23,6 +24,24 @@ original_key=$(sha256sum "$SSL_DIR/key.pem")
 setup_self_signed_ssl >/dev/null
 [[ "$original_cert" == "$(sha256sum "$SSL_DIR/cert.pem")" ]]
 [[ "$original_key" == "$(sha256sum "$SSL_DIR/key.pem")" ]]
+# Simulate Docker forwarding stdin: file-based commands must not consume menu input.
+(
+    command() {
+        if [[ "$1" == -v && "$2" == openssl ]]; then return 1; fi
+        builtin command "$@"
+    }
+    docker() {
+        shift 5 # run --rm -i -v mount
+        shift # image
+        if [[ "$1" != pkey || " ${*} " != *' -pubin '* ]]; then
+            cat >/dev/null
+        fi
+        "$openssl_path" "$@"
+    }
+    setup_self_signed_ssl >/dev/null
+    IFS= read -r remaining_input
+    [[ "$remaining_input" == 'menu input' ]]
+) <<< 'menu input'
 cp "$SSL_DIR/key.pem" "$test_dir/localhost-key.pem"
 openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$SSL_DIR/key.pem" >/dev/null 2>&1
 invalid_key=$(sha256sum "$SSL_DIR/key.pem")
@@ -41,11 +60,21 @@ fi
 # Generation failures must propagate even when called from a conditional.
 (
     SSL_DIR="$test_dir/generation-failure"
-    openssl() { return 1; }
+    openssl() {
+        while [ "$#" -gt 0 ]; do
+            case "$1" in
+                -keyout|-out) touch "$2"; shift 2 ;;
+                *) shift ;;
+            esac
+        done
+        return 1
+    }
     if setup_self_signed_ssl >/dev/null; then
         echo 'Certificate generation failure was reported as success' >&2
         exit 1
     fi
+    [[ ! -e "$SSL_DIR/key.pem" && ! -e "$SSL_DIR/cert.pem" ]]
+    [[ -z "$(ls -A "$SSL_DIR")" ]]
 )
 [[ "$original_cert" == "$(sha256sum "$SSL_DIR/cert.pem")" ]]
 [[ "$invalid_key" == "$(sha256sum "$SSL_DIR/key.pem")" ]]
@@ -148,6 +177,11 @@ sed -i 's/^DOMAIN=.*/DOMAIN=0.0.0.0/' "$ENV_FILE"
 auto_configure_env >/dev/null
 grep -qx 'VITE_API_URL=https://localhost' "$ENV_FILE"
 grep -qx 'FRONTEND_URL=https://localhost' "$ENV_FILE"
+sed -i 's/^DOMAIN=.*/DOMAIN=127.0.0.1/' "$ENV_FILE"
+auto_configure_env >/dev/null
+grep -qx 'FRONTEND_URL=https://127.0.0.1' "$ENV_FILE"
+grep -qx 'SERVER_CORS=https://127.0.0.1' "$ENV_FILE"
+grep -qx 'SOCKET_IO_CORS=https://127.0.0.1' "$ENV_FILE"
 if setup_letsencrypt_ssl >/dev/null; then
     echo 'Unsupported automatic certificate issuance was reported as successful' >&2
     exit 1

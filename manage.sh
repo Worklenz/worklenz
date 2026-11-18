@@ -147,20 +147,20 @@ validate_certificate_pair() {
         return 1
     fi
     # Trust the supplied leaf only for checking its validity dates, not its CA chain.
-    if ! ssl_openssl verify -partial_chain -trusted "$SSL_DIR/cert.pem" "$SSL_DIR/cert.pem" >/dev/null 2>&1; then
+    if ! ssl_openssl verify -partial_chain -trusted "$SSL_DIR/cert.pem" "$SSL_DIR/cert.pem" </dev/null >/dev/null 2>&1; then
         print_error "The certificate is invalid, expired, or not yet valid."
         return 1
     fi
-    cert_public_key=$(ssl_openssl x509 -in "$SSL_DIR/cert.pem" -pubkey -noout 2>/dev/null) || return 1
-    key_public_key=$(ssl_openssl pkey -in "$SSL_DIR/key.pem" -passin pass: -pubout 2>/dev/null) || {
+    cert_public_key=$(ssl_openssl x509 -in "$SSL_DIR/cert.pem" -pubkey -noout </dev/null 2>/dev/null) || return 1
+    key_public_key=$(ssl_openssl pkey -in "$SSL_DIR/key.pem" -passin pass: -pubout </dev/null 2>/dev/null) || {
         print_error "Unable to read the certificate private key."
         return 1
     }
     # EC keys can encode the same point in compressed or uncompressed form.
     cert_public_key=$(printf '%s\n' "$cert_public_key" | ssl_openssl pkey -pubin -pubout -ec_conv_form uncompressed 2>/dev/null) ||
-        cert_public_key=$(ssl_openssl x509 -in "$SSL_DIR/cert.pem" -pubkey -noout 2>/dev/null) || return 1
+        cert_public_key=$(ssl_openssl x509 -in "$SSL_DIR/cert.pem" -pubkey -noout </dev/null 2>/dev/null) || return 1
     key_public_key=$(printf '%s\n' "$key_public_key" | ssl_openssl pkey -pubin -pubout -ec_conv_form uncompressed 2>/dev/null) ||
-        key_public_key=$(ssl_openssl pkey -in "$SSL_DIR/key.pem" -passin pass: -pubout 2>/dev/null) || return 1
+        key_public_key=$(ssl_openssl pkey -in "$SSL_DIR/key.pem" -passin pass: -pubout </dev/null 2>/dev/null) || return 1
     if [ "$cert_public_key" != "$key_public_key" ]; then
         print_error "The certificate and private key do not match."
         return 1
@@ -176,8 +176,8 @@ setup_self_signed_ssl() {
     fi
     if [ -s "$SSL_DIR/cert.pem" ] && [ -s "$SSL_DIR/key.pem" ]; then
         if ! validate_certificate_pair ||
-           ! LC_ALL=C ssl_openssl x509 -in "$SSL_DIR/cert.pem" -noout -checkhost localhost 2>/dev/null | grep -q 'does match' ||
-           ! LC_ALL=C ssl_openssl x509 -in "$SSL_DIR/cert.pem" -noout -checkip 127.0.0.1 2>/dev/null | grep -q 'does match'; then
+           ! LC_ALL=C ssl_openssl x509 -in "$SSL_DIR/cert.pem" -noout -checkhost localhost </dev/null 2>/dev/null | grep -q 'does match' ||
+           ! LC_ALL=C ssl_openssl x509 -in "$SSL_DIR/cert.pem" -noout -checkip 127.0.0.1 </dev/null 2>/dev/null | grep -q 'does match'; then
             print_error "The existing certificate must be valid and match localhost and 127.0.0.1; existing files were not overwritten."
             return 1
         fi
@@ -191,32 +191,41 @@ setup_self_signed_ssl() {
 
     mkdir -p "$SSL_DIR" || return 1
 
+    local staging_dir
+    staging_dir=$(mktemp -d "$SSL_DIR/.cert-setup.XXXXXX") || return 1
     if command -v openssl &> /dev/null; then
         openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-            -keyout "$SSL_DIR/key.pem" \
-            -out "$SSL_DIR/cert.pem" \
+            -keyout "$staging_dir/key.pem" \
+            -out "$staging_dir/cert.pem" \
             -subj "/C=US/ST=State/L=City/O=Worklenz/CN=localhost" \
             -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" \
-            &> /dev/null || { print_error "Certificate generation failed."; return 1; }
-
-        chmod 644 "$SSL_DIR/cert.pem" || return 1
-        chmod 600 "$SSL_DIR/key.pem" || return 1
-
-        print_success "Self-signed SSL certificates generated"
+            </dev/null &> /dev/null || { rm -rf "$staging_dir"; print_error "Certificate generation failed."; return 1; }
     else
         # Use Docker with alpine/openssl if openssl not available
-        docker run --rm -v "$SSL_DIR:/certs" alpine/openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+        docker run --rm --user "$(id -u):$(id -g)" -v "$staging_dir:/certs" alpine/openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
             -keyout /certs/key.pem \
             -out /certs/cert.pem \
             -subj "/C=US/ST=State/L=City/O=Worklenz/CN=localhost" \
             -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" \
-            2>/dev/null || { print_error "Certificate generation failed."; return 1; }
-
-        chmod 644 "$SSL_DIR/cert.pem" || return 1
-        chmod 600 "$SSL_DIR/key.pem" || return 1
-
-        print_success "Self-signed SSL certificates generated (using Docker)"
+            </dev/null 2>/dev/null || { rm -rf "$staging_dir"; print_error "Certificate generation failed."; return 1; }
     fi
+    if ! chmod 644 "$staging_dir/cert.pem" || ! chmod 600 "$staging_dir/key.pem"; then
+        rm -rf "$staging_dir"
+        print_error "Unable to set certificate permissions."
+        return 1
+    fi
+    # Hard links install without replacing files created concurrently by an operator.
+    if ! ln "$staging_dir/key.pem" "$SSL_DIR/key.pem"; then
+        rm -rf "$staging_dir"
+        return 1
+    fi
+    if ! ln "$staging_dir/cert.pem" "$SSL_DIR/cert.pem"; then
+        rm -f "$SSL_DIR/key.pem"
+        rm -rf "$staging_dir"
+        return 1
+    fi
+    rm -rf "$staging_dir"
+    print_success "Self-signed SSL certificates generated"
 }
 
 setup_letsencrypt_ssl() {
@@ -640,7 +649,7 @@ auto_configure_env() {
     fi
 
     # Update URLs based on domain
-    if is_localhost; then
+    if [[ "$domain" == "localhost" || "$domain" == "0.0.0.0" ]]; then
         print_info "Configuring URLs for localhost..."
         sed -i.bak "s|^VITE_API_URL=.*|VITE_API_URL=https://localhost|" "$ENV_FILE"
         sed -i.bak "s|^VITE_SOCKET_URL=.*|VITE_SOCKET_URL=wss://localhost|" "$ENV_FILE"
