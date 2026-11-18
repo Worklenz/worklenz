@@ -1,4 +1,5 @@
-import { SendEmailCommand, SendRawEmailCommand, SESClient } from "@aws-sdk/client-ses";
+import { SendEmailCommand, SESClient } from "@aws-sdk/client-ses";
+import { SESv2Client, SendEmailCommand as SendEmailV2Command } from "@aws-sdk/client-sesv2";
 import nodemailer from "nodemailer";
 import { Validator } from "jsonschema";
 import { QueryResult } from "pg";
@@ -9,6 +10,7 @@ import emailRequestSchema from "../json_schemas/email-request-schema";
 import db from "../config/db";
 
 const sesClient = new SESClient({ region: process.env.AWS_REGION });
+const sesV2Client = new SESv2Client({ region: process.env.AWS_REGION });
 
 type EmailProvider = "ses" | "smtp";
 
@@ -360,16 +362,31 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
         attachments: options.attachments,
       });
       messageId = response.messageId;
-    } else if (options.attachments?.length || options.cc?.length) {
-      const transport = nodemailer.createTransport({ streamTransport: true, buffer: true, newline: "unix" });
-      const raw = await transport.sendMail({ from, to: options.to, cc: options.cc, subject: options.subject, html: options.html, text: plainText, attachments: options.attachments });
-      if (!Buffer.isBuffer(raw.message)) throw new Error("Unable to construct email message");
-      if (raw.message.length > 10 * 1024 * 1024) throw new Error("Encoded email exceeds the 10 MiB delivery limit");
-      const response = await sesClient.send(new SendRawEmailCommand({ RawMessage: { Data: raw.message } }));
+    } else if (options.attachments?.length) {
+      const response = await sesV2Client.send(new SendEmailV2Command({
+        FromEmailAddress: from,
+        Destination: { ToAddresses: options.to, CcAddresses: options.cc },
+        Content: {
+          Simple: {
+            Subject: { Charset: charset, Data: options.subject },
+            Body: {
+              Html: { Charset: charset, Data: options.html },
+              Text: { Charset: charset, Data: plainText },
+            },
+            Attachments: options.attachments.map(attachment => ({
+              FileName: attachment.filename,
+              ContentType: attachment.contentType,
+              ContentDisposition: "ATTACHMENT",
+              ContentTransferEncoding: "BASE64",
+              RawContent: Buffer.isBuffer(attachment.content) ? attachment.content : Buffer.from(attachment.content, "utf8"),
+            })),
+          },
+        },
+      }));
       messageId = response.MessageId;
     } else {
       const command = new SendEmailCommand({
-        Destination: { ToAddresses: options.to },
+        Destination: { ToAddresses: options.to, CcAddresses: options.cc },
         Message: {
           Subject: { Charset: charset, Data: options.subject },
           Body: {
