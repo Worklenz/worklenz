@@ -6,21 +6,24 @@ const fs = require('fs');
 const path = require('path');
 
 const repoRoot = path.resolve(__dirname, '../..');
-const nestedAddonsDir = path.join(__dirname, '../addons');
+const backendAddonsDir = path.join(__dirname, '../addons');
+const nestedAddonsDir = path.join(repoRoot, 'addons', 'worklenz-addons');
 const flatAddonsDir = path.join(repoRoot, 'addons');
 
 const getAddonDirs = (addonsDir) => {
   if (!fs.existsSync(addonsDir)) return [];
   return fs
     .readdirSync(addonsDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
+    .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'worklenz-addons')
     .map((entry) => [entry.name, path.join(addonsDir, entry.name)]);
 };
 
-// Backend-nested addons take precedence over same-id addons in the flat directory.
-const addonDirsById = new Map(getAddonDirs(nestedAddonsDir));
-for (const [addonId, addonDir] of getAddonDirs(flatAddonsDir)) {
-  if (!addonDirsById.has(addonId)) addonDirsById.set(addonId, addonDir);
+// Priority: backend-nested addons > nested worklenz-addons repository > flat addons directory.
+const addonDirsById = new Map();
+for (const dir of [flatAddonsDir, nestedAddonsDir, backendAddonsDir]) {
+  for (const [addonId, addonDir] of getAddonDirs(dir)) {
+    addonDirsById.set(addonId, addonDir);
+  }
 }
 const addonDirs = [...addonDirsById.entries()];
 

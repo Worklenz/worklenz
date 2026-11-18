@@ -19,7 +19,7 @@ back up and review their migration history before attempting an upgrade.
 
 ## Prerequisites
 
-Install Git, Docker Engine and the Docker Compose plugin. The host needs ports
+Install Git, OpenSSL, Docker Engine and the Docker Compose plugin. The host needs ports
 80 and 443 available. The default configuration also publishes ports 3000,
 5000, 5174 and 8333; restrict access to those ports with your firewall as
 appropriate. The database container installs `dos2unix` at startup and therefore
@@ -30,8 +30,11 @@ needs package repository access.
 The interactive `./quick-setup.sh` generates secrets and delegates installation
 to `manage.sh`. For a public deployment, first place your externally provisioned
 certificate and key at `nginx/ssl/cert.pem` and `nginx/ssl/key.pem`; the installer
-does not issue or renew certificates. Review the generated `.env` and nginx
-configuration. Alternatively, configure the stack manually:
+does not issue or renew certificates. Configure an HTTPS storage endpoint reachable
+by remote browsers and set `S3_PUBLIC_URL` in `.env` to its bucket URL; the
+default points to each browser's localhost. After changing it, run
+`docker compose up -d --force-recreate backend` to apply the setting. Review the
+generated `.env` and nginx configuration. Alternatively, configure the stack manually:
 
 ```bash
 git clone https://github.com/Worklenz/worklenz.git
@@ -81,7 +84,8 @@ docker compose start
 
 PostgreSQL data and SeaweedFS data use Docker volumes. The `db-backup` service
 writes daily SQL backups to `pg_backups` and removes SQL files older than 30
-days. Those database backups do **not** include attachments in the SeaweedFS
+days only after a successful backup. Monitor container logs for backup failures.
+Those database backups do **not** include attachments in the SeaweedFS
 volume. Back up both data sets off-host and test restoration before relying on
 them. Stopping containers preserves volumes; `docker compose down -v` deletes
 Compose-managed volumes and should be used only when intentionally removing
