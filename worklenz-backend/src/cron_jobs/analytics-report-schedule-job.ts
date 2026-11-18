@@ -4,6 +4,7 @@ import sanitizeHtmlLib from "sanitize-html";
 import db from "../config/db";
 import { sendEmail } from "../shared/email";
 import { log_error } from "../shared/utils";
+import { formatScheduleTimeRangeNote } from "../services/reporting-analytics/analytics-schedule-date-bounds";
 import { buildLiveScheduleExport } from "../services/reporting-analytics/analytics-schedule-export.service";
 import {
   AnalyticsScheduleRow,
@@ -27,8 +28,18 @@ function escapeHtml(value: string): string {
   return sanitizeHtmlLib(value, { allowedTags: [], allowedAttributes: {} });
 }
 
-function buildEmailHtml(schedule: AnalyticsScheduleRow): string {
+function buildEmailHtml(schedule: AnalyticsScheduleRow, sentAt: Date = new Date()): string {
   const safeName = escapeHtml(schedule.report_name);
+  const timeRange = formatScheduleTimeRangeNote(
+    schedule.filters_json,
+    schedule.timezone,
+    sentAt
+  );
+  const timeRangeHtml = timeRange
+    ? `<p style="margin:8px 0 0;color:#595959"><strong>Time range:</strong> ${escapeHtml(
+        timeRange
+      )}</p>`
+    : "";
   const custom =
     schedule.message && schedule.message.trim()
       ? `<p style="white-space:pre-wrap;margin:16px 0 0">${escapeHtml(
@@ -40,6 +51,7 @@ function buildEmailHtml(schedule: AnalyticsScheduleRow): string {
     <div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#262626;line-height:1.5">
       <p style="margin:0 0 8px">Your scheduled Worklenz report is attached.</p>
       <p style="margin:0"><strong>${safeName}</strong></p>
+      ${timeRangeHtml}
       <p style="margin:8px 0 0;color:#595959">
         This file was generated with your saved filters against live data at send time.
       </p>

@@ -1,6 +1,7 @@
 import moment from "moment-timezone";
 import {
   applyLiveScheduleDateBounds,
+  formatScheduleTimeRangeNote,
   resolveScheduleDateBounds,
 } from "../services/reporting-analytics/analytics-schedule-date-bounds";
 
@@ -98,5 +99,29 @@ describe("analytics-schedule-date-bounds", () => {
     expect(next.date_from).toBe("2026-11-17T00:00:00.000Z");
     expect(next.date_to).toBe("2026-11-17T23:59:59.999Z");
     expect(next.date_preset).toBe("yesterday");
+  });
+
+  it("formats an email time-range note for yesterday", () => {
+    const note = formatScheduleTimeRangeNote(
+      { date_preset: "yesterday" },
+      "UTC",
+      moment.tz("2026-11-18 08:00", "UTC")
+    );
+    expect(note).toBe("Yesterday (17 Nov 2026)");
+  });
+
+  it("formats an email time-range note for last_30_days", () => {
+    const note = formatScheduleTimeRangeNote(
+      { date_preset: "last_30_days" },
+      "UTC",
+      moment.tz("2026-11-18 08:00", "UTC")
+    );
+    expect(note).toBe("Last 30 days (19 Oct 2026 – 17 Nov 2026)");
+  });
+
+  it("formats all_time without calendar bounds", () => {
+    expect(
+      formatScheduleTimeRangeNote({ date_preset: "all_time" }, "UTC", new Date())
+    ).toBe("All time");
   });
 });

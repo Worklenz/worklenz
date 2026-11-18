@@ -233,3 +233,90 @@ export function applyLiveScheduleDateBounds(
   if (resolved.date_to !== undefined) next.date_to = resolved.date_to;
   return next;
 }
+
+const PRESET_LABELS: Record<string, string> = {
+  today: "Today",
+  yesterday: "Yesterday",
+  last_7_days: "Last 7 days",
+  last_14_days: "Last 14 days",
+  last_60_days: "Last 60 days",
+  this_quarter: "This quarter",
+  this_week: "This week",
+  last_week: "Last week",
+  this_month: "This month",
+  last_30_days: "Last 30 days",
+  last_month: "Last month",
+  last_3_months: "Last 3 months",
+  last_90_days: "Last 90 days",
+  all_time: "All time",
+  custom: "Custom range",
+};
+
+function toDayLabel(isoOrDay: string): string {
+  const day = String(isoOrDay || "").slice(0, 10);
+  if (!DATE_ONLY.test(day)) return day;
+  return moment.utc(day, "YYYY-MM-DD").format("D MMM YYYY");
+}
+
+function dayFromFilterValue(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const day = value.trim().slice(0, 10);
+  return DATE_ONLY.test(day) ? day : null;
+}
+
+/**
+ * Human-readable time-range note for scheduled report emails.
+ * Uses the same live preset resolution as the export at send time.
+ *
+ * Examples:
+ * - "Yesterday (17 Nov 2026)"
+ * - "Last 30 days (19 Oct 2026 – 17 Nov 2026)"
+ * - "All time"
+ */
+export function formatScheduleTimeRangeNote(
+  filters: Record<string, unknown> | null | undefined,
+  timezone?: string | null,
+  now?: Date | moment.Moment
+): string | null {
+  if (!filters || typeof filters !== "object") return null;
+
+  const preset =
+    typeof filters.date_preset === "string" ? filters.date_preset : null;
+  const resolved = resolveScheduleDateBounds({
+    datePreset: filters.date_preset,
+    customRange: filters.custom_range,
+    dateFrom: filters.date_from,
+    dateTo: filters.date_to,
+    timezone,
+    now,
+  });
+
+  let from = resolved?.date_from
+    ? String(resolved.date_from).slice(0, 10)
+    : dayFromFilterValue(filters.date_from);
+  let to = resolved?.date_to
+    ? String(resolved.date_to).slice(0, 10)
+    : dayFromFilterValue(filters.date_to);
+
+  if (preset === "all_time") return "All time";
+
+  if (!from && !to) {
+    if (preset && PRESET_LABELS[preset] && preset !== "custom") {
+      return PRESET_LABELS[preset];
+    }
+    return null;
+  }
+
+  if (from && !to) to = from;
+  if (to && !from) from = to;
+
+  const rangeLabel =
+    from === to ? toDayLabel(from!) : `${toDayLabel(from!)} – ${toDayLabel(to!)}`;
+  const presetLabel =
+    preset && PRESET_LABELS[preset] ? PRESET_LABELS[preset] : null;
+
+  if (presetLabel && preset !== "custom") {
+    return `${presetLabel} (${rangeLabel})`;
+  }
+  return rangeLabel;
+}
