@@ -14,6 +14,7 @@ import {
   writeAnalyticsFilterSession,
   type AnalyticsPersistedFilterState,
 } from '@/lib/reporting/analytics-filter-persistence';
+import { consumePendingScheduleFilters } from '@/lib/reporting/analytics-schedule-open';
 import type { ReportingCustomRange } from '@/utils/date-presets';
 import { getUserSession } from '@/utils/session-helper';
 
@@ -75,6 +76,24 @@ export const usePersistedAnalyticsFilters = (
   const storageScope = `${session?.team_id ?? ''}:${session?.id ?? ''}:${reportKey}`;
 
   const readScope = () => {
+    // Scheduled → Open stashes filters; apply once before session restore so the
+    // report shows the same filters that were saved on the schedule.
+    const fromSchedule = consumePendingScheduleFilters(reportKind, customTemplateId);
+    if (fromSchedule) {
+      const state = { ...defaults, ...fromSchedule.state };
+      const hasSavedFilters = true;
+      return {
+        scope: storageScope,
+        state,
+        wasRestored: true,
+        hasExplicitFilters: true,
+        restoredState: state,
+        shouldPersist: hasSavedFilters,
+        explicitProjects: fromSchedule.explicitProjects,
+        explicitTeams: fromSchedule.explicitTeams,
+      };
+    }
+
     const restored = readAnalyticsFilterSession(reportKey, defaults);
     const hasSavedFilters = restored.wasRestored &&
       (restored.hasExplicitFilters || hasMeaningfulAnalyticsFilters(restored.state, defaults));

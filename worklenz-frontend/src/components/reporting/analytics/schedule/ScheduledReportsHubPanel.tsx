@@ -20,6 +20,7 @@ import {
   analyticsPath,
   customReportPath,
 } from '@/lib/reporting/analytics-nav';
+import { stashScheduleFiltersForOpen } from '@/lib/reporting/analytics-schedule-open';
 import logger from '@/utils/errorLogger';
 import type {
   AnalyticsReportSchedule,
@@ -38,6 +39,18 @@ function reportOpenPath(schedule: AnalyticsReportSchedule): string {
     return analyticsPath(customReportPath(schedule.template_id));
   }
   return analyticsPath(schedule.report_kind);
+}
+
+function openScheduledReport(
+  navigate: ReturnType<typeof useNavigate>,
+  schedule: AnalyticsReportSchedule
+): void {
+  stashScheduleFiltersForOpen({
+    reportKind: schedule.report_kind,
+    templateId: schedule.template_id,
+    filters: schedule.filters_json || {},
+  });
+  navigate(reportOpenPath(schedule));
 }
 
 export const ScheduledReportsHubPanel: React.FC = () => {
@@ -175,7 +188,7 @@ export const ScheduledReportsHubPanel: React.FC = () => {
           {
             key: 'open',
             label: t('actionOpen', { defaultValue: 'Open' }),
-            onClick: () => navigate(reportOpenPath(row)),
+            onClick: () => openScheduledReport(navigate, row),
           },
           {
             key: 'edit',
