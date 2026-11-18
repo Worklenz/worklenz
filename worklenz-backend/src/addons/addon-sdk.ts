@@ -7,6 +7,7 @@ import { NotificationsService } from "../services/notifications/notifications.se
 import { sendProjectComment } from "../shared/email-notifications";
 import { HTML_TAG_REGEXP, LOG_DESCRIPTIONS, WorklenzColorCodes } from "../shared/constants";
 import { getBaseUrl } from "../cron_jobs/helpers";
+import { I18nHelper } from "../shared/i18n-helper";
 import safeControllerFunction from "../shared/safe-controller-function";
 import type { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import type { IWorkLenzResponse } from "../interfaces/worklenz-response";
@@ -35,6 +36,7 @@ export {
   LOG_DESCRIPTIONS,
   WorklenzColorCodes,
   getBaseUrl,
+  I18nHelper,
   safeControllerFunction,
   idParamValidator,
   teamOwnerOrAdminValidator,
