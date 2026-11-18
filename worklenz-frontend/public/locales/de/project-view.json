@@ -463,5 +463,6 @@
   "deleteSavedView": "Tab löschen",
   "deleteSavedViewTitle": "\"{{name}}\" löschen?",
   "deleteSavedViewContent": "Dieser Tab wird für alle im Projekt entfernt. Aufgaben sind nicht betroffen.",
-  "deleteSavedViewOk": "Löschen"
+  "deleteSavedViewOk": "Löschen",
+  "NewTab": "Neuer Tab"
 }
