@@ -173,7 +173,7 @@ const CollapsibleSearchFilter = ({
           onClick={handleToggle}
           title={t('search', { defaultValue: 'Search' })}
           aria-label={t('search', { defaultValue: 'Search' })}
-          className={`inline-flex h-8 box-border items-center gap-1.5 px-3 py-0 text-xs font-semibold rounded-md border border-solid transition-colors duration-200 focus:!outline-none focus:!ring-0 focus:!border-inherit focus-visible:!outline-none focus-visible:!ring-0 active:!border-inherit ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`}
+          className={`inline-flex h-8 box-border items-center gap-1.5 px-3 py-0 text-xs font-semibold rounded-md  ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`}
         >
           <SearchOutlined className="w-3.5 h-3.5" />
           <span>{t('search', { defaultValue: 'Search' })}</span>
@@ -210,7 +210,7 @@ const CollapsibleSearchFilter = ({
           </div>
           <button
             type="submit"
-            className={`inline-flex h-8 box-border items-center justify-center px-3 py-0 text-xs font-semibold rounded-md focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 active:ring-0 transition-colors duration-200 ${isDarkMode
+            className={`inline-flex h-8 box-border items-center justify-center px-3 py-0 text-xs font-semibold rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset active:ring-0 transition-colors duration-200 ${isDarkMode
               ? 'text-white bg-gray-600 hover:bg-gray-700'
               : 'text-gray-800 bg-gray-200 hover:bg-gray-300'
               }`}

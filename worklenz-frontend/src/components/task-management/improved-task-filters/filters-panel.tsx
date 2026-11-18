@@ -362,7 +362,7 @@ export const Filters: React.FC<FilterOptionsProps> = ({
           className={`
             inline-flex h-8 box-border items-center gap-1.5 px-3 py-0 text-xs font-semibold
 ${themeClasses.buttonText}
-focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 active:ring-0
+focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset active:ring-0
           `}
         >
           <FilterOutlined className="w-3.5 h-3.5" />

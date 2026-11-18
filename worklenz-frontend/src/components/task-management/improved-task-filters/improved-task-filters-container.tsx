@@ -1014,6 +1014,23 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
             />
           )}
 
+          {position === 'board' && !isSoftwareProject && (
+            <label
+              className={`inline-flex items-center gap-2 cursor-pointer px-2.5 py-1.5 rounded-md border text-xs ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`}
+            >
+              <input
+                type="checkbox"
+                checked={showArchived}
+                onChange={toggleArchived}
+                className={`w-3.5 h-3.5 rounded focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${isDarkMode
+                    ? 'border-[#303030] bg-[#141414] focus:ring-offset-gray-800'
+                    : 'border-gray-300 bg-white focus:ring-offset-white'
+                  }`}
+              />
+              <span>{t('showArchivedText', { defaultValue: 'Show Archived' })}</span>
+            </label>
+          )}
+
           {isCompactToolbar ? null : isDataLoaded ? (
             <>
               {attributeFilterSections.length > 0 && (
@@ -1072,7 +1089,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
                   inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
                   border transition-all duration-200 ease-in-out flex-shrink-0
                   ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}
-                  hover:shadow-sm focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 active:ring-0
+                  hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset active:ring-0
                 `}
               >
                 <MenuOutlined className="w-3.5 h-3.5" />

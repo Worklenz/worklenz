@@ -15,7 +15,8 @@ import { isSoftwareProjectType } from '@/lib/project/software-project';
 import { FilterSection, ThemeClasses } from './types';
 
 const MANAGE_BUTTON_BASE_CLASS =
-  'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 active:ring-0';
+  'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset active:ring-0';
+
 const getManageButtonThemeClass = (isDarkMode: boolean) =>
   isDarkMode
     ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500 focus:ring-offset-gray-900'
@@ -178,8 +179,7 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
               : 'bg-gray-200 text-gray-800 border-gray-300'
             : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
-  hover:shadow-sm focus:outline-none focus-visible:outline-none
-  focus:ring-0 focus-visible:ring-0 active:ring-0
+ hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset active:ring-0
 `}
         aria-expanded={isOpen}
         aria-haspopup="true"

@@ -121,7 +121,7 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
               : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
             : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
-         hover:shadow-sm focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 active:ring-0
+         hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset active:ring-0
         `}
         aria-expanded={open}
         aria-haspopup="true"
