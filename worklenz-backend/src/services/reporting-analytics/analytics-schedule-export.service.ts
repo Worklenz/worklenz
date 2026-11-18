@@ -1,6 +1,7 @@
 import { CSV_UTF8_BOM, formatCsvCell } from "../../shared/csv-utils";
 import db from "../../config/db";
 import { resolveScheduleOwnerAccessibleProjectIds } from "./analytics-schedule-access";
+import { applyLiveScheduleDateBounds } from "./analytics-schedule-date-bounds";
 import {
   renderScheduleChartPngs,
   ScheduleChartSource,
@@ -136,9 +137,12 @@ async function buildLivePayload(
   reportKind: string,
   ownerId: string,
   teamId: string,
-  filtersJson: Record<string, unknown>
+  filtersJson: Record<string, unknown>,
+  timezone?: string | null
 ): Promise<LiveExportPayload> {
-  const input = normalizeFilterInput(filtersJson);
+  const normalized = normalizeFilterInput(filtersJson);
+  // Relative date presets (yesterday, last_30_days, …) re-resolve at send time.
+  const input = applyLiveScheduleDateBounds(normalized, timezone);
   const accessible = await resolveScheduleOwnerAccessibleProjectIds(
     ownerId,
     teamId,
@@ -240,12 +244,15 @@ export async function buildLiveScheduleExport(input: {
   teamId: string;
   format: AnalyticsScheduleFormat;
   filtersJson: Record<string, unknown>;
+  /** Schedule timezone — used to re-resolve relative date presets at send time. */
+  timezone?: string | null;
 }): Promise<ScheduleExportFile> {
   const { csv: rawCsv, chartSource } = await buildLivePayload(
     input.reportKind,
     input.ownerId,
     input.teamId,
-    input.filtersJson
+    input.filtersJson,
+    input.timezone
   );
   // Shared by CSV / Excel / PDF so project names decode the same in every format.
   const csv = normalizeScheduleExportCsv(rawCsv);

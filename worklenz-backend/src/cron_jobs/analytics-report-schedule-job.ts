@@ -56,6 +56,7 @@ async function processSchedule(schedule: AnalyticsScheduleRow): Promise<boolean>
     teamId: schedule.team_id,
     format: schedule.format,
     filtersJson: schedule.filters_json,
+    timezone: schedule.timezone,
   });
 
   const result = await sendEmail({
