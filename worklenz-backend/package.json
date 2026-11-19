@@ -90,6 +90,7 @@
     "express-rate-limit": "^6.8.0",
     "express-session": "^1.17.3",
     "express-validator": "^6.15.0",
+    "google-auth-library": "^11.3.3",
     "gray-matter": "^4.0.3",
     "helmet": "^6.2.0",
     "hpp": "^0.2.3",
