@@ -33,7 +33,7 @@ async function isAccountDeactivated(email: string) {
   return !!result.rowCount;
 }
 
-async function registerUser(password: string, team_id: string, name: string, team_name: string, email: string, timezone: string, team_member_id: string) {
+async function registerUser(password: string, team_id: string, name: string, team_name: string, email: string, timezone: string, team_member_id: string, invitation_id: string | null) {
   const salt = bcrypt.genSaltSync(10);
   const encryptedPassword = bcrypt.hashSync(password, salt);
 
@@ -48,6 +48,7 @@ async function registerUser(password: string, team_id: string, name: string, tea
     timezone,
     invited_team_id: teamId,
     team_member_id,
+    invitation_id,
   };
 
   const result = await db.query(q, [JSON.stringify(body)]);
@@ -62,11 +63,24 @@ async function handleSignUp(req: Request, email: string, password: string, done:
 
   if (!team_name) return done(null, null, req.flash(ERROR_KEY, "Team name is required"));
 
-  if ((team_id || team_member_id) &&
-      !verifyRegistrationInvitationToken(req.body.invitation_token, team_id, team_member_id, email)) {
-    return done(null, null, req.flash(ERROR_KEY, "This invitation is invalid or expired. Please request a new invitation."));
+  let invitationId: string | null = null;
+  if (team_id || team_member_id) {
+    try {
+      const invitation = await db.query(
+        `SELECT id FROM email_invitations
+         WHERE team_id::text = $1 AND team_member_id::text = $2 AND LOWER(TRIM(email)) = LOWER(TRIM($3))
+         ORDER BY created_at DESC, id DESC LIMIT 1`,
+        [team_id || null, team_member_id || null, email],
+      );
+      invitationId = invitation.rows[0]?.id || null;
+      if (!invitationId || !verifyRegistrationInvitationToken(req.body.invitation_token, team_id, team_member_id, email, invitationId)) {
+        return done(null, null, req.flash(ERROR_KEY, "This invitation is invalid or expired. Please request a new invitation."));
+      }
+    } catch (error) {
+      log_error(error);
+      return done(null, null, req.flash(ERROR_KEY, DEFAULT_ERROR_MESSAGE));
+    }
   }
-
 
   // Sanitize user name to prevent HTML injection attacks
   // This ensures malicious HTML/JavaScript cannot be stored in the database or rendered in emails
@@ -84,7 +98,7 @@ async function handleSignUp(req: Request, email: string, password: string, done:
     return done(null, null, req.flash(ERROR_KEY, `Account for email ${email} has been deactivated. Please contact support to reactivate your account.`));
 
   try {
-    const user = await registerUser(password, team_id, sanitizedName, team_name, email, timezone, team_member_id);
+    const user = await registerUser(password, team_id, sanitizedName, team_name, email, timezone, team_member_id, invitationId);
     sendWelcomeEmail(email, sanitizedName);
     return done(null, user, req.flash(SUCCESS_KEY, "Registration successful. Please check your email for verification."));
   } catch (error: any) {

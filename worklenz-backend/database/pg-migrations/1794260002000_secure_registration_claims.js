@@ -26,6 +26,15 @@ exports.up = pgm => {
     CREATE FUNCTION register_user(_body json) RETURNS json LANGUAGE plpgsql AS $$
     BEGIN
       PERFORM validate_registration_claim(_body->>'invited_team_id', _body->>'team_member_id', _body->>'email');
+      IF NULLIF(_body->>'invited_team_id', '') IS NOT NULL THEN
+        PERFORM 1 FROM email_invitations
+        WHERE id::text = _body->>'invitation_id'
+          AND team_id::text = _body->>'invited_team_id'
+          AND team_member_id::text = _body->>'team_member_id'
+          AND LOWER(TRIM(email)) = LOWER(TRIM(_body->>'email'))
+        FOR UPDATE;
+        IF NOT FOUND THEN RAISE EXCEPTION 'ERROR_INVALID_JOINING_EMAIL'; END IF;
+      END IF;
       RETURN register_user_before_claim_guard(_body);
     END;
     $$;

@@ -187,11 +187,13 @@ async function handleAppleMobileAuth(req: Request, done: any) {
 
       // Update email if provided and different (first sign-in scenario)
       if (email && user.email !== email && emailVerified) {
-        await db.query(
-          "UPDATE users SET email = $1 WHERE id = $2;",
+        const updateResult = await db.query(
+          `UPDATE users SET email = $1 WHERE id = $2
+           AND NOT EXISTS (SELECT 1 FROM users WHERE LOWER(email) = $1 AND id <> $2 AND is_deleted IS FALSE)
+           RETURNING id;`,
           [email, user.id]
         );
-        user.email = email;
+        if (updateResult.rowCount) user.email = email;
       }
 
       // Update last active timestamp

@@ -25,3 +25,20 @@ test('prefers the matching Apple subject when another account matches the email'
   await appleMobileStrategy._verify({ body: { idToken: 'token' } }, done);
   expect(done).toHaveBeenCalledWith(null, expect.objectContaining({ id: 'subject-match' }), expect.anything());
 });
+
+
+test('does not replace an Apple account email when another user owns it', async () => {
+  process.env.APPLE_CLIENT_ID = 'web-client';
+  query.mockReset();
+  query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+  query.mockResolvedValueOnce({ rowCount: 2, rows: [
+    { id: 'email-match', apple_id: 'other-apple', google_id: null, email: 'person@example.com' },
+    { id: 'subject-match', apple_id: 'apple-user', google_id: null, email: 'original@example.com' },
+  ] });
+  query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+  query.mockResolvedValueOnce({ rowCount: 1, rows: [] });
+  const done = jest.fn();
+  await appleMobileStrategy._verify({ body: { idToken: 'token' } }, done);
+  expect(query.mock.calls[2][0]).toContain('NOT EXISTS');
+  expect(done).toHaveBeenCalledWith(null, expect.objectContaining({ id: 'subject-match', email: 'original@example.com' }), expect.anything());
+});
