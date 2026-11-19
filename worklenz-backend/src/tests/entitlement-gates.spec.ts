@@ -86,6 +86,28 @@ describe("canUseFeature: client portal in self-hosted deployments", () => {
   });
 });
 
+describe("self-hosted plan features", () => {
+  afterEach(() => { process.env.WORKLENZ_DEPLOYMENT_MODE = "cloud"; });
+
+  it.each(["project_docs", "phase_assignee", "csv_import"] as const)(
+    "grants %s even when the stored subscription is Free",
+    feature => {
+      process.env.WORKLENZ_DEPLOYMENT_MODE = "self_hosted";
+      expect(canUseFeature(free, feature)).toBe(true);
+    }
+  );
+
+  it("grants team features without looking up a subscription record", async () => {
+    process.env.WORKLENZ_DEPLOYMENT_MODE = "self_hosted";
+    const status = jest.mocked(paddleUtils.checkTeamSubscriptionStatus);
+    status.mockClear();
+    status.mockResolvedValue(undefined);
+    expect(await teamCanUseFeature("team-id", "phase_assignee")).toBe(true);
+    expect(status).not.toHaveBeenCalled();
+    expect(await teamCanUseFeature(undefined, "phase_assignee")).toBe(false);
+  });
+});
+
 describe("canUseFeature: enforce mode", () => {
   beforeEach(() => {
     process.env.ENTITLEMENTS_ENFORCE = "on";
