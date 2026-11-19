@@ -8,6 +8,7 @@ import idParamValidator from "../../middlewares/validators/id-param-validator";
 import taskAttachmentsValidator from "../../middlewares/validators/task-attachments-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import verifyTaskAccess from "../../middlewares/verify-task-access";
+import verifyProjectAccess from "../../middlewares/verify-project-access";
 import {verifyNonGuestTaskAccessViaAttachment, verifyTaskAccessViaAttachment, verifyTaskRolePermission} from "../../middlewares/verify-task-access";
 import { PROJECT_ROLE_PERMISSIONS } from "../../shared/organization-permissions";
 
@@ -27,7 +28,7 @@ attachmentsApiRouter.delete("/avatar", safeControllerFunction(AttachmentControll
 
 // Get attachments
 attachmentsApiRouter.get("/tasks/:id", idParamValidator, verifyTaskAccess('params', 'id'), safeControllerFunction(AttachmentController.get));
-attachmentsApiRouter.get("/project/:id", idParamValidator, safeControllerFunction(AttachmentController.getByProjectId));
+attachmentsApiRouter.get("/project/:id", idParamValidator, verifyProjectAccess("params", "id"), safeControllerFunction(AttachmentController.getByProjectId));
 
 // Downloads and deletes
 attachmentsApiRouter.get("/download", verifyTaskAccessViaAttachment('query', 'id'), safeControllerFunction(AttachmentController.download));
