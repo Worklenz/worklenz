@@ -319,22 +319,19 @@ export async function downloadAnalyticsBrandedPdf(
   const primaryChart = options.chartPngDataUrl;
   const secondaryChart = options.secondaryChartPngDataUrl;
   if (primaryChart && secondaryChart) {
-    // Project Health-style layout: bar ~3/4 left, donut ~1/4 right, same row as KPIs page.
+    // Match scheduled PDF: bar ~74%, donut ~24%, height 200, donut object-fit contain.
     const available = PAGE.width - PAGE.marginX * 2;
-    const gap = 12;
+    const gap = available * 0.02;
     const barW = available * 0.74;
-    const donutW = available - barW - gap;
+    const donutBoxW = available * 0.24;
     const chartH = Math.min(200, PAGE.height - cursorY - PAGE.marginBottom - 80);
+    // Contain square donut (with legend) inside the right column — same as scheduled objectFit.
+    const donutSide = Math.min(donutBoxW, chartH);
+    const donutX = PAGE.marginX + barW + gap + (donutBoxW - donutSide) / 2;
+    const donutY = cursorY + (chartH - donutSide) / 2;
     try {
       doc.addImage(primaryChart, 'PNG', PAGE.marginX, cursorY, barW, chartH);
-      doc.addImage(
-        secondaryChart,
-        'PNG',
-        PAGE.marginX + barW + gap,
-        cursorY,
-        donutW,
-        chartH
-      );
+      doc.addImage(secondaryChart, 'PNG', donutX, donutY, donutSide, donutSide);
       cursorY += chartH + 16;
     } catch {
       // Skip charts if embedding fails.

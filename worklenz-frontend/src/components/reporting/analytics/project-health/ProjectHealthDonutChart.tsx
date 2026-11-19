@@ -51,6 +51,9 @@ const TONE_META: Record<
 
 const TONE_ORDER: ProjectHealthTone[] = ['on_track', 'at_risk', 'off_track', 'not_set'];
 
+/** Matches scheduled PDF donut canvas (360×360 with right legend). */
+const EXPORT_DONUT_SIZE = 360;
+
 export const ProjectHealthDonutChart = forwardRef<
   ProjectHealthDonutChartHandle,
   ProjectHealthDonutChartProps
@@ -60,7 +63,43 @@ export const ProjectHealthDonutChart = forwardRef<
   const chartRef = useRef<ChartInstance<'doughnut'>>(null);
 
   useImperativeHandle(ref, () => ({
-    toPngDataUrl: () => chartToPngDataUrl(chartRef.current),
+    toPngDataUrl: () => {
+      const chart = chartRef.current;
+      if (!chart) return null;
+
+      const legend = chart.options.plugins?.legend;
+      const prevDisplay = legend?.display;
+      const prevPosition = legend?.position;
+      const parent = chart.canvas.parentElement;
+      const prevWidth = parent?.style.width ?? '';
+      const prevHeight = parent?.style.height ?? '';
+
+      if (legend) {
+        legend.display = true;
+        legend.position = 'right';
+      }
+      if (parent) {
+        parent.style.width = `${EXPORT_DONUT_SIZE}px`;
+        parent.style.height = `${EXPORT_DONUT_SIZE}px`;
+      }
+
+      try {
+        chart.resize();
+        chart.update('none');
+        return chartToPngDataUrl(chart);
+      } finally {
+        if (legend) {
+          legend.display = prevDisplay;
+          legend.position = prevPosition;
+        }
+        if (parent) {
+          parent.style.width = prevWidth;
+          parent.style.height = prevHeight;
+        }
+        chart.resize();
+        chart.update('none');
+      }
+    },
   }));
 
   const slices = useMemo((): HealthSlice[] => {
