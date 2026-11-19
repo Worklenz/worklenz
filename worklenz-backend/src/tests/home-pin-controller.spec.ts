@@ -386,6 +386,30 @@ describe("HomePageController.getTasks with pins", () => {
     expectPlaceholdersMatchParams(counts);
   });
 
+  it("preserves multiple selected statuses in getTasks filters (array and comma-separated)", async () => {
+    const { list: arrayList, counts: arrayCounts } = await run({
+      index: "1",
+      size: "10",
+      status: ["todo", "done"] as any,
+    });
+
+    expect(arrayList[0]).toMatch(/LOWER\(ts\.name\) = ANY\(\$4\)/);
+    expect(arrayList[1]).toContainEqual(["todo", "done"]);
+    expectPlaceholdersMatchParams(arrayList);
+    expectPlaceholdersMatchParams(arrayCounts);
+
+    const { list: strList, counts: strCounts } = await run({
+      index: "1",
+      size: "10",
+      status: "todo,done",
+    });
+
+    expect(strList[0]).toMatch(/LOWER\(ts\.name\) = ANY\(\$4\)/);
+    expect(strList[1]).toContainEqual(["todo", "done"]);
+    expectPlaceholdersMatchParams(strList);
+    expectPlaceholdersMatchParams(strCounts);
+  });
+
   it("an unknown tab still falls back to All", async () => {
     const { list } = await run({ current_tab: "Bogus", index: "1", size: "10" });
     expect(list[0]).not.toMatch(/AND upt\.id IS NOT NULL/);

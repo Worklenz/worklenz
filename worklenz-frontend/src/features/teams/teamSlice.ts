@@ -110,6 +110,16 @@ const teamSlice = createSlice({
         ? (state.ui.updateTitleNameModal = false)
         : (state.ui.updateTitleNameModal = true);
     },
+    updateTeamLogo: (
+      state,
+      action: PayloadAction<{ teamId: string; logoUrl: string | null }>
+    ) => {
+      const team = state.teamsList.find(team => team.id === action.payload.teamId);
+
+      if (team) {
+        team.logo_url = action.payload.logoUrl;
+      }
+    },
   },
   extraReducers: builder => {
     builder
@@ -134,6 +144,7 @@ export const {
   addTeam,
   toggleSettingDrawer,
   updateTeam,
+  updateTeamLogo,
   deleteTeam,
   toggleUpdateTeamNameModal,
 } = teamSlice.actions;

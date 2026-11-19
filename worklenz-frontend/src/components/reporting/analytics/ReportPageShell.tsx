@@ -65,7 +65,6 @@ export const ReportPageShell: React.FC<ReportPageShellProps> = ({
             <div style={{ flex: '1 1 auto', minWidth: 0 }}>{filters}</div>
             {(actions || onExport || schedule) && (
               <Space wrap size={8}>
-                {actions}
                 {onExport && (
                   <AnalyticsExportMenu
                     onExport={onExport}

@@ -14,9 +14,16 @@ import { ThemeClasses } from './types';
 interface SortDropdownProps {
   themeClasses: ThemeClasses;
   isDarkMode: boolean;
+  showArchived: boolean;
+  onToggleArchived: () => void;
 }
 
-export const SortDropdown: React.FC<SortDropdownProps> = ({ themeClasses, isDarkMode }) => {
+export const SortDropdown: React.FC<SortDropdownProps> = ({
+  themeClasses,
+  isDarkMode,
+  showArchived,
+  onToggleArchived,
+}) => {
   const { t } = useTranslation('task-list-filters');
   const dispatch = useAppDispatch();
   const { projectId } = useAppSelector(state => state.projectReducer);
@@ -106,17 +113,15 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({ themeClasses, isDark
             : t('sortText', { defaultValue: 'Sort' })
         }
         className={`
-          inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
-          border transition-all duration-200 ease-in-out
-          ${
-            isActive
-              ? isDarkMode
-                ? 'bg-gray-600 text-white border-gray-500'
-                : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
-              : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
+          inline-flex h-8 box-border items-center gap-1.5 px-3 py-0 text-xs font-semibold rounded-md
+          border transition-colors duration-200 ease-in-out
+          ${isActive
+            ? isDarkMode
+              ? 'bg-gray-600 text-white border-gray-500'
+              : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
+            : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
-          hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
-          ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
+         hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset active:ring-0
         `}
         aria-expanded={open}
         aria-haspopup="true"
@@ -163,22 +168,21 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({ themeClasses, isDark
                     className={`
                       w-full flex items-center justify-between gap-2 px-2 py-1.5 text-xs rounded
                       transition-colors duration-150 text-left
-                      ${
-                        isSelected
-                          ? isDarkMode
-                            ? 'bg-gray-600 text-white'
-                            : 'bg-gray-200 text-gray-800 font-semibold'
-                          : `${themeClasses.optionText} ${themeClasses.optionHover}`
+                      ${isSelected
+                        ? isDarkMode
+                          ? 'bg-gray-600 text-white'
+                          : 'bg-gray-200 text-gray-800 font-semibold'
+                        : `${themeClasses.optionText} ${themeClasses.optionHover}`
                       }
                     `}
                     title={
                       isSelected
                         ? t('currentSort', {
-                            field: sortField.label,
-                            order: orderText,
-                          }) + ` - ${t('sortDescending', { defaultValue: 'Sort Descending' })}`
+                          field: sortField.label,
+                          order: orderText,
+                        }) + ` - ${t('sortDescending', { defaultValue: 'Sort Descending' })}`
                         : t('sortByField', { field: sortField.label }) +
-                          ` - ${t('sortAscending', { defaultValue: 'Sort Ascending' })}`
+                        ` - ${t('sortAscending', { defaultValue: 'Sort Ascending' })}`
                     }
                   >
                     <div className="flex items-center gap-2">
@@ -206,6 +210,23 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({ themeClasses, isDark
                 );
               })}
             </div>
+          </div>
+
+          <div className={`border-t ${themeClasses.dividerBorder} p-2`}>
+            <label className="flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded transition-colors duration-150">
+              <input
+                type="checkbox"
+                checked={showArchived}
+                onChange={onToggleArchived}
+                className={`w-3.5 h-3.5 text-gray-600 rounded focus:ring-gray-500 transition-colors duration-150 ${isDarkMode
+                  ? 'border-[#303030] bg-[#141414] focus:ring-offset-gray-800'
+                  : 'border-gray-300 bg-white focus:ring-offset-white'
+                  }`}
+              />
+              <span className={`text-xs ${themeClasses.optionText}`}>
+                {t('showArchivedText', { defaultValue: 'Show Archived' })}
+              </span>
+            </label>
           </div>
         </div>
       )}
