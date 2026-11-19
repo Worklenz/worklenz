@@ -463,5 +463,6 @@
   "deleteSavedView": "Supprimer l’onglet",
   "deleteSavedViewTitle": "Supprimer « {{name}} » ?",
   "deleteSavedViewContent": "Cet onglet sera supprimé pour tous les membres du projet. Les tâches ne sont pas affectées.",
-  "deleteSavedViewOk": "Supprimer"
+  "deleteSavedViewOk": "Supprimer",
+  "NewTab": "Nouvel onglet"
 }
