@@ -1,15 +1,17 @@
 import express from "express";
+import hpp from "hpp";
 
 import HomePageController from "../../controllers/home-page-controller";
 import HomePreferencesController from "../../controllers/home-preferences-controller";
 import safeControllerFunction from "../../shared/safe-controller-function";
 
 const homePageApiRouter = express.Router();
+const tasksHpp = hpp({ whitelist: ["status", "priority_ids", "project_ids", "assignee_ids"] });
 
 homePageApiRouter.post("/personal-task", safeControllerFunction(HomePageController.createPersonalTask));
-homePageApiRouter.get("/tasks", safeControllerFunction(HomePageController.getTasks));
+homePageApiRouter.get("/tasks", tasksHpp, safeControllerFunction(HomePageController.getTasks));
 homePageApiRouter.get("/tasks/filter-options", safeControllerFunction(HomePageController.getTaskFilterOptions));
-homePageApiRouter.get("/unassigned-tasks", safeControllerFunction(HomePageController.getUnassignedTasks));
+homePageApiRouter.get("/unassigned-tasks", tasksHpp, safeControllerFunction(HomePageController.getUnassignedTasks));
 homePageApiRouter.get("/task-stats", safeControllerFunction(HomePageController.getTaskStats));
 homePageApiRouter.get("/my-progress", safeControllerFunction(HomePageController.getMyProgress));
 homePageApiRouter.get("/task-counts", safeControllerFunction(HomePageController.getTaskCountsByMonth));

@@ -1076,11 +1076,7 @@ export default class ReportingController extends WorklenzControllerBase {
 
     const teams = (req.query.teams as string)?.split(",");
 
-    const status = Array.isArray(req.query.status)
-      ? (req.query.status as string[])
-      : typeof req.query.status === "string"
-        ? req.query.status.split(",")
-        : [];
+    const status = (req.query.status as string)?.split(",");
 
     const results = await this.getReportingCustomExport(req.user?.id as string, includeArchived as string, teams, status, searchQuery) as any;
 
@@ -1781,11 +1777,7 @@ export default class ReportingController extends WorklenzControllerBase {
     const search = typeof req.query.search === "string" ? req.query.search : "";
 
     const projects = typeof req.query.projects === "string" ? req.query.projects.split(",") : [];
-    const status = Array.isArray(req.query.status)
-      ? (req.query.status as string[])
-      : typeof req.query.status === "string"
-        ? req.query.status.split(",")
-        : [];
+    const status = typeof req.query.status === "string" ? req.query.status.split(",") : [];
 
     const dateRange: string[] = [];
     if (start && end) {

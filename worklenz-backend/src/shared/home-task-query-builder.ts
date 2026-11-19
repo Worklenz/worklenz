@@ -16,7 +16,19 @@ export const TASK_SORT_FIELDS: Record<string, string> = {
 
 export function toArray(v: unknown): string[] {
   if (v === undefined || v === null || v === "") return [];
-  return (Array.isArray(v) ? v : [v]).map(String).filter(Boolean);
+  const rawList = Array.isArray(v) ? v : [v];
+  const result: string[] = [];
+  for (const item of rawList) {
+    if (item === undefined || item === null) continue;
+    const str = String(item).trim();
+    if (!str) continue;
+    if (str.includes(",")) {
+      result.push(...str.split(",").map(s => s.trim()).filter(Boolean));
+    } else {
+      result.push(str);
+    }
+  }
+  return result;
 }
 
 // Same as toArray, but drops entries that aren't valid UUIDs — used for the

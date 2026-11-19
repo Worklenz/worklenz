@@ -33,6 +33,11 @@ describe("toArray", () => {
   it("passes arrays through, stringified and with blanks filtered", () => {
     expect(toArray(["a", "", "b"])).toEqual(["a", "b"]);
   });
+
+  it("splits comma-separated strings into separate elements", () => {
+    expect(toArray("todo, in_progress, done")).toEqual(["todo", "in_progress", "done"]);
+    expect(toArray(["todo, done", "review"])).toEqual(["todo", "done", "review"]);
+  });
 });
 
 describe("toUuidArray", () => {
