@@ -486,8 +486,8 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
       attributeFilterSections.reduce(
         (total, section) => total + section.selectedValues.length,
         0
-      ),
-    [attributeFilterSections]
+      ) + (position === 'list' && showArchived ? 1 : 0),
+    [attributeFilterSections, position, showArchived]
   );
 
   useEffect(() => {
@@ -841,7 +841,6 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         dispatch(setKanbanPriorities([]));
       }
 
-      // Persist cleared filters only after restoration completes.
       if (!isRestoringFilters) {
         dispatch(persistFilters());
       }
@@ -907,6 +906,14 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         dispatch(setStatuses([]));
         dispatch(setPhases([]));
       }
+      // Clear Show Archived when using Clear all in List view.
+      if (position === 'list' && showArchived) {
+        dispatch(toggleTaskManagementArchived());
+      }
+
+      if (!isRestoringFilters) {
+        dispatch(persistFilters());
+      }
 
       if (!isRestoringFilters) {
         dispatch(persistFilters());
@@ -928,6 +935,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
     projectId,
     clearingFilters,
     position,
+    showArchived,
     kanbanState.labels,
     kanbanState.taskAssignees,
     currentTaskLabels,
