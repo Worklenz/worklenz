@@ -103,13 +103,6 @@ const pdfStyles = StyleSheet.create({
     marginTop: 4,
     color: "#262626",
   },
-  chartTitle: {
-    fontSize: 12,
-    fontWeight: 700,
-    marginBottom: 8,
-    marginTop: 4,
-    color: "#262626",
-  },
   kpiSection: {
     marginBottom: 16,
   },
@@ -120,19 +113,30 @@ const pdfStyles = StyleSheet.create({
   kpiCard: {
     flexGrow: 1,
     flexBasis: 0,
+    marginRight: 12,
+    height: 88,
+    position: "relative",
+  },
+  kpiCardLast: {
+    marginRight: 0,
+  },
+  // Absolute fill — flexGrow card Views often skip backgroundColor in @react-pdf.
+  kpiCardBg: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#f4f5f6",
     borderWidth: 1.5,
     borderColor: "#d9d9d9",
     borderRadius: 10,
-    backgroundColor: "#ffffff",
-    marginRight: 12,
-    minHeight: 88,
+  },
+  kpiCardBody: {
     paddingTop: 12,
     paddingBottom: 12,
     paddingLeft: 12,
     paddingRight: 12,
-  },
-  kpiCardLast: {
-    marginRight: 0,
   },
   kpiLabelRow: {
     flexDirection: "row",
@@ -178,15 +182,21 @@ const pdfStyles = StyleSheet.create({
     fontWeight: 700,
     borderBottomWidth: 1.25,
     borderBottomColor: "#8c8c8c",
+    minHeight: 28,
   },
   cell: {
     flexGrow: 1,
     flexBasis: 0,
     paddingVertical: 5,
     paddingHorizontal: 6,
-    fontSize: 14,
+    fontSize: 8,
     borderRightWidth: 1.25,
     borderRightColor: "#8c8c8c",
+  },
+  headerCell: {
+    fontSize: 10,
+    fontWeight: 700,
+    paddingVertical: 10,
   },
   cellLast: {
     borderRightWidth: 0,
@@ -307,12 +317,15 @@ const KpiCards = ({ kpis }: { kpis: SchedulePdfKpiTile[] }) => {
               key={`kpi-${index}`}
               style={isLast ? [pdfStyles.kpiCard, pdfStyles.kpiCardLast] : pdfStyles.kpiCard}
             >
-              <View style={pdfStyles.kpiLabelRow}>
-                <View style={[pdfStyles.kpiDot, { backgroundColor: tone }]} />
-                <Text style={pdfStyles.kpiLabel}>{kpi.label}</Text>
+              <View style={pdfStyles.kpiCardBg} />
+              <View style={pdfStyles.kpiCardBody}>
+                <View style={pdfStyles.kpiLabelRow}>
+                  <View style={[pdfStyles.kpiDot, { backgroundColor: tone }]} />
+                  <Text style={pdfStyles.kpiLabel}>{kpi.label}</Text>
+                </View>
+                <Text style={[pdfStyles.kpiValue, { color: tone }]}>{kpi.value}</Text>
+                {kpi.sub ? <Text style={pdfStyles.kpiSub}>{kpi.sub}</Text> : null}
               </View>
-              <Text style={[pdfStyles.kpiValue, { color: tone }]}>{kpi.value}</Text>
-              {kpi.sub ? <Text style={pdfStyles.kpiSub}>{kpi.sub}</Text> : null}
             </View>
           );
         })}
@@ -326,7 +339,11 @@ const TableHeaderRow = ({ header }: { header: string[] }) => (
     {header.map((cell, i) => (
       <Text
         key={`h-${i}`}
-        style={i === header.length - 1 ? [pdfStyles.cell, pdfStyles.cellLast] : pdfStyles.cell}
+        style={
+          i === header.length - 1
+            ? [pdfStyles.cell, pdfStyles.headerCell, pdfStyles.cellLast]
+            : [pdfStyles.cell, pdfStyles.headerCell]
+        }
       >
         {decodeCell(cell)}
       </Text>
@@ -409,9 +426,6 @@ const SchedulePdfDocument = ({
 
   const chartsBlock = hasCharts ? (
     <View wrap={false}>
-      <Text style={pdfStyles.chartTitle}>
-        {charts.length > 1 ? "Charts" : "Chart"}
-      </Text>
       {charts.map((src, index) => (
         <Image
           key={`chart-${index}`}

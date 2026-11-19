@@ -70,6 +70,8 @@ async function resolveLogoDataUrl(logoUrl?: string | null): Promise<string> {
   return worklenzLogo as string;
 }
 
+const KPI_CARD_FILL: [number, number, number] = [244, 245, 246]; // #f9f9fa
+
 function drawRoundedRect(
   doc: jsPDF,
   x: number,
@@ -78,12 +80,14 @@ function drawRoundedRect(
   h: number,
   r: number,
   borderRgb: [number, number, number] = [217, 217, 217],
-  fillRgb: [number, number, number] = [250, 250, 250]
+  fillRgb: [number, number, number] = KPI_CARD_FILL
 ): void {
-  doc.setDrawColor(borderRgb[0], borderRgb[1], borderRgb[2]);
+  // Fill then stroke separately — some jsPDF builds skip fill on 'FD' roundedRect.
   doc.setFillColor(fillRgb[0], fillRgb[1], fillRgb[2]);
+  doc.roundedRect(x, y, w, h, r, r, 'F');
+  doc.setDrawColor(borderRgb[0], borderRgb[1], borderRgb[2]);
   doc.setLineWidth(1.25);
-  doc.roundedRect(x, y, w, h, r, r, 'FD');
+  doc.roundedRect(x, y, w, h, r, r, 'S');
   doc.setLineWidth(0.5);
 }
 
@@ -152,7 +156,7 @@ function drawKpiCards(
     const tone = kpi.tone || TONES.primary;
     const [tr, tg, tb] = hexToRgb(tone);
 
-    drawRoundedRect(doc, x, y, cardW, cardH, 8, [217, 217, 217], [255, 255, 255]);
+    drawRoundedRect(doc, x, y, cardW, cardH, 8, [217, 217, 217], KPI_CARD_FILL);
 
     doc.setFillColor(tr, tg, tb);
     doc.circle(x + 14, y + 18, 4, 'F');
@@ -212,6 +216,7 @@ function drawTable(doc: jsPDF, rows: string[][], startY: number): void {
   const tableWidth = PAGE.width - PAGE.marginX * 2;
   const colW = tableWidth / colCount;
   const rowH = 18;
+  const headerRowH = 26;
   const bottomLimit = PAGE.height - PAGE.marginBottom;
   const borderRgb: [number, number, number] = [140, 140, 140];
 
@@ -221,13 +226,13 @@ function drawTable(doc: jsPDF, rows: string[][], startY: number): void {
     return { y: PAGE.marginTop + 12, newPage: true };
   };
 
-  const strokeCellGrid = (atY: number, cols: number) => {
+  const strokeCellGrid = (atY: number, cols: number, height: number) => {
     doc.setDrawColor(borderRgb[0], borderRgb[1], borderRgb[2]);
     doc.setLineWidth(0.9);
-    doc.rect(PAGE.marginX, atY, tableWidth, rowH, 'S');
+    doc.rect(PAGE.marginX, atY, tableWidth, height, 'S');
     for (let i = 1; i < cols; i += 1) {
       const x = PAGE.marginX + i * colW;
-      doc.line(x, atY, x, atY + rowH);
+      doc.line(x, atY, x, atY + height);
     }
   };
 
@@ -246,20 +251,20 @@ function drawTable(doc: jsPDF, rows: string[][], startY: number): void {
   /** Column header always drawn above data rows (and again after each page break). */
   const drawHeaderRow = (atY: number): number => {
     doc.setFillColor(240, 241, 243);
-    doc.rect(PAGE.marginX, atY, tableWidth, rowH, 'F');
-    strokeCellGrid(atY, colCount);
+    doc.rect(PAGE.marginX, atY, tableWidth, headerRowH, 'F');
+    strokeCellGrid(atY, colCount, headerRowH);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
+    doc.setFontSize(10);
     doc.setTextColor(38, 38, 38);
     header.forEach((cell, i) => {
-      doc.text(String(cell ?? ''), PAGE.marginX + i * colW + 4, atY + 12, {
+      doc.text(String(cell ?? ''), PAGE.marginX + i * colW + 4, atY + 16, {
         maxWidth: colW - 8,
       });
     });
-    return atY + rowH;
+    return atY + headerRowH;
   };
 
-  y = ensureSpace(y, rowH + 4).y;
+  y = ensureSpace(y, headerRowH + 4).y;
   y = drawHeaderRow(y);
 
   body.forEach(row => {
@@ -270,7 +275,7 @@ function drawTable(doc: jsPDF, rows: string[][], startY: number): void {
     }
     doc.setFillColor(255, 255, 255);
     doc.rect(PAGE.marginX, y, tableWidth, rowH, 'F');
-    strokeCellGrid(y, colCount);
+    strokeCellGrid(y, colCount, rowH);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(38, 38, 38);
@@ -307,12 +312,6 @@ export async function downloadAnalyticsBrandedPdf(
   cursorY = drawKpiCards(doc, options.kpis || [], cursorY);
 
   if (options.chartPngDataUrl) {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.setTextColor(38, 38, 38);
-    doc.text('Chart', PAGE.marginX, cursorY);
-    cursorY += 12;
-
     const chartW = PAGE.width - PAGE.marginX * 2;
     const chartH = Math.min(220, PAGE.height - cursorY - PAGE.marginBottom - 80);
     try {
