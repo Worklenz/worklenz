@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { Button, message } from '@/shared/antd-imports';
+import { Button, CrownOutlined, Space, message } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { analyticsSchedulesApiService } from '@/api/reporting/analytics-schedules.api.service';
 import { useAuthService } from '@/hooks/useAuth';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { openUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { canUseFeature } from '@/utils/subscription-utils';
 import logger from '@/utils/errorLogger';
 import type { AnalyticsScheduleUpsertPayload } from '@/types/reporting/analytics-schedules.types';
 import { ScheduleReportModal } from './ScheduleReportModal';
@@ -15,6 +18,7 @@ export interface AnalyticsScheduleActionProps {
   disabled?: boolean;
 }
 
+/** Schedule report email — Business plan only; Free/Pro show crown and open upgrade. */
 export const AnalyticsScheduleAction: React.FC<AnalyticsScheduleActionProps> = ({
   reportKind,
   reportName,
@@ -23,8 +27,10 @@ export const AnalyticsScheduleAction: React.FC<AnalyticsScheduleActionProps> = (
   disabled,
 }) => {
   const { t } = useTranslation('reporting-analytics');
+  const dispatch = useAppDispatch();
   const authService = useAuthService();
   const session = authService.getCurrentSession();
+  const canSchedule = canUseFeature(session, 'advanced_reporting');
 
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -57,24 +63,52 @@ export const AnalyticsScheduleAction: React.FC<AnalyticsScheduleActionProps> = (
     }
   };
 
+  const handleClick = () => {
+    if (!canSchedule) {
+      dispatch(openUpgradeModal('default'));
+      return;
+    }
+    setOpen(true);
+  };
+
   return (
     <>
-      <Button disabled={disabled} onClick={() => setOpen(true)}>
-        {t('actionSchedule', { defaultValue: 'Schedule' })}
+      <Button
+        disabled={canSchedule ? disabled : false}
+        onClick={handleClick}
+        aria-label={
+          canSchedule
+            ? t('actionSchedule', { defaultValue: 'Schedule' })
+            : t('scheduleUpgradeAria', {
+                defaultValue: 'Schedule — Business plan required',
+              })
+        }
+      >
+        <Space size={6}>
+          <span>{t('actionSchedule', { defaultValue: 'Schedule' })}</span>
+          {!canSchedule && (
+            <CrownOutlined
+              style={{ fontSize: 14, color: '#faad14' }}
+              aria-hidden
+            />
+          )}
+        </Space>
       </Button>
-      <ScheduleReportModal
-        open={open}
-        reportKind={reportKind}
-        reportName={reportName}
-        templateId={templateId}
-        timezone={timezone}
-        existing={null}
-        confirmLoading={saving}
-        defaultRecipient={defaultRecipient}
-        getFilters={getFilters}
-        onCancel={() => setOpen(false)}
-        onSave={handleSave}
-      />
+      {canSchedule && (
+        <ScheduleReportModal
+          open={open}
+          reportKind={reportKind}
+          reportName={reportName}
+          templateId={templateId}
+          timezone={timezone}
+          existing={null}
+          confirmLoading={saving}
+          defaultRecipient={defaultRecipient}
+          getFilters={getFilters}
+          onCancel={() => setOpen(false)}
+          onSave={handleSave}
+        />
+      )}
     </>
   );
 };

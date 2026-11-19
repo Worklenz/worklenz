@@ -29,6 +29,8 @@
   "hubCustomDesc": "Pick a row type, choose columns, save a view. Coming soon.",
   "templateSavedToCustom": "Szablon został zapisany. Znajdź go w sekcji Raporty niestandardowe.",
   "saveAsTemplateUpgradeAria": "Zapisz jako szablon — wymagany plan Business",
+  "scheduleUpgradeAria": "Harmonogram — wymagany plan Business",
+  "scheduleLockedDescription": "Zaplanowane e-maile z raportami są dostępne w planie Business.",
   "hubFootnote": "Liczby odzwierciedlają dane dotyczące obszaru roboczego w bieżącym okresie. Otwórz raport, aby zmienić zakres dat, projekty i filtry.",
   "hubNoScheduledTitle": "Nie ma jeszcze zaplanowanych raportów",
   "hubNoScheduledHint": "Otwórz dowolny raport i wybierz opcję Zaplanuj, aby wysyłać go cyklicznie pocztą elektroniczną.",

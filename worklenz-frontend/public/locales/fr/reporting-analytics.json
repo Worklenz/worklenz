@@ -29,6 +29,8 @@
   "hubCustomDesc": "Pick a row type, choose columns, save a view. Coming soon.",
   "templateSavedToCustom": "Modèle enregistré. Trouvez-le sous Rapports personnalisés.",
   "saveAsTemplateUpgradeAria": "Enregistrer comme modèle — forfait Business requis",
+  "scheduleUpgradeAria": "Planifier — forfait Business requis",
+  "scheduleLockedDescription": "Les e-mails de rapports planifiés sont disponibles avec le forfait Business.",
   "hubFootnote": "Les chiffres reflètent les données de votre espace de travail pour la période en cours. Ouvrez un rapport pour modifier la plage de dates, les projets et les filtres.",
   "hubNoScheduledTitle": "Aucun rapport planifié pour l'instant",
   "hubNoScheduledHint": "Ouvrez n'importe quel rapport et choisissez Planifier pour l'envoyer par e-mail de manière récurrente.",

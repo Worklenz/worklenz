@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Button,
+  CrownOutlined,
   Dropdown,
   Empty,
   Flex,
   MoreOutlined,
+  Result,
   Table,
   Tag,
   Typography,
@@ -16,11 +18,14 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { analyticsSchedulesApiService } from '@/api/reporting/analytics-schedules.api.service';
 import { useAuthService } from '@/hooks/useAuth';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { openUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import {
   analyticsPath,
   customReportPath,
 } from '@/lib/reporting/analytics-nav';
 import { stashScheduleFiltersForOpen } from '@/lib/reporting/analytics-schedule-open';
+import { canUseFeature } from '@/utils/subscription-utils';
 import logger from '@/utils/errorLogger';
 import type {
   AnalyticsReportSchedule,
@@ -57,8 +62,10 @@ export const ScheduledReportsHubPanel: React.FC = () => {
   const { t, i18n } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const authService = useAuthService();
   const session = authService.getCurrentSession();
+  const canSchedule = canUseFeature(session, 'advanced_reporting');
 
   const [loading, setLoading] = useState(true);
   const [schedules, setSchedules] = useState<AnalyticsReportSchedule[]>([]);
@@ -70,6 +77,11 @@ export const ScheduledReportsHubPanel: React.FC = () => {
   const cardBg = token.colorBgContainer;
 
   const loadSchedules = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!canSchedule) {
+      setSchedules([]);
+      setLoading(false);
+      return;
+    }
     // Avoid full-table spinner on refresh when rows are already visible.
     if (!opts?.silent) {
       setLoading(true);
@@ -87,12 +99,37 @@ export const ScheduledReportsHubPanel: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [canSchedule]);
 
   useEffect(() => {
     void loadSchedules();
   }, [loadSchedules]);
 
+  if (!canSchedule) {
+    return (
+      <Flex align="center" justify="center" style={{ minHeight: 360, width: '100%' }}>
+        <Result
+          icon={<CrownOutlined style={{ color: token.colorWarning }} />}
+          title={t('businessReportLockedTitle', {
+            defaultValue: 'Business plan required',
+          })}
+          subTitle={t('scheduleLockedDescription', {
+            defaultValue:
+              'Scheduled report emails are available on the Business plan.',
+          })}
+          extra={
+            <Button
+              type="primary"
+              icon={<CrownOutlined />}
+              onClick={() => dispatch(openUpgradeModal('default'))}
+            >
+              {t('upgradeToBusiness', { defaultValue: 'Upgrade to Business' })}
+            </Button>
+          }
+        />
+      </Flex>
+    );
+  }
   const handleSave = async (payload: AnalyticsScheduleUpsertPayload) => {
     if (!editing?.id) return;
     try {

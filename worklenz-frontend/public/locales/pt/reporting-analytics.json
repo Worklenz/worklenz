@@ -29,6 +29,8 @@
   "hubCustomDesc": "Pick a row type, choose columns, save a view. Coming soon.",
   "templateSavedToCustom": "Modelo salvo. Encontre-o em Relatórios personalizados.",
   "saveAsTemplateUpgradeAria": "Salvar como modelo — plano Business necessário",
+  "scheduleUpgradeAria": "Agendar — plano Business necessário",
+  "scheduleLockedDescription": "E-mails de relatórios agendados estão disponíveis no plano Business.",
   "hubFootnote": "Os números refletem os dados do seu espaço de trabalho para o período atual. Abra um relatório para alterar o intervalo de datas, projetos e filtros.",
   "hubNoScheduledTitle": "Ainda não há relatórios programados",
   "hubNoScheduledHint": "Abra qualquer relatório e escolha Agendar para enviá-lo por e-mail de forma recorrente.",

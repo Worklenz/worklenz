@@ -29,6 +29,8 @@
   "hubCustomDesc": "Pick a row type, choose columns, save a view. Coming soon.",
   "templateSavedToCustom": "Plantilla guardada. Encuéntrelo en Informes personalizados.",
   "saveAsTemplateUpgradeAria": "Guardar como plantilla — se requiere plan Business",
+  "scheduleUpgradeAria": "Programar — se requiere plan Business",
+  "scheduleLockedDescription": "Los correos de informes programados están disponibles en el plan Business.",
   "hubFootnote": "Las cifras reflejan los datos de su espacio de trabajo para el período actual. Abra un informe para cambiar el rango de fechas, los proyectos y los filtros.",
   "hubNoScheduledTitle": "Aún no hay informes programados",
   "hubNoScheduledHint": "Abra cualquier informe y elija Programar para enviarlo por correo electrónico de forma recurrente.",
