@@ -15,9 +15,9 @@ import { SocketEvents } from "../socket.io/events";
 import { IO } from "../shared/io";
 import { notifyProjectDateChanges } from "../shared/project-date-notifications";
 import { getCurrentProjectsCount, getFreePlanSettings } from "../shared/paddle-utils";
-import { canUseFeature } from "../shared/entitlements/gates";
 import { ActivityLoggingService } from "../services/activity-logging.service";
 import { NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE } from "../shared/guest-access-sql";
+import { canUseFeature } from "../shared/entitlements/gates";
 import { getProjectAccessForRequest } from "../shared/project-access";
 import { getProjectRolePermissionFlags, getVisibleProjectIds } from "../shared/project-role-permissions";
 import { stripProjectFinanceFields } from "../shared/strip-finance-fields";
@@ -82,9 +82,6 @@ export default class ProjectsController extends WorklenzControllerBase {
     }
   })
   public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    if ((req.body.phase_assignees_enabled === true || req.body.phase_assignees_enabled === "true") && !canUseFeature(req.user, "phase_assignee")) {
-      return res.status(403).send(new ServerResponse(false, null, "Phase assignees require a Pro plan"));
-    }
     if (req.user?.subscription_status === "free" && req.user?.owner_id) {
       const limits = await getFreePlanSettings();
       const projectsCount = await getCurrentProjectsCount(req.user.owner_id);
@@ -93,6 +90,10 @@ export default class ProjectsController extends WorklenzControllerBase {
       if (parseInt(projectsCount) >= projectsLimit) {
         return res.status(200).send(new ServerResponse(false, [], `Sorry, the free plan cannot have more than ${projectsLimit} projects.`));
       }
+    }
+
+    if ((req.body.phase_assignees_enabled === true || req.body.phase_assignees_enabled === "true") && !canUseFeature(req.user, "phase_assignee")) {
+      return res.status(403).send(new ServerResponse(false, null, "Phase assignees require a Pro plan"));
     }
 
     const q = `SELECT create_project($1) AS project`;
