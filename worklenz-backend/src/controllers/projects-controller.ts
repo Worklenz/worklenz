@@ -1039,6 +1039,13 @@ export default class ProjectsController extends WorklenzControllerBase {
     }
   })
   public static async update(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    if (Object.prototype.hasOwnProperty.call(req.body, "phase_assignees_enabled")) {
+      const value = req.body.phase_assignees_enabled;
+      if (value !== true && value !== false && value !== "true" && value !== "false") {
+        return res.status(400).send(new ServerResponse(false, null, "phase_assignees_enabled must be a boolean"));
+      }
+      req.body.phase_assignees_enabled = value === true || value === "true";
+    }
     if ((req.body.phase_assignees_enabled === true || req.body.phase_assignees_enabled === "true") && !canUseFeature(req.user, "phase_assignee")) {
       const existing = await db.query(
         `SELECT phase_assignees_enabled FROM projects WHERE id = $1 AND team_id = $2`,

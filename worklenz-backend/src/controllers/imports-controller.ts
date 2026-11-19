@@ -583,6 +583,8 @@ export default class ImportsController {
     async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
       const userId = this.getUserId(req);
       const job = await this.assertJob(req.params.jobId, userId);
+      if (!canUseFeature(req.user, "csv_import"))
+        throw createHttpError(403, "Staging imported tasks requires a Pro plan");
       const rows = (req.body?.tasks as StageTaskRow[]) || [];
       if (!Array.isArray(rows))
         throw createHttpError(400, "tasks must be array");

@@ -586,7 +586,7 @@ const SortablePhaseItem: React.FC<PhaseItemProps & { id: string }> = ({
       </div>
 
       {/* Phase Assignee Dropdown Portal */}
-      {!disabled && (
+      {!disabled && phaseAssigneesEnabled && (
         <PhaseAssigneeDropdown
           phase={phase}
           members={members}
