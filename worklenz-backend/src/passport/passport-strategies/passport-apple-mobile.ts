@@ -126,8 +126,8 @@ async function handleAppleMobileAuth(req: Request, done: any) {
     // Check for existing local account (password-based)
     if (email) {
       const localAccountResult = await db.query(
-        "SELECT 1 FROM users WHERE LOWER(email) = $1 AND password IS NOT NULL AND is_deleted IS FALSE;",
-        [email]
+        "SELECT 1 FROM users WHERE LOWER(email) = $1 AND password IS NOT NULL AND is_deleted IS FALSE AND NOT EXISTS (SELECT 1 FROM users WHERE apple_id = $2 AND is_deleted IS FALSE);",
+        [email, appleId]
       );
 
       if (localAccountResult.rowCount) {
@@ -153,7 +153,7 @@ async function handleAppleMobileAuth(req: Request, done: any) {
 
     // Existing user - login flow
     if (userResult.rowCount) {
-      const user = userResult.rows[0];
+      const user = userResult.rows.find((row: { apple_id: string | null }) => row.apple_id === appleId) || userResult.rows[0];
 
       // If this is a sign-up request but user already exists
       if (isSignUp) {

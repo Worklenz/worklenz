@@ -39,3 +39,15 @@ test('does not query accounts when token verification fails', async () => {
   expect(query).not.toHaveBeenCalled();
   expect(done).toHaveBeenCalledWith(expect.any(Error));
 });
+
+test('prefers the matching Apple subject when another account matches the email', async () => {
+  verify.mockResolvedValue({ sub: 'apple-user', email: 'person@example.com', email_verified: true });
+  query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+  query.mockResolvedValueOnce({ rowCount: 2, rows: [
+    { id: 'email-match', apple_id: 'other-apple', google_id: null },
+    { id: 'subject-match', apple_id: 'apple-user', google_id: null },
+  ] });
+  const done = jest.fn();
+  await handleAppleWebAuth({ body: {}, query: {}, session: {} } as never, '', '', 'token', {}, done);
+  expect(done).toHaveBeenCalledWith(null, expect.objectContaining({ id: 'subject-match' }), expect.anything());
+});
