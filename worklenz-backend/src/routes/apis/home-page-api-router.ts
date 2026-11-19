@@ -6,7 +6,7 @@ import HomePreferencesController from "../../controllers/home-preferences-contro
 import safeControllerFunction from "../../shared/safe-controller-function";
 
 const homePageApiRouter = express.Router();
-const tasksHpp = hpp({ whitelist: ["status", "priority_ids", "project_ids", "assignee_ids"] });
+export const tasksHpp = hpp({ whitelist: ["status", "priority_ids", "project_ids", "assignee_ids"] });
 
 homePageApiRouter.post("/personal-task", safeControllerFunction(HomePageController.createPersonalTask));
 homePageApiRouter.get("/tasks", tasksHpp, safeControllerFunction(HomePageController.getTasks));

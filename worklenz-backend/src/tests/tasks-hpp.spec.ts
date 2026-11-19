@@ -1,8 +1,8 @@
 import hpp from "hpp";
+import { tasksHpp } from "../routes/apis/home-page-api-router";
 
 describe("tasksHpp parameter pollution handling", () => {
   const globalHpp = hpp();
-  const tasksHpp = hpp({ whitelist: ["status", "priority_ids", "project_ids", "assignee_ids"] });
 
   it("restores whitelisted query array parameters while collapsing non-whitelisted ones", () => {
     const req: any = {

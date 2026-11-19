@@ -36,7 +36,10 @@ describe("toArray", () => {
 
   it("splits comma-separated strings into separate elements", () => {
     expect(toArray("todo, in_progress, done")).toEqual(["todo", "in_progress", "done"]);
-    expect(toArray(["todo, done", "review"])).toEqual(["todo", "done", "review"]);
+  });
+
+  it("keeps array elements intact even if an element contains a comma", () => {
+    expect(toArray(["QA, Review", "Done"])).toEqual(["QA, Review", "Done"]);
   });
 });
 
