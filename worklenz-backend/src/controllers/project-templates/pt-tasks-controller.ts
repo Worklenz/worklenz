@@ -245,7 +245,7 @@ export default class PtTasksController extends PtTasksControllerBase {
         typeof task?.id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(task.id))) {
         return res.status(400).send(new ServerResponse(false, null, "Invalid task IDs"));
       }
-      const ids: string[] = [...new Set<string>(tasks.map(task => task.id as string))];
+      const ids: string[] = [...new Set<string>(tasks.map(task => (task.id as string).toLowerCase()))];
       // Check the entire batch and delete in one statement; a mixed-team batch
       // must never partially delete the caller's tasks.
       const q = `

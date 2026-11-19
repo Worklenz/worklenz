@@ -1152,6 +1152,12 @@ export default class ImportsController {
 
       // Validate the user-supplied domain and reject internal/private hosts (SSRF guard)
       const cleanDomain = assertSafeExternalHost(domain);
+      if (!/^[a-zA-Z0-9-]+\.(atlassian\.net|jira\.com)$/i.test(cleanDomain)) {
+        throw createHttpError(
+          400,
+          "Only Jira Cloud domains (*.atlassian.net or *.jira.com) are supported",
+        );
+      }
       const baseUrl = `https://${cleanDomain}`;
 
       // Create Basic Auth header

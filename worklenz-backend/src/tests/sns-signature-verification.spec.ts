@@ -1,6 +1,8 @@
 import crypto from "crypto";
 import {
   validateSnsCertUrl,
+  validateSnsSubscribeUrl,
+  isAllowedTopicArn,
   buildSnsStringToSign,
   verifySnsSignature,
   verifySnsNotification,
@@ -41,6 +43,40 @@ describe("SNS signature verification", () => {
       expect(validateSnsCertUrl("https://sns.us-east-1.amazonaws.com/cert.pem?redirect=evil.com")).toBe(false);
       expect(validateSnsCertUrl("https://sns.us-east-1.amazonaws.com/cert.pem#fragment")).toBe(false);
       expect(validateSnsCertUrl("https://sns.us-east-1.amazonaws.com/../evil.pem")).toBe(false);
+    });
+  });
+
+  describe("isAllowedTopicArn", () => {
+    it("validates well-formed SNS Topic ARNs", () => {
+      expect(isAllowedTopicArn("arn:aws:sns:us-east-1:123456789012:worklenz-ses")).toBe(true);
+      expect(isAllowedTopicArn("arn:aws:sns:eu-west-1:999888777666:topic_name")).toBe(true);
+    });
+
+    it("rejects invalid Topic ARNs", () => {
+      expect(isAllowedTopicArn("invalid-arn")).toBe(false);
+      expect(isAllowedTopicArn("arn:aws:sqs:us-east-1:123456789012:queue")).toBe(false);
+      expect(isAllowedTopicArn(undefined)).toBe(false);
+    });
+  });
+
+  describe("validateSnsSubscribeUrl", () => {
+    const topic = "arn:aws:sns:us-east-1:123456789012:worklenz-ses";
+    const token = "tok-12345";
+    const validUrl = `https://sns.us-east-1.amazonaws.com/?Action=ConfirmSubscription&TopicArn=${encodeURIComponent(topic)}&Token=${token}`;
+
+    it("accepts authentic AWS confirmation URL matching topic and token", () => {
+      expect(validateSnsSubscribeUrl(validUrl, topic, token)).toBe(true);
+    });
+
+    it("rejects URL with wrong action or mismatched topic/token", () => {
+      expect(validateSnsSubscribeUrl(validUrl.replace("ConfirmSubscription", "Unsubscribe"), topic, token)).toBe(false);
+      expect(validateSnsSubscribeUrl(validUrl, "mismatched-topic", token)).toBe(false);
+      expect(validateSnsSubscribeUrl(validUrl, topic, "mismatched-token")).toBe(false);
+    });
+
+    it("rejects non-AWS hosts or non-root path", () => {
+      expect(validateSnsSubscribeUrl(`https://attacker.com/?Action=ConfirmSubscription&TopicArn=${encodeURIComponent(topic)}&Token=${token}`, topic, token)).toBe(false);
+      expect(validateSnsSubscribeUrl(`https://sns.us-east-1.amazonaws.com/path?Action=ConfirmSubscription&TopicArn=${encodeURIComponent(topic)}&Token=${token}`, topic, token)).toBe(false);
     });
   });
 

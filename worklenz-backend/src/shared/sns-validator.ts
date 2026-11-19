@@ -21,6 +21,20 @@ function cacheCert(url: string, cert: string): void {
 }
 
 /**
+ * Checks that the topic ARN is either in the configured allowlist (if set)
+ * or matches an expected Amazon SNS ARN format.
+ */
+export function isAllowedTopicArn(topicArn?: string): boolean {
+  if (!topicArn || typeof topicArn !== "string") return false;
+  const configuredArns = process.env.AWS_SNS_TOPIC_ARNS || process.env.AWS_SES_TOPIC_ARN;
+  if (configuredArns) {
+    const allowed = configuredArns.split(",").map(a => a.trim()).filter(Boolean);
+    return allowed.includes(topicArn);
+  }
+  return /^arn:aws:sns:[a-zA-Z0-9-]+:\d{12}:[a-zA-Z0-9-_]+$/.test(topicArn);
+}
+
+/**
  * Validates that the SigningCertURL is hosted on an official Amazon AWS SNS endpoint
  * Example: https://sns.us-east-1.amazonaws.com/SimpleNotificationService-010a637e18fa1f761b963a447047ff1e.pem
  */
@@ -46,6 +60,28 @@ export function validateSnsCertUrl(certUrl: string): boolean {
       return false;
     }
 
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Validates that the SubscribeURL is a genuine Amazon AWS SNS confirmation endpoint
+ */
+export function validateSnsSubscribeUrl(subscribeUrl: string, topicArn?: string, token?: string): boolean {
+  if (!subscribeUrl || typeof subscribeUrl !== "string") return false;
+  if (subscribeUrl.includes("..")) return false;
+
+  try {
+    const parsed = new URL(subscribeUrl);
+    if (parsed.protocol !== "https:") return false;
+    if (parsed.username || parsed.password || parsed.hash) return false;
+    if (!/^sns\.[a-zA-Z0-9-]+\.amazonaws\.com(\.cn)?$/.test(parsed.hostname)) return false;
+    if (parsed.pathname !== "/") return false;
+    if (parsed.searchParams.get("Action") !== "ConfirmSubscription") return false;
+    if (topicArn && parsed.searchParams.get("TopicArn") !== topicArn) return false;
+    if (token && parsed.searchParams.get("Token") !== token) return false;
     return true;
   } catch {
     return false;
@@ -128,6 +164,11 @@ export async function fetchSnsCertificate(certUrl: string): Promise<string> {
         cacheCert(cacheKey, data);
         resolve(data);
       });
+      res.on("close", () => {
+        if (!res.complete) {
+          reject(new Error("SNS certificate response closed prematurely"));
+        }
+      });
       res.on("error", reject);
     });
 
@@ -151,6 +192,11 @@ export async function verifySnsSignature(body: Record<string, any>): Promise<boo
 
   const { Signature, SignatureVersion, SigningCertURL } = body;
   if (!Signature || !SigningCertURL) return false;
+
+  // Validate topic ARN before performing remote certificate retrieval
+  if (!body.TopicArn || !isAllowedTopicArn(body.TopicArn)) {
+    return false;
+  }
 
   // Only SignatureVersion "1" (SHA1withRSA) and "2" (SHA256withRSA) are valid
   const hashAlgorithm = SignatureVersion === "2" ? "RSA-SHA256" : SignatureVersion === "1" ? "RSA-SHA1" : null;
@@ -204,6 +250,35 @@ export async function verifySnsNotification(
   // Handle subscription confirmation if needed
   if (body.Type === "SubscriptionConfirmation") {
     console.log(`[SNS] SubscriptionConfirmation received for topic ${body.TopicArn || ""}`);
+    if (body.SubscribeURL && validateSnsSubscribeUrl(body.SubscribeURL, body.TopicArn, body.Token)) {
+      const confirmUrl = new URL(body.SubscribeURL);
+      await new Promise<void>((resolve, reject) => {
+        const req = https.get(
+          {
+            protocol: "https:",
+            hostname: confirmUrl.hostname,
+            path: confirmUrl.pathname + confirmUrl.search,
+            agent: publicHttpsAgent,
+            timeout: 5000,
+          },
+          confirmationRes => {
+            confirmationRes.resume();
+            if (confirmationRes.statusCode && confirmationRes.statusCode >= 200 && confirmationRes.statusCode < 300) {
+              resolve();
+            } else {
+              reject(new Error(`Failed to confirm subscription: HTTP ${confirmationRes.statusCode}`));
+            }
+          }
+        );
+        req.on("error", reject);
+        req.on("timeout", () => {
+          req.destroy();
+          reject(new Error("Timeout confirming subscription"));
+        });
+      }).catch(err => {
+        log_error(`[SNS] Subscription confirmation error: ${err.message}`);
+      });
+    }
     return res.status(200).json(new ServerResponse(true, null, "Subscription confirmed"));
   }
 
