@@ -52,8 +52,16 @@ export default class ClientPortalAttachmentController {
         "text/plain", "text/csv"
       ];
 
-      if (fileType && !allowedTypes.includes(fileType)) {
+      if (!fileType || !allowedTypes.includes(fileType)) {
         return res.status(400).json(new ServerResponse(false, null, "File type not allowed"));
+      }
+
+      // If base64 data includes a data URL scheme, verify that embedded mime matches allowed types
+      if (typeof fileData === "string" && fileData.startsWith("data:")) {
+        const mimeMatch = fileData.match(/^data:([^;]+);base64,/);
+        if (mimeMatch && !allowedTypes.includes(mimeMatch[1])) {
+          return res.status(400).json(new ServerResponse(false, null, "File type not allowed"));
+        }
       }
 
       // Generate unique filename with client prefix

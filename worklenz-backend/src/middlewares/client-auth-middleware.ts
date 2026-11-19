@@ -81,8 +81,8 @@ export const authenticateClient = async (
       }
     }
 
-    // Get client token from headers or query params
-    const clientToken = req.headers["x-client-token"] || req.query.clientToken;
+    // Get client token from headers (do not accept via query params to prevent credential exposure in URLs/logs)
+    const clientToken = (req.headers["x-client-token"] || req.headers["X-Client-Token"]) as string | undefined;
 
     if (!clientToken) {
       return res.status(401).json(
