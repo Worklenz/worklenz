@@ -505,25 +505,25 @@ const snsBodyParser = express.text({ type: ["text/plain", "application/json"], l
 app.post(
   "/webhook/emails/bounce",
   snsBodyParser,
-  verifySnsNotification,
+  safeControllerFunction(verifySnsNotification),
   safeControllerFunction(AwsSesController.handleBounceResponse),
 );
 app.post(
   "/webhook/emails/complaints",
   snsBodyParser,
-  verifySnsNotification,
+  safeControllerFunction(verifySnsNotification),
   safeControllerFunction(AwsSesController.handleComplaintResponse),
 );
 app.post(
   "/webhook/emails/delivery",
   snsBodyParser,
-  verifySnsNotification,
+  safeControllerFunction(verifySnsNotification),
   safeControllerFunction(AwsSesController.handleDeliveryEvents),
 );
 app.post(
   "/webhook/emails/reply",
   snsBodyParser,
-  verifySnsNotification,
+  safeControllerFunction(verifySnsNotification),
   safeControllerFunction(AwsSesController.handleReplies),
 );
 

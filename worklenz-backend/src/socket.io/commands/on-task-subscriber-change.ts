@@ -33,12 +33,7 @@ export async function on_task_subscriber_change(_io: Server, socket: Socket, dat
   const hasAccess = await verifyTaskAccessSocket(socket, data.task_id);
   if (!hasAccess) {
     logUnauthorizedSocketAccess(socket, "TASK_SUBSCRIBERS_CHANGE", "task", data.task_id);
-    try {
-      const subscribers = await TasksControllerV2.getTaskSubscribers(data.task_id);
-      socket.emit(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), subscribers);
-    } catch {
-      socket.emit(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), []);
-    }
+    socket.emit(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), []);
     return;
   }
 
@@ -56,15 +51,19 @@ export async function on_task_subscriber_change(_io: Server, socket: Socket, dat
 
     if (!memberCheck.rowCount) {
       logUnauthorizedSocketAccess(socket, "TASK_SUBSCRIBERS_CHANGE", "task", data.task_id);
-      const subscribers = await TasksControllerV2.getTaskSubscribers(data.task_id);
-      socket.emit(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), subscribers);
+      socket.emit(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), []);
       return;
     }
 
-    const targetUserId = memberCheck.rows[0].user_id || data.user_id || null;
+    const targetUserId = memberCheck.rows[0].user_id;
+    if (!targetUserId) {
+      logUnauthorizedSocketAccess(socket, "TASK_SUBSCRIBERS_CHANGE", "task", data.task_id);
+      socket.emit(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), []);
+      return;
+    }
 
     // If modifying another member's subscription, caller must have permission to edit the task
-    if (targetUserId && targetUserId !== userId) {
+    if (targetUserId !== userId) {
       const { session } = socket.request as ISocketSession;
       const sessionUser = session?.passport?.user as IPassportSession | undefined;
       const canEdit = (await canUserEditTask(userId, data.task_id, sessionUser)) &&
@@ -72,8 +71,7 @@ export async function on_task_subscriber_change(_io: Server, socket: Socket, dat
 
       if (!canEdit) {
         logUnauthorizedSocketAccess(socket, "TASK_SUBSCRIBERS_CHANGE", "task", data.task_id);
-        const subscribers = await TasksControllerV2.getTaskSubscribers(data.task_id);
-        socket.emit(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), subscribers);
+        socket.emit(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), []);
         return;
       }
     }
@@ -86,13 +84,13 @@ export async function on_task_subscriber_change(_io: Server, socket: Socket, dat
       : `DELETE
          FROM task_subscribers
          WHERE task_id = $1
-           AND team_member_id = $2;`;
+           AND team_member_id = $2
+           AND user_id = $3;`;
 
-    if (isSubscribe) {
-      await db.query(q, [targetUserId, data.task_id, data.team_member_id]);
-    } else {
-      await db.query(q, [data.task_id, data.team_member_id]);
-    }
+    await db.query(q, isSubscribe
+      ? [targetUserId, data.task_id, data.team_member_id]
+      : [data.task_id, data.team_member_id, targetUserId]
+    );
 
     const subscribers = await TasksControllerV2.getTaskSubscribers(data.task_id);
     socket.emit(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), subscribers);

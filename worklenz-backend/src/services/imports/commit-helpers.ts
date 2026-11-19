@@ -197,7 +197,10 @@ export const importTaskAttachments = async (
           : { Accept: "*/*" },
       });
 
-      if (response.status === 303 && response.headers?.location) {
+      if (response.status === 303) {
+        if (!response.headers?.location) {
+          throw new Error("303 redirect missing Location header");
+        }
         const redirectUrl = new URL(response.headers.location, sourceUrl).toString();
         const redirectParsed = new URL(redirectUrl);
         if (redirectParsed.protocol !== "http:" && redirectParsed.protocol !== "https:") {

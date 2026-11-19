@@ -92,8 +92,9 @@ export function validateSnsSubscribeUrl(subscribeUrl: string, topicArn?: string,
  * Constructs the canonical string to sign according to AWS SNS specification
  */
 export function buildSnsStringToSign(message: Record<string, any>): string | null {
+  if (!message || typeof message !== "object") return null;
   const type = message.Type;
-  if (!type) return null;
+  if (!type || typeof type !== "string") return null;
 
   const lines: string[] = [];
 
@@ -101,6 +102,9 @@ export function buildSnsStringToSign(message: Record<string, any>): string | nul
     const fields = ["Message", "MessageId", "Subject", "Timestamp", "TopicArn", "Type"];
     for (const field of fields) {
       if (field in message && message[field] !== undefined && message[field] !== null) {
+        if (typeof message[field] !== "string" && typeof message[field] !== "number") {
+          return null;
+        }
         lines.push(field);
         lines.push(String(message[field]));
       }
@@ -109,6 +113,9 @@ export function buildSnsStringToSign(message: Record<string, any>): string | nul
     const fields = ["Message", "MessageId", "SubscribeURL", "Timestamp", "Token", "TopicArn", "Type"];
     for (const field of fields) {
       if (field in message && message[field] !== undefined && message[field] !== null) {
+        if (typeof message[field] !== "string" && typeof message[field] !== "number") {
+          return null;
+        }
         lines.push(field);
         lines.push(String(message[field]));
       }
@@ -228,59 +235,63 @@ export async function verifySnsNotification(
   res: Response,
   next: NextFunction
 ): Promise<void | Response> {
-  let body = req.body;
-  if (typeof body === "string") {
-    try {
-      body = JSON.parse(body);
-      req.body = body;
-    } catch {
-      return res.status(400).json(new ServerResponse(false, null, "Invalid JSON payload"));
+  try {
+    let body = req.body;
+    if (typeof body === "string") {
+      try {
+        body = JSON.parse(body);
+        req.body = body;
+      } catch {
+        return res.status(400).json(new ServerResponse(false, null, "Invalid JSON payload"));
+      }
     }
-  }
 
-  if (!body || typeof body !== "object") {
-    return res.status(400).json(new ServerResponse(false, null, "Malformed SNS payload"));
-  }
+    if (!body || typeof body !== "object") {
+      return res.status(400).json(new ServerResponse(false, null, "Malformed SNS payload"));
+    }
 
-  const isValid = await verifySnsSignature(body);
-  if (!isValid) {
-    return res.status(403).json(new ServerResponse(false, null, "Invalid SNS signature"));
-  }
+    const isValid = await verifySnsSignature(body);
+    if (!isValid) {
+      return res.status(403).json(new ServerResponse(false, null, "Invalid SNS signature"));
+    }
 
-  // Handle subscription confirmation if needed
-  if (body.Type === "SubscriptionConfirmation") {
-    console.log(`[SNS] SubscriptionConfirmation received for topic ${body.TopicArn || ""}`);
-    if (body.SubscribeURL && validateSnsSubscribeUrl(body.SubscribeURL, body.TopicArn, body.Token)) {
-      const confirmUrl = new URL(body.SubscribeURL);
-      await new Promise<void>((resolve, reject) => {
-        const req = https.get(
-          {
-            protocol: "https:",
-            hostname: confirmUrl.hostname,
-            path: confirmUrl.pathname + confirmUrl.search,
-            agent: publicHttpsAgent,
-            timeout: 5000,
-          },
-          confirmationRes => {
-            confirmationRes.resume();
-            if (confirmationRes.statusCode && confirmationRes.statusCode >= 200 && confirmationRes.statusCode < 300) {
-              resolve();
-            } else {
-              reject(new Error(`Failed to confirm subscription: HTTP ${confirmationRes.statusCode}`));
+    // Handle subscription confirmation if needed
+    if (body.Type === "SubscriptionConfirmation") {
+      console.log(`[SNS] SubscriptionConfirmation received for topic ${body.TopicArn || ""}`);
+      if (body.SubscribeURL && validateSnsSubscribeUrl(body.SubscribeURL, body.TopicArn, body.Token)) {
+        const confirmUrl = new URL(body.SubscribeURL);
+        await new Promise<void>((resolve, reject) => {
+          const req = https.get(
+            {
+              protocol: "https:",
+              hostname: confirmUrl.hostname,
+              path: confirmUrl.pathname + confirmUrl.search,
+              agent: publicHttpsAgent,
+              timeout: 5000,
+            },
+            confirmationRes => {
+              confirmationRes.resume();
+              if (confirmationRes.statusCode && confirmationRes.statusCode >= 200 && confirmationRes.statusCode < 300) {
+                resolve();
+              } else {
+                reject(new Error(`Failed to confirm subscription: HTTP ${confirmationRes.statusCode}`));
+              }
             }
-          }
-        );
-        req.on("error", reject);
-        req.on("timeout", () => {
-          req.destroy();
-          reject(new Error("Timeout confirming subscription"));
+          );
+          req.on("error", reject);
+          req.on("timeout", () => {
+            req.destroy();
+            reject(new Error("Timeout confirming subscription"));
+          });
+        }).catch(err => {
+          log_error(`[SNS] Subscription confirmation error: ${err.message}`);
         });
-      }).catch(err => {
-        log_error(`[SNS] Subscription confirmation error: ${err.message}`);
-      });
+      }
+      return res.status(200).json(new ServerResponse(true, null, "Subscription confirmed"));
     }
-    return res.status(200).json(new ServerResponse(true, null, "Subscription confirmed"));
-  }
 
-  next();
+    next();
+  } catch (error) {
+    next(error);
+  }
 }

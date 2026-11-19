@@ -29,13 +29,31 @@ describe("client portal security", () => {
   });
 
   describe("ClientPortalAttachmentController.uploadFile", () => {
+    it("rejects uploads when fileData is not a valid base64 data URL", async () => {
+      const req = {
+        clientId: "client-1",
+        organizationId: "org-1",
+        body: {
+          fileName: "test.png",
+          fileType: "image/png",
+          fileData: "dGVzdA==" // raw base64 without data: URI scheme
+        }
+      };
+      const res = createMockResponse();
+
+      await ClientPortalAttachmentController.uploadFile(req as any, res as any);
+
+      expect(res.statusCode).toBe(400);
+      expect((res as any).body?.message).toContain("File type not allowed");
+    });
+
     it("rejects uploads when fileType is missing", async () => {
       const req = {
         clientId: "client-1",
         organizationId: "org-1",
         body: {
           fileName: "test.exe",
-          fileData: "dGVzdA=="
+          fileData: "data:application/octet-stream;base64,dGVzdA=="
         }
       };
       const res = createMockResponse();
@@ -53,7 +71,7 @@ describe("client portal security", () => {
         body: {
           fileName: "test.exe",
           fileType: "application/x-msdownload",
-          fileData: "dGVzdA=="
+          fileData: "data:application/x-msdownload;base64,dGVzdA=="
         }
       };
       const res = createMockResponse();

@@ -70,4 +70,14 @@ describe("import attachment URL security", () => {
     expect(result).toEqual({ attachments: 0, attachmentFailures: 1 });
     expect(axios.get).toHaveBeenCalledTimes(1);
   });
+  it("rejects 303 redirect missing Location header", async () => {
+    (axios.get as jest.Mock).mockResolvedValueOnce({
+      status: 303,
+      headers: {}
+    });
+
+    const result = await request("https://jira.example.com/file");
+    expect(result).toEqual({ attachments: 0, attachmentFailures: 1 });
+    expect(axios.get).toHaveBeenCalledTimes(1);
+  });
 });

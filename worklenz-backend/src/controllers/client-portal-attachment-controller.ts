@@ -56,12 +56,12 @@ export default class ClientPortalAttachmentController {
         return res.status(400).json(new ServerResponse(false, null, "File type not allowed"));
       }
 
-      // If base64 data includes a data URL scheme, verify that embedded mime matches allowed types
-      if (typeof fileData === "string" && fileData.startsWith("data:")) {
-        const mimeMatch = fileData.match(/^data:([^;,]+)(?:;[^,]*)?;base64,/i);
-        if (!mimeMatch || !allowedTypes.includes(mimeMatch[1].toLowerCase())) {
-          return res.status(400).json(new ServerResponse(false, null, "File type not allowed"));
-        }
+      // Require a base64 data URL whose embedded MIME type is allowed
+      const mimeMatch = typeof fileData === "string"
+        ? fileData.match(/^data:([^;,]+)(?:;[^,]*)?;base64,/i)
+        : null;
+      if (!mimeMatch || !allowedTypes.includes(mimeMatch[1].toLowerCase())) {
+        return res.status(400).json(new ServerResponse(false, null, "File type not allowed"));
       }
 
       // Generate unique filename with client prefix

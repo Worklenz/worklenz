@@ -114,7 +114,7 @@ describe("socket task security", () => {
       });
 
       expect(mockDb).not.toHaveBeenCalled();
-      expect(socket.emit).toHaveBeenCalledWith("23", expect.any(Array));
+      expect(socket.emit).toHaveBeenCalledWith("23", []);
     });
 
     it("rejects when team member does not belong to the task's project", async () => {
@@ -131,7 +131,7 @@ describe("socket task security", () => {
       });
 
       expect(mockDb).toHaveBeenCalledTimes(1);
-      expect(socket.emit).toHaveBeenCalledWith("23", expect.any(Array));
+      expect(socket.emit).toHaveBeenCalledWith("23", []);
     });
 
     it("rejects when modifying another user without task edit permissions", async () => {
@@ -152,7 +152,7 @@ describe("socket task security", () => {
       });
 
       expect(mockDb).toHaveBeenCalledTimes(1); // Only the check query, not the INSERT query
-      expect(socket.emit).toHaveBeenCalledWith("23", expect.any(Array));
+      expect(socket.emit).toHaveBeenCalledWith("23", []);
     });
 
     it("allows subscribing self when authorized", async () => {
@@ -196,6 +196,29 @@ describe("socket task security", () => {
       });
 
       expect(mockDb).toHaveBeenCalledTimes(2);
+      expect(socket.emit).toHaveBeenCalledWith("23", expect.any(Array));
+    });
+
+    it("allows unsubscribe with target user_id in DELETE predicate", async () => {
+      mockGetUserId.mockReturnValue("user-1");
+      mockVerify.mockResolvedValue(true);
+      mockDb.mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ id: "tm-1", user_id: "user-1" }]
+      } as any);
+      mockDb.mockResolvedValueOnce({ rowCount: 1, rows: [] } as any);
+
+      await on_task_subscriber_change({} as any, socket, {
+        mode: 1,
+        task_id: "task-1",
+        user_id: "user-1",
+        team_member_id: "tm-1"
+      });
+
+      expect(mockDb).toHaveBeenLastCalledWith(
+        expect.stringContaining("DELETE"),
+        ["task-1", "tm-1", "user-1"]
+      );
       expect(socket.emit).toHaveBeenCalledWith("23", expect.any(Array));
     });
   });
