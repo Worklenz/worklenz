@@ -17,6 +17,7 @@ import {
   getFreePlanSettings,
 } from "../../shared/paddle-utils";
 import { hasBusinessPlanAccess } from "../../middlewares/subscription-middleware";
+import { isSelfHostedDeployment } from "../../shared/deployment-mode";
 import OnboardingController from "../onboarding-controller";
 import { IProjectTemplateSettingsOverrides, IProjectTemplateApplySkip } from "./interfaces";
 import { allocateCopyName } from "../../shared/template-copy-name";
@@ -283,7 +284,7 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    if (req.user?.subscription_status === "free" && req.user?.owner_id) {
+    if (!isSelfHostedDeployment() && req.user?.subscription_status === "free" && req.user?.owner_id) {
       const limits = await getFreePlanSettings();
       const projectsCount = await getCurrentProjectsCount(req.user.owner_id);
       const projectsLimit = parseInt(limits.projects_limit);
@@ -548,7 +549,7 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    if (req.user?.subscription_status === "free" && req.user?.owner_id) {
+    if (!isSelfHostedDeployment() && req.user?.subscription_status === "free" && req.user?.owner_id) {
       const limits = await getFreePlanSettings();
       const projectsCount = await getCurrentProjectsCount(req.user.owner_id);
       const projectsLimit = parseInt(limits.projects_limit);

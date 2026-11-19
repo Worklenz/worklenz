@@ -169,6 +169,50 @@ describe('ProjectsController - members_can_view_client_team toggle persistence',
   });
 
   describe('ProjectsController.create', () => {
+    it('continues enforcing the Free project limit in cloud deployments', async () => {
+      const previousMode = process.env.WORKLENZ_DEPLOYMENT_MODE;
+      process.env.WORKLENZ_DEPLOYMENT_MODE = 'cloud';
+      try {
+        mockedDbQuery.mockImplementation((sql: string) => Promise.resolve({
+          rows: sql.includes('licensing_settings') ? [{ projects_limit: '3' }] : [{ count: '3' }],
+        }));
+        const req = createMockRequest({
+          user: { id: 'user-123', team_id: 'team-123', owner_id: 'owner-123', subscription_status: 'free' },
+          body: { name: 'Beta Project' },
+        });
+        const res = createMockResponse();
+
+        await ProjectsController.create(req, res);
+
+        expect(res.body?.done).toBe(false);
+        expect(mockedDbQuery.mock.calls.some(([sql]: [string]) => sql.includes('SELECT create_project'))).toBe(false);
+      } finally {
+        if (previousMode === undefined) delete process.env.WORKLENZ_DEPLOYMENT_MODE;
+        else process.env.WORKLENZ_DEPLOYMENT_MODE = previousMode;
+      }
+    });
+    it('does not apply the Free project limit on self-hosted installations', async () => {
+      const previousMode = process.env.WORKLENZ_DEPLOYMENT_MODE;
+      process.env.WORKLENZ_DEPLOYMENT_MODE = 'self_hosted';
+      try {
+        mockedDbQuery.mockImplementation((sql: string) => Promise.resolve({
+          rows: sql.includes('SELECT create_project') ? [{ project: { id: 'project-456', name: 'Beta Project' } }] : [],
+        }));
+        const req = createMockRequest({
+          user: { id: 'user-123', team_id: 'team-123', owner_id: 'owner-123', subscription_status: 'free' },
+          body: { name: 'Beta Project' },
+        });
+        const res = createMockResponse();
+
+        await ProjectsController.create(req, res);
+
+        expect(mockedDbQuery.mock.calls.some(([sql]: [string]) => sql.includes('SELECT create_project'))).toBe(true);
+        expect(mockedDbQuery.mock.calls.some(([sql]: [string]) => sql.includes('FROM licensing_settings'))).toBe(false);
+      } finally {
+        if (previousMode === undefined) delete process.env.WORKLENZ_DEPLOYMENT_MODE;
+        else process.env.WORKLENZ_DEPLOYMENT_MODE = previousMode;
+      }
+    });
     it('passes members_can_view_client_team set to false in create_project payload', async () => {
       mockedDbQuery.mockImplementation((sql: string) => {
         if (sql.includes('SELECT create_project')) {

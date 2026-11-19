@@ -15,6 +15,7 @@ import { SocketEvents } from "../socket.io/events";
 import { IO } from "../shared/io";
 import { notifyProjectDateChanges } from "../shared/project-date-notifications";
 import { getCurrentProjectsCount, getFreePlanSettings } from "../shared/paddle-utils";
+import { isSelfHostedDeployment } from "../shared/deployment-mode";
 import { ActivityLoggingService } from "../services/activity-logging.service";
 import { NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE } from "../shared/guest-access-sql";
 import { getProjectAccessForRequest } from "../shared/project-access";
@@ -81,7 +82,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     }
   })
   public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    if (req.user?.subscription_status === "free" && req.user?.owner_id) {
+    if (!isSelfHostedDeployment() && req.user?.subscription_status === "free" && req.user?.owner_id) {
       const limits = await getFreePlanSettings();
       const projectsCount = await getCurrentProjectsCount(req.user.owner_id);
       const projectsLimit = parseInt(limits.projects_limit);
