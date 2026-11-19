@@ -1,6 +1,6 @@
-import * as Highcharts from "highcharts";
+import { IChartPoint } from "./interfaces";
 
-export default class PointOptionsObject implements Highcharts.PointOptionsObject {
+export default class PointOptionsObject implements IChartPoint {
   name!: string;
   color!: string;
   y!: number;

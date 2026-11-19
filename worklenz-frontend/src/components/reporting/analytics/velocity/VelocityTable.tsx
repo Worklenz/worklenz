@@ -31,26 +31,25 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({
 }) => {
   const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
+  const tableBorderColor = token.colorBorder;
 
-  const bucketColumnTitle =
-    bucket === 'phase'
-      ? t('colPhase', { defaultValue: 'Phase' })
-      : bucket === 'mixed'
-        ? t('colSprintOrPhase', { defaultValue: 'Sprint / Phase' })
-        : t('colSprint', { defaultValue: 'Sprint' });
+  const cellBorderStyle: React.CSSProperties = {
+    borderInlineEnd: `1px solid ${token.colorBorder}`,
+    borderBottom: `1px solid ${token.colorBorder}`,
+  };
 
   const defaultEmptyText =
     bucket === 'phase'
       ? t('velocityChartEmptyPhases', {
-          defaultValue: 'No phases with tasks match these filters.',
-        })
+        defaultValue: 'No phases with tasks match these filters.',
+      })
       : bucket === 'mixed'
         ? t('velocityChartEmptyMixed', {
-            defaultValue: 'No completed sprints or phases match these filters.',
-          })
+          defaultValue: 'No completed sprints or phases match these filters.',
+        })
         : t('velocityChartEmpty', {
-            defaultValue: 'No completed sprints match these filters.',
-          });
+          defaultValue: 'No completed sprints match these filters.',
+        });
 
   const emptyText = (
     <Text type="secondary">{emptyTextProp ?? defaultEmptyText}</Text>
@@ -70,31 +69,61 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({
 
   const columns: ColumnsType<VelocityRow> = [
     {
-      title: bucketColumnTitle,
+      title: t('colSprintOrPhase', { defaultValue: 'Sprint / Phase' }),
       dataIndex: 'sprint_name',
       key: 'sprint_name',
+      width: 150,
       sorter: (a, b) => a.sprint_name.localeCompare(b.sprint_name),
+      onCell: () => ({
+        style: cellBorderStyle,
+      }),
+      onHeaderCell: () => ({
+        style: cellBorderStyle,
+      }),
     },
     {
       title: t('legendCommitted', { defaultValue: 'Committed' }),
       dataIndex: 'committed',
+      width: 150,
       key: 'committed',
       align: 'right',
       sorter: (a, b) => a.committed - b.committed,
+      onCell: () => ({
+        style: cellBorderStyle,
+      }),
+      onHeaderCell: () => ({
+        style: cellBorderStyle,
+      }),
     },
     {
       title: t('legendCompleted', { defaultValue: 'Completed' }),
       dataIndex: 'completed',
       key: 'completed',
+      width: 130,
       align: 'right',
       sorter: (a, b) => a.completed - b.completed,
+      onCell: () => ({
+        style: cellBorderStyle,
+      }),
+      onHeaderCell: () => ({
+        style: cellBorderStyle,
+      }),
     },
     {
       title: t('colCommitmentPct', { defaultValue: 'Commitment %' }),
       dataIndex: 'commitment_accuracy',
       key: 'commitment_accuracy',
+      width: 80,
       align: 'right',
-      sorter: (a, b) => (a.commitment_accuracy ?? -1) - (b.commitment_accuracy ?? -1),
+      sorter: (a, b) =>
+        (a.commitment_accuracy ?? -1) -
+        (b.commitment_accuracy ?? -1),
+      onCell: () => ({
+        style: cellBorderStyle,
+      }),
+      onHeaderCell: () => ({
+        style: cellBorderStyle,
+      }),
       render: (value: number | null, row) => {
         if (value === null || value === undefined) {
           return (
@@ -107,6 +136,7 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({
             </Tooltip>
           );
         }
+
         return (
           <Tooltip
             title={t('tooltipCommitmentDetail', {
@@ -124,7 +154,9 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({
 
   return (
     <Table
+      className="velocity-table"
       size="middle"
+      bordered
       rowKey="key"
       columns={columns}
       dataSource={data}
@@ -132,6 +164,7 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({
       showSorterTooltip={false}
       style={{
         borderRadius: token.borderRadiusLG,
+        border: `1px solid ${tableBorderColor}`,
       }}
       locale={{
         emptyText,

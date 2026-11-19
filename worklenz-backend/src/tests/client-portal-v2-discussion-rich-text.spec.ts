@@ -8,6 +8,11 @@ describe("sanitizeDiscussionHtml", () => {
     expect(sanitizeDiscussionHtml(html)).toBe(html);
   });
 
+  it("preserves data-list attributes on list items", () => {
+    const html = '<ol><li data-list="bullet">dot</li><li data-list="ordered">one</li></ol>';
+    expect(sanitizeDiscussionHtml(html)).toBe(html);
+  });
+
   it("keeps a mention chip with its id", () => {
     const html = '<p><span class="mention" data-type="mention" data-id="u1" data-label="Ann">@Ann</span> hi</p>';
     expect(sanitizeDiscussionHtml(html)).toBe(html);

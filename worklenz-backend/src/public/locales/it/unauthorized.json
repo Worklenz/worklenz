@@ -1,0 +1,13 @@
+{
+  "title": "Accesso non autorizzato!",
+  "subtitle": "Non sei autorizzato ad accedere a questa pagina",
+  "commentAccessTitle": "Devi avere accesso per visualizzare questo commento",
+  "commentAccessContactAdmin": "Non sei stato invitato a questo progetto. Contatta l’amministratore o il proprietario del progetto per richiedere l’accesso.",
+  "commentAccessDenied": "Non sei stato invitato a questo progetto. Contatta l’amministratore o il proprietario del progetto per richiedere l’accesso.",
+  "invalidCommentLink": "Il link a questo commento non è valido.",
+  "commentNotFound": "Impossibile trovare questo commento.",
+  "commentLinkOpenFailed": "Impossibile aprire il link al commento. Riprova o apri il commento dall’attività.",
+  "unableToOpenComment": "Impossibile aprire il commento",
+  "openingComment": "Apertura del commento...",
+  "button": "Vai alla pagina iniziale"
+}

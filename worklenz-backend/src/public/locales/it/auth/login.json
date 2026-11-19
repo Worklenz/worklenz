@@ -1,0 +1,39 @@
+{
+  "headline": "Bentornato",
+  "headerDescription": "Accedi al tuo spazio di lavoro Worklenz.",
+  "signInWithLabel": "Accedi con",
+  "orText": "oppure",
+  "emailLabel": "Email",
+  "emailPlaceholder": "nome@azienda.com",
+  "emailRequired": "Inserisci la tua email!",
+  "nextButton": "Avanti",
+  "changeEmailLink": "Modifica",
+  "passwordLabel": "Password",
+  "passwordPlaceholder": "Inserisci la password",
+  "passwordRequired": "Inserisci la password!",
+  "loginButton": "Accedi",
+  "signupButton": "Registrati",
+  "forgotPasswordButton": "Password dimenticata?",
+  "signInWithGoogleButton": "Google",
+  "signInWithGoogleAriaLabel": "Accedi con Google",
+  "signInWithAppleButton": "Apple",
+  "signInWithAppleAriaLabel": "Accedi con Apple",
+  "dontHaveAccountText": "Non hai un account?",
+  "bySigningInText": "Accedendo, dichiari di accettare i nostri",
+  "andText": "e la nostra",
+  "termsOfServiceLink": "Termini di servizio",
+  "privacyPolicyLink": "Informativa sulla privacy",
+  "successMessage": "Accesso effettuato!",
+  "loginError": "Accesso non riuscito",
+  "googleLoginError": "Accesso con Google non riuscito",
+  "appleLoginError": "Accesso con Apple non riuscito",
+  "validationMessages": {
+    "email": "Inserisci un indirizzo email valido",
+    "password": "La password deve contenere almeno 8 caratteri"
+  },
+  "errorMessages": {
+    "loginErrorTitle": "Accesso non riuscito",
+    "loginErrorMessage": "Controlla email e password e riprova"
+  },
+  "rememberMe": "Ricordami"
+}

@@ -98,7 +98,7 @@
   "terminology": {
     "issue": "Problem",
     "issues": "Problemy",
-    "createIssue": "Utwórz problem",
+    "createIssue": "Utwórz element pracy",
     "issueList": "Lista",
     "backlog": "Zaległości",
     "sprint": "Iteracja",
@@ -463,5 +463,6 @@
   "deleteSavedView": "Usuń kartę",
   "deleteSavedViewTitle": "Usunąć „{{name}}”?",
   "deleteSavedViewContent": "Ta karta zostanie usunięta dla wszystkich w projekcie. Zadania nie zostaną zmienione.",
-  "deleteSavedViewOk": "Usuń"
+  "deleteSavedViewOk": "Usuń",
+  "NewTab": "Nowa karta"
 }

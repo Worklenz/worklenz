@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { MemberLoggedTimeType } from '@/types/timeSheet/project.types';
-import { Empty, Progress, Spin } from '@/shared/antd-imports';
+import { Empty, Progress, Spin, Tooltip } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
 import { reportingTimesheetApiService } from '@/api/reporting/reporting.timesheet.api.service';
@@ -96,6 +96,7 @@ const TimeSheetTable: React.FC = () => {
   return (
     <Spin spinning={loading} tip={t('loadingText')}>
       <div
+        className="member-project-table"
         style={{
           overflow: 'auto',
           width: 'max-content',
@@ -103,7 +104,7 @@ const TimeSheetTable: React.FC = () => {
         }}
       >
         {members.length == 0 && projects.length == 0 && (
-           <div className="no-data">
+          <div className="no-data">
             <Empty description={t('noData')} />
           </div>
         )}
@@ -129,7 +130,11 @@ const TimeSheetTable: React.FC = () => {
                   <span className="anticon" style={{ color: item.status_color_code }}>
                     <i className={item.status_icon}></i>
                   </span>
-                  <span className="ms-1">{decodeHtmlEntities(item.name)}</span>
+                  <Tooltip title={decodeHtmlEntities(item.name)} placement="topLeft">
+                    <span className="timesheet-project-name-text ms-1">
+                      {decodeHtmlEntities(item.name)}
+                    </span>
+                  </Tooltip>
                   <div className="d-block">
                     <Progress percent={item.progress} strokeColor={item.color_code} size="small" />
                   </div>
@@ -149,7 +154,7 @@ const TimeSheetTable: React.FC = () => {
             {/* total row */}
             {members.length > 0 && (
               <div className="table-row_ d-flex bottom-row">
-                 <div className="project-name bg-bold">{t('total')}</div>
+                <div className="project-name bg-bold">{t('total')}</div>
                 {members.map(item => (
                   <div
                     key={item.id}

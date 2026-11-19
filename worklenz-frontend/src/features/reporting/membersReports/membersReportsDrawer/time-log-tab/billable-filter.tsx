@@ -10,10 +10,25 @@ interface BillableFilterProps {
 
 const BillableFilter = ({ billable, onBillableChange }: BillableFilterProps) => {
   // state to track dropdown open status
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(true);
 
   // localization
   const { t } = useTranslation('reporting-members-drawer');
+
+  const getButtonLabel = () => {
+    const { billable: isBillable, nonBillable } = billable;
+
+    if (isBillable && nonBillable) {
+      return `${t('billableText')} (${t('billableAndNonBillableText')})`;
+    }
+    if (isBillable) {
+      return t('billableText') || 'Billable';
+    }
+    if (nonBillable) {
+      return t('nonBillableText') || 'Non Billable';
+    }
+    return t('noneSelected');
+  };
 
   // billable dropdown items
   type BillableFieldsType = {
@@ -66,6 +81,7 @@ const BillableFilter = ({ billable, onBillableChange }: BillableFilterProps) => 
       overlayClassName="custom-dropdown"
       trigger={['click']}
       popupRender={() => billableDropdownContent}
+      open={isDropdownOpen}
       onOpenChange={open => setIsDropdownOpen(open)}
     >
       <Button
@@ -78,7 +94,7 @@ const BillableFilter = ({ billable, onBillableChange }: BillableFilterProps) => 
             : 'hover:text-[#1890ff hover:border-[#1890ff]'
         }`}
       >
-        {t('billableButton')}
+        {getButtonLabel()}
       </Button>
     </Dropdown>
   );

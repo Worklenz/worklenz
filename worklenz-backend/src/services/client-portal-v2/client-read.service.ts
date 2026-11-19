@@ -171,7 +171,7 @@ export interface ClientMilestoneDto {
   id: string;
   name: string;
   description: string;
-  target_date: string;
+  target_date: string | null;
   status: "upcoming" | "in_progress" | "completed" | "delayed";
   completed_at: string | null;
   completion_note: string;

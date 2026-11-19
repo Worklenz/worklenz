@@ -1,5 +1,3 @@
-import * as Highcharts from "highcharts";
-
 export interface IDuration {
   label: string;
   key: string;
@@ -33,8 +31,14 @@ export interface IOverviewStatistics {
   members: IMemberStatistics;
 }
 
+export interface IChartPoint {
+  name: string;
+  color: string;
+  y: number;
+}
+
 export interface IChartData {
-  chart: Highcharts.PointOptionsObject[];
+  chart: IChartPoint[];
 }
 
 export interface ITasksByStatus extends IChartData {

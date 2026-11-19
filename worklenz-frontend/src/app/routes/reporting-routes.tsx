@@ -1,14 +1,15 @@
 import { RouteObject, Navigate } from 'react-router-dom';
-import React, { Suspense, lazy, memo, type ReactNode } from 'react';
+import React, { Suspense, lazy, type ReactNode } from 'react';
 import ReportingLayout from '@/layouts/ReportingLayout';
 import AnalyticsReportingLayout from '@/layouts/AnalyticsReportingLayout';
 import { ReportingMenuItems, reportingsItems } from '@/lib/reporting/reporting-constants';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import NavSurfaceIndexRedirect from '@/features/navigation/NavSurfaceIndexRedirect';
-import GuestRedirect from '@/guards/GuestRedirect';
-import { useAuthStatus } from '@/hooks/useAuthStatus';
 import { ANALYTICS_BASE_PATH, flatAnalyticsNavItems } from '@/lib/reporting/analytics-nav';
 import { AnalyticsBusinessGate, AnalyticsFinanceGate } from '@/components/reporting/analytics/AnalyticsBusinessGate';
+import { AdminGuard } from '@/app/routes/index';
+import { OrganizationPermissionGuard } from '@/guards/OrganizationPermissionGuard';
+import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 
 const AllReportsPage = lazy(() => import('@/pages/reporting/analytics/AllReportsPage'));
 const DashboardsPage = lazy(() => import('@/pages/reporting/analytics/DashboardsPage'));
@@ -52,22 +53,11 @@ const withSuspense = (element: ReactNode) => (
   <Suspense fallback={<SuspenseFallback />}>{element}</Suspense>
 );
 
-/** Reporting & Analytics remain Owner/Admin (paid) only. */
-const ReportingAdminGuard = memo(({ children }: { children: ReactNode }) => {
-  const { isAuthenticated, isAdmin, location } = useAuthStatus();
-
-  if (!isAuthenticated) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
-  }
-
-  if (!isAdmin) {
-    return <Navigate to="/worklenz/home" replace />;
-  }
-
-  return <>{children}</>;
-});
-
-ReportingAdminGuard.displayName = 'ReportingAdminGuard';
+const ClassicReportingLayout = () => (
+  <AdminGuard>
+    <ReportingLayout />
+  </AdminGuard>
+);
 
 const enabledAnalyticsElements: Record<string, ReactNode> = {
   velocity: withBusinessGate('velocity', 'Velocity', <VelocityPage />),
@@ -99,15 +89,16 @@ const comingSoonPaths = flatAnalyticsNavItems()
   .map(item => item.path);
 
 const reportingRoutes: RouteObject[] = [
-  // New Reporting & Analytics (prototype sidebar) — listed first for specificity
+  // New Reporting & Analytics — "View reports" (+ paid plan)
   {
     path: 'worklenz/reporting/analytics',
     element: (
-      <GuestRedirect blockPathPrefix="/worklenz/reporting">
-        <ReportingAdminGuard>
-          <AnalyticsReportingLayout />
-        </ReportingAdminGuard>
-      </GuestRedirect>
+      <OrganizationPermissionGuard
+        permission={ORGANIZATION_PERMISSIONS.VIEW_REPORTS}
+        blockFreePlan
+      >
+        <AnalyticsReportingLayout />
+      </OrganizationPermissionGuard>
     ),
     children: [
       { index: true, element: withSuspense(<AllReportsPage />) },
@@ -136,16 +127,10 @@ const reportingRoutes: RouteObject[] = [
       { path: '*', element: <Navigate to={ANALYTICS_BASE_PATH} replace /> },
     ],
   },
-  // Classic reporting (NavRail) — Owner/Admin only
+  // Classic reporting stays Owner/Admin (and non-free) via AdminGuard.
   {
     path: 'worklenz/reporting',
-    element: (
-      <GuestRedirect blockPathPrefix="/worklenz/reporting">
-        <ReportingAdminGuard>
-          <ReportingLayout />
-        </ReportingAdminGuard>
-      </GuestRedirect>
-    ),
+    element: <ClassicReportingLayout />,
     children: [
       { index: true, element: <NavSurfaceIndexRedirect surfaceKey="reporting" /> },
       ...flattenedItems.map(item => ({

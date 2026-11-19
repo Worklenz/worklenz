@@ -105,6 +105,7 @@ const HomeLeftSidebar: React.FC<HomeLeftSidebarProps> = ({ activeView, onViewCha
   const dispatch  = useAppDispatch();
   const navigate  = useNavigate();
   const { t } = useTranslation('home-sidebar');
+  const { t: tCommon } = useTranslation('common');
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -181,9 +182,10 @@ const HomeLeftSidebar: React.FC<HomeLeftSidebarProps> = ({ activeView, onViewCha
       }}>
         {/* Trial badge */}
         {isTrial && trialDaysLeft !== null && (
-          <Tooltip title={`${trialDaysLeft} days left in your trial`} placement="right">
+          <Tooltip title={tCommon('sidebarTrialTooltip', { count: trialDaysLeft, defaultValue: '{{count}} days left in your trial' })} placement="right">
             <button
               onClick={() => dispatch(toggleUpgradeModal())}
+              aria-label={tCommon('sidebarTrialTooltip', { count: trialDaysLeft, defaultValue: '{{count}} days left in your trial' })}
               style={{
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
@@ -192,10 +194,10 @@ const HomeLeftSidebar: React.FC<HomeLeftSidebarProps> = ({ activeView, onViewCha
               }}
             >
               <span style={{ fontSize: 9, fontWeight: 400, lineHeight: 1.4, color: '#fa541c', textAlign: 'center' }}>
-                {trialDaysLeft} Days
+                {tCommon('sidebarTrialDays', { count: trialDaysLeft, defaultValue: '{{count}} days' })}
               </span>
               <span style={{ fontSize: 9, fontWeight: 400, lineHeight: 1.4, color: '#fa541c', textAlign: 'center' }}>
-                Trial
+                {tCommon('sidebarTrialLabel', { defaultValue: 'Trial' })}
               </span>
             </button>
           </Tooltip>
@@ -203,9 +205,10 @@ const HomeLeftSidebar: React.FC<HomeLeftSidebarProps> = ({ activeView, onViewCha
 
         {/* Upgrade button */}
         {isTrial && (
-          <Tooltip title="Upgrade to Pro" placement="right">
+          <Tooltip title={tCommon('sidebarUpgradeTooltip', { defaultValue: 'Upgrade your plan' })} placement="right">
             <button
               onClick={() => dispatch(toggleUpgradeModal())}
+              aria-label={tCommon('sidebarUpgradeTooltip', { defaultValue: 'Upgrade your plan' })}
               style={{
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
@@ -213,6 +216,7 @@ const HomeLeftSidebar: React.FC<HomeLeftSidebarProps> = ({ activeView, onViewCha
                 borderRadius: 7, cursor: 'pointer', border: 'none',
                 background: 'linear-gradient(135deg,#ff4d4f,#ff7875)',
                 color: '#fff', fontSize: 9, fontWeight: 700, letterSpacing: .2,
+                textAlign: 'center', overflowWrap: 'anywhere', lineHeight: 1.2,
               }}
               onMouseEnter={e => {
                 (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg,#cf1322,#ff4d4f)';
@@ -223,8 +227,8 @@ const HomeLeftSidebar: React.FC<HomeLeftSidebarProps> = ({ activeView, onViewCha
                 (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
               }}
             >
-              <span style={{ fontSize: 16, lineHeight: 1 }}>⚡</span>
-              UPGRADE
+              <span aria-hidden="true" style={{ fontSize: 16, lineHeight: 1 }}>⚡</span>
+              {tCommon('sidebarUpgradeLabel', { defaultValue: 'UPGRADE' })}
             </button>
           </Tooltip>
         )}

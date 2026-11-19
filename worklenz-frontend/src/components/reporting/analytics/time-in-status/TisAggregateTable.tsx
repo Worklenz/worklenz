@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Table, Tag } from '@/shared/antd-imports';
+import { Table, Tag, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import type { TimeInStatusAggregateRow } from '@/types/reporting/analytics-time-in-status.types';
@@ -10,6 +10,7 @@ interface TisAggregateTableProps {
 
 export const TisAggregateTable: React.FC<TisAggregateTableProps> = ({ rows }) => {
   const { t } = useTranslation('reporting-analytics');
+  const { token } = theme.useToken();
 
   const data = useMemo(
     () =>
@@ -74,11 +75,28 @@ export const TisAggregateTable: React.FC<TisAggregateTableProps> = ({ rows }) =>
     },
   ];
 
+  const borderedColumns = columns.map((column) => ({
+  ...column,
+  onCell: () => ({
+    style: {
+      borderInlineEnd: `1px solid ${token.colorBorder}`,
+      borderBottom: `1px solid ${token.colorBorder}`,
+    },
+  }),
+  onHeaderCell: () => ({
+    style: {
+      borderInlineEnd: `1px solid ${token.colorBorder}`,
+      borderBottom: `1px solid ${token.colorBorder}`,
+    },
+  }),
+}));
+
   return (
     <Table
+      bordered
       size="small"
       pagination={false}
-      columns={columns}
+      columns={borderedColumns}
       dataSource={data}
       scroll={{ x: true }}
     />

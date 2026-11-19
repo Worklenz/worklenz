@@ -1,4 +1,4 @@
-import { memo, useMemo, Suspense } from 'react';
+import { memo, useEffect, useMemo, Suspense } from 'react';
 import {
   Table,
   TableColumnsType,
@@ -32,6 +32,8 @@ import {
   setSelectedPriorities,
   setSelectedAssignees,
   updateTaskAssignees,
+  updateTaskStatus,
+  updateTaskPriority,
 } from '@/features/reporting/allTasksReports/all-tasks-reports-slice';
 import {
   setShowTaskDrawer,
@@ -41,6 +43,10 @@ import {
 import { setProjectId } from '@/features/project/project.slice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { useAllTasksReportsFilterOptions } from '../../hooks/useAllTasksReportsFilterOptions';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
+import { ITaskListStatusChangeResponse } from '@/types/tasks/task-list-status.types';
+import { ITaskListPriorityChangeResponse } from '@/types/tasks/task-list-priority.types';
 import './all-tasks-reports-table.css';
 import TablePagination from '@/components/TablePagination';
 
@@ -49,6 +55,7 @@ const TaskDrawer = React.lazy(() => import('@components/task-drawer/task-drawer'
 const AllTasksReportsTable = () => {
   const { t } = useTranslation('reporting-all-tasks');
   const dispatch = useAppDispatch();
+  const { socket } = useSocket();
 
   const {
     tasksList,
@@ -67,6 +74,50 @@ const AllTasksReportsTable = () => {
 
   // Get filter options for columns
   const filterOptions = useAllTasksReportsFilterOptions();
+
+  // Keep Status / Priority columns in sync when the task drawer (or another
+  // client) changes them over the socket — without refetching the full report.
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleStatusChange = (data: ITaskListStatusChangeResponse) => {
+      if (!data?.id) return;
+      dispatch(
+        updateTaskStatus({
+          id: data.id,
+          status_id: data.status_id,
+          status_name: data.status_name,
+          color_code: data.color_code,
+          color_code_dark: data.color_code_dark,
+          complete_ratio: data.complete_ratio,
+          completed_at: data.completed_at,
+          statusCategory: data.statusCategory,
+        })
+      );
+    };
+
+    const handlePriorityChange = (data: ITaskListPriorityChangeResponse) => {
+      if (!data?.id) return;
+      dispatch(
+        updateTaskPriority({
+          id: data.id,
+          priority_id: data.priority_id,
+          priority_name: data.priority_name,
+          color_code: data.color_code,
+          color_code_dark: data.color_code_dark,
+          priority_value: data.priority_value,
+        })
+      );
+    };
+
+    socket.on(SocketEvents.TASK_STATUS_CHANGE.toString(), handleStatusChange);
+    socket.on(SocketEvents.TASK_PRIORITY_CHANGE.toString(), handlePriorityChange);
+
+    return () => {
+      socket.off(SocketEvents.TASK_STATUS_CHANGE.toString(), handleStatusChange);
+      socket.off(SocketEvents.TASK_PRIORITY_CHANGE.toString(), handlePriorityChange);
+    };
+  }, [socket, dispatch]);
 
   const handleTaskClick = (task: IProjectTask) => {
     if (!task.id || !task.project_id) return;

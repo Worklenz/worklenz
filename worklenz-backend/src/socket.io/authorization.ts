@@ -6,6 +6,8 @@ import { NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE } from "../shared/gue
 import { canUserAccessTaskDetail, canUserEditTask } from "../shared/assignee-task-scope";
 import { ISocketSession } from "../interfaces/socket-session";
 import { IPassportSession } from "../interfaces/passport-session";
+import { checkTaskRolePermission, checkProjectRolePermission } from "../shared/project-role-permissions";
+import { PROJECT_ROLE_PERMISSIONS, ProjectRolePermission } from "../shared/organization-permissions";
 
 /**
  * Verify user has access to a task via their team
@@ -37,6 +39,8 @@ export async function verifyTaskAccessSocket(
     if (!result.rowCount || result.rowCount <= 0) {
       return false;
     }
+
+    if (!(await checkTaskRolePermission(userId, taskId, PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT)).allowed) return false;
 
     const { session } = socket.request as ISocketSession;
     // Assignee-scope + notification/mention exception (no deep-link signal on sockets)
@@ -78,7 +82,8 @@ export async function verifyNonGuestTaskAccessSocket(
     if (!mayAccess) return false;
 
     // TVR-13: mutations require direct assignee (or exempt); parent-context is read-only
-    return canUserEditTask(userId, taskId, sessionUser);
+    return (await canUserEditTask(userId, taskId, sessionUser)) &&
+      (await checkTaskRolePermission(userId, taskId, PROJECT_ROLE_PERMISSIONS.EDIT_TASKS)).allowed;
   } catch (error) {
     log_error(`Error verifying non-guest task access: ${error}`);
     return false;
@@ -87,7 +92,8 @@ export async function verifyNonGuestTaskAccessSocket(
 
 export async function verifyNonGuestProjectAccessSocket(
   socket: Socket,
-  projectId: string
+  projectId: string,
+  permission?: ProjectRolePermission
 ): Promise<boolean> {
   const userId = getLoggedInUserIdFromSocket(socket);
 
@@ -103,7 +109,9 @@ export async function verifyNonGuestProjectAccessSocket(
       LIMIT 1;
     `;
     const result = await db.query(q, [projectId, userId]);
-    return result.rowCount ? result.rowCount > 0 : false;
+    if (!result.rowCount) return false;
+    if (!(await checkProjectRolePermission(userId, projectId, PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT)).allowed) return false;
+    return !permission || (await checkProjectRolePermission(userId, projectId, permission)).allowed;
   } catch (error) {
     log_error(`Error verifying non-guest project access: ${error}`);
     return false;
@@ -136,7 +144,7 @@ export async function verifyProjectAccessSocket(
       LIMIT 1;
     `;
     const result = await db.query(q, [projectId, userId]);
-    return result.rowCount ? result.rowCount > 0 : false;
+    return !!result.rowCount && (await checkProjectRolePermission(userId, projectId, PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT)).allowed;
   } catch (error) {
     log_error(`Error verifying project access: ${error}`);
     return false;

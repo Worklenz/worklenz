@@ -48,7 +48,7 @@ export const getSoftwareProjectLabels = (
     return {
       task: translateTerm('issue', 'Issue'),
       taskPlural: translateTerm('issues', 'Issues'),
-      createTask: translateTerm('createIssue', 'Create Issue'),
+      createTask: translateTerm('createIssue', 'Create work item'),
       taskList: translateTerm('issueList', 'List'),
       backlog: translateTerm('backlog', 'Backlog'),
       phase: translateTerm('sprint', 'Sprint'),

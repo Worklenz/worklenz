@@ -30,8 +30,13 @@ import { UnifiedTimelineCalculator } from './utils/unified-timeline-calculator';
 import { formatDateLocal } from './utils/date-utils';
 import { createHorizontalScrollSync } from './utils/horizontal-scroll-sync';
 import { getColumnWidth } from './constants/gantt-constants';
+import { buildRoadmapExportRows, RoadmapExportFormat } from './utils/roadmap-export';
+import { exportRoadmapFile } from './services/roadmap-export.api';
+import { downloadBlob } from '@/lib/reporting/download-file';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useOrderedStatuses } from '@/hooks/useOrderedStatuses';
+import { canReorderStatuses } from '@/utils/status-category-order';
 import {
   setShowTaskDrawer,
   setSelectedTaskId,
@@ -102,14 +107,15 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   const [expandedSectionPositions, setExpandedSectionPositions] = useState<Map<string, number>>(new Map());
   const [isInitialized, setIsInitialized] = useState(false);
   const [highlightedDateRange, setHighlightedDateRange] = useState<{ start: Date; end: Date } | null>(null);
+  const [exporting, setExporting] = useState(false);
   const timelineRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
   const taskListRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // Get statuses and priorities from Redux
-  const statuses = useAppSelector(state => state.taskStatusReducer?.status || []);
+  // Get statuses (configured category order) and priorities from Redux
+  const statuses = useOrderedStatuses();
   const statusCategories = useAppSelector(state => state.taskStatusReducer?.statusCategories || []);
   const priorities = useAppSelector(state => state.priorityReducer?.priorities || []);
   const currentProject = useAppSelector(state => state.projectReducer?.project);
@@ -945,6 +951,13 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
         return;
       }
 
+      if (!canReorderStatuses(statuses, oldIndex, newIndex)) {
+        message.info(t('statusReorderSameCategory', {
+          defaultValue: 'Statuses can only be reordered within the same category.',
+        }));
+        return;
+      }
+
       const reorderedStatuses = [...statuses];
       const [moved] = reorderedStatuses.splice(oldIndex, 1);
       reorderedStatuses.splice(newIndex, 0, moved);
@@ -972,7 +985,7 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
         message.error(err?.data?.message || 'Failed to update status order');
       }
     },
-    [projectId, statuses, dispatch, refetchTasks]
+    [projectId, statuses, dispatch, refetchTasks, t]
   );
 
   const authUser = useAppSelector(state => state.auth?.user);
@@ -1276,6 +1289,37 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
     }).filter(item => item.task);
   }, [expandedTasks, tasks, expandedSectionPositions]);
 
+  const handleExport = async (format: RoadmapExportFormat) => {
+    if (!projectId || exporting || loading || tasksError || (groupingMode === 'phase' && phasesError)) return;
+    const rows = buildRoadmapExportRows(tasks);
+
+    const groupingKey =
+      groupingMode === 'status'
+        ? 'grouping.status'
+        : groupingMode === 'priority'
+          ? 'grouping.priority'
+          : 'grouping.phase';
+    const groupingFallback =
+      groupingMode === 'status' ? 'Status' : groupingMode === 'priority' ? 'Priority' : 'Phase';
+
+    setExporting(true);
+    try {
+      const { blob, fileName } = await exportRoadmapFile({
+        project_id: projectId,
+        format,
+        group_by: groupingMode,
+        grouping_label: t(groupingKey, { defaultValue: groupingFallback }),
+        rows,
+      });
+      downloadBlob(blob, fileName);
+    } catch (error) {
+      console.error('Roadmap export failed', error);
+      message.error(t('toolbar.exportFailed', { defaultValue: 'Could not export the roadmap. Try again.' }));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (tasksError || phasesError) {
     message.error('Failed to load Gantt chart data');
   }
@@ -1342,6 +1386,9 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
             dateRange={dateRange}
             onScrollToToday={handleScrollToToday}
             onToggleFullscreen={handleToggleFullscreen}
+            onExport={handleExport}
+            exporting={exporting}
+            exportDisabled={loading || Boolean(tasksError) || (groupingMode === 'phase' && Boolean(phasesError))}
           />
           <div
             className="flex flex-1 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"

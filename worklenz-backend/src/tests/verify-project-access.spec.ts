@@ -8,6 +8,9 @@ jest.mock("../config/db", () => ({
 jest.mock("../shared/utils", () => ({
   log_error: jest.fn(),
 }));
+jest.mock("../shared/project-role-permissions", () => ({
+  checkProjectRolePermission: jest.fn().mockResolvedValue({ allowed: true }),
+}));
 
 import db from "../config/db";
 import verifyProjectAccess, {

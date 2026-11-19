@@ -54,6 +54,12 @@ export const DocsDocumentEditor = ({
   onReady,
 }: DocsDocumentEditorProps) => {
   const { t } = useTranslation('project-view-docs');
+  const translationRef = useRef(t);
+  translationRef.current = t;
+  const resolvePlaceholder = () =>
+    translationRef.current('writingPlaceholder', {
+      defaultValue: "Write, '/' for blocks, '@' for members, '#' for tasks",
+    });
   const commands = useDocsBlockCommands();
   const commandsRef = useRef(commands);
   commandsRef.current = commands;
@@ -85,9 +91,7 @@ export const DocsDocumentEditor = ({
       createSlashCommands(commandsRef, slashMenuRef),
       createDocumentTaskItem(t('toggleItem', { defaultValue: 'Toggle to-do' })),
       Placeholder.configure({
-        placeholder: t('writingPlaceholder', {
-          defaultValue: "Write, '/' for blocks, '@' for members, '#' for tasks",
-        }),
+        placeholder: resolvePlaceholder,
       }),
       MemberMention,
       TaskMention,
@@ -164,6 +168,11 @@ export const DocsDocumentEditor = ({
     callbacks.current.onReady?.(editor);
     return () => callbacks.current.onReady?.(null);
   }, [editor]);
+
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    editor.view.dispatch(editor.state.tr);
+  }, [editor, t]);
 
   useEffect(() => registerDocsEditorRelease(() => setReleased(true)), []);
 

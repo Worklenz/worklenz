@@ -336,6 +336,7 @@ const DocsEditor = ({
             variant="borderless"
             value={title}
             aria-label={t('pageTitle', { defaultValue: 'Page title' })}
+            placeholder={t('untitled', { defaultValue: 'Untitled' })}
             onChange={event => onTitleChange(event.target.value)}
             style={{ color: token.colorText }}
           />

@@ -16,6 +16,29 @@ export const selectGrouping = (state: RootState) => state.taskManagement.groupin
 export const selectLoading = (state: RootState) => state.taskManagement.loading;
 export const selectError = (state: RootState) => state.taskManagement.error;
 export const selectLoadedProjectId = (state: RootState) => state.taskManagement.loadedProjectId;
+export const selectShouldFetchInitialTaskList = (state: RootState, projectId?: string) =>
+  Boolean(projectId) && state.taskManagement.loadedProjectId !== projectId &&
+  !state.taskManagement.loading && !state.taskManagement.loadingColumns &&
+  !state.taskManagement.error;
+// Share filter derivation across rows instead of allocating arrays on every dispatch.
+const haveSameFilterIds = (previous: readonly unknown[], next: readonly unknown[]) =>
+  previous.length === next.length && previous.every((id, index) => id === next[index]);
+export const selectTaskListMemberIds = createSelector(
+  [(state: RootState) => state.taskReducer.taskAssignees],
+  members => members.filter(member => member.selected).map(member => member.id),
+  { memoizeOptions: { resultEqualityCheck: haveSameFilterIds } }
+);
+export const selectTaskListLabelIds = createSelector(
+  [(state: RootState) => state.taskReducer.labels],
+  labels => labels.filter(label => label.selected).map(label => label.id),
+  { memoizeOptions: { resultEqualityCheck: haveSameFilterIds } }
+);
+export const selectHasTaskListFilters = (state: RootState, includePhases: boolean) =>
+  (includePhases && state.taskReducer.phases.length > 0) ||
+  state.taskReducer.priorities.length > 0 ||
+  state.taskReducer.statuses.length > 0 ||
+  selectTaskListLabelIds(state).length > 0 ||
+  selectTaskListMemberIds(state).length > 0;
 export const selectSelectedPriorities = (state: RootState) =>
   state.taskManagement.selectedPriorities;
 export const selectSearch = (state: RootState) => state.taskManagement.search;

@@ -53,7 +53,7 @@
   "errorLoadingTasks": "Fehler beim Laden der Aufgaben",
   "noTasksFound": "Keine Aufgaben gefunden",
   "noIssuesFound": "Keine Probleme gefunden",
-  "createIssue": "Problem erstellen",
+  "createIssue": "Arbeitselement erstellen",
   "newIssueNamePlaceholder": "Schreiben Sie einen Ausgabetitel",
   "loadingFilters": "Filter werden geladen...",
   "failedToUpdateColumnOrder": "Fehler beim Aktualisieren der Spaltenreihenfolge",

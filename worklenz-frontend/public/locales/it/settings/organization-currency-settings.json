@@ -1,0 +1,15 @@
+{
+  "pageTitle": "Valuta dell’organizzazione",
+  "pageSubtitle": "Imposta la valuta di base dell’organizzazione. I totali finanziari saranno convertiti in questa valuta usando i tassi di cambio aggiornati.",
+  "save": "Salva",
+  "saveChanges": "Salva modifiche",
+  "adminOnly": "Solo i proprietari e gli amministratori dell’organizzazione possono modificare questa impostazione.",
+  "successMessage": "Valuta di base dell’organizzazione impostata su {{currency}}",
+  "errorMessage": "Impossibile salvare l’impostazione della valuta",
+  "selectAriaLabel": "Valuta di base dell’organizzazione",
+  "ratesCardTitle": "Tassi di cambio aggiornati - 1 {{currency}} =",
+  "ratesUpdated": "Aggiornato: {{time}}",
+  "refreshRatesTooltip": "Aggiorna tassi",
+  "refreshRatesAriaLabel": "Aggiorna tassi di cambio",
+  "noRateData": "Nessun dato sui tassi disponibile."
+}

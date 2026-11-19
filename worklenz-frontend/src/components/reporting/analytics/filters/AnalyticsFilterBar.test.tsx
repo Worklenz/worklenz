@@ -1,0 +1,142 @@
+import React from 'react';
+import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { ConfigProvider } from 'antd';
+import { AnalyticsFilterBar } from './AnalyticsFilterBar';
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (_key: string, opts?: { defaultValue?: string }) => opts?.defaultValue ?? _key,
+  }),
+}));
+
+vi.mock('@/hooks/useAppSelector', () => ({
+  useAppSelector: (selector: (state: unknown) => unknown) =>
+    selector({ themeReducer: { mode: 'light' } }),
+}));
+
+vi.mock('@/shared/antd-imports', async () => {
+  const antd = await import('antd');
+  const icons = await import('@ant-design/icons');
+  return { ...antd, ...icons };
+});
+
+const PROJECT_OPTIONS = [
+  { value: 'p1', label: 'Alpha' },
+  { value: 'p2', label: 'Beta' },
+];
+
+const TEAM_OPTIONS = [
+  { value: 't-default', label: 'Default Team' },
+  { value: 't-other', label: 'Other Team' },
+];
+
+const renderBar = (props: Partial<React.ComponentProps<typeof AnalyticsFilterBar>> = {}) => {
+  const onProjectsChange = vi.fn();
+  const onTeamsChange = vi.fn();
+  const utils = render(
+    <ConfigProvider>
+      <AnalyticsFilterBar
+        projectOptions={PROJECT_OPTIONS}
+        selectedProjectIds={['p1']}
+        onProjectsChange={onProjectsChange}
+        teamOptions={TEAM_OPTIONS}
+        selectedTeamIds={['t-other']}
+        onTeamsChange={onTeamsChange}
+        defaultTeamIds={['t-default']}
+        {...props}
+      />
+    </ConfigProvider>
+  );
+  return { onProjectsChange, onTeamsChange, ...utils };
+};
+
+describe('AnalyticsFilterBar', () => {
+  it('restores defaultTeamIds on Clear instead of emptying teams', async () => {
+    const { onProjectsChange, onTeamsChange } = renderBar();
+
+    fireEvent.click(screen.getByRole('button', { name: /Filter/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Clear' }));
+
+    expect(onProjectsChange).toHaveBeenCalledWith([]);
+    expect(onTeamsChange).toHaveBeenCalledWith(['t-default']);
+    expect(onTeamsChange).not.toHaveBeenCalledWith([]);
+  });
+
+  it('does not treat the default team alone as an active filter', () => {
+    renderBar({
+      selectedProjectIds: [],
+      selectedTeamIds: ['t-default'],
+    });
+
+    expect(screen.getByRole('button', { name: 'Filter' })).toBeInTheDocument();
+    expect(screen.queryByText('1')).not.toBeInTheDocument();
+  });
+
+  it('enables Clear when every team is removed and the default set is nonempty', async () => {
+    const { onProjectsChange, onTeamsChange } = renderBar({
+      selectedProjectIds: [],
+      selectedTeamIds: [],
+      defaultTeamIds: ['t-default'],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Filter/ }));
+    const clearButton = await screen.findByRole('button', { name: 'Clear' });
+    expect(clearButton).toBeEnabled();
+
+    fireEvent.click(clearButton);
+
+    expect(onProjectsChange).toHaveBeenCalledWith([]);
+    expect(onTeamsChange).toHaveBeenCalledWith(['t-default']);
+  });
+
+  const datePill = (label: string) =>
+    screen.getByRole('button', { name: new RegExp(`^caret-down\\s+${label}`) });
+
+  it('shows Classic Time Logs date presets and applies a selection via onDateChange', async () => {
+    const onDateChange = vi.fn();
+    renderBar({
+      selectedProjectIds: [],
+      selectedTeamIds: ['t-default'],
+      datePreset: 'last_30_days',
+      customRange: null,
+      onDateChange,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Filter/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /caret-down\s+Last 30 Days/ }));
+
+    expect(await screen.findByRole('option', { name: /This Week/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Today/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Custom Range/ })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /This quarter/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('option', { name: /This Week/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(onDateChange).toHaveBeenCalledWith('this_week', null);
+  });
+
+  it('disables Apply when Custom Range is selected without dates', async () => {
+    renderBar({
+      selectedProjectIds: [],
+      selectedTeamIds: ['t-default'],
+      datePreset: 'last_30_days',
+      customRange: null,
+      onDateChange: vi.fn(),
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Filter/ }));
+    fireEvent.click(datePill('Last 30 Days'));
+    fireEvent.click(await screen.findByRole('option', { name: /Custom Range/ }));
+
+    expect(screen.getByRole('button', { name: 'Apply' })).toBeDisabled();
+  });
+  it('hides custom ranges from preset-only callers even when explicitly allowed', async () => {
+    renderBar({ datePreset: 'last_30_days', onDatePresetChange: vi.fn(),
+      availableDatePresets: ['last_30_days', 'custom'] });
+    fireEvent.click(screen.getByRole('button', { name: /Filter/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /caret-down\s+Last 30 Days/ }));
+    expect(screen.queryByRole('option', { name: /Custom Range/ })).not.toBeInTheDocument();
+  });
+});

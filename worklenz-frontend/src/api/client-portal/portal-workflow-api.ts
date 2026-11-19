@@ -21,7 +21,7 @@ import type {
   PostMessageResult,
   PreviewProjectResponse,
   PreviewResponse,
-  PreviewUser,
+  PreviewUsersResponse,
   ResubmitApprovalRequest,
   StartThreadRequest,
   Thread,
@@ -185,7 +185,7 @@ export const portalWorkflowApi = clientPortalApi.injectEndpoints({
 
     // ─── Preview as client ──────────────────────────────────────────────────
 
-    getPreviewUsers: builder.query<ServerEnvelope<PreviewUser[]>, void>({
+    getPreviewUsers: builder.query<ServerEnvelope<PreviewUsersResponse>, void>({
       query: () => `${PORTAL_V2}/preview/users`,
       providesTags: ['PortalPreview', 'PortalClientUsers'],
     }),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import reducer, { openAddCompanyUserDrawer, toggleAddClientDrawer } from './clients-slice';
+import reducer, { openAddClientWizard, openAddCompanyUserDrawer, toggleAddClientDrawer } from './clients-slice';
 
 const initial = () => reducer(undefined, { type: 'init' });
 
@@ -12,6 +12,15 @@ describe('Add Client drawer', () => {
     const state = reducer(initial(), toggleAddClientDrawer());
 
     expect(state).toMatchObject({ isAddClientDrawerOpen: true, addClientPreset: null });
+  });
+
+  it('opens on a new client or an existing organization', () => {
+    expect(reducer(initial(), openAddClientWizard('new_organization')).addClientPreset).toEqual({
+      method: 'new_organization',
+    });
+    expect(reducer(initial(), openAddClientWizard('existing_organization')).addClientPreset).toEqual({
+      method: 'existing_organization',
+    });
   });
 
   it('opens on "Add a client user" for a company', () => {

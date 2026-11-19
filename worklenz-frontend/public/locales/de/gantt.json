@@ -63,7 +63,14 @@
     "viewBy": "Ansicht nach",
     "sortBy": "Sortieren nach",
     "sortManual": "Manuell",
-    "sortChronological": "Chronologisch"
+    "sortChronological": "Chronologisch",
+    "export": "Exportieren",
+    "exportPdf": "PDF",
+    "exportExcel": "Excel",
+    "exportRoadmap": "Roadmap exportieren",
+    "exportRoadmapHint": "Diese Roadmap als PDF oder Excel-Datei herunterladen",
+    "exportFailed": "Roadmap konnte nicht exportiert werden. Bitte erneut versuchen.",
+    "exportEmpty": "Noch nichts zu exportieren."
   },
   "viewMode": {
     "day": "Tag",
@@ -94,5 +101,6 @@
     "dragDisabledInChronological": "Wechseln Sie zur manuellen Reihenfolge, um die Phasen per Drag & Drop neu anzuordnen"
   },
   "unscheduledTasksTitle": "Ungeplante Aufgaben",
-  "noUnscheduledTasks": "Keine ungeplanten Aufgaben verfügbar."
+  "noUnscheduledTasks": "Keine ungeplanten Aufgaben verfügbar.",
+  "statusReorderSameCategory": "Status können nur innerhalb derselben Kategorie neu angeordnet werden."
 }

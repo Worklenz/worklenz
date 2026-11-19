@@ -1,0 +1,8 @@
+{
+  "language": "Lingua",
+  "language_required": "La lingua è obbligatoria",
+  "time_zone": "Fuso orario",
+  "time_zone_required": "Il fuso orario è obbligatorio",
+  "save_changes": "Salva modifiche",
+  "save": "Salva"
+}

@@ -1,4 +1,4 @@
-import { CLIENT_ROLE_DEFINITIONS } from "../../shared/client-portal-permissions";
+import { CLIENT_ROLE_DEFINITIONS, ClientContactRole } from "../../shared/client-portal-permissions";
 import {
   getClientDashboard,
   getClientProject,
@@ -13,10 +13,11 @@ import {
 import { getDashboardLayout } from "./dashboard-layout.service";
 import { notFound } from "./errors";
 import { getPortalSettingsV2 } from "./settings.service";
-import { loadSubjectByContactId } from "./subject";
+import { ClientSubject } from "./subject";
 import { listClientThreads } from "./client-write.service";
 import { Queryable } from "./types";
 import { USER_VIEW_SQL } from "./users.service";
+import { subjectProjectsSql } from "./scope";
 
 /**
  * "Preview as client": what one specific client user sees, read-only. It is built by calling the SAME
@@ -26,6 +27,8 @@ import { USER_VIEW_SQL } from "./users.service";
  * the client router.
  */
 
+export type PreviewUserStatus = "active" | "invited";
+
 export interface PreviewUserView {
   id: string;
   name: string;
@@ -33,36 +36,80 @@ export interface PreviewUserView {
   organization_id: string;
   organization_name: string;
   role: string;
+  status: PreviewUserStatus;
+}
+
+export interface PreviewUsersResult {
+  users: PreviewUserView[];
+  /** False when the team has no client users left to preview or invite (deleted accounts do not count). */
+  has_client_users: boolean;
 }
 
 /**
- * Active users who can open at least one portal project. Client Admins inherit org portal projects
- * (no client_contact_project_access rows), so the filter uses USER_VIEW_SQL.projects rather than
- * assignment rows alone. Invited or Deactivated users cannot be previewed.
+ * Active and invited users who can open at least one portal project. Client Admins inherit org portal
+ * projects (no client_contact_project_access rows). An invited user has not accepted yet; the preview uses the same project
+ * and visibility rules they will be held to after they join. Deactivated and deleted users are excluded.
  */
-export async function listPreviewUsers(q: Queryable, teamId: string): Promise<PreviewUserView[]> {
-  const result = await q.query(
-    `SELECT u.id, u.name, u.email, u.client_id, u.organization_name, u.role
-       FROM (${USER_VIEW_SQL}) u
-      WHERE u.status_key = 'active'
-        AND json_array_length(u.projects) > 0
-      ORDER BY u.organization_name, u.name`,
-    [teamId]
-  );
-  return result.rows.map(row => ({
-    id: row.id,
-    name: row.name,
-    email: row.email,
-    organization_id: row.client_id,
-    organization_name: row.organization_name,
-    role: row.role,
-  }));
+export async function listPreviewUsers(q: Queryable, teamId: string): Promise<PreviewUsersResult> {
+  const [usersResult, anyResult] = await Promise.all([
+    q.query(
+      `SELECT u.id, u.name, u.email, u.client_id, u.organization_name, u.role, u.status_key
+         FROM (${USER_VIEW_SQL}) u
+         JOIN clients org ON org.id = u.client_id AND org.status <> 'inactive'
+        WHERE u.status_key IN ('active', 'invited')
+          AND EXISTS (${subjectProjectsSql("u.id", "u.client_id", "$1")})
+        ORDER BY u.organization_name,
+                 CASE WHEN u.status_key = 'active' THEN 0 ELSE 1 END,
+                 u.name`,
+      [teamId]
+    ),
+    q.query(
+      `SELECT EXISTS (
+         SELECT 1 FROM (${USER_VIEW_SQL}) u WHERE u.status_key <> 'deleted'
+       ) AS has_client_users`,
+      [teamId]
+    ),
+  ]);
+
+  return {
+    users: usersResult.rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      organization_id: row.client_id,
+      organization_name: row.organization_name,
+      role: row.role,
+      status: row.status_key === "invited" ? "invited" : "active",
+    })),
+    has_client_users: anyResult.rows[0]?.has_client_users === true,
+  };
 }
 
-async function subjectFor(q: Queryable, teamId: string, contactId: string) {
-  const subject = await loadSubjectByContactId(q, teamId, contactId);
-  if (!subject) throw notFound("Client user");
-  return subject;
+/**
+ * Subject for the staff preview. Active users and invited users who have not accepted yet can be
+ * previewed. This does not grant a client session: the client API still resolves an active login only.
+ */
+async function subjectFor(q: Queryable, teamId: string, contactId: string): Promise<ClientSubject> {
+  const result = await q.query(
+    `SELECT u.id, u.name, u.email, u.client_id, u.role, cc.client_user_id, cc.team_id
+       FROM (${USER_VIEW_SQL}) u
+       JOIN client_contacts cc ON cc.id = u.id
+       JOIN clients org ON org.id = u.client_id AND org.status <> 'inactive'
+      WHERE u.id = $2
+        AND u.status_key IN ('active', 'invited')`,
+    [teamId, contactId]
+  );
+  const row = result.rows[0];
+  if (!row) throw notFound("Client user");
+  return {
+    contactId: row.id,
+    clientId: row.client_id,
+    teamId: row.team_id,
+    role: row.role as ClientContactRole,
+    name: row.name,
+    email: row.email,
+    clientUserId: row.client_user_id ?? null,
+  };
 }
 
 /** The whole preview for one user: dashboard, projects, approvals, change requests, discussions and the staff-only hidden panel. */

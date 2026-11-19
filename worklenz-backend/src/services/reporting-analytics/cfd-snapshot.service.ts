@@ -1,6 +1,91 @@
 import { cfdDatesInclusive } from "./cfd-date-range";
+import { PoolClient } from "pg";
 import db from "../../config/db";
+import { log_error } from "../../shared/utils";
 import { STATUS_HISTORY_RETENTION_MONTHS } from "../../shared/reporting-analytics.constants";
+
+const SNAPSHOT_WRITE_LOCK_NAME = "cfd-daily-snapshots";
+const LOCK_WAIT_MS = 5000;
+const RETRY_DELAY_MS = 50;
+
+/** Signals that a snapshot write could not acquire the shared lock in time. */
+export class CfdSnapshotLockBusyError extends Error {
+  /** Create the retryable lock-contention error. */
+  constructor() {
+    super("Timed out waiting for the CFD snapshot lock. Please try again.");
+    this.name = "CfdSnapshotLockBusyError";
+  }
+}
+
+/** Coordinate full-table writes with project-scoped writes, releasing clients before retries. */
+async function withSnapshotWriteLock<T>(
+  projectIds: string[] | undefined,
+  fn: (client: PoolClient) => Promise<T>
+): Promise<T> {
+  const deadline = Date.now() + LOCK_WAIT_MS;
+  const projects = projectIds?.length ? [...new Set(projectIds)].sort() : undefined;
+
+  while (true) {
+    const client = await db.connect();
+    let inTransaction = false;
+    let discardConnection = false;
+
+    try {
+      await client.query("BEGIN");
+      inTransaction = true;
+      const lockResult = await client.query(
+        projects
+          ? "SELECT pg_try_advisory_xact_lock_shared(hashtext($1)) AS acquired"
+          : "SELECT pg_try_advisory_xact_lock(hashtext($1)) AS acquired",
+        [SNAPSHOT_WRITE_LOCK_NAME]
+      );
+
+      let acquired = lockResult.rows[0]?.acquired === true;
+      if (acquired && projects) {
+        const projectLocks = await client.query(
+          `SELECT bool_and(pg_try_advisory_xact_lock(hashtext($1), hashtext(project_id::UUID::TEXT))) AS acquired
+           FROM unnest($2::TEXT[]) AS project_id`,
+          [SNAPSHOT_WRITE_LOCK_NAME, projects]
+        );
+        acquired = projectLocks.rows[0]?.acquired === true;
+      }
+
+      if (acquired) {
+        const result = await fn(client);
+        await client.query("COMMIT");
+        inTransaction = false;
+        return result;
+      }
+
+      try {
+        await client.query("ROLLBACK");
+        inTransaction = false;
+      } catch (rollbackError) {
+        inTransaction = false;
+        discardConnection = true;
+        log_error(rollbackError);
+        throw rollbackError;
+      }
+    } catch (error) {
+      if (inTransaction) {
+        try {
+          await client.query("ROLLBACK");
+        } catch (rollbackError) {
+          discardConnection = true;
+          log_error(rollbackError);
+        }
+      }
+      throw error;
+    } finally {
+      client.release(discardConnection);
+    }
+
+    if (Date.now() >= deadline) {
+      throw new CfdSnapshotLockBusyError();
+    }
+    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+  }
+}
 
 function toDateString(value: Date | string): string {
   if (typeof value === "string") return value.slice(0, 10);
@@ -26,10 +111,7 @@ export async function captureSnapshotsForDate(
   snapshotDate: string,
   projectIds?: string[]
 ): Promise<number> {
-  const client = await db.connect();
-  try {
-    await client.query("BEGIN");
-
+  return withSnapshotWriteLock(projectIds, async client => {
     const params: unknown[] = [snapshotDate];
     let projectFilter = "";
     let deleteFilter = "snapshot_date = $1::DATE";
@@ -66,14 +148,8 @@ export async function captureSnapshotsForDate(
       params
     );
 
-    await client.query("COMMIT");
     return result.rowCount ?? 0;
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+  });
 }
 
 /**
@@ -110,51 +186,54 @@ export async function backfillRange(
 
   const allDates = cfdDatesInclusive(fromDate, toDate);
 
-  const existing = await db.query(
-    `
+  return withSnapshotWriteLock(projectIds, async client => {
+    const existing = await client.query(
+      `
     SELECT project_id::TEXT AS project_id, snapshot_date::TEXT AS snapshot_date
     FROM cfd_daily_snapshots
     WHERE project_id = ANY($1::UUID[])
       AND snapshot_date >= $2::DATE
       AND snapshot_date <= $3::DATE
     `,
-    [projectIds, fromDate, toDate]
-  );
+      [projectIds, fromDate, toDate]
+    );
 
-  const have = new Set(
-    (existing.rows as Array<{ project_id: string; snapshot_date: string }>).map(
-      r => `${r.project_id}|${toDateString(r.snapshot_date)}`
-    )
-  );
+    const have = new Set(
+      (existing.rows as Array<{ project_id: string; snapshot_date: string }>).map(
+        r => `${r.project_id}|${toDateString(r.snapshot_date)}`
+      )
+    );
 
-  const missingPairs: Array<{ project_id: string; day: string }> = [];
-  for (const projectId of projectIds) {
-    for (const day of allDates) {
-      if (!have.has(`${projectId}|${day}`)) {
-        missingPairs.push({ project_id: projectId, day });
+    const missingPairs: Array<{ project_id: string; day: string }> = [];
+    for (const projectId of projectIds) {
+      for (const day of allDates) {
+        if (!have.has(`${projectId}|${day}`)) {
+          missingPairs.push({ project_id: projectId, day });
+        }
       }
     }
-  }
-  if (missingPairs.length === 0) return 0;
+    if (missingPairs.length === 0) {
+      return 0;
+    }
 
-  const missingProjectIds = [...new Set(missingPairs.map(p => p.project_id))];
+    const missingProjectIds = [...new Set(missingPairs.map(p => p.project_id))];
 
-  // Fast path: if nothing in history for these projects, skip heavy reconstruct.
-  const historyCheck = await db.query(
-    `
+    // Fast path: if nothing in history for these projects, skip heavy reconstruct.
+    const historyCheck = await client.query(
+      `
     SELECT 1
     FROM task_status_history h
     WHERE h.project_id = ANY($1::UUID[])
     LIMIT 1
     `,
-    [missingProjectIds]
-  );
-  if ((historyCheck.rowCount ?? 0) === 0) {
-    return 0;
-  }
+      [missingProjectIds]
+    );
+    if ((historyCheck.rowCount ?? 0) === 0) {
+      return 0;
+    }
 
-  const result = await db.query(
-    `
+    const result = await client.query(
+      `
     WITH needed AS (
       SELECT * FROM unnest($1::UUID[], $2::DATE[]) AS pairs(project_id, day)
     )
@@ -178,22 +257,26 @@ export async function backfillRange(
       created_at = CURRENT_TIMESTAMP
     RETURNING id
     `,
-    [missingPairs.map(p => p.project_id), missingPairs.map(p => p.day)]
-  );
+      [missingPairs.map(p => p.project_id), missingPairs.map(p => p.day)]
+    );
 
-  return result.rowCount ?? 0;
+    return result.rowCount ?? 0;
+  });
 }
 
 /** Drop snapshot rows older than retention window. */
 export async function pruneOldSnapshots(): Promise<number> {
-  const result = await db.query(
-    `
+  return withSnapshotWriteLock(undefined, async client => {
+    const result = await client.query(
+      `
     DELETE FROM cfd_daily_snapshots
     WHERE snapshot_date < (CURRENT_DATE - ($1::INT || ' months')::INTERVAL)
     `,
-    [STATUS_HISTORY_RETENTION_MONTHS]
-  );
-  return result.rowCount ?? 0;
+      [STATUS_HISTORY_RETENTION_MONTHS]
+    );
+
+    return result.rowCount ?? 0;
+  });
 }
 
 export async function runCfdDailySnapshotJob(): Promise<{

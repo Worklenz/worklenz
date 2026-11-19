@@ -17,4 +17,9 @@ export interface IWorkLenzRequest extends Request {
   projectFileMeta?: IProjectFileMeta;
   /** Per-request cache for getProjectAccessForRequest (keyed by project id). */
   projectAccessCache?: Map<string, IProjectAccess>;
+  /**
+   * Set for guests on Planner routes who lack "View all projects".
+   * Team-wide Planner responses must omit every other project.
+   */
+  plannerVisibleProjectIds?: string[];
 }

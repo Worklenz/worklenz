@@ -6,16 +6,30 @@ const fs = require('fs');
 const path = require('path');
 
 const repoRoot = path.resolve(__dirname, '../..');
-const addonsDir = path.join(repoRoot, 'addons');
+const backendAddonsDir = path.join(__dirname, '../addons');
+const nestedAddonsDir = path.join(repoRoot, 'addons', 'worklenz-addons');
+const flatAddonsDir = path.join(repoRoot, 'addons');
 
-if (!fs.existsSync(addonsDir)) {
+const getAddonDirs = (addonsDir) => {
+  if (!fs.existsSync(addonsDir)) return [];
+  return fs
+    .readdirSync(addonsDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'worklenz-addons')
+    .map((entry) => [entry.name, path.join(addonsDir, entry.name)]);
+};
+
+// Priority: backend-nested addons > nested worklenz-addons repository > flat addons directory.
+const addonDirsById = new Map();
+for (const dir of [flatAddonsDir, nestedAddonsDir, backendAddonsDir]) {
+  for (const [addonId, addonDir] of getAddonDirs(dir)) {
+    addonDirsById.set(addonId, addonDir);
+  }
+}
+const addonDirs = [...addonDirsById.entries()];
+
+if (addonDirs.length === 0) {
   process.exit(0);
 }
-
-const addonDirs = fs
-  .readdirSync(addonsDir, { withFileTypes: true })
-  .filter((d) => d.isDirectory())
-  .map((d) => d.name);
 
 const sdkSource = path.join(__dirname, '../src/addons/addon-sdk.ts');
 const sdkBuildFile = path.join(__dirname, '../build/addons/addon-sdk.js');
@@ -93,8 +107,8 @@ fs.writeFileSync(
   )
 );
 
-for (const addonId of addonDirs) {
-  const tsconfigPath = path.join(addonsDir, addonId, 'backend', 'tsconfig.json');
+for (const [addonId, addonDir] of addonDirs) {
+  const tsconfigPath = path.join(addonDir, 'backend', 'tsconfig.json');
   if (!fs.existsSync(tsconfigPath)) {
     continue;
   }
@@ -111,7 +125,7 @@ for (const addonId of addonDirs) {
     );
 
     // Normalize any relative addon-sdk imports in emitted dist files to @worklenz/addon-sdk
-    const distDir = path.join(addonsDir, addonId, 'backend', 'dist');
+    const distDir = path.join(addonDir, 'backend', 'dist');
     if (fs.existsSync(distDir)) {
       const walk = (dir) => {
         for (const file of fs.readdirSync(dir)) {

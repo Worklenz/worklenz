@@ -266,7 +266,8 @@
       "attachment": "anexo",
       "comment": "comentário",
       "assignee": "responsável",
-      "archive": "arquivo"
+      "archive": "arquivo",
+      "project": "projeto"
     },
     "historyLockedBoundary": "O histórico de atividade está limitado aos últimos 90 dias neste plano",
     "historyLockedTitle": "Histórico de atividade bloqueado",

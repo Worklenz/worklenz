@@ -1,0 +1,126 @@
+{
+  "page": {
+    "title": "Panoramica",
+    "description": "Ciò che richiede la tua attenzione tra clienti, progetti e discussioni.",
+    "editingHint": "Trascina i widget per spostarli, ridimensionarli dall'angolo o nascondere quelli che non ti servono.",
+    "loadFailed": "Impossibile caricare la panoramica."
+  },
+  "widget": {
+    "viewAll": "Visualizza tutto",
+    "retry": "Riprova",
+    "error": "Impossibile caricare questo widget."
+  },
+  "edit": {
+    "customize": "Personalizza",
+    "done": "Fatto",
+    "cancel": "Annulla",
+    "reset": "Ripristina",
+    "resetConfirm": "Ripristinare il layout predefinito?",
+    "saveFailed": "Impossibile salvare il layout.",
+    "resetFailed": "Impossibile reimpostare il layout.",
+    "drag": "Trascina per riordinare {{title}}",
+    "size": "Dimensione di {{title}}",
+    "size_s": "S",
+    "size_m": "M",
+    "size_l": "l",
+    "hide": "Nascondi widget",
+    "show": "Mostra widget",
+    "hideNamed": "Nascondi {{title}}",
+    "showNamed": "Mostra {{title}}",
+    "save": "Salva",
+    "saved": "Panoramica salvata",
+    "resetDone": "Panoramica ripristinata al layout predefinito",
+    "resetConfirmHelp": "Il tuo arrangiamento salvato verrà rimosso.",
+    "addWidget": "Aggiungi widget",
+    "emptyTitle": "Nessun widget nella panoramica",
+    "emptyHelp": "Scegli Personalizza, quindi Aggiungi widget per ripristinarne alcuni.",
+    "widgetSettings": "{{name}} impostazioni",
+    "settingsFor": "Impostazioni per {{name}}",
+    "width": "Larghezza",
+    "widthQuarter": "Larghezza quarto",
+    "widthThird": "Un terzo",
+    "widthHalf": "Mezza larghezza",
+    "widthTwoThirds": "Due terzi",
+    "widthThreeQuarters": "Tre quarti",
+    "widthFull": "Tutta la larghezza",
+    "moveEarlier": "Muoviti prima",
+    "moveLater": "Muoviti più tardi",
+    "leaveTitle": "Uscire senza salvare?",
+    "leaveBody": "Le modifiche alla panoramica non sono state salvate e andranno perse.",
+    "leave": "Lascia",
+    "stay": "Rimani"
+  },
+  "status": {
+    "awaiting": "In attesa",
+    "approved": "Approvato",
+    "changes_requested": "Modifiche richieste",
+    "cr_submitted": "Inviato",
+    "cr_under_review": "In corso di revisione",
+    "cr_more_info": "Maggiori informazioni",
+    "cr_approved": "Approvato",
+    "cr_in_progress": "In corso",
+    "cr_completed": "Completato",
+    "cr_rejected": "Rifiutato",
+    "cr_cancelled": "Annullato"
+  },
+  "widgets": {
+    "kpi_awaiting_approvals": {
+      "title": "In attesa di approvazioni",
+      "sub": "{{count}} in ritardo"
+    },
+    "kpi_open_change_requests": {
+      "title": "Modifica le richieste da rivedere",
+      "sub": "{{count}} in attesa del cliente"
+    },
+    "kpi_delayed_milestones": {
+      "title": "Traguardi ritardati",
+      "sub": "Attraverso i progetti del portale"
+    },
+    "kpi_unread_discussions": {
+      "title": "Discussioni non lette",
+      "sub": "Con nuovi messaggi per i clienti"
+    },
+    "kpi_overdue_invoices": {
+      "title": "Fatture scadute",
+      "none": "Niente di scaduto"
+    },
+    "pending_approvals": {
+      "title": "In attesa di approvazioni",
+      "empty": "Nessuna approvazione è in attesa di un cliente.",
+      "overdue": "In ritardo · {{date}}",
+      "due": "Scadenza {{date}}"
+    },
+    "change_requests": {
+      "title": "Modifica le richieste da rivedere",
+      "empty": "Nessuna richiesta di modifica necessita di revisione."
+    },
+    "upcoming_milestones": {
+      "title": "Prossimi traguardi",
+      "empty": "Nessuna pietra miliare aperta sui progetti del portale."
+    },
+    "latest_discussions": {
+      "title": "Ultime discussioni",
+      "empty": "Nessuna discussione ancora"
+    },
+    "mentions_me": {
+      "title": "Menzioni di me",
+      "empty": "Nessuno ti ha menzionato in una discussione.",
+      "row": "{{name}} in {{project}}"
+    },
+    "approvals_by_status": {
+      "title": "Approvazioni per stato",
+      "empty": "Nessuna approvazione è stata ancora inviata."
+    },
+    "cr_by_status": {
+      "title": "Modifica pipeline della richiesta",
+      "empty": "Nessuna richiesta di modifica ancora."
+    },
+    "needs_attention": {
+      "title": "Ha bisogno di attenzione",
+      "empty": "Niente ha bisogno di attenzione. Bel lavoro.",
+      "approval_overdue": "Approvazione in ritardo",
+      "change_request_review": "Richiesta di revisione ad alta priorità",
+      "milestone_late": "Traguardo tardivo"
+    }
+  }
+}

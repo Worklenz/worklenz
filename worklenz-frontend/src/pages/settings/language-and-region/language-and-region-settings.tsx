@@ -76,6 +76,10 @@ const LanguageAndRegionSettings = () => {
       value: Language.FR,
       label: 'Français',
     },
+    {
+      value: Language.IT,
+      label: 'Italiano',
+    },
   ];
 
   const handleLanguageChange = async (values: { language?: ILanguageType; timezone?: string }) => {

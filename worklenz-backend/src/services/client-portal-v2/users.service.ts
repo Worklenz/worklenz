@@ -17,6 +17,7 @@ import { AuditActor, recordAuditEvent } from "./audit.service";
 import { PortalError, badRequest, conflict, notFound } from "./errors";
 import { lockOrganization } from "./organization-lock";
 import { assignContactToProject, removeContactFromProject } from "./project-core";
+import { projectOpenForPortalSql } from "./scope";
 import { Queryable } from "./types";
 
 /**
@@ -99,12 +100,14 @@ export const USER_VIEW_SQL = `
                  JOIN project_client_settings pcs
                    ON pcs.project_id = p.id AND pcs.portal_enabled IS TRUE
                 WHERE p.client_id = cc.client_id AND p.team_id = cc.team_id
+                  AND ${projectOpenForPortalSql("p")}
              )
              ELSE (
                SELECT json_agg(json_build_object('id', p.id, 'name', p.name) ORDER BY p.name)
                  FROM client_contact_project_access a
                  JOIN projects p ON p.id = a.project_id AND p.client_id = cc.client_id
                 WHERE a.client_contact_id = cc.id
+                  AND ${projectOpenForPortalSql("p")}
              )
            END,
            '[]'::json

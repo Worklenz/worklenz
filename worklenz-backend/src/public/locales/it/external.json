@@ -1,0 +1,64 @@
+{
+  "slack": {
+    "task_created": {
+      "title": "Attività creata"
+    },
+    "task_assigned": {
+      "title": "Attività assegnata"
+    },
+    "task_completed": {
+      "title": "Attività completata"
+    },
+    "comment_added": {
+      "title": "Commento aggiunto"
+    },
+    "priority_changed": {
+      "title": "Priorità modificata"
+    },
+    "due_date_changed": {
+      "title": "Scadenza modificata"
+    },
+    "task_updated": {
+      "title": "Attività aggiornata"
+    },
+    "task_status_changed": {
+      "title": "Stato dell’attività modificato"
+    },
+    "viewTask": "Visualizza attività",
+    "assignedTo": "👥 Assegnata a",
+    "assignedBy": "👤 Assegnata da",
+    "statusChange": "📊 Cambio di stato",
+    "changedBy": "👤 Modificato da",
+    "createdBy": "👤 Creato da",
+    "commentedBy": "💬 Commentato da",
+    "updatedBy": "👤 Aggiornato da",
+    "status": "📊 Stato",
+    "currentStatus": "📊 Stato attuale",
+    "priority": "Priorità",
+    "dueDate": "Scadenza",
+    "assignees": "👥 Assegnatari",
+    "comment": "Commento",
+    "priorityChanged": "🔺 Priorità modificata",
+    "dueDateChanged": "📅 Scadenza modificata",
+    "updatedByWithUser": "Aggiornato da {{user}}"
+  },
+  "teams": {
+    "task": "Attività",
+    "project": "Progetto",
+    "assignees": "Assegnatari",
+    "assignedBy": "Assegnata da",
+    "createdBy": "Creato da",
+    "commentedBy": "Commentato da",
+    "updatedBy": "Aggiornato da",
+    "status": "Stato",
+    "priority": "Priorità",
+    "dueDate": "Scadenza",
+    "previousStatus": "Stato precedente",
+    "newStatus": "Nuovo stato",
+    "previousPriority": "Priorità precedente",
+    "newPriority": "Nuova priorità",
+    "statusChange": "Cambio di stato",
+    "changedBy": "Modificato da",
+    "viewTask": "Visualizza attività"
+  }
+}

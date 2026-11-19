@@ -1,0 +1,25 @@
+{
+  "connect": "Connetti",
+  "comingSoon": "In arrivo",
+  "availableSoon": "Disponibile a breve",
+  "slack": {
+    "title": "Slack",
+    "description": "Integra Slack per ricevere notifiche in tempo reale, creare attività e sincronizzare il team."
+  },
+  "teams": {
+    "title": "Microsoft Teams",
+    "description": "Integra Microsoft Teams con il tuo team Worklenz per ricevere notifiche in tempo reale, creare attività da Teams e mantenere il team sincronizzato tra le due piattaforme."
+  },
+  "github": {
+    "title": "GitHub",
+    "description": "Collega i repository GitHub per monitorare commit, pull request e issue insieme alle attività."
+  },
+  "googleDrive": {
+    "title": "Google Drive",
+    "description": "Connetti Google Drive per allegare file, condividere documenti e collaborare con il team ai risultati del progetto."
+  },
+  "googleCalendar": {
+    "title": "Google Calendar",
+    "description": "Sincronizza attività e scadenze con Google Calendar per gestire la pianificazione, impostare promemoria e non perdere le tappe importanti del progetto."
+  }
+}

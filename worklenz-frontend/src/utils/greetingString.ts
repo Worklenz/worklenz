@@ -59,6 +59,12 @@ export const greetingString = (name: string): string => {
     morning = 'Bonjour';
     afternoon = 'Bon après-midi';
     evening = 'Bonsoir';
+  } else if (language === 'it') {
+    greetingPrefix = 'Ciao';
+    greetingSuffix = '';
+    morning = 'Buongiorno';
+    afternoon = 'Buon pomeriggio';
+    evening = 'Buonasera';
   }
 
   // Get the localized time period based on the current time
@@ -68,7 +74,7 @@ export const greetingString = (name: string): string => {
   else localizedTimePeriod = evening;
 
   // Handle Chinese, Polish, and French languages which have custom sentence structures
-  if (language === 'zh_cn' || language === 'pl' || language === 'fr') {
+  if (language === 'zh_cn' || language === 'pl' || language === 'fr' || language === 'it') {
     return `${greetingPrefix} ${name}, ${localizedTimePeriod}!`;
   }
 

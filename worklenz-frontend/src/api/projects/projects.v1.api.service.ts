@@ -15,6 +15,7 @@ export const projectsApi = createApi({
   reducerPath: 'projectsApi',
   baseQuery: fetchBaseQuery({
     baseUrl: `${config.apiUrl}${API_BASE_URL}`,
+    timeout: 30000,
     prepareHeaders: async headers => {
       let token = getCsrfToken();
       if (!token) {
@@ -47,6 +48,7 @@ export const projectsApi = createApi({
         categories?: string | null;
         priorities?: string | null;
         clients?: string | null;
+        project_types?: string | null;
       }
     >({
       query: ({
@@ -60,6 +62,7 @@ export const projectsApi = createApi({
         categories,
         priorities,
         clients,
+        project_types,
       }) => {
         const params = new URLSearchParams({
           index: index.toString(),
@@ -72,6 +75,7 @@ export const projectsApi = createApi({
           categories: categories || '',
           priorities: priorities || '',
           clients: clients || '',
+          project_types: project_types || '',
         });
         return `${rootUrl}?${params.toString()}`;
       },

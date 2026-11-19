@@ -1,4 +1,5 @@
 {
+  "exampleTaskCreateFailed": "Could not confirm task creation. Check the task list before retrying.",
   "apply": "Apply",
   "keyColumn": "Key",
   "taskColumn": "Task",
@@ -59,6 +60,7 @@
   "lastupdatedColumn": "Last Updated",
   "reporterColumn": "Reporter",
   "moveColumnHandle": "Move column",
+  "resizeColumn": "Resize {{column}} column",
   "dueTimeColumn": "Due Time",
   "activeParentBadge": "Active parent",
   "activeParentTooltip": "Parent task is not archived",
@@ -71,7 +73,7 @@
   "selectText": "Select",
   "labelsSelectorInputTip": "Hit enter to create!",
   "addTaskText": "Add Task",
-  "createIssueText": "Create Issue",
+  "createIssueText": "Create work item",
   "createWorkItemText": "Create work item",
   "insertIssueText": "Insert Issue",
   "addSubTaskText": "Add Sub Task",
@@ -80,6 +82,7 @@
   "addSubTaskInputPlaceholder": "Type subtask name and press Enter to save",
   "noTasksInGroup": "No tasks in this group",
   "dropTaskHere": "Drop task here",
+  "dropHere": "Drop here",
   "openButton": "Open",
   "okButton": "Ok",
   "noLabelsFound": "No labels found",
@@ -88,7 +91,7 @@
   "labelInputPlaceholder": "Search or create",
   "searchLabelsPlaceholder": "Search labels...",
   "createLabelButton": "Create \"{{name}}\"",
-  "manageLabelsPath": "Settings → Labels",
+  "manageLabelsPath": "Settings → Project & Workflow → Labels",
   "pendingInvitation": "Pending Invitation",
   "contextMenu": {
     "duplicateTask": "Duplicate task",
@@ -116,7 +119,8 @@
     "deleteConfirmMessage": "Are you sure you want to delete this task? This action cannot be undone.",
     "deleteSubtaskConfirmMessage": "Are you sure you want to delete this subtask? This action cannot be undone.",
     "deleteConfirmOk": "Delete",
-    "deleteConfirmCancel": "Cancel"
+    "deleteConfirmCancel": "Cancel",
+    "moveToProject": "Move to project"
   },
   "setDueDate": "Set due date",
   "setStartDate": "Set start date",
@@ -208,6 +212,7 @@
       "number": "Number",
       "date": "Date",
       "selection": "Selection",
+      "dependent_selection": "Dependent Selection",
       "checkbox": "Checkbox",
       "labels": "Labels",
       "key": "Key",
@@ -248,19 +253,32 @@
       "keyLabelPlaceholder": "ex: MK"
     },
     "dependentSelection": {
-      "typeGroup": "Depends on selection",
-      "dependsOn": "Depends on",
-      "createNewParent": "+ Create new parent field",
-      "newParentTitle": "New parent field",
-      "newParentNamePlaceholder": "Parent field title, e.g. Department",
-      "newParentNameLabel": "Parent field title",
-      "newParentOptions": "Parent field options",
-      "newParentIncomplete": "Give the new parent field a title and at least one option.",
-      "newParentOnlyHint": "Creates a main Selection column only. Add a child column later and set Depends on to this field.",
+      "newParentSingleColumnHint": "Saves one column with the parent options. A Dependent Selection you add later can pick this column as its parent and create its own child options under each parent option.",
+      "parentOptionsLocked": "New parent options cannot be added here because other fields depend on this field.",
+      "parentField": "Parent column",
+      "chooseParent": "— Choose —",
+      "chooseParentHint": "Choose an existing Selection column above, or create a brand-new parent column, to start grouping options under its values.",
+      "parentNote": "Options are grouped by {{parent}}. A task's choices here narrow to whichever group matches its {{parent}} value.",
+      "parentRequired": "Choose a parent column, or create a new parent column.",
+      "createNewParent": "+ Create new parent column",
+      "creatingNewParent": "Creating a new column to be the parent",
+      "newParentTitle": "New parent column",
+      "newParentTitleHint": "Parent column title (this is a different column from \"{{name}}\" above)",
+      "newParentNamePlaceholder": "Parent column title, e.g. Department",
+      "newParentNameLabel": "Parent column title",
+      "newParentOptions": "Parent column options",
+      "newParentAddPlaceholder": "New parent option… (comma-separated for multiple)",
+      "newParentIncomplete": "Give the new parent column a title and at least one option.",
+      "newParentTogetherHint": "Saving creates two columns: the new parent column with its options, and this column with the dependent options.",
+      "newChildTitleHint": "Name for the new dependent field. “{{name}}” is not changed.",
+      "fieldTitleFirstHint": "First give the field title. It names the new dependent column that uses the parent column below.",
+      "dependentOptions": "Dependent options",
+      "addUnderPlaceholder": "New option under {{value}}… (comma-separated for multiple)",
+      "addButton": "+ Add",
       "none": "None",
       "title": "Options grouped by {{parent}}",
       "hint": "On a task, only the options in the group matching the task's {{parent}} value can be picked.",
-      "parentMissing": "The parent field could not be found. Choose another field in Type.",
+      "parentMissing": "The parent column could not be found. Choose another parent column.",
       "parentHasNoOptions": "{{parent}} has no options yet. Add options to it first.",
       "optionCount_one": "{{count}} option",
       "optionCount_other": "{{count}} options",
@@ -283,7 +301,7 @@
       "autoCleared": "{{field}} was cleared: \"{{value}}\" is not available when {{parent}} is \"{{parentValue}}\".",
       "autoClearedParentEmpty": "{{field}} was cleared because {{parent}} was cleared.",
       "rejected": "Value not saved: {{reason}}",
-      "parentValueRequired": "Select the parent field value first.",
+      "parentValueRequired": "Select the parent column value first.",
       "invalidPair": "That option is not valid for the current parent value.",
       "hasDependentsTypeHint": "{{fields}} depends on this field, so its type cannot be changed."
     },
@@ -337,5 +355,42 @@
   "save": "Save",
   "cancel": "Cancel",
   "changeStatus": "Change status: {{status}}",
-  "ellipsis": "..."
+  "ellipsis": "...",
+  "moveTaskProject": {
+    "title": "Move tasks to another project",
+    "selectedTasksTitle": "Selected tasks",
+    "destinationLabel": "Destination project",
+    "destinationPlaceholder": "Select destination project",
+    "releaseWarning": "Release assignments will be cleared and will not be restored if tasks are moved back.",
+    "mappingInfo": "Map source fields to destination project fields before moving tasks.",
+    "statusMappingTitle": "Status mapping",
+    "phaseMappingTitle": "Phase mapping",
+    "customFieldMappingTitle": "Custom field mapping",
+    "selectStatus": "Select destination status",
+    "selectPhase": "Select destination phase",
+    "selectCustomField": "Select destination custom field",
+    "actions": {
+      "cancel": "Cancel",
+      "move": "Move tasks"
+    },
+    "options": {
+      "moveSubtasks": "Move subtasks together with selected tasks",
+      "keepAssignees": "Keep assignees if they are members in destination project",
+      "keepLabels": "Keep labels"
+    },
+    "messages": {
+      "movedSuccess": "Tasks moved successfully",
+      "movedWithWarnings": "Tasks moved with warnings"
+    },
+    "errors": {
+      "loadData": "Failed to load move task data",
+      "loadDestinationData": "Failed to load destination project fields",
+      "moveFailed": "Failed to move tasks"
+    },
+    "partialMappingWarning": "Some phase or custom field mappings are missing. Tasks will still be moved and unmapped values will be skipped.",
+    "loadFailed": "Could not load projects and mappings. Please try again.",
+    "completedWithWarnings": "Tasks moved with {{count}} mapping warnings. Review the destination project.",
+    "completed": "Tasks moved successfully.",
+    "moveFailed": "Could not move tasks. Please try again."
+  }
 }

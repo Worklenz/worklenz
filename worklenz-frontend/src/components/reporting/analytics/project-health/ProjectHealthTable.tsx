@@ -92,7 +92,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         title: t('phColProject', { defaultValue: 'Project' }),
         dataIndex: 'project_name',
         key: 'project_name',
-        width: '22%',
+        width: 200,
         ellipsis: true,
         sorter: (a, b) => a.project_name.localeCompare(b.project_name),
         render: (name: string, record) => {
@@ -129,7 +129,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
           />
         ),
         key: 'delivery_confidence',
-        width: '14%',
+        width: 170,
         filters: [
           { text: t('statOnTrack', { defaultValue: 'On track' }), value: 'green' },
           { text: t('statAtRisk', { defaultValue: 'At risk' }), value: 'amber' },
@@ -138,14 +138,12 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         ],
         onFilter: (value, record) => confidenceTone(record.delivery_confidence) === value,
         render: (_: unknown, row) => {
-          const tone = confidenceTone(row.delivery_confidence);
-          const fallback = CONFIDENCE_FALLBACK[tone];
-          const label = t(fallback.labelKey, { defaultValue: fallback.defaultLabel });
+          const confidence = CONFIDENCE_FALLBACK[confidenceTone(row.delivery_confidence)];
           const note = row.delivery_confidence_note?.trim();
           return (
-            <Flex vertical gap={2} style={{ minWidth: 0 }}>
-              <Tag color={fallback.color} style={{ width: 'fit-content', marginInlineEnd: 0 }}>
-                {label}
+            <Flex vertical gap={4}>
+              <Tag color={confidence.color} style={{ alignSelf: 'flex-start', marginInlineEnd: 0 }}>
+                {t(confidence.labelKey, { defaultValue: confidence.defaultLabel })}
               </Tag>
               {note ? (
                 <Text
@@ -174,7 +172,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         ),
         dataIndex: 'progress_pct',
         key: 'progress_pct',
-        width: '10%',
+        width: 110,
         align: 'right',
         sorter: (a, b) => a.progress_pct - b.progress_pct,
         render: (value: number) => (
@@ -185,7 +183,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         title: t('phColDue', { defaultValue: 'Due' }),
         dataIndex: 'due_date',
         key: 'due_date',
-        width: '12%',
+        width: 120,
         align: 'right',
         sorter: (a, b) => (a.due_date || '').localeCompare(b.due_date || ''),
         render: (value: string | null) =>
@@ -204,7 +202,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         ),
         dataIndex: 'open_tasks',
         key: 'open_tasks',
-        width: '10%',
+        width: 120,
         align: 'right',
         sorter: (a, b) => a.open_tasks - b.open_tasks,
       },
@@ -222,7 +220,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         ),
         dataIndex: 'overdue_tasks',
         key: 'overdue_tasks',
-        width: '9%',
+        width: 110,
         align: 'right',
         sorter: (a, b) => a.overdue_tasks - b.overdue_tasks,
         render: (value: number) =>
@@ -248,7 +246,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         ),
         dataIndex: 'budget_used_pct',
         key: 'budget_used_pct',
-        width: '11%',
+        width: 130,
         align: 'right',
         sorter: (a, b) => a.budget_used_pct - b.budget_used_pct,
         render: (value: number, row) =>
@@ -262,7 +260,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         title: t('phColLead', { defaultValue: 'Project lead' }),
         dataIndex: 'lead_name',
         key: 'lead_name',
-        width: '12%',
+        width: 140,
         ellipsis: true,
         render: (value: string | null) =>
           value ? (
@@ -274,16 +272,37 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
     ],
     [t, token.colorText, token.colorTextSecondary]
   );
+  const borderedColumns: ColumnsType<ProjectHealthRow> = useMemo(
+    () =>
+      columns.map((column) => ({
+        ...column,
+        onCell: () => ({
+          style: {
+            borderInlineEnd: `1px solid ${token.colorBorder}`,
+            borderBottom: `1px solid ${token.colorBorder}`,
+          },
+        }),
+        onHeaderCell: () => ({
+          style: {
+            borderInlineEnd: `1px solid ${token.colorBorder}`,
+            borderBottom: `1px solid ${token.colorBorder}`,
+          },
+        }),
+      })),
+    [columns, token.colorBorder]
+  );
 
   return (
     <Table<ProjectHealthRow>
+      bordered
       rowKey="project_id"
-      columns={columns}
+      columns={borderedColumns}
       dataSource={projects}
       loading={loading}
       pagination={getClientTablePagination(20)}
       size="middle"
       tableLayout="fixed"
+      scroll={{ x: 'max-content' }}
       style={{ width: '100%' }}
       showSorterTooltip={false}
       locale={{

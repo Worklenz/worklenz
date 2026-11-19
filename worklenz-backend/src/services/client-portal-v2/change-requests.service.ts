@@ -4,7 +4,7 @@ import { AuditActor, recordAuditEvent } from "./audit.service";
 import { mirrorChangeRequestMessage } from "./discussions.service";
 import { badRequest, conflict, notFound } from "./errors";
 import { cleanPortalRichText } from "./rich-text";
-import { notifyClientUsers } from "./notify.service";
+import { emitPortalDataUpdated, notifyClientUsers } from "./notify.service";
 import { findStaff, StaffRef, toStaffRef } from "./staff";
 import { PortalSide, Queryable } from "./types";
 import { containsPattern } from "./list-params";
@@ -407,6 +407,10 @@ export async function applyChangeRequestAction(input: {
 }): Promise<ChangeRequestView> {
   const { teamId, id, actor, body } = input;
 
+  // Notify + socket emit must run after commit (own pool connection); otherwise the client can
+  // refetch stale status and the emit would still fire if the transaction rolled back.
+  let pendingClientNotify: Parameters<typeof notifyClientUsers>[0] | null = null;
+
   await withTransaction(async tx => {
     const request = await lockRequest(tx, teamId, id);
     const from = request.status as ChangeRequestStatus;
@@ -518,7 +522,7 @@ export async function applyChangeRequestAction(input: {
 
     // The requester hears about every change that concerns them: the response, status and estimate.
     if (to !== from || clientMessage) {
-      void notifyClientUsers({
+      pendingClientNotify = {
         teamId,
         clientId: request.client_id,
         projectId: request.project_id,
@@ -530,9 +534,13 @@ export async function applyChangeRequestAction(input: {
         emailEvent: "change_request_update",
         onlyContactIds: request.requester_contact_id ? [request.requester_contact_id] : undefined,
         portalPath: `/change-requests/${id}`,
-      });
+      };
     }
   });
+
+  if (pendingClientNotify) {
+    void notifyClientUsers(pendingClientNotify);
+  }
 
   return getChangeRequest(db, teamId, id);
 }
@@ -554,11 +562,17 @@ export async function updateChangeRequest(input: {
 }): Promise<ChangeRequestView> {
   const { teamId, id, patch } = input;
 
+  let clientId: string | null = null;
+  let projectId: string | null = null;
+  let didUpdate = false;
+
   await withTransaction(async tx => {
     const request = await lockRequest(tx, teamId, id);
     if (TERMINAL_STATUSES.includes(request.status)) {
       throw conflict("A closed request can no longer be edited", "READ_ONLY");
     }
+    clientId = request.client_id;
+    projectId = request.project_id;
 
     const sets: string[] = [];
     const values: unknown[] = [id];
@@ -581,8 +595,21 @@ export async function updateChangeRequest(input: {
         `UPDATE client_portal_change_requests SET ${sets.join(", ")}, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
         values
       );
+      didUpdate = true;
     }
   });
+
+  // Keep open Admin / Client Portal CR views in sync (estimate is client-visible after approve).
+  if (didUpdate && clientId) {
+    emitPortalDataUpdated({
+      teamId,
+      clientId,
+      projectId,
+      type: "change_request",
+      referenceId: id,
+      source: "staff",
+    });
+  }
 
   return getChangeRequest(db, teamId, id);
 }
@@ -663,6 +690,12 @@ export async function convertChangeRequestToWork(input: {
       );
       const priority = await tx.query(`SELECT id FROM task_priorities WHERE LOWER(name) = LOWER($1)`, [request.priority]);
 
+      // create_task inserts total_minutes explicitly; omit/null violates the NOT NULL column.
+      const totalMinutes =
+        request.estimate_hours != null
+          ? Math.round(Number(request.estimate_hours) * 60)
+          : 0;
+
       const taskBody: Record<string, unknown> = {
         name: (body.title ?? "").trim() || `${request.cr_no}: ${request.title}`,
         project_id: request.project_id,
@@ -671,15 +704,15 @@ export async function convertChangeRequestToWork(input: {
         description: request.description,
         status_id: status.rows[0]?.id ?? null,
         priority_id: priority.rows[0]?.id ?? null,
+        total_minutes: totalMinutes,
         assignees: body.assignee_id ? [body.assignee_id] : [],
         attachments: [],
         labels: [],
       };
-      // Left out when the request has no hours so the task estimate stays blank, never 0.
-      if (request.estimate_hours != null) taskBody.total_minutes = Math.round(Number(request.estimate_hours) * 60);
 
       const created = await tx.query("SELECT create_task($1) AS task;", [JSON.stringify(taskBody)]);
-      taskId = created.rows[0]?.task?.id;
+      // create_task returns get_task_form_view_model: { task: { id, ... }, ... }
+      taskId = created.rows[0]?.task?.task?.id;
       if (!taskId) throw new Error("Failed to create the task");
 
       const key = await tx.query(

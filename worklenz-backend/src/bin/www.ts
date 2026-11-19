@@ -13,6 +13,7 @@ import {IO} from "../shared/io";
 import sessionMiddleware from "../middlewares/session-middleware";
 import {getLoggedInUserIdFromSocket} from "../socket.io/util";
 import {startCronJobs} from "../cron_jobs";
+import { startAddonJobs } from "../addons/load-addons";
 import {startRecurringTasksJob} from "../cron_jobs/recurring-tasks";
 import {startProjectFilesCleanupJob} from "../cron_jobs/project-files-cleanup-job";
 import {startSprintAutoScheduleJob} from "../cron_jobs/sprint-auto-schedule-job";
@@ -28,6 +29,7 @@ import { getEmailConfigurationErrors } from "../shared/email";
 import { getDeploymentMode } from "../shared/deployment-mode";
 import { isPaddleServiceConfigured } from "../shared/paddle-requests";
 import { initializeI18n } from "../config/i18n";
+import { startTelemetryHeartbeat } from "../services/telemetry-heartbeat";
 
 function normalizePort(val?: string) {
   const p = parseInt(val || "0", 10);
@@ -89,6 +91,7 @@ io.on("connection", (socket: Socket) => {
   // misses re-emitting LOGIN after a silent reconnect.
   const userId = getLoggedInUserIdFromSocket(socket);
   if (userId) {
+    void socket.join(`user:${userId}`);
     void on_login(io, socket, userId);
   }
   register(io, socket);
@@ -130,8 +133,12 @@ function onListening() {
     ? `pipe ${addr}`
     : `port ${addr.port}`;
 
-  process.env.ENABLE_EMAIL_CRONJOBS === "true" && startCronJobs();
+  if (process.env.ENABLE_EMAIL_CRONJOBS === "true") {
+    startCronJobs();
+    startAddonJobs();
+  }
   startBackgroundWorkers();
+  startTelemetryHeartbeat();
   process.env.ENABLE_RECURRING_JOBS === "true" && startRecurringTasksJob();
   startProjectFilesCleanupJob();
   startSprintAutoScheduleJob();

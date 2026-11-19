@@ -32,6 +32,9 @@ export const currentDateString = (): string => {
     case 'fr':
       locale = 'fr';
       break;
+    case 'it':
+      locale = 'it';
+      break;
     default:
       locale = 'en';
   }
@@ -62,6 +65,9 @@ export const currentDateString = (): string => {
       break;
     case 'fr':
       todayText = "Aujourd'hui, c'est";
+      break;
+    case 'it':
+      todayText = 'Oggi è';
       break;
     default:
       todayText = 'Today is';

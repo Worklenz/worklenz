@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Table } from '@/shared/antd-imports';
+import { Table, Tooltip, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import type { ColumnsType } from 'antd/es/table';
 import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
@@ -19,6 +19,7 @@ interface RowRecord {
 
 export const CfdTable: React.FC<CfdTableProps> = ({ data, visibleStatusIds, statusOrder }) => {
   const { t } = useTranslation('reporting-analytics');
+  const { token } = theme.useToken();
 
   const statusById = useMemo(() => {
     const map = new Map<string, CfdStatusMeta>();
@@ -38,17 +39,35 @@ export const CfdTable: React.FC<CfdTableProps> = ({ data, visibleStatusIds, stat
         dataIndex: 'date',
         key: 'date',
         fixed: 'left',
-        width: 100,
+        width: 50,
       },
     ];
     orderedVisible.forEach(statusId => {
       const status = statusById.get(statusId);
+      const statusName = status?.name ?? statusId;
+
       cols.push({
-        title: status?.name ?? statusId,
+        title: (
+          <Tooltip title={statusName} trigger={['hover', 'focus']}>
+            <span
+              tabIndex={0}
+              style={{
+                display: 'block',
+                minWidth: 0,
+                maxWidth: '100%',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {statusName}
+            </span>
+          </Tooltip>
+        ),
         dataIndex: statusId,
         key: statusId,
         align: 'right',
-        width: 100,
+        width: 80,
       });
     });
     return cols;
@@ -74,13 +93,31 @@ export const CfdTable: React.FC<CfdTableProps> = ({ data, visibleStatusIds, stat
     });
   }, [data.dates, data.series, orderedVisible]);
 
+  const borderedColumns = columns.map((column) => ({
+    ...column,
+    onCell: () => ({
+      style: {
+        borderInlineEnd: `1px solid ${token.colorBorder}`,
+        borderBottom: `1px solid ${token.colorBorder}`,
+      },
+    }),
+    onHeaderCell: () => ({
+      style: {
+        borderInlineEnd: `1px solid ${token.colorBorder}`,
+        borderBottom: `1px solid ${token.colorBorder}`,
+      },
+    }),
+  }));
+
   return (
     <Table
+      bordered
       size="small"
+      tableLayout="fixed"
       pagination={getClientTablePagination(15)}
-      columns={columns}
+      columns={borderedColumns}
       dataSource={rows}
-      scroll={{ x: Math.max(400, orderedVisible.length * 100 + 140) }}
+      scroll={{ x: Math.max(400, orderedVisible.length * 80 + 50) }}
       locale={{
         emptyText: t('cfdChartEmpty', {
           defaultValue: 'No cumulative flow data for these filters.',

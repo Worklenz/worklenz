@@ -8,6 +8,7 @@ import 'dayjs/locale/sq';
 import 'dayjs/locale/zh-cn';
 import 'dayjs/locale/pl';
 import 'dayjs/locale/fr';
+import 'dayjs/locale/it';
 import i18n from '@/i18n';
 import { getLanguageFromLocalStorage } from './language-utils';
 
@@ -31,6 +32,7 @@ const getLocaleFromLanguage = (language?: string): string => {
     'zh-cn': 'zh-cn',
     pl: 'pl',
     fr: 'fr',
+    it: 'it',
   };
   return (
     localeMap[normalized] ||

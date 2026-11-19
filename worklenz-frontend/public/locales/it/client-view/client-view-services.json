@@ -1,0 +1,10 @@
+{
+  "title": "{{items}} servizi",
+  "requestButton": "Invia una richiesta",
+  "modal": {
+    "title": "Invia una richiesta",
+    "submitButton": "Invia"
+  },
+  "uploadLogoText": "Fai clic o trascina un file in quest’area per caricarlo",
+  "uploadLogoAltText": "Supporta il caricamento di uno o più file. È vietato caricare dati aziendali o altri file vietati"
+}

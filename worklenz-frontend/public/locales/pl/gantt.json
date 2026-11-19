@@ -63,7 +63,14 @@
     "viewBy": "Zobacz według",
     "sortBy": "Sortuj według",
     "sortManual": "Instrukcja",
-    "sortChronological": "Chronologiczny"
+    "sortChronological": "Chronologiczny",
+    "export": "Eksportuj",
+    "exportPdf": "PDF",
+    "exportExcel": "Excel",
+    "exportRoadmap": "Eksportuj plan działania",
+    "exportRoadmapHint": "Pobierz ten plan działania jako PDF lub Excel",
+    "exportFailed": "Nie udało się wyeksportować planu działania. Spróbuj ponownie.",
+    "exportEmpty": "Nie ma jeszcze nic do wyeksportowania."
   },
   "viewMode": {
     "day": "Dzień",
@@ -94,5 +101,6 @@
     "dragDisabledInChronological": "Przejdź do opcji Kolejność ręczna, aby zmienić kolejność faz za pomocą przeciągania"
   },
   "unscheduledTasksTitle": "Niezaplanowane zadania",
-  "noUnscheduledTasks": "Brak dostępnych niezaplanowanych zadań."
+  "noUnscheduledTasks": "Brak dostępnych niezaplanowanych zadań.",
+  "statusReorderSameCategory": "Kolejność statusów można zmieniać tylko w ramach tej samej kategorii."
 }

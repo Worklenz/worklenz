@@ -1,0 +1,84 @@
+{
+  "access": {
+    "introExisting": "Scegli i progetti che questo utente può aprire. Se il Portale Clienti è disattivato per un progetto scelto, viene attivato.",
+    "introNew": "Scegli i progetti che questo cliente dovrebbe vedere. I progetti senza un cliente vengono collegati alla nuova organizzazione e il Portale Clienti viene attivato per ciascuno di essi selezionato.",
+    "loadFailed": "Impossibile caricare i progetti.",
+    "noClientYet": "Nessun cliente ancora",
+    "noProjectsExisting": "Questa organizzazione non ha ancora progetti. All'utente possono essere assegnati progetti in seguito.",
+    "noProjectsNew": "Ogni progetto di spazio di lavoro ha già un client. Collegane uno più tardi da Portal Projects.",
+    "portalOff": "Portale spento, verrà acceso",
+    "search": "Cerca progetti...",
+    "title": "Accesso al progetto"
+  },
+  "details": {
+    "email": "Indirizzo e-mail",
+    "emailHint": "Questo è l'indirizzo di accesso e di invito. Deve essere unico.",
+    "emailInvalid": "Inserisci un indirizzo email valido.",
+    "firstName": "Nome",
+    "firstNamePlaceholder": "Jane",
+    "firstUserNotice": "Il primo utente di una nuova organizzazione è un amministratore cliente. Possono approvare gli elementi e, se lo abiliti nelle Impostazioni del portale, gestire i propri colleghi. Come ogni utente cliente, accedono con un codice monouso inviato via email a questo indirizzo.",
+    "jobTitle": "Titolo di lavoro",
+    "jobTitlePlaceholder": "ad es. Direttore Marketing",
+    "lastName": "Cognome",
+    "lastNamePlaceholder": "Dai",
+    "noOrganizations": "Nessuna organizzazione trovata.",
+    "organization": "Organizzazione",
+    "organizationName": "Nome dell'organizzazione",
+    "organizationNamePlaceholder": "ad es. Logistica del faro",
+    "phone": "Telefono (facoltativo)",
+    "role": "Ruolo",
+    "selectOrganization": "Seleziona un'organizzazione…"
+  },
+  "footer": {
+    "addUser": "Aggiungi utente",
+    "back": "Indietro",
+    "continue": "Continua",
+    "sendInvitation": "Invia invito"
+  },
+  "method": {
+    "existingOrganization": {
+      "description": "Invita un'altra persona a un'organizzazione che ha già accesso al portale.",
+      "name": "Aggiungi un utente a un'organizzazione esistente"
+    },
+    "groupLabel": "Come aggiungere questo cliente",
+    "intro": "Ogni utente cliente appartiene a un'organizzazione e vede solo i progetti che gli assegni.",
+    "newOrganization": {
+      "description": "Crea l'organizzazione e invita il suo primo utente come amministratore cliente.",
+      "name": "Nuova organizzazione cliente"
+    }
+  },
+  "result": {
+    "activationHint": "Aprono il collegamento nell'e-mail e accedono con un codice di 6 cifre inviato al loro indirizzo. Non esiste una password.",
+    "addedNoInvite": "{{name}} è stato aggiunto come {{role}}. Nessun invito è stato ancora inviato.",
+    "emailNotSent": "{{name}} è stato salvato, ma non è stato possibile inviare l'e-mail di invito. Condividi invece il collegamento.",
+    "failed": "Impossibile aggiungere il cliente.",
+    "invited": "Invito inviato a {{email}}.",
+    "portalsSwitchedOn": "Portale clienti attivato per progetti {{count}}.",
+    "portalsSwitchedOn_one": "Portale clienti attivato per il progetto {{count}}.",
+    "portalsSwitchedOn_other": "Portale clienti attivato per progetti {{count}}."
+  },
+  "review": {
+    "email": "E-mail",
+    "name": "Nome",
+    "organization": "Organizzazione",
+    "projects": "Progetti",
+    "projectsAssigned": "{{count}} assegnato",
+    "projectsAssigned_one": "{{count}} assegnato",
+    "projectsAssigned_other": "{{count}} assegnato",
+    "projectsNone": "Nessuno ancora",
+    "role": "Ruolo",
+    "sendInvitation": "Invia l'invito adesso",
+    "sendInvitationHint": "Il collegamento riporta il loro indirizzo email; aprendolo invia loro un codice di 6 cifre, quindi non c'è alcuna password da impostare. Il collegamento scade dopo 7 giorni. Se scade, invialo nuovamente dall'elenco degli utenti oppure gli utenti possono accedere inserendo il proprio indirizzo email."
+  },
+  "steps": {
+    "access": "Accesso",
+    "details": "Dettagli",
+    "method": "Metodo"
+  },
+  "title": {
+    "access": "Accesso e revisione",
+    "detailsExisting": "Scegli l'organizzazione e l'utente",
+    "detailsNew": "Raccontaci dell'organizzazione",
+    "method": "Come vuoi aggiungere questo cliente?"
+  }
+}

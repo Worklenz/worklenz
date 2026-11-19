@@ -171,5 +171,12 @@
   "nextPage": "Página siguiente",
   "lastPage": "Última página",
   "selectAll": "Seleccionar todo",
-  "clearAll": "Borrar todo"
+  "clearAll": "Borrar todo",
+  "sidebarTrialDays_one": "{{count}} día",
+  "sidebarTrialDays_other": "{{count}} días",
+  "sidebarTrialLabel": "Prueba",
+  "sidebarUpgradeLabel": "MEJORAR",
+  "sidebarUpgradeTooltip": "Mejorar tu plan",
+  "sidebarTrialTooltip_one": "Queda {{count}} día de prueba",
+  "sidebarTrialTooltip_other": "Quedan {{count}} días de prueba"
 }

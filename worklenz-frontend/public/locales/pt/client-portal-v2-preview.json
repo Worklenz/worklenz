@@ -189,7 +189,12 @@
     "poweredBy": "Desenvolvido por Worklenz",
     "projects": "Projetos"
   },
-  "noUsers": "Nenhum usuário cliente ativo com um projeto ainda. Convide um usuário e atribua um projeto para visualizar o portal.",
+  "addClient": "Adicionar cliente",
+  "addClientUser": "Adicionar usuário cliente",
+  "noClientUsers": "Ainda não há usuários cliente. Adicione um cliente e um usuário cliente e, em seguida, atribua um projeto para visualizar o portal.",
+  "noUsers": "Ainda não há usuários cliente com um projeto. Convide um usuário e atribua um projeto para visualizar o portal.",
+  "noUsersWithProject": "Ainda não há usuários cliente com um projeto. Convide um usuário e atribua um projeto para visualizar o portal.",
+  "pendingInvite": "Convite pendente",
   "previewAs": "Visualizar como",
   "project": {
     "back": "← Projetos",
@@ -267,6 +272,7 @@
     "filter": "Filter"
   },
   "userOption": "{{name}} · {{role}}",
+  "userOptionPending": "{{name}} · {{role}} · Convite pendente",
   "usersFailed": "Os usuários do cliente não puderam ser carregados.",
   "openPortal": "Open the client portal"
 }

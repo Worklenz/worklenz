@@ -47,5 +47,6 @@
   "archiveSuccessMessage": "{{parentCount}} tarefas e {{subtaskCount}} subtarefas foram {{action}}das.",
   "SET_START_DATE": "Definir Data de Início",
   "Unarchive": "Desarquivar",
-  "Archive": "Arquivar"
+  "Archive": "Arquivar",
+  "moveToProject": "Mover para projeto"
 }

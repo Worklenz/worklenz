@@ -47,5 +47,6 @@
   "archiveSuccessMessage": "已{{action}} {{parentCount}} 个任务和 {{subtaskCount}} 个子任务。",
   "SET_START_DATE": "设置开始日期",
   "Unarchive": "取消归档",
-  "Archive": "归档"
+  "Archive": "归档",
+  "moveToProject": "移动到项目"
 }

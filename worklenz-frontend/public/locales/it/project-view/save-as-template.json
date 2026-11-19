@@ -1,0 +1,102 @@
+{
+  "title": "Salva come modello",
+  "templateName": "Nome del modello",
+  "templateNamePlaceholder": "Inserisci il nome del modello",
+  "templateInfo": "Informazioni sul modello",
+  "includes": "Elementi del progetto",
+  "projectSettings": "Impostazioni del progetto",
+  "taskIncludes": "Elementi del compito",
+  "cancel": "Annulla",
+  "save": "Salva",
+  "creating": "Creazione modello...",
+  "created": "Modello creato!",
+  "quickSelect": "Selezione rapida:",
+  "selectAll": "Seleziona tutto",
+  "essentialOnly": "Solo essenziale",
+  "clearAll": "Cancella tutto",
+  "itemsSelected": "elementi selezionati",
+  "selected": "selezionato",
+  "readyToSave": "Pronto per salvare",
+  "validName": "Nome valido",
+  "required": "Obbligatorio",
+  "characters": "personaggi",
+  "proTips": "Suggerimenti professionali",
+  "budgetPlanHint": "Le impostazioni del budget sono disponibili sui piani Business ed Enterprise.",
+  "includesOptions": {
+    "statuses": "Stati",
+    "phases": "Fasi",
+    "labels": "Etichette",
+    "customColumns": "Colonne personalizzate"
+  },
+  "projectSettingsOptions": {
+    "category": "Categoria",
+    "projectManager": "Responsabile del progetto",
+    "estimatedWorkingDays": "Giorni lavorativi stimati",
+    "estimatedManDays": "Giorni uomo stimati",
+    "hoursPerDay": "Ore al giorno",
+    "advanced": "Impostazioni avanzate",
+    "budget": "Impostazioni del budget"
+  },
+  "taskIncludesOptions": {
+    "name": "Nome",
+    "priority": "Priorità",
+    "status": "Stato",
+    "phase": "Fase",
+    "label": "Etichetta",
+    "timeEstimate": "Stima del tempo",
+    "description": "Descrizione",
+    "subTasks": "Attività secondarie",
+    "assignees": "Assegnatari",
+    "recurrence": "Opzioni ricorrenti",
+    "dependencies": "Dipendenze",
+    "billable": "Fatturabile/Non fatturabile"
+  },
+  "descriptions": {
+    "statuses": "Configurazione del flusso di lavoro dello stato del progetto",
+    "phases": "Fasi e tappe fondamentali del progetto",
+    "labels": "Etichette personalizzate per la categorizzazione",
+    "customColumns": "Campi e metadati personalizzati",
+    "category": "Categoria di progetto per l'organizzazione",
+    "projectManager": "Responsabile del progetto assegnato",
+    "estimatedWorkingDays": "Giorni lavorativi stimati per il progetto",
+    "estimatedManDays": "Giorni uomo stimati per il progetto",
+    "hoursPerDay": "Orario di lavoro giornaliero predefinito",
+    "advanced": "Modalità di avanzamento, impostazioni predefinite delle attività e controlli di accesso",
+    "budget": "Importo del budget, valuta e tariffario del progetto",
+    "taskName": "Nomi e titoli delle attività",
+    "taskPriority": "Livelli di priorità delle attività",
+    "taskStatus": "Stato di completamento dell'attività",
+    "taskPhase": "Fase di progetto associato",
+    "taskLabel": "Etichette e tag delle attività",
+    "timeEstimate": "Stime temporali e durata",
+    "description": "Descrizioni e dettagli delle attività",
+    "subTasks": "Attività secondarie ed elementi della lista di controllo",
+    "assignees": "Assegnatari di attività e sottoattività",
+    "recurrence": "Frequenza, intervallo e regola di fine per attività",
+    "dependencies": "Collegamenti tra le attività nel modello",
+    "billable": "Contrassegno fatturabile per ogni attività"
+  },
+  "tooltips": {
+    "projectElements": "Scegli quali elementi del progetto includere nel tuo modello",
+    "projectSettings": "Scegli quali impostazioni del progetto includere. Questi possono essere esaminati prima di creare un progetto da questo modello.",
+    "taskElements": "Scegli quali elementi dell'attività includere nel modello",
+    "required": "Questo elemento è obbligatorio e non può essere deselezionato"
+  },
+  "tips": {
+    "line1": "I modelli preservano la struttura del progetto per un rapido riutilizzo",
+    "line2": "Gli articoli essenziali sono sempre inclusi e non possono essere rimossi",
+    "line3": "Le impostazioni del progetto possono essere riviste e modificate durante la creazione di un progetto da questo modello",
+    "line4": "Lascia le persone e il budget disattivati per impostazione predefinita per evitare incarichi o costi a sorpresa in nuovi progetti"
+  },
+  "validation": {
+    "nameRequired": "Inserisci un nome per il modello",
+    "nameMinLength": "Il nome del modello deve contenere almeno 3 caratteri",
+    "nameMaxLength": "Il nome del modello deve contenere meno di 50 caratteri"
+  },
+  "notifications": {
+    "createSuccess": "Modello creato",
+    "createSuccessDesc": "Il modello di progetto è stato creato con successo ed è pronto per l'uso.",
+    "createError": "Creazione del modello non riuscita",
+    "error": "Errore"
+  }
+}

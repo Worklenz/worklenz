@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_timer_started } from '@/shared/worklenz-analytics-events';
 import { TimerEventProps } from '@/types/mixpanel-events.types';
+import { useTranslation } from 'react-i18next';
 
 interface TaskTimerProps {
   started: boolean;
@@ -20,6 +21,8 @@ interface TaskTimerProps {
   timeString: string;
   taskId: string;
   disabled?: boolean;
+  /** Keep the log popup out of virtualized rows until the user opens it. */
+  deferLogPopover?: boolean;
 }
 
 const TaskTimer = ({
@@ -29,9 +32,13 @@ const TaskTimer = ({
   timeString,
   taskId,
   disabled = false,
+  deferLogPopover = false,
 }: TaskTimerProps) => {
   const [timeLogs, setTimeLogs] = useState<ITaskLogViewModel[]>([]);
   const [loading, setLoading] = useState(false);
+  const [hasOpenedLogs, setHasOpenedLogs] = useState(false);
+  const [isLogOpen, setIsLogOpen] = useState(false);
+  const { t } = useTranslation('task-list-table');
   const { trackMixpanelEvent } = useMixpanelTracking();
 
   const renderStopIcon = () => {
@@ -73,7 +80,7 @@ const TaskTimer = ({
     }
   };
 
-  const timeTrackingLogCard = (
+  const timeTrackingLogCard = (!deferLogPopover || hasOpenedLogs) && (
     <Flex vertical style={{ width: '100%', maxWidth: 400, maxHeight: 350, overflowY: 'scroll' }}>
       <Skeleton active loading={loading}>
         {timeLogs.map(log => (
@@ -119,22 +126,49 @@ const TaskTimer = ({
   };
 
   const handleOpenChange = (visible: boolean) => {
+    if (disabled) return;
+    setIsLogOpen(visible);
     if (visible) {
+      setHasOpenedLogs(true);
       getTaskLogs();
     } else {
       setTimeLogs([]);
     }
   };
 
+  // The first click mounts the controlled Popover already open. Keeping it mounted
+  // afterward preserves its normal outside-click handling and closing animation.
+  const logTrigger = deferLogPopover ? (
+    <button
+      type="button"
+      disabled={disabled}
+      aria-label={`${t('timeTrackingColumn', { defaultValue: 'Time' })}: ${timeString}`}
+      aria-haspopup="dialog"
+      aria-expanded={!disabled && isLogOpen}
+      autoFocus={hasOpenedLogs}
+      className="rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+      style={{
+        padding: 0,
+        border: 0,
+        background: 'transparent',
+        color: 'inherit',
+        font: 'inherit',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+      }}
+      onClick={hasOpenedLogs ? undefined : () => handleOpenChange(true)}
+    >
+      {timeString}
+    </button>
+  ) : (
+    <Typography.Text style={{ cursor: disabled ? 'not-allowed' : 'pointer' }}>
+      {timeString}
+    </Typography.Text>
+  );
+
   return (
     <Flex gap={4} align="center" style={{ pointerEvents: disabled ? 'none' : 'auto' }}>
       {started ? (
-        <Button 
-          type="text" 
-          icon={renderStopIcon()} 
-          onClick={handleStopTimer}
-          disabled={disabled}
-        />
+        <Button type="text" icon={renderStopIcon()} onClick={handleStopTimer} disabled={disabled} />
       ) : (
         <Button
           type="text"
@@ -148,22 +182,27 @@ const TaskTimer = ({
           disabled={disabled}
         />
       )}
-      <Popover
-        title={
-          <Typography.Text style={{ fontWeight: 500 }}>
-            Time Tracking Log
-            <Divider style={{ marginBlockStart: 8, marginBlockEnd: 12 }} />
-          </Typography.Text>
-        }
-        content={timeTrackingLogCard}
-        trigger={disabled ? [] : "click"}
-        placement="bottomRight"
-        onOpenChange={handleOpenChange}
-        zIndex={1100}
-        getPopupContainer={() => document.body}
-      >
-        <Typography.Text style={{ cursor: disabled ? 'not-allowed' : 'pointer' }}>{timeString}</Typography.Text>
-      </Popover>
+      {!deferLogPopover || hasOpenedLogs ? (
+        <Popover
+          title={
+            <Typography.Text style={{ fontWeight: 500 }}>
+              Time Tracking Log
+              <Divider style={{ marginBlockStart: 8, marginBlockEnd: 12 }} />
+            </Typography.Text>
+          }
+          content={timeTrackingLogCard}
+          trigger={disabled ? [] : 'click'}
+          placement="bottomRight"
+          onOpenChange={handleOpenChange}
+          open={!disabled && isLogOpen}
+          zIndex={1100}
+          getPopupContainer={() => document.body}
+        >
+          {logTrigger}
+        </Popover>
+      ) : (
+        logTrigger
+      )}
     </Flex>
   );
 };

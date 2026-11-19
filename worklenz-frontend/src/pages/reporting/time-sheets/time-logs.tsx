@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { Flex, Typography } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { reportingTimeLogsApiService } from '@/api/reporting/reporting-time-logs.api.service';
+import { useSessionPersistedState } from '@/hooks/useSessionPersistedState';
+import { getUserSession } from '@/utils/session-helper';
 import {
   ITimeLogGroupsRequest,
   ITimeLogsListRequest,
@@ -18,6 +20,7 @@ import { TimeLogsGroupedList } from './components/time-logs/TimeLogsGroupedList'
 import { TimeLogsTable } from './components/time-logs/TimeLogsTable';
 import {
   DEFAULT_TIME_LOGS_FILTERS,
+  isTimeLogsFilterState,
   ITimeLogsFilterState,
   areFiltersEqual,
   countActiveFilters,
@@ -35,6 +38,7 @@ import {
 const { Title, Text } = Typography;
 
 const DEFAULT_PAGE_SIZE = 20;
+const TIME_LOGS_FILTERS_STORAGE_PREFIX = 'worklenz.timeLogsFilters';
 
 // `group_by` and `view` live in the URL (like Projects > Time Entries), so a shared link reproduces
 // the same layout. Anything else — an old bookmark, a typo — falls back to the default.
@@ -50,8 +54,14 @@ const parseTableView = (value: string | null): TimeLogsTableView =>
 const TimeLogsPage: React.FC = () => {
   const { t } = useTranslation('time-report');
   const [searchParams, setSearchParams] = useSearchParams();
+  const session = getUserSession();
+  const filtersStorageKey = `${TIME_LOGS_FILTERS_STORAGE_PREFIX}:${session?.team_id ?? 'no-team'}:${session?.id ?? 'no-user'}`;
 
-  const [filters, setFilters] = useState<ITimeLogsFilterState>(DEFAULT_TIME_LOGS_FILTERS);
+  const [filters, setFilters] = useSessionPersistedState<ITimeLogsFilterState>(
+    filtersStorageKey,
+    DEFAULT_TIME_LOGS_FILTERS,
+    isTimeLogsFilterState
+  );
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);

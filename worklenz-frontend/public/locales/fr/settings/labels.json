@@ -31,5 +31,7 @@
   "createLabelSuccessMessage": "Étiquette créée avec succès",
   "createLabelErrorMessage": "Échec de la création du libellé",
   "updateLabelSuccessMessage": "Étiquette mise à jour avec succès",
-  "updateLabelErrorMessage": "Échec de la mise à jour de l'étiquette"
+  "updateLabelErrorMessage": "Échec de la mise à jour de l'étiquette",
+  "rowsPerPage": "Lignes par page :",
+  "paginationSummary": "{{range}} sur {{total}}"
 }

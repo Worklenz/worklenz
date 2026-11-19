@@ -266,7 +266,8 @@
       "attachment": "附件",
       "comment": "评论",
       "assignee": "指派人",
-      "archive": "归档"
+      "archive": "归档",
+      "project": "项目"
     },
     "historyLockedBoundary": "活动记录在此方案中仅限最近 90 天",
     "historyLockedTitle": "活动历史已锁定",

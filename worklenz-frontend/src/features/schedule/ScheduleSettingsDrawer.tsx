@@ -15,6 +15,8 @@ import Skeleton from 'antd/es/skeleton/Skeleton';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { scheduleApi } from '@/api/schedule/scheduleApi';
 import { setShowWeekends, selectShowWeekends } from './scheduleSliceRTK';
+import { saveShowWeekendsPreference } from './schedulePreferencesStorage';
+import { getUserSession } from '@/utils/session-helper';
 
 const ScheduleSettingsDrawer: React.FC = () => {
   const isDrawerOpen = useAppSelector(state => state.scheduleReducer.isSettingsDrawerOpen);
@@ -84,7 +86,10 @@ const ScheduleSettingsDrawer: React.FC = () => {
     >
       <Checkbox
         checked={showWeekends}
-        onChange={e => dispatch(setShowWeekends(e.target.checked))}
+        onChange={e => {
+          saveShowWeekendsPreference(getUserSession()?.id, e.target.checked);
+          dispatch(setShowWeekends(e.target.checked));
+        }}
         style={{ marginBottom: 20 }}
       >
         {t('showWeekends', { defaultValue: 'Show weekends' })}

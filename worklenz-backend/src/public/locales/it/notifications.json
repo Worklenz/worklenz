@@ -1,0 +1,21 @@
+{
+  "taskAssigned": "<b>{{reporter}}</b> ti ha assegnato a <b>{{task}}</b>",
+  "taskRemoved": "<b>{{reporter}}</b> ti ha rimosso da <b>{{task}}</b>",
+  "taskAdded": "<b>{{user}}</b> ha aggiunto \"<b>{{task}}</b>\" a \"<b>{{project}}</b>\"",
+  "taskRemovedFromProject": "<b>{{user}}</b> ha rimosso \"<b>{{task}}</b>\" da \"<b>{{project}}</b>\"",
+  "addedToProject": "Sei stato aggiunto a <b>{{project}}</b> da <b>{{user}}</b>",
+  "removedFromProject": "Sei stato rimosso da <b>{{project}}</b> da <b>{{user}}</b>",
+  "addedToTeam": "Sei stato aggiunto a <b>{{team}}</b>",
+  "removedFromTeam": "Sei stato rimosso da <b>{{team}}</b> da <b>{{user}}</b>",
+  "commentAdded": "<b>{{user}}</b> ha aggiunto un commento a <b>{{task}}</b>",
+  "mentionedInComment": "<b>{{user}}</b> ti ha menzionato in un commento su <b>{{task}}</b>",
+  "mentionedInProjectComment": "<b>{{user}}</b> ti ha menzionato in un commento su <b>{{project}}</b>",
+  "mentionedInProjectDocument": "<b>{{user}}</b> ti ha menzionato in un documento su <b>{{project}}</b>",
+  "phaseTaskAssigned": "Ti è stata assegnata un’attività in <b>{{phase}}</b>: <b>{{task}}</b>",
+  "security": {
+    "invitationLimit": "Questo spazio di lavoro ha raggiunto il limite di sicurezza degli inviti. Riprova più tardi.",
+    "invitationsPaused": "Gli inviti sono temporaneamente sospesi. Contatta l’amministratore.",
+    "blockedTaskHost": "Questa attività contiene un link bloccato. Rimuovilo e riprova.",
+    "blockedSignupDomain": "Questo provider email non è supportato. Usa un altro indirizzo email."
+  }
+}

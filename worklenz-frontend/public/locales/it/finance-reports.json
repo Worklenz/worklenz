@@ -1,0 +1,175 @@
+{
+  "emptyValue": "—",
+  "noBudgetSet": "Nessun budget impostato",
+  "loadError": "Impossibile caricare questo rapporto. Riprova.",
+  "retry": "Riprova",
+  "searchPlaceholder": "Cerca",
+  "budgets": {
+    "pageTitle": "Budget",
+    "pageSubTitle": "Monitoraggio del budget e tasso di consumo in tutti i progetti. ETC indica le ore rimanenti stimate alla tariffa oraria realizzata dal tempo registrato.",
+    "empty": "Nessun progetto da mostrare ancora.",
+    "table": {
+      "project": "Progetto",
+      "budget": "Bilancio",
+      "spent": "Speso",
+      "remaining": "Rimanente",
+      "burnRate": "Tasso di combustione",
+      "etc": "ECC",
+      "alert": "Avviso"
+    },
+    "alert": {
+      "high": "Bruciatura elevata",
+      "watch": "Guarda",
+      "ok": "Va bene",
+      "none": "Nessun budget"
+    }
+  },
+  "invoices": {
+    "pageTitle": "Fatture",
+    "pageSubTitle": "Invia, monitora e riscuoti i pagamenti dei clienti da un'unica visualizzazione del portafoglio.",
+    "empty": "Ancora nessuna fattura. Crea fatture dal Portale Clienti.",
+    "openInvoice": "Fattura aperta",
+    "kpi": {
+      "totalInvoiced": "Totale fatturato",
+      "totalPaid": "Totale pagato",
+      "totalOutstanding": "Totale eccezionale"
+    },
+    "table": {
+      "invoice": "Fattura",
+      "client": "Cliente",
+      "project": "Progetto",
+      "amount": "Importo",
+      "paymentStatus": "Stato del pagamento",
+      "paidAmount": "Importo pagato",
+      "status": "Stato",
+      "issued": "Rilasciato",
+      "due": "Dovuto"
+    },
+    "status": {
+      "draft": "Bozza",
+      "sent": "Inviato",
+      "paid": "Pagato",
+      "overdue": "In ritardo",
+      "cancelled": "Annullato",
+      "outstanding": "Eccezionale"
+    }
+  },
+  "billableTime": {
+    "pageTitle": "Tempo fatturabile",
+    "pageSubTitle": "Ore registrate, contrassegno fatturabile e valore del tariffario in tutto il team. L'approvazione della scheda attività non è richiesta: ogni registro è già registrato.",
+    "empty": "Nessun tempo registrato in questo periodo.",
+    "tableTitle": "Voci di tempo",
+    "range": {
+      "week": "Questa settimana",
+      "month": "Questo mese",
+      "lastMonth": "Il mese scorso"
+    },
+    "kpi": {
+      "logged": "Registrato questo periodo",
+      "billable": "Fatturabile",
+      "nonBillable": "Non fatturabile",
+      "value": "Valore fatturabile"
+    },
+    "table": {
+      "member": "Membro",
+      "project": "Progetto",
+      "task": "Compito",
+      "date": "Data",
+      "time": "Tempo",
+      "billable": "Fatturabile",
+      "rate": "Vota",
+      "value": "Valore"
+    },
+    "billable": "Fatturabile",
+    "internal": "Interno"
+  },
+  "utilization": {
+    "pageTitle": "Utilizzo",
+    "pageSubTitle": "Ore fatturabili del team rispetto alla capacità per il periodo selezionato. La sovraallocazione è superiore all'85% della capacità.",
+    "empty": "Nessun membro del team da mostrare.",
+    "tableTitle": "Utilizzo da parte del membro",
+    "kpi": {
+      "team": "Utilizzo della squadra",
+      "billable": "Ore fatturabili",
+      "nonBillable": "Non fatturabile",
+      "overallocated": "Sovrassegnato"
+    },
+    "overallocatedCount_one": "{{count}} membro",
+    "overallocatedCount_other": "{{count}} membri",
+    "table": {
+      "member": "Membro",
+      "role": "Ruolo",
+      "billableHours": "Ore fatturabili",
+      "totalHours": "Ore totali",
+      "utilization": "Utilizzo",
+      "status": "Stato"
+    },
+    "status": {
+      "high": "Sovrassegnato",
+      "watch": "Guarda",
+      "ok": "Va bene"
+    },
+    "overallocatedCount": "{{count}} membri"
+  },
+  "profitability": {
+    "pageTitle": "Redditività",
+    "pageSubTitle": "Entrate del portafoglio derivanti da fatture pagate, costi monitorati dal tempo registrato e dai costi fissi e utilizzo fatturabile per progetto.",
+    "empty": "Nessun progetto da mostrare ancora.",
+    "revenueNote": "Le entrate vengono pagate tramite fatture del portale clienti. Le entrate a livello di progetto non sono ancora monitorate, quindi la tabella mostra i costi e l'utilizzo.",
+    "noRevenueNote": "Nessuna fattura ancora pagata, quindi entrate, profitto e margine rimangono vuoti finché non vengono riscosse le fatture.",
+    "kpi": {
+      "revenue": "Entrate",
+      "trackedCost": "Costo monitorato",
+      "profit": "Profitto",
+      "margin": "Margine di profitto",
+      "billableUtil": "Utilità fatturabile"
+    },
+    "trendTitle": "Andamento delle entrate e dei profitti",
+    "costBreakdownTitle": "Ripartizione dei costi",
+    "tableTitle": "Redditività del progetto",
+    "cost": {
+      "fixed": "Costi fissi",
+      "timeBased": "Costi basati sul tempo"
+    },
+    "table": {
+      "project": "Progetto",
+      "cost": "Costo",
+      "utilization": "Utilizzo",
+      "health": "Salute"
+    },
+    "health": {
+      "high": "Bruciatura elevata",
+      "watch": "Guarda",
+      "ok": "In pista",
+      "none": "Nessun budget"
+    },
+    "legend": {
+      "revenue": "Entrate",
+      "profit": "Profitto",
+      "cost": "Costo"
+    }
+  },
+  "forecasts": {
+    "pageTitle": "Previsioni",
+    "pageSubTitle": "Prossimi tre mesi da una tendenza lineare degli ultimi tre mesi delle entrate fatturate e dei costi basati sul tempo.",
+    "methodology": "Metodo di previsione: andamento lineare dei tre mesi precedenti. Non una previsione basata sulla pipeline.",
+    "kpi": {
+      "projectedRevenue": "Entrate previste (mese successivo)",
+      "projectedProfit": "Profitto previsto (mese successivo)"
+    },
+    "vsPrevious": "{{value}}% rispetto a questo mese",
+    "noRevenueBaseline": "Nessuna entrata questo mese da confrontare",
+    "noProfitBaseline": "Nessun profitto questo mese da confrontare",
+    "chartTitle": "Previsione delle entrate a 3 mesi",
+    "legend": {
+      "revenue": "Entrate",
+      "profit": "Profitto",
+      "actual": "Reale",
+      "projected": "Proiettato"
+    },
+    "empty": "La cronologia non è ancora sufficiente per fare previsioni. Registra tempo e invia fatture per creare una tendenza."
+  },
+  "myTasksView": {
+    "rowsPerPage": "Righe per pagina:"
+  }
+}

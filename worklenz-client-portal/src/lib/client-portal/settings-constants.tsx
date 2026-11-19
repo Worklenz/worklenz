@@ -126,4 +126,5 @@ export const LANGUAGE_OPTIONS = [
   { value: 'zh', label: '简体中文' },
   { value: 'pl', label: 'Polski' },
   { value: 'fr', label: 'Français' },
+  { value: 'it', label: 'Italiano' },
 ] as const;

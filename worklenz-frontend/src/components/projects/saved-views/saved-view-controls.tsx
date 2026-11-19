@@ -148,8 +148,18 @@ export const SavedViewControls: React.FC = () => {
         defaultValue: 'Keep these filters, sort and grouping as a new project tab',
       })}
     >
-      <Button size="small" icon={<PlusOutlined />} loading={isSaving} onClick={saveAsNewTab}>
-        {t('saveAsNewTab', { defaultValue: 'Save as a new tab' })}
+      <Button
+        size="small"
+        icon={<PlusOutlined />}
+        loading={isSaving}
+        onClick={saveAsNewTab}
+        className={
+          ' !h-[30px] !min-h-[30px] !px-2.5 !py-1.5 !text-xs !font-semibold !rounded-md !border ' +
+          ' ' +
+          ' '
+        }
+      >
+        {t('NewTab', { defaultValue: ' New tab' })}
       </Button>
     </Tooltip>
   );

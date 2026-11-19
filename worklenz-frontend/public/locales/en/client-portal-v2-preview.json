@@ -189,7 +189,12 @@
     "poweredBy": "Powered by Worklenz",
     "projects": "Projects"
   },
-  "noUsers": "No active client users with a project yet. Invite a user and assign a project to preview the portal.",
+  "addClient": "Add client",
+  "addClientUser": "Add client user",
+  "noClientUsers": "No client users yet. Add a client and a client user, then assign a project to preview the portal.",
+  "noUsers": "No client users with a project yet. Invite a user and assign a project to preview the portal.",
+  "noUsersWithProject": "No client users with a project yet. Invite a user and assign a project to preview the portal.",
+  "pendingInvite": "Pending invite",
   "previewAs": "Preview as",
   "project": {
     "back": "← Projects",
@@ -267,5 +272,6 @@
     "filter": "Filter"
   },
   "userOption": "{{name}} · {{role}}",
+  "userOptionPending": "{{name}} · {{role}} · Pending invite",
   "usersFailed": "The client users could not be loaded."
 }

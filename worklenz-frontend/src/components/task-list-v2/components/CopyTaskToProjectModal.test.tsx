@@ -1,9 +1,22 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ComponentProps } from 'react';
 
-const { getMyProjectsToTasks } = vi.hoisted(() => ({
+const { getMyProjectsToTasks, modalRender } = vi.hoisted(() => ({
   getMyProjectsToTasks: vi.fn(),
+  modalRender: vi.fn(),
 }));
+
+vi.mock('@/shared/antd-imports', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/shared/antd-imports')>();
+  return {
+    ...actual,
+    Modal: (props: ComponentProps<typeof actual.Modal>) => {
+      modalRender(props.open);
+      return <actual.Modal {...props} />;
+    },
+  };
+});
 
 vi.mock('@/api/projects/projects.api.service', () => ({
   projectsApiService: {
@@ -32,6 +45,25 @@ import CopyTaskToProjectModal from './CopyTaskToProjectModal';
 describe('CopyTaskToProjectModal', () => {
   beforeEach(() => {
     getMyProjectsToTasks.mockReset();
+    modalRender.mockClear();
+  });
+
+  it('defers dialog mounting until first open and retains it while closing', async () => {
+    getMyProjectsToTasks.mockResolvedValue({ done: true, body: [] });
+    const props = { onCompare: vi.fn(), onClose: vi.fn(), onConfirm: vi.fn() };
+    const { rerender } = render(<CopyTaskToProjectModal {...props} open={false} />);
+    expect(modalRender).not.toHaveBeenCalled();
+    expect(getMyProjectsToTasks).not.toHaveBeenCalled();
+
+    rerender(<CopyTaskToProjectModal {...props} open />);
+    await waitFor(() => expect(getMyProjectsToTasks).toHaveBeenCalledTimes(1));
+    expect(modalRender).toHaveBeenCalledWith(true);
+
+    modalRender.mockClear();
+    rerender(<CopyTaskToProjectModal {...props} open={false} />);
+    expect(modalRender).toHaveBeenCalledWith(false);
+    rerender(<CopyTaskToProjectModal {...props} open />);
+    await waitFor(() => expect(getMyProjectsToTasks).toHaveBeenCalledTimes(2));
   });
 
   it('loads accessible projects and excludes the source project', async () => {

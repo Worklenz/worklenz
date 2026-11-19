@@ -1,0 +1,105 @@
+{
+  "title": "Scegli un piano",
+  "subtitle": "Paghi solo per le persone del tuo team. I prezzi sono per utente, in USD.",
+  "monthly": "Mensile",
+  "annual": "Annuale",
+  "saveUpTo": "Risparmia il {{percent}}% con la fatturazione annuale",
+  "annualBadge": "Risparmia fino al {{percent}}%",
+  "mostPopular": "Il più popolare",
+  "billingPeriod": "Periodo di fatturazione",
+  "seats": "Utenti",
+  "seatsHelp_one": "Minimo {{count}} (l’utente attualmente attivo)",
+  "seatsHelp_other": "Minimo {{count}} (gli utenti attualmente attivi)",
+  "perUserPerMonth": "per utente / mese",
+  "billedAnnually": "fatturato annualmente ({{total}} per utente / anno)",
+  "totalMonthly_one": "{{total}} al mese per {{count}} utente",
+  "totalMonthly_other": "{{total}} al mese per {{count}} utenti",
+  "totalAnnual_one": "{{total}} all’anno per {{count}} utente",
+  "totalAnnual_other": "{{total}} all’anno per {{count}} utenti",
+  "currentPlan": "Piano attuale",
+  "select": "Seleziona piano",
+  "switch": "Passa a questo piano",
+  "updateSeats": "Aggiorna posti",
+  "unavailable": "Questo piano non è disponibile per il periodo di fatturazione selezionato.",
+  "plans": {
+    "pro": {
+      "name": "Pro",
+      "description": "Tutto ciò che serve per gestire progetti e monitorare il tempo.",
+      "features": [
+        "Tutto ciò che è incluso nel piano Free",
+        "Progetti illimitati",
+        "Monitoraggio del tempo e report",
+        "Campi personalizzati e modelli",
+        "Ospiti illimitati e portale clienti"
+      ]
+    },
+    "business": {
+      "name": "Business",
+      "description": "Strumenti di pianificazione, finanza e gestione clienti per i team in crescita.",
+      "features": [
+        "Tutto ciò che è incluso nel piano Pro",
+        "Pianificazione, cronologia e carico di lavoro",
+        "Finanza e personalizzazione del portale",
+        "Integrazione Slack"
+      ]
+    },
+    "expansion": {
+      "name": "AppSumo Expansion",
+      "description": "Aggiungi posti Business ai tuoi codici AppSumo.",
+      "features": [
+        "Funzionalità Business",
+        "Posti aggiuntivi fatturati per utente",
+        "Per i clienti AppSumo"
+      ]
+    },
+    "free": {
+      "name": "Free",
+      "description": "Ideale per iniziare.",
+      "features": [
+        "3 progetti",
+        "Fino a 5 utenti",
+        "Elenco attività e bacheca Kanban",
+        "File e commenti"
+      ]
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "description": "Per grandi organizzazioni.",
+      "features": [
+        "Tutto ciò che è incluso nel piano Business",
+        "Utenti illimitati senza costi aggiuntivi",
+        "Sicurezza avanzata",
+        "Integrazioni personalizzate",
+        "Supporto prioritario"
+      ]
+    }
+  },
+  "legacyConfirm": {
+    "title": "Sostituire il piano attuale?",
+    "content": "Stai usando un piano precedente. Sottoscrivendo un nuovo piano perderai il prezzo precedente e l’abbonamento attuale sarà annullato all’inizio del nuovo.",
+    "ok": "Continua",
+    "cancel": "Mantieni il piano attuale"
+  },
+  "messages": {
+    "success": "Abbonamento aggiornato!",
+    "changed": "Piano di abbonamento modificato!",
+    "seatsUpdated": "Posti aggiornati. Il nuovo numero sarà visibile a breve.",
+    "error": "Impossibile avviare il pagamento. Riprova.",
+    "checkoutError": "Errore durante il pagamento: {{message}}"
+  },
+  "trustLine": "Annulla quando vuoi. Le imposte sono calcolate al pagamento. Pagamento sicuro tramite Paddle.",
+  "contactSales": "Contatta le vendite",
+  "freeForever": "per sempre",
+  "switchToFree": "Passa a Free",
+  "custom": "Personalizzato",
+  "customNote": "prezzi",
+  "freeConfirm": {
+    "title": "Passare al piano Free?",
+    "content": "Il piano a pagamento terminerà e perderai le funzionalità a pagamento, inclusi i progetti oltre i limiti del piano Free. Da qui non puoi annullare questa operazione.",
+    "ok": "Passa a Free",
+    "cancel": "Mantieni il piano attuale"
+  },
+  "decreaseUsers": "Riduci utenti",
+  "increaseUsers": "Aumenta utenti",
+  "freeLimitHint": "Il piano Free supporta fino a {{count}} utenti. Rimuovi utenti per passare a Free."
+}

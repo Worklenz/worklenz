@@ -608,6 +608,8 @@ interface ManagePhaseContentProps {
   // filter call sites are unaffected.
   enableDates?: boolean;
   disabled?: boolean;
+  /** When set (e.g. from Project Settings form), overrides the saved project flag for live UI. */
+  phaseAssigneesEnabled?: boolean;
 }
 
 /**
@@ -619,6 +621,7 @@ const ManagePhaseContent: React.FC<ManagePhaseContentProps> = ({
   projectId,
   enableDates = false,
   disabled = false,
+  phaseAssigneesEnabled: phaseAssigneesEnabledProp,
 }) => {
   const { t } = useTranslation('phases-drawer');
   const dispatch = useAppDispatch();
@@ -647,8 +650,11 @@ const ManagePhaseContent: React.FC<ManagePhaseContentProps> = ({
   const softwareLabels = getSoftwareProjectLabels(project?.project_type);
   const showSprintFields = enableDates || isSoftware;
 
-  // Whether phase assignees feature is enabled for this project
-  const phaseAssigneesEnabled = Boolean(project?.phase_assignees_enabled);
+  // Prefer live form override (Project Settings); fall back to saved project flag
+  const phaseAssigneesEnabled =
+    phaseAssigneesEnabledProp !== undefined
+      ? Boolean(phaseAssigneesEnabledProp)
+      : Boolean(project?.phase_assignees_enabled);
 
   // DnD sensors
   const sensors = useSensors(

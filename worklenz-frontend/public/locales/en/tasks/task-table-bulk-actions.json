@@ -47,5 +47,6 @@
   "archiveSuccessMessage": "{{parentCount}} tasks and {{subtaskCount}} subtasks {{action}}d.",
   "SET_START_DATE": "Set Start Date",
   "Unarchive": "Unarchive",
-  "Archive": "Archive"
+  "Archive": "Archive",
+  "moveToProject": "Move to project"
 }

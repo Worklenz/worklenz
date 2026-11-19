@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 import {
   Avatar,
+  Button,
   CheckOutlined,
   SearchOutlined,
   SettingOutlined,
@@ -14,12 +15,12 @@ import { isSoftwareProjectType } from '@/lib/project/software-project';
 import { FilterSection, ThemeClasses } from './types';
 
 const MANAGE_BUTTON_BASE_CLASS =
-  'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2';
+  'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset active:ring-0';
 
 const getManageButtonThemeClass = (isDarkMode: boolean) =>
   isDarkMode
     ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500 focus:ring-offset-gray-900'
-    : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-600 focus:ring-offset-white';
+    : 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500 focus:ring-offset-white';
 
 interface ManagePhasesButtonProps {
   isDarkMode: boolean;
@@ -170,18 +171,16 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
         title={buttonTitle}
         aria-label={buttonTitle}
         className={`
-          inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
-          border transition-all duration-200 ease-in-out
-          ${
-            selectedCount > 0
-              ? isDarkMode
-                ? 'bg-gray-600 text-white border-gray-500'
-                : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
-              : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
+  inline-flex h-8 box-border items-center gap-1.5 px-3 py-0 text-xs font-semibold rounded-md
+  border transition-colors duration-200 ease-in-out
+  ${selectedCount > 0
+            ? isDarkMode
+              ? 'bg-gray-600 text-white border-gray-500'
+              : 'bg-gray-200 text-gray-800 border-gray-300'
+            : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
-          hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
-          ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
-        `}
+ hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset active:ring-0
+`}
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
@@ -210,22 +209,23 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
             <ManagePhasesButton isDarkMode={isDarkMode} onClick={onManagePhase} />
           )}
           {section.selectedValues[0] === 'status' && (
-            <button
+            <Button
+              type="primary"
+              size="middle"
+              className="!h-8 !min-h-8 !px-3 !text-xs !font-semibold"
+              icon={<SettingOutlined />}
               onClick={onManageStatus}
-              className={`${MANAGE_BUTTON_BASE_CLASS} ${getManageButtonThemeClass(isDarkMode)}`}
             >
-              <SettingOutlined className="w-3.5 h-3.5" />
               {t('manageStatuses', { defaultValue: 'Manage Statuses' })}
-            </button>
+            </Button>
           )}
         </div>
       )}
 
       {isOpen && (
         <div
-          className={`absolute top-full ${
-            dropdownAlign === 'right' ? 'right-0' : 'left-0'
-          } z-50 mt-1 w-64 ${themeClasses.dropdownBg} rounded-md shadow-sm border ${themeClasses.dropdownBorder}`}
+          className={`absolute top-full ${dropdownAlign === 'right' ? 'right-0' : 'left-0'
+            } z-50 mt-1 w-64 ${themeClasses.dropdownBg} rounded-md shadow-sm border ${themeClasses.dropdownBorder}`}
         >
           {section.searchable && (
             <div className={`p-2 border-b ${themeClasses.dividerBorder}`}>
@@ -235,11 +235,10 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                   placeholder={t('search', { defaultValue: 'Search' })}
-                  className={`w-full pl-8 pr-2 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${
-                    isDarkMode
-                      ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
-                      : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
-                  }`}
+                  className={`w-full pl-8 pr-2 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${isDarkMode
+                    ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
+                    : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
+                    }`}
                 />
               </div>
             </div>
@@ -262,12 +261,11 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
                       className={`
                         w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded
                         transition-colors duration-150 text-left
-                        ${
-                          isSelected
-                            ? isDarkMode
-                              ? 'bg-gray-600 text-white'
-                              : 'bg-gray-200 text-gray-800 font-semibold'
-                            : `${themeClasses.optionText} ${themeClasses.optionHover}`
+                        ${isSelected
+                          ? isDarkMode
+                            ? 'bg-gray-600 text-white'
+                            : 'bg-gray-200 text-gray-800 font-semibold'
+                          : `${themeClasses.optionText} ${themeClasses.optionHover}`
                         }
                       `}
                     >
@@ -275,10 +273,9 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
                         <div
                           className={`
                             flex items-center justify-center w-3.5 h-3.5 border rounded
-                            ${
-                              isSelected
-                                ? 'bg-gray-600 border-gray-800 text-white'
-                                : 'border-gray-300 dark:border-gray-600'
+                            ${isSelected
+                              ? 'bg-gray-600 border-gray-800 text-white'
+                              : 'border-gray-300 dark:border-gray-600'
                             }
                           `}
                         >

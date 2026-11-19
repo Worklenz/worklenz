@@ -130,8 +130,14 @@ export interface ITaskState {
   error: string | null;
   taskAssignees: ITaskListMemberFilter[];
   loadingAssignees: boolean;
+  assigneesProjectId: string | null;
+  assigneesRequestId: string | null;
+  assigneesLoadingProjectId: string | null;
   statuses: ITaskStatusViewModel[];
   loadingLabels: boolean;
+  labelsProjectId: string | null;
+  labelsRequestId: string | null;
+  labelsLoadingProjectId: string | null;
   labels: ITaskLabelFilter[];
   priorities: string[];
   phases: string[];
@@ -165,9 +171,15 @@ const initialState: ITaskState = {
   error: null,
   taskAssignees: [],
   loadingAssignees: false,
+  assigneesProjectId: null,
+  assigneesRequestId: null,
+  assigneesLoadingProjectId: null,
   statuses: [],
   labels: [],
   loadingLabels: false,
+  labelsProjectId: null,
+  labelsRequestId: null,
+  labelsLoadingProjectId: null,
   priorities: [],
   phases: [],
   members: [],
@@ -1345,12 +1357,19 @@ const taskSlice = createSlice({
       .addCase(fetchSubTasks.rejected, (state, action) => {
         state.error = action.error.message || 'Failed to fetch sub tasks';
       })
-      .addCase(fetchTaskAssignees.pending, state => {
+      .addCase(fetchTaskAssignees.pending, (state, action) => {
         state.loadingAssignees = true;
+        if (state.assigneesProjectId !== action.meta.arg) state.assigneesProjectId = null;
+        state.assigneesRequestId = action.meta.requestId;
+        state.assigneesLoadingProjectId = action.meta.arg;
         state.error = null;
       })
       .addCase(fetchTaskAssignees.fulfilled, (state, action) => {
+        if (state.assigneesRequestId !== action.meta.requestId) return;
         state.loadingAssignees = false;
+        state.assigneesProjectId = action.meta.arg;
+        state.assigneesRequestId = null;
+        state.assigneesLoadingProjectId = null;
         const existingSelections = new Map(
           state.taskAssignees.map(assignee => [assignee.id, assignee.selected])
         );
@@ -1360,7 +1379,10 @@ const taskSlice = createSlice({
         }));
       })
       .addCase(fetchTaskAssignees.rejected, (state, action) => {
+        if (state.assigneesRequestId !== action.meta.requestId) return;
         state.loadingAssignees = false;
+        state.assigneesRequestId = null;
+        state.assigneesLoadingProjectId = null;
         state.error = action.error.message || 'Failed to fetch task assignees';
       })
       .addCase(fetchTaskListColumns.pending, state => {
@@ -1396,11 +1418,18 @@ const taskSlice = createSlice({
         state.error = action.error.message || 'Failed to fetch task list columns';
       })
       // Fetch Labels By Project
-      .addCase(fetchLabelsByProject.pending, state => {
+      .addCase(fetchLabelsByProject.pending, (state, action) => {
         state.loadingLabels = true;
+        if (state.labelsProjectId !== action.meta.arg) state.labelsProjectId = null;
+        state.labelsRequestId = action.meta.requestId;
+        state.labelsLoadingProjectId = action.meta.arg;
         state.error = null;
       })
-      .addCase(fetchLabelsByProject.fulfilled, (state, action: PayloadAction<ITaskLabel[]>) => {
+      .addCase(fetchLabelsByProject.fulfilled, (state, action) => {
+        if (state.labelsRequestId !== action.meta.requestId) return;
+        state.labelsProjectId = action.meta.arg;
+        state.labelsRequestId = null;
+        state.labelsLoadingProjectId = null;
         // Preserve the selected state of existing labels so active filter selections
         // are not wiped when the list is refreshed (e.g. after a new label is created).
         const selectedIds = new Set(state.labels.filter(l => l.selected).map(l => l.id));
@@ -1412,7 +1441,10 @@ const taskSlice = createSlice({
         state.loadingLabels = false;
       })
       .addCase(fetchLabelsByProject.rejected, (state, action) => {
+        if (state.labelsRequestId !== action.meta.requestId) return;
         state.loadingLabels = false;
+        state.labelsRequestId = null;
+        state.labelsLoadingProjectId = null;
         state.error = action.payload as string;
       })
       .addCase(updateColumnVisibility.fulfilled, (state, action) => {

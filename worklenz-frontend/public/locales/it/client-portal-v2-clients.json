@@ -1,0 +1,403 @@
+{
+  "actions": {
+    "createLinkFailed": "Impossibile creare il collegamento di accesso.",
+    "deactivateFailed": "Impossibile disattivare l'utente.",
+    "deactivated": "{{name}} è stato disattivato. L'accesso al portale e all'API viene revocato immediatamente.",
+    "messageNoProjects": "{{name}} non ha ancora progetti. Assegna prima un progetto, quindi avvia una discussione.",
+    "reactivateFailed": "Impossibile riattivare l'utente.",
+    "reactivated": "{{name}} può accedere di nuovo. Il loro stato precedente è stato ripristinato.",
+    "removeFailed": "Impossibile rimuovere l'utente.",
+    "removed": "{{name}} è stato rimosso dal portale.",
+    "resendFailed": "Impossibile inviare nuovamente l'invito.",
+    "resent": "Invito inviato nuovamente a {{email}}. Il collegamento è valido per 7 giorni.",
+    "accountRestored": "L'account di {{name}} è stato ripristinato. Possono accedere di nuovo.",
+    "restoreAccountFailed": "Impossibile ripristinare l'account."
+  },
+  "assign": {
+    "description": "Un utente vede sempre e solo i progetti assegnati qui, anche se appartengono a {{organization}}. Ciò che possono fare all'interno di ciascun progetto dipende dal loro ruolo:",
+    "failed": "Impossibile aggiornare l'accesso al progetto.",
+    "loadFailed": "Impossibile caricare i progetti.",
+    "noProjects": "{{organization}} non ha ancora progetti.",
+    "portalOff": "Il Portale Clienti è disattivato per questo progetto. Accendilo prima.",
+    "save": "Salva",
+    "saved": "Accesso al progetto aggiornato per {{name}}.",
+    "savedWithRemoval": "Accesso al progetto aggiornato per {{name}}. L'accesso rimosso viene applicato immediatamente.",
+    "title": "Assegna progetti · {{name}}"
+  },
+  "deactivate": {
+    "body": "{{name}} perde subito l'accesso. Se hanno una sessione aperta, la richiesta successiva fallisce e vengono disconnessi. Potrai riattivarli in seguito e il loro stato precedente verrà ripristinato.",
+    "confirm": "Disattiva",
+    "title": "Disattivare questo utente client?"
+  },
+  "edit": {
+    "failed": "Impossibile aggiornare l'utente.",
+    "roleChanged": "{{name}} ora è un {{role}}. Si applica alla loro successiva richiesta, non solo dopo un nuovo accesso.",
+    "roleNotice": "Le modifiche al ruolo diventano effettive al successivo controllo di autorizzazione dell'utente, non solo dopo un nuovo accesso.",
+    "save": "Salva",
+    "title": "Modifica utente · {{organization}}",
+    "updated": "{{name}} aggiornato."
+  },
+  "fields": {
+    "email": "E-mail (indirizzo di accesso)",
+    "emailInvalid": "Inserisci un indirizzo email valido.",
+    "emailRequired": "Inserisci l'indirizzo email dell'utente.",
+    "jobTitle": "Titolo di lavoro",
+    "name": "Nome completo",
+    "nameRequired": "Inserisci il nome dell'utente.",
+    "phone": "Telefono (facoltativo)",
+    "role": "Ruolo"
+  },
+  "lastAdmin": {
+    "confirm": "Continua comunque",
+    "pendingApprovalsTitle": "Ciò lascia un'approvazione senza un approvatore",
+    "title": "Questo è l'ultimo amministratore del cliente"
+  },
+  "menu": {
+    "assign": "Assegna progetti",
+    "createLink": "Crea collegamento di accesso",
+    "deactivate": "Disattiva utente",
+    "edit": "Modifica utente e ruolo",
+    "message": "Messaggio",
+    "reactivate": "Riattiva utente",
+    "remove": "Rimuovi utente",
+    "resend": "Invia nuovamente l'invito",
+    "resendShort": "Invia nuovamente",
+    "view": "Visualizza profilo",
+    "restoreAccount": "Ripristina l'account"
+  },
+  "organizations": {
+    "accessFilter": {
+      "active": "Attivo",
+      "deactivated": "Disattivato",
+      "invited": "Invitato",
+      "none": "Nessun utente"
+    },
+    "awaitingApprovals_one": "{{count}} approvazione",
+    "awaitingApprovals_other": "{{count}} approvazioni",
+    "awaitingChangeRequests_one": "{{count}} richiesta di modifica",
+    "awaitingChangeRequests_other": "{{count}} richieste di modifica",
+    "columns": {
+      "access": "Accesso al portale",
+      "actions": "Azioni",
+      "awaiting": "In attesa del cliente",
+      "client": "Cliente",
+      "contactEmail": "Contatto e-mail",
+      "contactName": "Contatto primario",
+      "projects": "Progetti di portali",
+      "users": "Utenti"
+    },
+    "empty": "Nessuna organizzazione cliente ancora. Utilizzare Aggiungi nuovo per creare il primo.",
+    "emptySearch": "Nessun cliente corrisponde a questi filtri.",
+    "createLinkFailed": "Impossibile creare il collegamento di invito.",
+    "menu": {
+      "copyInvite": "Copia il link dell'invito",
+      "edit": "Modifica cliente",
+      "message": "Cliente del messaggio",
+      "open": "Visualizza i dettagli",
+      "projects": "Gestire progetti",
+      "users": "Gestisci utenti e accessi"
+    },
+    "rowActions": "Azioni per {{name}}",
+    "search": "Cerca per cliente, contatto, email o telefono...",
+    "searchLabel": "Cerca organizzazioni clienti",
+    "tableLabel": "Organizzazioni clienti",
+    "usersSummary": "{{active}} attivo · {{total}} totale",
+    "waiting": "{{count}} in attesa",
+    "waiting_one": "{{count}} in attesa",
+    "waiting_other": "{{count}} in attesa",
+    "columnHelp": {
+      "access": "Attivo se qualsiasi utente può accedere, altrimenti Invitato, Disattivato o Nessun utente.",
+      "awaiting": "Approvazioni e richieste di informazioni in attesa del cliente.",
+      "client": "L'organizzazione cliente.",
+      "contactEmail": "Indirizzo email del contatto principale.",
+      "contactName": "Il primo amministratore del portale attivo di questo cliente.",
+      "projects": "Progetti condivisi con questo cliente nel portale.",
+      "users": "Utenti che hanno effettuato l'accesso, tra tutti gli utenti per questo client."
+    },
+    "deleted": {
+      "show": "Eliminato ({{count}})",
+      "hide": "Torniamo ai clienti",
+      "banner": "Un cliente eliminato può essere ripristinato per {{days}} giorni. Successivamente viene rimosso definitivamente.",
+      "columnDeleted": "Eliminato",
+      "columnRemoval": "Rimosso definitivamente",
+      "empty": "Nessun client eliminato. Un cliente che elimini rimane qui per {{days}} giorni, quindi puoi ripristinarlo."
+    }
+  },
+  "overview": {
+    "attention": {
+      "approvalAwaiting": "il cliente",
+      "changeRequestReview": "\"{{title}}\" necessita della tua revisione",
+      "empty": "Niente ti aspetta per {{name}}.",
+      "inviteExpired": "L'invito di {{name}} è scaduto",
+      "inviteExpiredAsked": "L'invito di {{name}} è scaduto e ha chiesto un nuovo collegamento",
+      "theClient": "il cliente",
+      "title": "Ha bisogno di attenzione",
+      "unreadMessage": "Messaggio del cliente non letto"
+    },
+    "recent": {
+      "empty": "Nessuna attività ancora",
+      "error": "Impossibile caricare l'attività recente.",
+      "title": "Attività recente"
+    },
+    "stats": {
+      "awaiting": "In attesa dell'azione del cliente",
+      "awaitingSub": "Approvazioni e richieste di informazioni",
+      "openChangeRequests": "Aprire richieste di modifica",
+      "portalProjects": "Progetti di portali"
+    }
+  },
+  "page": {
+    "addClient": "Aggiungi nuovo",
+    "description": "Organizzazioni clienti, persone che possono accedere al loro portale e cosa aspetta ciascuna di loro.",
+    "organizationsTab": "Clienti",
+    "title": "Clienti",
+    "usersTab": "Utenti clienti",
+    "viewToggle": "Visualizzazione dei clienti"
+  },
+  "profile": {
+    "assignedProjects_one": "Progetti assegnati ({{count}})",
+    "assignedProjects_other": "Progetti assegnati ({{count}})",
+    "lastAccess": "Ultimo accesso",
+    "neverAccessed": "Mai",
+    "noJobTitle": "Nessun titolo professionale in archivio",
+    "noProjects": "Nessun progetto assegnato ancora. Questo utente accede a un portale vuoto.",
+    "phone": "Telefono",
+    "title": "Utente cliente"
+  },
+  "remove": {
+    "body": "{{name}} e le relative assegnazioni di progetto vengono rimossi. Commenti e approvazioni che hanno fatto rimanere nella storia.",
+    "confirm": "Rimuovi utente",
+    "title": "Rimuovere questo utente client?"
+  },
+  "retry": "Riprova",
+  "roleAdminDescription": "Visualizza i progetti assegnati, i commenti, carica i file consentiti, invia richieste di modifica, approva gli elementi e può gestire gli utenti client se abilitato.",
+  "roleMemberDescription": "Visualizza i progetti assegnati, i commenti, carica i file consentiti e invia richieste di modifica. Impossibile approvare o gestire gli utenti.",
+  "roleViewerDescription": "Sola lettura: informazioni sul progetto, tappe fondamentali, attività e file visibili al cliente. Non è possibile commentare, caricare, approvare o inviare richieste di modifica.",
+  "rowsPerPage": "Righe per pagina:",
+  "stats": {
+    "activeUsers": "Utenti attivi",
+    "awaiting": "In attesa dell'azione del cliente",
+    "awaitingSub": "Approvazioni e richieste di informazioni",
+    "expired": "{{count}} scaduto",
+    "expired_one": "{{count}} scaduto",
+    "expired_other": "{{count}} scaduto",
+    "invited": "Invitato",
+    "organizations": "Organizzazioni clienti"
+  },
+  "users": {
+    "allRoles": "Tutti i ruoli",
+    "allStatuses": "Tutti gli stati",
+    "columns": {
+      "actions": "Azioni",
+      "email": "E-mail",
+      "jobTitle": "Titolo di lavoro",
+      "lastAccess": "Ultimo accesso",
+      "name": "Nome",
+      "organization": "Cliente",
+      "phone": "Numero di telefono",
+      "projects": "Progetti",
+      "role": "Ruolo",
+      "status": "Stato",
+      "user": "Utente"
+    },
+    "empty": "Nessun utente cliente ancora. Utilizza Aggiungi nuovo per invitare il primo.",
+    "emptyFiltered": "Nessun utente cliente corrisponde a questi filtri.",
+    "groupBy": {
+      "client": "Gruppo",
+      "label": "Raggruppare gli utenti del cliente",
+      "count_one": "{{count}} utente",
+      "count_other": "{{count}} utenti"
+    },
+    "invitedAgo": "Invitato {{when}}",
+    "neverAccessed": "Mai",
+    "noProjects": "Nessuno assegnato",
+    "projectCount": "{{count}} progetti",
+    "projectCount_one": "{{count}} progetto",
+    "projectCount_other": "{{count}} progetti",
+    "roleFilter": "Filtra per ruolo",
+    "rowActions": "Azioni per {{name}}",
+    "search": "Cerca per nome, email, cliente, titolo professionale, telefono o progetto...",
+    "searchInOrganization": "Cerca per nome, email, titolo professionale, telefono o progetto...",
+    "searchLabel": "Cerca gli utenti del cliente",
+    "statusFilter": "Filtra per stato",
+    "tableLabel": "Utenti clienti",
+    "columnHelp": {
+      "email": "L'indirizzo con cui l'utente accede.",
+      "jobTitle": "Il loro ruolo all’interno dell’azienda del cliente.",
+      "lastAccess": "L'ultima volta che l'utente ha effettuato l'accesso al portale.",
+      "name": "Il nome completo dell'utente cliente.",
+      "organization": "Il client a cui appartiene questo utente.",
+      "phone": "Contattare il numero di telefono, se fornito.",
+      "projects": "Numero di progetti di portale che questo utente può aprire.",
+      "role": "Cosa può fare l'utente nel portale: Amministratore, Membro o Visualizzatore.",
+      "status": "Se l'utente ha effettuato l'accesso, è invitato o è disattivato."
+    },
+    "searchClients": "Cerca clienti…"
+  },
+  "workspace": {
+    "activity": {
+      "empty": "Nessuna attività per {{name}} ancora.",
+      "error": "Impossibile caricare l'attività.",
+      "openFullLog": "Apri il registro di controllo completo",
+      "sideClient": "Cliente",
+      "sideInternal": "Interno",
+      "title": "Traccia di controllo per {{name}}"
+    },
+    "approvals": {
+      "columns": {
+        "due": "Dovuto",
+        "id": "ID",
+        "linked": "Elemento collegato",
+        "status": "Stato",
+        "title": "Titolo"
+      },
+      "empty": "Nessuna approvazione per {{name}} ancora.",
+      "request": "Richiedi l'approvazione",
+      "tableLabel": "Approvazioni per questo cliente"
+    },
+    "billing": {
+      "createInvoice": "Crea fattura",
+      "manageUsers": "Gestisci gli utenti",
+      "title": "Fatture",
+      "warningDescription": "Nessuno dei loro utenti ha accettato un invito, quindi non possono visualizzare o pagare le fatture nel loro portale. Puoi comunque creare fatture. Invita prima un utente se dovesse vederlo.",
+      "warningTitle": "{{name}} non può ancora utilizzare il suo portale"
+    },
+    "changeRequests": {
+      "columns": {
+        "id": "ID",
+        "priority": "Priorità",
+        "status": "Stato",
+        "submitted": "Inviato",
+        "title": "Titolo"
+      },
+      "empty": "Nessuna richiesta di modifica da {{name}} ancora.",
+      "tableLabel": "Richieste di modifica da questo client"
+    },
+    "errors": {
+      "backToClients": "Torniamo ai clienti",
+      "loadDescription": "Per favore riprova.",
+      "loadTitle": "Impossibile caricare questo client",
+      "notFoundDescription": "Potrebbe essere stato rimosso o il collegamento è sbagliato.",
+      "notFoundTitle": "Cliente non trovato"
+    },
+    "header": {
+      "actionsLabel": "Azioni del cliente",
+      "edit": "Modifica cliente",
+      "message": "Messaggio"
+    },
+    "projects": {
+      "assign": {
+        "button": "Assegna progetto",
+        "cancel": "Annulla",
+        "confirm": "Assegnare",
+        "description": "Scegli progetti di workspace che non appartengono ancora a un cliente. Il Portale Clienti rimane spento finché non lo accendi.",
+        "done_one": "{{count}} progetto assegnato a {{name}}. Attiva il Portale Clienti per condividerlo.",
+        "done_other": "{{count}} progetti assegnati a {{name}}. Attiva il Portale Clienti per condividerli.",
+        "failed": "Impossibile assegnare alcuni progetti: {{details}}",
+        "loadFailed": "Impossibile caricare i progetti.",
+        "none": "Ogni progetto di spazio di lavoro appartiene già a un cliente.",
+        "placeholder": "Cerca progetti...",
+        "retry": "Riprova",
+        "title": "Assegna progetti a {{name}}"
+      },
+      "columns": {
+        "phase": "Fase",
+        "portal": "Portale",
+        "progress": "Progresso",
+        "project": "Progetto",
+        "status": "Stato rivolto al cliente",
+        "users": "Utenti"
+      },
+      "empty": "Nessun progetto per {{name}} ancora. Collega un progetto dell'area di lavoro a questo client da Progetti portale.",
+      "emptyShort": "Nessun progetto per {{name}} ancora.",
+      "manage": "Gestisci",
+      "progressLabel": "Avanzamento di {{name}}",
+      "tableLabel": "Progetti di questo cliente",
+      "title": "Progetti"
+    },
+    "rail": {
+      "active": "Attivo",
+      "balance": "Equilibrio",
+      "billing": "Fatturazione",
+      "deactivated": "Disattivato",
+      "email": "E-mail",
+      "hint": "Un utente client vede solo i progetti a lui assegnati.",
+      "inviteUser": "Invita un utente",
+      "invited": "Invitato",
+      "organization": "Organizzazione",
+      "portalAccess": "Accesso al portale",
+      "portalProjects": "Progetti di portali",
+      "primaryContact": "Contatto primario",
+      "quickActions": "Azioni rapide",
+      "requestApproval": "Richiedi l'approvazione"
+    },
+    "tabs": {
+      "activity": "Attività",
+      "approvals": "Approvazioni",
+      "billing": "Fatturazione",
+      "changeRequests": "Richieste di modifica",
+      "overview": "Panoramica",
+      "projects": "Progetti",
+      "users": "Utenti e accesso"
+    },
+    "users": {
+      "description": "Persone presso {{name}} che possono accedere. Ciascuno vede solo i progetti loro assegnati.",
+      "invite": "Invita utente"
+    }
+  },
+  "orgActions": {
+    "menu": {
+      "deactivate": "Disattiva cliente",
+      "reactivate": "Riattivare il cliente",
+      "delete": "Elimina cliente",
+      "restore": "Ripristinare il cliente"
+    },
+    "deactivate": {
+      "title": "Disattivare {{name}}?",
+      "body": "Tutti in {{name}} perdono immediatamente l'accesso al portale e chiunque abbia effettuato l'accesso verrà disconnesso alla richiesta successiva. Tutti i dati vengono conservati e puoi riattivare il client in qualsiasi momento.",
+      "confirm": "Disattiva cliente",
+      "success": "{{name}} è stato disattivato. I suoi utenti non possono più accedere.",
+      "failed": "Impossibile disattivare il client."
+    },
+    "reactivate": {
+      "title": "Riattivare {{name}}?",
+      "body": "I suoi utenti possono accedere nuovamente, con lo stesso accesso che avevano in precedenza.",
+      "confirm": "Riattivare il cliente",
+      "success": "{{name}} è stato riattivato.",
+      "failed": "Impossibile riattivare il client."
+    },
+    "delete": {
+      "title": "Eliminare {{name}}?",
+      "checking": "Verifica degli effetti dell'eliminazione di questo client…",
+      "checkFailed": "Non è stato possibile verificare gli effetti dell'eliminazione di questo client.",
+      "usersAffected": "Utenti che perdono subito l'accesso: {{count}}",
+      "effect": "La loro richiesta successiva fallisce e vengono disconnessi. Nulla viene ancora rimosso: il cliente, i suoi utenti, i progetti, le approvazioni, le discussioni e le fatture vengono conservati per {{days}} giorni.",
+      "restorable": "Fino ad allora puoi ripristinare il client dalla vista Eliminati con tutta la sua cronologia. Successivamente viene rimosso definitivamente; le fatture vengono conservate come record.",
+      "blockedTitle": "Fatture non pagate",
+      "blocked": "{{numbers}}. Salda o annulla queste fatture prima di eliminare questo cliente.",
+      "approvals": "Approvazioni ancora in attesa di una decisione: {{refs}}.",
+      "approvalsAck": "Capisco che queste approvazioni non possano più essere decise.",
+      "changeRequests": "Richieste di modifica aperte: {{titles}}.",
+      "changeRequestsAck": "Capisco che non è più possibile elaborare queste richieste di modifica.",
+      "warningsTitle": "Conferma prima di eliminare",
+      "confirm": "Elimina cliente",
+      "success": "{{name}} è stato eliminato. Puoi ripristinarlo fino al {{date}}.",
+      "failed": "Impossibile eliminare il client."
+    },
+    "restore": {
+      "title": "Ripristinare {{name}}?",
+      "body": "I suoi utenti possono accedere nuovamente e i progetti, le approvazioni, le discussioni, le fatture e la cronologia tornano esattamente come prima.",
+      "confirm": "Ripristinare il cliente",
+      "success": "{{name}} è stato ripristinato.",
+      "failed": "Impossibile ripristinare il client.",
+      "nameTaken": "Un altro client è già denominato \"{{name}}\". Assegna a questo client un nuovo nome per ripristinarlo.",
+      "newName": "Nuovo nome cliente",
+      "newNameRequired": "Immettere un nome per il cliente."
+    }
+  },
+  "restoreAccount": {
+    "title": "Ripristinare questo account?",
+    "body": "Questo account è stato eliminato da {{name}}. Ripristinalo solo se te lo hanno chiesto; potranno quindi accedere nuovamente con il ruolo e i progetti precedenti.",
+    "confirm": "Ripristina l'account"
+  }
+}

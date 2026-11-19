@@ -31,7 +31,7 @@ import { alertService } from '@/services/alerts/alertService';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const LabelsSettings = () => {
-  const { t } = useTranslation('settings/labels');
+  const { t, i18n } = useTranslation('settings/labels');
   const { trackMixpanelEvent } = useMixpanelTracking();
   useDocumentTitle(t('pageTitle', 'Manage Labels'));
 
@@ -136,7 +136,7 @@ const LabelsSettings = () => {
       render: (record: ITaskLabel) => {
         const usageCount = record.usage || 0;
         const labelName = decodeHtmlEntities(record.name) || 'this label';
-        const plural = usageCount > 1 ? 's' : '';
+        const plural = !i18n.resolvedLanguage?.startsWith('it') && usageCount > 1 ? 's' : '';
         const isInUse = usageCount > 0;
 
         return (

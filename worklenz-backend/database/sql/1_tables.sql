@@ -12,7 +12,7 @@ CREATE TYPE DEPENDENCY_TYPE AS ENUM ('blocked_by');
 
 CREATE TYPE SCHEDULE_TYPE AS ENUM ('daily', 'weekly', 'yearly', 'monthly', 'every_x_days', 'every_x_weeks', 'every_x_months');
 
-CREATE TYPE LANGUAGE_TYPE AS ENUM ('en', 'es', 'pt', 'alb', 'de', 'zh_cn', 'ko');
+CREATE TYPE LANGUAGE_TYPE AS ENUM ('en', 'es', 'pt', 'alb', 'de', 'zh_cn', 'ko', 'pl', 'fr', 'it');
 
 -- START: Users
 CREATE SEQUENCE IF NOT EXISTS users_user_no_seq START 1;
@@ -642,7 +642,8 @@ CREATE TABLE IF NOT EXISTS organizations (
     is_lkr_billing           BOOLEAN                  DEFAULT FALSE,
     working_hours            DOUBLE PRECISION         DEFAULT 8                  NOT NULL,
     business_plan_override   BOOLEAN                  DEFAULT FALSE              NOT NULL,
-    team_member_limit_override BOOLEAN                DEFAULT FALSE              NOT NULL
+    team_member_limit_override BOOLEAN                DEFAULT FALSE              NOT NULL,
+    enforce_daily_time_limit BOOLEAN                  DEFAULT TRUE               NOT NULL
 );
 
 COMMENT ON COLUMN organizations.business_plan_override IS 'Manual override to grant business plan feature access (client portal, Slack, finance, etc.) regardless of subscription status. Set manually by admins.';
@@ -856,7 +857,8 @@ CREATE TABLE IF NOT EXISTS projects (
     hours_per_day          INTEGER                  DEFAULT 8,
     health_id              UUID,
     estimated_working_days INTEGER                  DEFAULT 0,
-    priority_id            UUID
+    priority_id            UUID,
+    archived_for_team      BOOLEAN                  DEFAULT FALSE              NOT NULL
 );
 
 ALTER TABLE projects

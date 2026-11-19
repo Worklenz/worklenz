@@ -190,7 +190,7 @@ export default class ReportingAllTasksController extends ReportingControllerBase
       "name": "t.name",
       "project_name": "project_name",
       "status_name": "status_name",
-      "priority_name": "priority_name",
+      "priority_name": "(SELECT value FROM task_priorities WHERE id = t.priority_id)",
       "end_date": "t.end_date",
       "start_date": "t.start_date",
       "created_at": "t.created_at",
@@ -357,7 +357,7 @@ export default class ReportingAllTasksController extends ReportingControllerBase
     res.end();
   }
 
-  private static async getTasksData(req: IWorkLenzRequest, body: IAllTasksRequest) {
+  public static async getTasksData(req: IWorkLenzRequest, body: IAllTasksRequest) {
     const page = body.index || 1;
     const pageSize = body.size || 50;
     const offset = (page - 1) * pageSize;

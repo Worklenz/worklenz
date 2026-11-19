@@ -1,3 +1,4 @@
+import type { PoolClient } from "pg";
 import { Server, Socket } from "socket.io";
 import db from "../config/db";
 import { IPassportSession } from "../interfaces/passport-session";
@@ -528,25 +529,26 @@ export const getUsersWhoCanViewTask = async (
 };
 
 /**
- * Whether the user may mutate a task under assignee-scope rules (TVR-13).
- * Direct assignees (including any of multiple — TVR-14) may edit.
- * Parent-context-only and notification-exception viewers may view but not edit.
+ * Single-query check for multiple tasks:
+ * Resolves whether `userId` has permission to edit all tasks in `taskIds`.
  */
-export const canUserEditTask = async (
+export const canUserEditTasks = async (
   userId: string | null | undefined,
-  taskId: string | null | undefined,
-  session?: IPassportSession | null
+  taskIds: string[],
+  session?: IPassportSession | null,
+  client?: PoolClient
 ): Promise<boolean> => {
-  if (!userId || !taskId) return false;
+  if (!userId || !Array.isArray(taskIds) || taskIds.length === 0) return false;
 
   if (isAssigneeScopeSessionExempt(session)) {
     return true;
   }
 
   try {
-    const result = await db.query(
+    const result = await (client ?? db).query(
       `
       SELECT
+        t.id,
         COALESCE(p.restrict_tasks_to_assignee, FALSE) AS restrict_on,
         tm.id AS team_member_id,
         ${buildGuestExemptSql("$1", "tm")} AS is_guest,
@@ -573,31 +575,47 @@ export const canUserEditTask = async (
         ON tm.team_id = p.team_id
        AND tm.user_id = $1
       LEFT JOIN roles r ON r.id = tm.role_id
-      WHERE t.id = $2
-      LIMIT 1;
+      WHERE t.id = ANY($2::UUID[]);
       `,
-      [userId, taskId]
+      [userId, taskIds]
     );
 
-    const row = result.rows[0];
-    if (!row) return false;
-    if (row.restrict_on !== true) return true;
-    if (
-      row.is_guest === true ||
-      row.is_project_manager === true ||
-      row.is_privileged_role === true
-    ) {
-      return true;
+    if (result.rows.length !== taskIds.length) return false;
+
+    for (const row of result.rows) {
+      if (row.restrict_on !== true) continue;
+      if (
+        row.is_guest === true ||
+        row.is_project_manager === true ||
+        row.is_privileged_role === true
+      ) {
+        continue;
+      }
+      if (row.is_directly_assigned !== true) return false;
     }
-    return row.is_directly_assigned === true;
+    return true;
   } catch (error) {
-    // Fail closed: deny access + log on DB error (IDOR prevention)
     console.error(
-      `[SECURITY] Database error in canUserEditTask for userId=${userId}, taskId=${taskId}:`,
+      `[SECURITY] Database error in canUserEditTasks for userId=${userId}:`,
       error
     );
     return false;
   }
+};
+
+/**
+ * Whether the user may mutate a task under assignee-scope rules (TVR-13).
+ * Direct assignees (including any of multiple — TVR-14) may edit.
+ * Parent-context-only and notification-exception viewers may view but not edit.
+ */
+export const canUserEditTask = async (
+  userId: string | null | undefined,
+  taskId: string | null | undefined,
+  session?: IPassportSession | null,
+  client?: PoolClient
+): Promise<boolean> => {
+  if (!taskId) return false;
+  return canUserEditTasks(userId, [taskId], session, client);
 };
 
 /** Inverse of canUserEditTask for socket/API early-returns. */

@@ -1,6 +1,5 @@
 import db from "../../../config/db";
-import * as Highcharts from "highcharts";
-import { ITasksByDue, ITasksByPriority, ITasksByStatus } from "../interfaces";
+import { IChartPoint, ITasksByDue, ITasksByPriority, ITasksByStatus } from "../interfaces";
 import ReportingControllerBase from "../reporting-controller-base";
 import {
   DATE_RANGES,
@@ -192,7 +191,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     const doing = int(data?.counts.doing);
     const done = int(data?.counts.done);
 
-    const chart: Highcharts.PointOptionsObject[] = [];
+    const chart: IChartPoint[] = [];
 
     return {
       all,
@@ -233,7 +232,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     const high = int(data?.counts.high);
     const critical = int(data?.counts.critical);
 
-    const chart: Highcharts.PointOptionsObject[] = [];
+    const chart: IChartPoint[] = [];
 
     return {
       all: 0,
@@ -264,7 +263,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     const res = await db.query(q, [projectId]);
     const [data] = res.rows;
 
-    const chart: Highcharts.PointOptionsObject[] = [];
+    const chart: IChartPoint[] = [];
 
     return {
       all: 0,
@@ -609,7 +608,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     `;
     const result = await db.query(q, [teamMemberId]);
 
-    const chart: Highcharts.PointOptionsObject[] = [];
+    const chart: IChartPoint[] = [];
 
     const total = result.rows.reduce((accumulator: number, current: {
       count: number
@@ -663,7 +662,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     `;
     const result = await db.query(q, [teamMemberId]);
 
-    const chart: Highcharts.PointOptionsObject[] = [];
+    const chart: IChartPoint[] = [];
 
     const total = result.rows.reduce((accumulator: number, current: {
       count: number
@@ -702,7 +701,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
 
     const total = int(d.low) + int(d.medium) + int(d.high) + int(d.critical);
 
-    const chart: Highcharts.PointOptionsObject[] = [
+    const chart: IChartPoint[] = [
       new PointOptionsObject("Low", TASK_PRIORITY_LOW_COLOR, d.low),
       new PointOptionsObject("Medium", TASK_PRIORITY_MEDIUM_COLOR, d.medium),
       new PointOptionsObject("High", TASK_PRIORITY_HIGH_COLOR, d.high),
@@ -762,7 +761,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
 
     const total = int(d.low) + int(d.medium) + int(d.high) + int(d.critical);
 
-    const chart: Highcharts.PointOptionsObject[] = [
+    const chart: IChartPoint[] = [
       new PointOptionsObject("Low", TASK_PRIORITY_LOW_COLOR, d.low),
       new PointOptionsObject("Medium", TASK_PRIORITY_MEDIUM_COLOR, d.medium),
       new PointOptionsObject("High", TASK_PRIORITY_HIGH_COLOR, d.high),
@@ -818,7 +817,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
 
     const total = int(d.total);
 
-    const chart: Highcharts.PointOptionsObject[] = [
+    const chart: IChartPoint[] = [
       new PointOptionsObject("Todo", TASK_STATUS_TODO_COLOR, d.todo),
       new PointOptionsObject("Doing", TASK_STATUS_DOING_COLOR, d.doing),
       new PointOptionsObject("Done", TASK_STATUS_DONE_COLOR, d.done),
@@ -860,7 +859,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
 
     const total = int(d.todo) + int(d.doing) + int(d.done);
 
-    const chart: Highcharts.PointOptionsObject[] = [
+    const chart: IChartPoint[] = [
       new PointOptionsObject("Todo", TASK_STATUS_TODO_COLOR, d.todo),
       new PointOptionsObject("Doing", TASK_STATUS_DOING_COLOR, d.doing),
       new PointOptionsObject("Done", TASK_STATUS_DONE_COLOR, d.done),
@@ -912,7 +911,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     const in_progress = int(data?.counts.in_progress);
     const completed = int(data?.counts.completed);
 
-    const chart: Highcharts.PointOptionsObject[] = [];
+    const chart: IChartPoint[] = [];
 
     return {
       all,
@@ -943,7 +942,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     `;
     const result = await db.query(q, [teamId]);
 
-    const chart: Highcharts.PointOptionsObject[] = [];
+    const chart: IChartPoint[] = [];
 
     const total = result.rows.reduce((accumulator: number, current: {
       count: number
@@ -987,7 +986,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     const at_risk = int(data?.counts.at_risk);
     const good = int(data?.counts.good);
 
-    const chart: Highcharts.PointOptionsObject[] = [];
+    const chart: IChartPoint[] = [];
 
     return {
       not_set,

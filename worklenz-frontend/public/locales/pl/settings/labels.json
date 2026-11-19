@@ -31,5 +31,7 @@
   "createLabelSuccessMessage": "Etykieta została utworzona pomyślnie",
   "createLabelErrorMessage": "Nie udało się utworzyć etykiety",
   "updateLabelSuccessMessage": "Etykieta została pomyślnie zaktualizowana",
-  "updateLabelErrorMessage": "Nie udało się zaktualizować etykiety"
+  "updateLabelErrorMessage": "Nie udało się zaktualizować etykiety",
+  "rowsPerPage": "Wierszy na stronę:",
+  "paginationSummary": "{{range}} z {{total}}"
 }

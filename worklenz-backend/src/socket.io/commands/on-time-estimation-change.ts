@@ -1,3 +1,4 @@
+import { verifyNonGuestTaskAccessSocket } from "../authorization";
 import { Server, Socket } from "socket.io";
 import db from "../../config/db";
 import TasksController from "../../controllers/tasks-controller";
@@ -79,6 +80,7 @@ export async function on_time_estimation_change(io: Server, socket: Socket, data
     // (SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id) AS total_minutes_spent,
     const q = `UPDATE tasks SET total_minutes = $2 WHERE id = $1 RETURNING total_minutes, project_id, parent_task_id;`;
     const body = JSON.parse(data as string);
+    if (!(await verifyNonGuestTaskAccessSocket(socket, body.task_id))) return;
 
     // Enforce restrict_task_creation: restricted users cannot modify tasks.
     const userId = getLoggedInUserIdFromSocket(socket);

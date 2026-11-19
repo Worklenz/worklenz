@@ -1,0 +1,13 @@
+{
+  "importTaskTemplate": "Importa modello di attività",
+  "templateName": "Nome del modello",
+  "templateDescription": "Descrizione del modello",
+  "selectedTasks": "Attività selezionate",
+  "tasks": "Attività",
+  "templates": "Modelli",
+  "remove": "Rimuovi",
+  "cancel": "Annulla",
+  "import": "Importa",
+  "subtasksLabel": "sottoattività",
+  "subtaskCountTooltip": "Verranno importate {{count}} sottoattività"
+}

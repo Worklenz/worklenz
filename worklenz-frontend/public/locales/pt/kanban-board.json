@@ -53,7 +53,7 @@
   "errorLoadingTasks": "Erro ao carregar tarefas",
   "noTasksFound": "Nenhuma tarefa encontrada",
   "noIssuesFound": "Nenhum problema encontrado",
-  "createIssue": "Criar problema",
+  "createIssue": "Criar item de trabalho",
   "newIssueNamePlaceholder": "Escreva um título de problema",
   "loadingFilters": "Carregando filtros...",
   "failedToUpdateColumnOrder": "Falha ao atualizar a ordem das colunas",

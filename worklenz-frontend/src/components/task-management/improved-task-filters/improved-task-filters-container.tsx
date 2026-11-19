@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
+import { DeferredMount } from '@/components/task-list-v2/components/DeferredMount';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { createSelector } from '@reduxjs/toolkit';
@@ -19,6 +20,7 @@ import { RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useFilterDataLoader } from '@/hooks/useFilterDataLoader';
+import { selectOrderedStatuses } from '@/features/taskAttributes/taskStatus.selectors';
 import {
   fetchTasksV3,
   setArchived as setTaskManagementArchived,
@@ -46,8 +48,6 @@ import {
   setKanbanStatuses,
   setKanbanPhases,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
-import ManageStatusModal from '@/components/task-management/ManageStatusModal';
-import ManagePhaseModal from '@/components/task-management/ManagePhaseModal';
 import AssigneeScopeIndicator from '@/components/task-management/assignee-scope-indicator';
 import { useAuthService } from '@/hooks/useAuth';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
@@ -63,6 +63,9 @@ import { SortDropdown } from './sort-dropdown';
 import { FilteredTaskExportButton } from './filtered-task-export-button';
 import { FilterSection, ImprovedTaskFiltersProps } from './types';
 import { projectsApiService } from '@/api/projects/projects.api.service';
+
+const ManageStatusModal = lazy(() => import('@/components/task-management/ManageStatusModal'));
+const ManagePhaseModal = lazy(() => import('@/components/task-management/ManagePhaseModal'));
 
 const FILTER_DEBOUNCE_DELAY = 300;
 const SEARCH_DEBOUNCE_DELAY = 500;
@@ -82,7 +85,7 @@ const selectFilterData = createSelector(
     (state: any) => state.enhancedKanbanReducer.priorities,
     (state: any) => state.taskReducer.statuses,
     (state: any) => state.taskReducer.phases,
-    (state: any) => state.taskStatusReducer.status,
+    selectOrderedStatuses,
     (state: any) => state.phaseReducer.phaseList,
     (state: any) => state.enhancedKanbanReducer.statuses,
     (state: any) => state.enhancedKanbanReducer.phases,
@@ -409,7 +412,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
   const dispatch = useAppDispatch();
   const currentTaskAssignees = useAppSelector(state => state.taskReducer.taskAssignees);
   const currentTaskLabels = useAppSelector(state => state.taskReducer.labels);
-  const allStatuses = useAppSelector((state: RootState) => (state as any).taskStatusReducer?.status || []);
+  const allStatuses = useAppSelector(selectOrderedStatuses);
   const kanbanState = useAppSelector((state: RootState) => state.enhancedKanbanReducer);
   const taskManagementArchived = useAppSelector(selectArchived);
   const enhancedKanbanArchived = useAppSelector(state => state.enhancedKanbanReducer.archived);
@@ -418,9 +421,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
   const taskManagementSearch = useAppSelector(state => state.taskManagement?.search || '');
   const kanbanSearch = useAppSelector(state => state.enhancedKanbanReducer?.search || '');
   const searchValue = position === 'board' ? kanbanSearch : taskManagementSearch;
-  const [filterSections, setFilterSections] = useState<FilterSection[]>([]);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [activeFiltersCount, setActiveFiltersCount] = useState(0);
   const [clearingFilters, setClearingFilters] = useState(false);
   const [showManageStatusModal, setShowManageStatusModal] = useState(false);
   const [showManagePhaseModal, setShowManagePhaseModal] = useState(false);
@@ -449,7 +450,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
     () => visibleFilterSections.find(section => section.id === 'groupBy'),
     [visibleFilterSections]
   );
-  const memoizedFilterSections = useMemo(() => visibleFilterSections, [visibleFilterSections]);
+  const filterSections = visibleFilterSections;
   const isDarkMode = useAppSelector(state => state.themeReducer?.mode === 'dark');
   const isRestoringFilters = useAppSelector((state: RootState) => state.taskReducer.isRestoringFilters);
   const isSavedViewActive = useAppSelector((state: RootState) => state.taskReducer.isSavedViewActive);
@@ -499,13 +500,6 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  useEffect(() => {
-    const hasChanged = JSON.stringify(filterSections) !== JSON.stringify(memoizedFilterSections);
-    if (hasChanged && memoizedFilterSections.length > 0) {
-      setFilterSections(memoizedFilterSections);
-    }
-  }, [memoizedFilterSections, filterSections]);
 
   const overflowMenuItems = useMemo(() => {
     const groupByMenuOptions = currentGroupBySection?.options ?? [];
@@ -614,7 +608,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
     };
   }, [dispatch, isRestoringFilters]);
 
-  const calculatedActiveFiltersCount = useMemo(() => {
+  const activeFiltersCount = useMemo(() => {
     // Hidden filters (e.g. the Board's automatic active-sprint filter) are not user-visible here.
     if (isCompactToolbar) return (searchValue ? 1 : 0) + quickFiltersCount;
     const count = filterSections.reduce(
@@ -644,12 +638,6 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
     );
     return filterCount + (searchValue ? 1 : 0) > 0;
   }, [filterSections, searchValue]);
-
-  useEffect(() => {
-    if (activeFiltersCount !== calculatedActiveFiltersCount) {
-      setActiveFiltersCount(calculatedActiveFiltersCount);
-    }
-  }, [calculatedActiveFiltersCount, activeFiltersCount]);
 
   const handleDropdownToggle = useCallback((sectionId: string) => {
     setOpenDropdown(current => (current === sectionId ? null : sectionId));
@@ -823,13 +811,6 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
       debouncedFilterChangeRef.current?.cancel();
       debouncedSearchChangeRef.current?.cancel();
 
-      setFilterSections(prev =>
-        prev.map(section => ({
-          ...section,
-          selectedValues: section.id === 'groupBy' ? section.selectedValues : [],
-        }))
-      );
-
       dispatch(setTaskManagementSearch(''));
       dispatch(setTasksSearch(''));
       dispatch(resetSoftwareQuickFilters());
@@ -893,13 +874,6 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
 
     try {
       debouncedFilterChangeRef.current?.cancel();
-
-      setFilterSections(prev =>
-        prev.map(section => ({
-          ...section,
-          selectedValues: section.id === 'groupBy' ? section.selectedValues : [],
-        }))
-      );
 
       if (position === 'board') {
         const currentLabels = kanbanState.labels || [];
@@ -1032,7 +1006,29 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
           {isSoftwareProject && <SoftwareQuickFilterChips onChange={refetchCurrentView} />}
 
           {position === 'list' && !isCompactToolbar && (
-            <SortDropdown themeClasses={themeClasses} isDarkMode={isDarkMode} />
+            <SortDropdown
+              themeClasses={themeClasses}
+              isDarkMode={isDarkMode}
+              showArchived={showArchived}
+              onToggleArchived={toggleArchived}
+            />
+          )}
+
+          {position === 'board' && !isSoftwareProject && (
+            <label
+              className={`inline-flex items-center gap-2 cursor-pointer px-2.5 py-1.5 rounded-md border text-xs ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`}
+            >
+              <input
+                type="checkbox"
+                checked={showArchived}
+                onChange={toggleArchived}
+                className={`w-3.5 h-3.5 rounded focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${isDarkMode
+                    ? 'border-[#303030] bg-[#141414] focus:ring-offset-gray-800'
+                    : 'border-gray-300 bg-white focus:ring-offset-white'
+                  }`}
+              />
+              <span>{t('showArchivedText', { defaultValue: 'Show Archived' })}</span>
+            </label>
           )}
 
           {isCompactToolbar ? null : isDataLoaded ? (
@@ -1093,8 +1089,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
                   inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
                   border transition-all duration-200 ease-in-out flex-shrink-0
                   ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}
-                  hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
-                  ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
+                  hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset active:ring-0
                 `}
               >
                 <MenuOutlined className="w-3.5 h-3.5" />
@@ -1107,32 +1102,6 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         <div className="flex flex-wrap items-center gap-2 ml-auto min-w-0 shrink-0">
           <AssigneeScopeIndicator />
 
-          {activeFiltersCount > 0 && (
-            <div className="flex items-center gap-1.5">
-              <span className={`text-xs ${themeClasses.secondaryText}`}>
-                {activeFiltersCount}{' '}
-                {activeFiltersCount !== 1
-                  ? t('filtersActive', { defaultValue: 'Filters Active' })
-                  : t('filterActive', { defaultValue: 'Filter Active' })}
-              </span>
-              <button
-                onClick={clearAllFilters}
-                disabled={clearingFilters}
-                className={`text-xs font-medium transition-colors duration-150 ${
-                  clearingFilters
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : isDarkMode
-                      ? 'text-gray-400 hover:text-gray-300'
-                      : 'text-gray-600 hover:text-gray-700'
-                }`}
-              >
-                {clearingFilters
-                  ? t('clearing', { defaultValue: 'Clearing' })
-                  : t('clearAll', { defaultValue: 'Clear All' })}
-              </button>
-            </div>
-          )}
-
           {!isCompactToolbar && (
             <FilteredTaskExportButton
               position={position}
@@ -1141,23 +1110,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
             />
           )}
 
-          {!isCompactToolbar && (
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showArchived}
-                onChange={toggleArchived}
-                className={`w-3.5 h-3.5 text-gray-600 rounded focus:ring-gray-500 transition-colors duration-150 ${
-                  isDarkMode
-                    ? 'border-[#303030] bg-[#141414] focus:ring-offset-gray-800'
-                    : 'border-gray-300 bg-white focus:ring-offset-white'
-                }`}
-              />
-              <span className={`text-xs ${themeClasses.optionText}`}>
-                {t('showArchivedText', { defaultValue: 'Show Archived' })}
-              </span>
-            </label>
-          )}
+          {extraActions}
 
           {position === 'list' && !isCompactToolbar && (
             <FieldsDropdown
@@ -1166,28 +1119,34 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
               createDebouncedFunction={createDebouncedFunction}
             />
           )}
-
-          {extraActions}
         </div>
       </div>
 
-      <ManageStatusModal
-        open={showManageStatusModal}
-        onClose={() => {
-          setShowManageStatusModal(false);
-          refreshFilterData();
-        }}
-        projectId={projectId || undefined}
-      />
+      <DeferredMount isOpen={showManageStatusModal}>
+        <Suspense fallback={null}>
+          <ManageStatusModal
+            open={showManageStatusModal}
+            onClose={() => {
+              setShowManageStatusModal(false);
+              refreshFilterData();
+            }}
+            projectId={projectId || undefined}
+          />
+        </Suspense>
+      </DeferredMount>
 
-      <ManagePhaseModal
-        open={showManagePhaseModal}
-        onClose={() => {
-          setShowManagePhaseModal(false);
-          refreshFilterData();
-        }}
-        projectId={projectId || undefined}
-      />
+      <DeferredMount isOpen={showManagePhaseModal}>
+        <Suspense fallback={null}>
+          <ManagePhaseModal
+            open={showManagePhaseModal}
+            onClose={() => {
+              setShowManagePhaseModal(false);
+              refreshFilterData();
+            }}
+            projectId={projectId || undefined}
+          />
+        </Suspense>
+      </DeferredMount>
     </div>
   );
 };

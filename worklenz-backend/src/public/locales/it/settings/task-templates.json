@@ -1,0 +1,15 @@
+{
+  "pageTitle": "Modelli di attività",
+  "nameColumn": "Nome",
+  "createdColumn": "Creato",
+  "editToolTip": "Modifica",
+  "deleteToolTip": "Elimina",
+  "confirmText": "Confermi?",
+  "okText": "Sì",
+  "cancelText": "Annulla",
+  "noTemplatesYet": "Nessun modello di attività disponibile",
+  "step1": "Vai a un progetto e aprilo.",
+  "step2": "Seleziona le attività usando la modifica in blocco.",
+  "step3": "Fai clic su Altre opzioni nella barra delle azioni in blocco e scegli Crea modello di attività.",
+  "totalItems": "Elementi totali"
+}

@@ -98,7 +98,7 @@
   "terminology": {
     "issue": "Problema",
     "issues": "Problemas",
-    "createIssue": "Crear problema",
+    "createIssue": "Crear elemento de trabajo",
     "issueList": "Lista",
     "backlog": "Trabajo pendiente",
     "sprint": "Iteración",
@@ -463,5 +463,6 @@
   "deleteSavedView": "Eliminar pestaña",
   "deleteSavedViewTitle": "¿Eliminar \"{{name}}\"?",
   "deleteSavedViewContent": "Esta pestaña se eliminará para todos en el proyecto. Las tareas no se verán afectadas.",
-  "deleteSavedViewOk": "Eliminar"
+  "deleteSavedViewOk": "Eliminar",
+  "NewTab": "Nueva pestaña"
 }

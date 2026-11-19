@@ -92,7 +92,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     return fEndDate.isSame(fCurrentDate);
   }
 
-  private static async getMembers(
+  public static async getMembers(
     teamId: string, searchQuery = "",
     searchParams: string[] = [],
     size: number | null = null,
@@ -1417,6 +1417,10 @@ export default class ReportingMembersController extends ReportingControllerBaseW
   @HandleExceptions()
   public static async getMemberTimelogs(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { team_member_id, team_id, duration, date_range, archived, billable } = req.body;
+
+    if (billable && !billable.billable && !billable.nonBillable) {
+      return res.status(200).send(new ServerResponse(true, []));
+    }
 
     // Get user timezone for proper date filtering
     const userTimezone = await this.getUserTimezone(req.user?.id as string);

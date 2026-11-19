@@ -927,6 +927,7 @@ export default class ClientsController extends WorklenzControllerBase {
       description: ticket.description || null,
       status_id: statusId,
       priority_id: priorityId,
+      total_minutes: 0,
       assignees: [],
       attachments: [],
       labels: [],
@@ -936,7 +937,8 @@ export default class ClientsController extends WorklenzControllerBase {
     // its respect for the target project's own auto_assign_task_creator setting.
     const taskResult = await db.query("SELECT create_task($1) AS task;", [JSON.stringify(taskBody)]);
     const [taskData] = taskResult.rows;
-    const taskId = taskData?.task?.id;
+    // create_task returns get_task_form_view_model: { task: { id, ... }, ... }
+    const taskId = taskData?.task?.task?.id;
 
     if (!taskId) {
       return res.status(500).send(new ServerResponse(false, null, "Failed to create task"));
