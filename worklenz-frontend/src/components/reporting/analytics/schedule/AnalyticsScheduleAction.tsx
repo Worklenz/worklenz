@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, CrownOutlined, Space, message } from '@/shared/antd-imports';
+import { Button, CalendarOutlined, CrownOutlined, Space, message } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { analyticsSchedulesApiService } from '@/api/reporting/analytics-schedules.api.service';
 import { useAuthService } from '@/hooks/useAuth';
@@ -9,6 +9,7 @@ import { canUseFeature } from '@/utils/subscription-utils';
 import logger from '@/utils/errorLogger';
 import type { AnalyticsScheduleUpsertPayload } from '@/types/reporting/analytics-schedules.types';
 import { ScheduleReportModal } from './ScheduleReportModal';
+import '@/components/reporting/analytics/analytics-report-controls.css';
 
 export interface AnalyticsScheduleActionProps {
   reportKind: string;
@@ -74,6 +75,8 @@ export const AnalyticsScheduleAction: React.FC<AnalyticsScheduleActionProps> = (
   return (
     <>
       <Button
+        className="analytics-blue-action"
+        icon={<CalendarOutlined />}
         disabled={canSchedule ? disabled : false}
         onClick={handleClick}
         aria-label={
