@@ -379,10 +379,11 @@ const ScheduleTable = ({ header, body, truncated }: ScheduleTableProps) => {
         {body.map((r, ri) => (
           <View
             key={`r-${ri}`}
-            style={[
-              pdfStyles.row,
-              ri === body.length - 1 ? { borderBottomWidth: 0 } : null,
-            ]}
+            style={
+              ri === body.length - 1
+                ? [pdfStyles.row, { borderBottomWidth: 0 }]
+                : pdfStyles.row
+            }
             wrap={false}
           >
             {header.map((_, ci) => (
