@@ -28,3 +28,37 @@
   outline: 2px solid var(--ant-color-primary, #1890ff);
   outline-offset: 1px;
 }
+
+/* Match the Advanced / Classic switch with Analytics report filter buttons. */
+.reporting-mode-paddle-segmented.ant-segmented {
+  box-sizing: border-box;
+  height: 30px;
+  padding: 2px;
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+.reporting-mode-paddle-segmented .ant-segmented-group {
+  height: 100%;
+  gap: 2px;
+}
+
+.reporting-mode-paddle-segmented .ant-segmented-item {
+  min-height: 24px;
+  border-radius: 5px;
+  font-size: 12px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.reporting-mode-paddle-segmented .ant-segmented-item-label {
+  padding-inline: 12px;
+  line-height: 24px;
+}
+
+.reporting-mode-paddle-segmented .ant-segmented-item-selected {
+  color: #ffffff;
+  background: #176dbe;
+  font-weight: 500;
+  border-radius: 5px;
+  box-shadow: none;
+}
