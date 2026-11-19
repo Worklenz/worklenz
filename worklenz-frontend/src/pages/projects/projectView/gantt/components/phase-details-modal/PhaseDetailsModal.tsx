@@ -558,9 +558,21 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
                 )}
               </Col>
               <Col span={8}>
-                <Text type="secondary">{t('timeline.status')}</Text>
-                <br />
-                <Tag color={getDateStatusColor()}>{getDateStatusText()}</Tag>
+                <div className="flex flex-col items-start gap-2">
+                  <Text type="secondary">{t('timeline.status')}</Text>
+                  <Tag
+                    color={getDateStatusColor()}
+                    style={{
+                      maxWidth: '100%',
+                      whiteSpace: 'normal',
+                      overflowWrap: 'anywhere',
+                      display: 'inline-block',
+                      marginInlineEnd: 0,
+                    }}
+                  >
+                    {getDateStatusText()}
+                  </Tag>
+                </div>
               </Col>
             </Row>
           </Card>
@@ -667,9 +679,9 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
                   return (
                     <div
                       key={task.id}
-                      className={`p-3 rounded-md border transition-colors hover:shadow-sm ${task.progress === 100
-                          ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                      className={`p-4 rounded-md border transition-colors hover:shadow-sm ${task.progress === 100
+                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                         }`}
                       style={{
                         backgroundColor: task.progress === 100 ? undefined : token.colorBgContainer,
@@ -677,7 +689,7 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
                       }}
                     >
                       {/* Main row with task info */}
-                      <div className="flex items-center justify-between gap-3 mb-2">
+                      <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
                         {/* Left side: Status icon, task name, and priority */}
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           {task.progress === 100 ? (
@@ -699,8 +711,12 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
 
                           <Text
                             strong
-                            className="text-sm truncate flex-1"
-                            style={{ color: token.colorText }}
+                            className="text-sm flex-1 min-w-0"
+                            style={{
+                              color: token.colorText,
+                              whiteSpace: 'normal',
+                              overflowWrap: 'anywhere',
+                            }}
                             title={decodeHtmlEntities(task.name)}
                           >
                             {decodeHtmlEntities(task.name)}
