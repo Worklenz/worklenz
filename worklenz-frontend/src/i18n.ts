@@ -26,7 +26,7 @@ i18n
 
     backend: {
       // Bump when locale JSON changes so browsers do not keep a stale translation file.
-      loadPath: '/locales/{{lng}}/{{ns}}.json?v=20261117-reporting-analytics-locale-update',
+      loadPath: '/locales/{{lng}}/{{ns}}.json?v=20261118-project-view-new-tab',
     },
 
     react: {
