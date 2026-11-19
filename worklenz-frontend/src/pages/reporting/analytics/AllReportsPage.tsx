@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, CrownOutlined, Empty, Typography, theme } from '@/shared/antd-imports';
+import { CrownOutlined, Empty, Typography, theme } from '@/shared/antd-imports';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
@@ -33,6 +33,8 @@ import {
 } from '@/features/reporting/analytics-custom-reports';
 import { analyticsTemplatesApiService } from '@/api/reporting/analytics-templates.api.service';
 import './all-reports-gallery.css';
+import PillToggle from '@/pages/home/PillToggle';
+
 
 const { Title, Text } = Typography;
 
@@ -439,28 +441,15 @@ const AllReportsPage: React.FC = () => {
           </Text>
         </div>
 
-        <div
-          className="all-reports-hub__tabs"
-          role="tablist"
-          aria-label={t('hubTabsAria', { defaultValue: 'Report categories' })}
-        >
-          {tabs.map(item => {
-            const active = tab === item.key;
-
-            return (
-              <Button
-                key={item.key}
-                type="default"
-                role="tab"
-                aria-selected={active}
-                className={`all-reports-hub__tab${active ? ' is-active' : ''}`}
-                onClick={() => setTab(item.key)}
-              >
-                {item.label}
-              </Button>
-            );
-          })}
-        </div>
+        <PillToggle<HubTab>
+          value={tab}
+          options={tabs.map(item => ({
+            value: item.key,
+            label: item.label,
+          }))}
+          onChange={setTab}
+          ariaLabel={t('hubTabsAria', { defaultValue: 'Report categories' })}
+        />
       </div>
 
       {tab === 'scheduled' ? (

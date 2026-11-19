@@ -31,45 +31,6 @@
   line-height: 1.45;
 }
 
-.all-reports-hub__tabs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.all-reports-hub__tab {
-  white-space: nowrap;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.all-reports-hub__tab.is-active {
-  background: #176DBE !important;
-  border-color: #176DBE !important;
-  color: #ffffff !important;
-  font-weight: 500;
-}
-
-.all-reports-hub__tab.is-active:hover {
-  background: #176DBE !important;
-  border-color: #176DBE !important;
-  color: #ffffff !important;
-}
-
-.all-reports-hub__tab:focus-visible {
-  outline: 2px solid #176DBE;
-  outline-offset: 2px;
-}
-
-.all-reports-hub__tab:disabled {
-  cursor: default;
-  opacity: 0.55;
-}
-
-.all-reports-hub__tab.is-active {
-  font-weight: 600;
-}
-
 .all-reports-hub__banner {
   display: flex;
   align-items: center;
