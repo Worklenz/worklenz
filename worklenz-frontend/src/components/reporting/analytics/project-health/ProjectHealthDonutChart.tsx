@@ -67,9 +67,16 @@ export const ProjectHealthDonutChart = forwardRef<
       const chart = chartRef.current;
       if (!chart) return null;
 
+      // Match scheduled PDF donut: white slice borders + dark legend on white page.
       const legend = chart.options.plugins?.legend;
       const prevDisplay = legend?.display;
       const prevPosition = legend?.position;
+      const prevLabels = legend?.labels ? { ...legend.labels } : undefined;
+      const dataset = chart.data.datasets[0] as
+        | { borderColor?: string | string[]; borderWidth?: number }
+        | undefined;
+      const prevBorderColor = dataset?.borderColor;
+      const prevBorderWidth = dataset?.borderWidth;
       const parent = chart.canvas.parentElement;
       const prevWidth = parent?.style.width ?? '';
       const prevHeight = parent?.style.height ?? '';
@@ -77,6 +84,14 @@ export const ProjectHealthDonutChart = forwardRef<
       if (legend) {
         legend.display = true;
         legend.position = 'right';
+        legend.labels = {
+          ...(legend.labels || {}),
+          color: 'rgba(0, 0, 0, 0.65)',
+        };
+      }
+      if (dataset) {
+        dataset.borderColor = '#ffffff';
+        dataset.borderWidth = 2;
       }
       if (parent) {
         parent.style.width = `${EXPORT_DONUT_SIZE}px`;
@@ -91,6 +106,15 @@ export const ProjectHealthDonutChart = forwardRef<
         if (legend) {
           legend.display = prevDisplay;
           legend.position = prevPosition;
+          if (prevLabels) {
+            legend.labels = prevLabels;
+          } else if (legend.labels) {
+            delete (legend as { labels?: unknown }).labels;
+          }
+        }
+        if (dataset) {
+          dataset.borderColor = prevBorderColor;
+          dataset.borderWidth = prevBorderWidth;
         }
         if (parent) {
           parent.style.width = prevWidth;
