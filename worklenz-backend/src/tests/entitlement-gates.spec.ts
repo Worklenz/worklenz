@@ -88,14 +88,28 @@ describe("canUseFeature: enforce mode", () => {
     expect(canUseFeature(proClassic, "project_phases")).toBe(true);
   });
 
-  it("Planner is Business only for Pro (classic or Billing)", () => {
-    expect(canUseFeature(proClassic, "planner_schedule")).toBe(false);
-    expect(canUseFeature({ ...proClassic, billing_provider: "paddle_billing" }, "planner_schedule")).toBe(false);
+  it("gives Pro read-only Schedule access", () => {
+    expect(canUseFeature(proClassic, "planner_schedule")).toBe(true);
+    expect(canUseFeature({ ...proClassic, billing_provider: "paddle_billing" }, "planner_schedule")).toBe(true);
+    expect(canUseFeature(proClassic, "planner_schedule_edit")).toBe(false);
     expect(canUseFeature(business, "planner_schedule")).toBe(true);
+    expect(canUseFeature(business, "planner_schedule_edit")).toBe(true);
   });
 });
 
 describe("requireFeature", () => {
+  it("allows Schedule editing for Business but denies Pro and Free", () => {
+    for (const user of [proClassic, free]) {
+      const res = makeRes();
+      const next = jest.fn();
+      requireFeature("planner_schedule_edit")({ user } as any, res, next);
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(next).not.toHaveBeenCalled();
+    }
+    const next = jest.fn();
+    requireFeature("planner_schedule_edit")({ user: business } as any, makeRes(), next);
+    expect(next).toHaveBeenCalled();
+  });
   it("returns 401 without a user", () => {
     const res = makeRes();
     const next = jest.fn();
@@ -208,13 +222,16 @@ describe("requireAnyFeature", () => {
     expect(blocked).not.toHaveBeenCalled();
   });
 
-  it("enforce mode: AppSumo passes via Timeline/Workload, Pro and Free do not", () => {
+  it("enforce mode: AppSumo and Pro pass, Free does not", () => {
     process.env.ENTITLEMENTS_ENFORCE = "on";
     const pass = jest.fn();
     requireAnyFeature(planner)({ user: ltd } as any, makeRes(), pass);
     expect(pass).toHaveBeenCalled();
 
-    for (const user of [proClassic, free]) {
+    const proNext = jest.fn();
+    requireAnyFeature(planner)({ user: proClassic } as any, makeRes(), proNext);
+    expect(proNext).toHaveBeenCalled();
+    for (const user of [free]) {
       const res = makeRes();
       const next = jest.fn();
       requireAnyFeature(planner)({ user } as any, res, next);

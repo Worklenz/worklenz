@@ -12,7 +12,7 @@ import WorkloadController from "../../../controllers/schedule-v2/workload-contro
 import { verifyNonGuestProjectAccess } from "../../../middlewares/verify-project-access";
 import verifyTaskAccess, { verifyNonGuestTaskAccess } from "../../../middlewares/verify-task-access";
 import verifyNonGuestPlannerAccess from "../../../middlewares/verify-non-guest-planner-access";
-import { requireAnyFeature } from "../../../shared/entitlements/gates";
+import { requireAnyFeature, requireFeature } from "../../../shared/entitlements/gates";
 import { PLANNER_FEATURES } from "../../../shared/entitlements/feature-registry";
 import { manageOrganizationSettingsValidator } from "../../../middlewares/validators/organization-permission-validator";
 import { requireProjectPermission } from "../../../middlewares/validators/require-project-permission";
@@ -66,6 +66,7 @@ scheduleApiRouter.get("/members/projects/:id", safeControllerFunction(ScheduleCo
 scheduleApiRouter.get("/members/:memberId/summary", safeControllerFunction(ScheduleControllerV2.getMemberScheduleSummary));
 scheduleApiRouter.post(
   "/schedule",
+  requireFeature("planner_schedule_edit"),
   verifyNonGuestProjectAccess('body', 'project_id'),
   requireProjectPermission("settings", { sources: ["body.project_id"] }),
   safeControllerFunction(ScheduleControllerV2.createSchedule)
@@ -92,6 +93,7 @@ scheduleApiRouter.get("/tasks", safeControllerFunction(TaskTimelineController.ge
 // Update task dates (drag-drop) — MUTATION, requires non-guest access to the task's team/project
 scheduleApiRouter.put(
   "/tasks/:taskId/dates",
+  requireAnyFeature(["planner_schedule_edit", "planner_timeline"]),
   validateUuidParam("taskId", "params"),
   verifyNonGuestTaskAccess('params', 'taskId'),
   safeControllerFunction(TaskTimelineController.updateTaskDates)
@@ -109,11 +111,12 @@ scheduleApiRouter.get(
 // Project Timeline Endpoints (Portfolio View)
 // ============================================
 // Get all projects with date range + todo/doing/done breakdown
-scheduleApiRouter.get("/timeline/projects", safeControllerFunction(ProjectTimelineController.getProjectsTimeline));
+scheduleApiRouter.get("/timeline/projects", requireFeature("planner_timeline"), safeControllerFunction(ProjectTimelineController.getProjectsTimeline));
 
 // Update a project's start/end date (drag-resize on the Timeline bar)
 scheduleApiRouter.put(
   "/timeline/projects/:id/dates",
+  requireFeature("planner_timeline"),
   idParamValidator,
   requireProjectPermission("settings", { sources: ["params.id"] }),
   safeControllerFunction(ProjectTimelineController.updateProjectDates)
@@ -123,18 +126,18 @@ scheduleApiRouter.put(
 // Workload Management Endpoints (NEW)
 // ============================================
 // Get member workload data
-scheduleApiRouter.get("/workload", safeControllerFunction(WorkloadController.getMemberWorkload));
+scheduleApiRouter.get("/workload", requireFeature("planner_workload"), safeControllerFunction(WorkloadController.getMemberWorkload));
 
 // Update resource allocation (MUTATION — Requires non-guest access)
-scheduleApiRouter.put("/allocation", verifyNonGuestProjectAccess('body', 'project_id'), safeControllerFunction(WorkloadController.updateResourceAllocation));
+scheduleApiRouter.put("/allocation", requireFeature("planner_workload"), verifyNonGuestProjectAccess('body', 'project_id'), safeControllerFunction(WorkloadController.updateResourceAllocation));
 
 // Rebalance workload (MUTATION — Requires non-guest access)
-scheduleApiRouter.post("/rebalance", verifyNonGuestProjectAccess('body', 'project_id'), safeControllerFunction(WorkloadController.rebalanceWorkload));
+scheduleApiRouter.post("/rebalance", requireFeature("planner_workload"), verifyNonGuestProjectAccess('body', 'project_id'), safeControllerFunction(WorkloadController.rebalanceWorkload));
 
 // Get resource conflicts
-scheduleApiRouter.get("/conflicts", safeControllerFunction(WorkloadController.getResourceConflicts));
+scheduleApiRouter.get("/conflicts", requireFeature("planner_workload"), safeControllerFunction(WorkloadController.getResourceConflicts));
 
 // Get capacity report
-scheduleApiRouter.get("/capacity-report", safeControllerFunction(WorkloadController.getCapacityReport));
+scheduleApiRouter.get("/capacity-report", requireFeature("planner_workload"), safeControllerFunction(WorkloadController.getCapacityReport));
 
 export default scheduleApiRouter;
