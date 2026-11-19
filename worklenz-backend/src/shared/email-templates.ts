@@ -1,3 +1,4 @@
+import { createRegistrationInvitationToken } from "./registration-invitation-token";
 import {IEmailTemplateType} from "../interfaces/email-template-type";
 import {IPassportSession} from "../interfaces/passport-session";
 import {sendEmail} from "./email";
@@ -113,6 +114,7 @@ export async function sendRegisterAndJoinTeamInvitation(myName: string, userName
   // Email addresses are validated elsewhere, no need to sanitize in HTML context
   content = content.replaceAll("[VAR_LOGO_URL]", logoUrl);
   content = content.replaceAll("[VAR_EMAIL]", toEmail);
+  content = content.replaceAll("[VAR_INVITATION_TOKEN]", createRegistrationInvitationToken(teamId, userId, toEmail));
   content = content.replaceAll("[VAR_USER_ID]", userId);
   content = content.replaceAll("[VAR_USER_NAME]", sanitizePlainText(userName));
   content = content.replaceAll("[VAR_TEAM_NAME]", sanitizePlainText(teamName));

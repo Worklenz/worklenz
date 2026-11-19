@@ -1,3 +1,4 @@
+import { verifyRegistrationInvitationToken } from "../../shared/registration-invitation-token";
 import bcrypt from "bcrypt";
 import { Strategy as LocalStrategy } from "passport-local";
 
@@ -61,6 +62,12 @@ async function handleSignUp(req: Request, email: string, password: string, done:
 
   if (!team_name) return done(null, null, req.flash(ERROR_KEY, "Team name is required"));
 
+  if ((team_id || team_member_id) &&
+      !verifyRegistrationInvitationToken(req.body.invitation_token, team_id, team_member_id, email)) {
+    return done(null, null, req.flash(ERROR_KEY, "This invitation is invalid or expired. Please request a new invitation."));
+  }
+
+
   // Sanitize user name to prevent HTML injection attacks
   // This ensures malicious HTML/JavaScript cannot be stored in the database or rendered in emails
   const sanitizedName = sanitizePlainText(name || "");
@@ -107,7 +114,7 @@ async function handleSignUp(req: Request, email: string, password: string, done:
       return done(null, null, req.flash(ERROR_KEY, `Team name "${team_name}" is already taken. Please choose a different team name.`));
     }
 
-    log_error(error, req.body);
+    log_error(error);
     return done(null, null, req.flash(ERROR_KEY, DEFAULT_ERROR_MESSAGE));
   }
 }

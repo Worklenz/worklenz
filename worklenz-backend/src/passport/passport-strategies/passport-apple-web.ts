@@ -1,25 +1,12 @@
 import { Strategy as AppleStrategy } from "passport-apple";
 import { Strategy as CustomStrategy } from "passport-custom";
 import { Request } from "express";
-import jwt from "jsonwebtoken";
+import { verifyAppleWebToken } from "./verify-apple-web-token";
 import db from "../../config/db";
 import { log_error } from "../../shared/utils";
 import { ERROR_KEY } from "./passport-constants";
 import { sendWelcomeEmail } from "../../shared/email-templates";
 import { getBlockedSignupEmailMessage, isSignupEmailDomainBlocked } from "../../shared/signup-email-domain-policy";
-
-/**
- * Apple ID Token Payload Interface
- */
-interface AppleTokenPayload {
-  sub: string; // Apple user ID (unique identifier)
-  email?: string; // Email
-  email_verified?: boolean; // Email verification status
-  aud: string; // Audience (client ID)
-  iss: string; // Issuer (https://appleid.apple.com)
-  exp: number; // Expiration timestamp
-  iat: number; // Issued at timestamp
-}
 
 /**
  * Apple Web OAuth Handler
@@ -39,7 +26,7 @@ interface AppleTokenPayload {
  * @param profile - User profile from Apple (often empty on subsequent logins)
  * @param done - Passport callback function
  */
-async function handleAppleWebAuth(
+export async function handleAppleWebAuth(
   req: Request,
   _accessToken: string,
   _refreshToken: string,
@@ -48,67 +35,23 @@ async function handleAppleWebAuth(
   done: any,
 ) {
   try {
-    // Extract data from ID token (more reliable than profile)
-    let appleId: string | undefined;
-    let email: string | undefined;
+    const token = await verifyAppleWebToken(idToken);
+    const appleId = token.sub;
+    const email = token.email_verified === true || token.email_verified === "true"
+      ? token.email?.toLowerCase().trim()
+      : undefined;
     let name = "Apple User";
 
-    // Try to get data from profile first (first-time login)
-    if (profile && profile.id) {
-      appleId = profile.id;
-      email = profile.email?.toLowerCase().trim();
-      if (profile.name) {
-        name =
-          `${profile.name.firstName || ""} ${
-            profile.name.lastName || ""
-          }`.trim() || "Apple User";
-      }
-    }
-
-    // Apple sends user data in req.body.user on first authorization
-    // This is a JSON string containing { name: { firstName, lastName }, email }
-
-    if (req.body && req.body.user) {
+    // The unsigned user object is used only for the display name, never identity.
+    if (req.body?.user) {
       try {
-        const userData =
-          typeof req.body.user === "string"
-            ? JSON.parse(req.body.user)
-            : req.body.user;
-
+        const userData = typeof req.body.user === "string" ? JSON.parse(req.body.user) : req.body.user;
         if (userData.name) {
-          const firstName = userData.name.firstName || "";
-          const lastName = userData.name.lastName || "";
-          name = `${firstName} ${lastName}`.trim() || "Apple User";
-        }
-
-        // Also get email from body if available
-        if (userData.email && !email) {
-          email = userData.email.toLowerCase().trim();
+          name = `${userData.name.firstName || ""} ${userData.name.lastName || ""}`.trim() || name;
         }
       } catch (error) {
         log_error("Failed to parse Apple user data from request body:", error);
       }
-    }
-
-    // If profile is empty or missing data, decode ID token
-    // Apple only sends profile data on first authorization, so we extract from token on subsequent logins
-    if ((!appleId || !email) && idToken) {
-      try {
-        // Decode ID token without verification (passport-apple already verified it)
-        const tokenPayload = jwt.decode(idToken) as AppleTokenPayload;
-
-        if (tokenPayload) {
-          appleId = appleId || tokenPayload.sub;
-          email = email || tokenPayload.email?.toLowerCase().trim();
-        }
-      } catch (error) {
-        log_error("Failed to decode Apple ID token:", error);
-      }
-    }
-
-    // Validate Apple ID
-    if (!appleId) {
-      return done(null, false, { message: "Apple ID not found" });
     }
 
     // Check for existing local account (password-based)
@@ -154,6 +97,10 @@ async function handleAppleWebAuth(
     // Existing user - login flow
     if (userResult.rowCount) {
       const user = userResult.rows[0];
+
+      if (user.apple_id && user.apple_id !== appleId) {
+        return done(null, false, { message: "This account is linked to another Apple ID." });
+      }
 
       // Check for Google account conflict
       if (user.google_id !== null && user.apple_id === null) {

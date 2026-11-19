@@ -220,7 +220,7 @@ const SignupPage = () => {
 
       const res = await authApiService.signUpCheck(body);
       if (res.done) {
-        await signUpWithEmail(body);
+        await signUpWithEmail(body, values.invitation_token);
       }
     } catch (error: any) {
       message.error(error?.response?.data?.message || 'Failed to validate signup details');
@@ -229,7 +229,7 @@ const SignupPage = () => {
     }
   };
 
-  const signUpWithEmail = async (body: IUserSignUpRequest) => {
+  const signUpWithEmail = async (body: IUserSignUpRequest, invitationToken?: string) => {
     try {
       setLoading(true);
       trackMixpanelEvent(evt_signup_with_email_click, {
@@ -243,6 +243,7 @@ const SignupPage = () => {
       }
       if (urlParams.teamMemberId) {
         body.team_member_id = urlParams.teamMemberId;
+        body.invitation_token = invitationToken;
       }
       if (urlParams.projectId) {
         body.project_id = urlParams.projectId;
@@ -337,6 +338,16 @@ const SignupPage = () => {
           name: urlParams.name,
         }}
       >
+        {urlParams.teamId && urlParams.teamMemberId && (
+          <Form.Item
+            name="invitation_token"
+            label={t('invitationCodeLabel', { defaultValue: 'Invitation code' })}
+            rules={[{ required: true, message: t('invitationCodeRequired', { defaultValue: 'Enter the invitation code from your email.' }) }]}
+          >
+            <Input size="large" autoComplete="off" />
+          </Form.Item>
+        )}
+
         <Form.Item name="name" label={t('nameLabel')} rules={formRules.name}>
           <Input
             prefix={<UserOutlined />}

@@ -15,7 +15,7 @@ import { getBlockedSignupEmailMessage, isSignupEmailDomainBlocked } from "../../
 interface AppleTokenPayload {
   sub: string;              // Apple user ID (unique identifier)
   email?: string;           // Email (only provided on first sign-in)
-  email_verified?: boolean; // Email verification status
+  email_verified?: boolean | string; // Email verification status
   aud: string;              // Audience (client ID / bundle ID)
   iss: string;              // Issuer (https://appleid.apple.com)
   exp: number;              // Expiration timestamp
@@ -115,8 +115,8 @@ async function handleAppleMobileAuth(req: Request, done: any) {
 
     // Extract user data
     const appleId = payload.sub;
-    const email = payload.email?.toLowerCase().trim();
-    const emailVerified = payload.email_verified ?? true;
+    const emailVerified = payload.email_verified === true || payload.email_verified === "true";
+    const email = emailVerified ? payload.email?.toLowerCase().trim() : undefined;
 
     // Validate Apple ID
     if (!appleId) {
@@ -163,6 +163,10 @@ async function handleAppleMobileAuth(req: Request, done: any) {
             : "An account with this Apple ID already exists. Please sign in instead.",
           [ERROR_KEY]: "USER_ALREADY_EXISTS"
         });
+      }
+
+      if (user.apple_id && user.apple_id !== appleId) {
+        return done(null, false, { message: "This account is linked to another Apple ID." });
       }
 
       // Check for Google account conflict
