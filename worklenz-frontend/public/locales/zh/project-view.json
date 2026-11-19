@@ -463,5 +463,6 @@
   "deleteSavedView": "删除标签页",
   "deleteSavedViewTitle": "删除“{{name}}”？",
   "deleteSavedViewContent": "此标签页将从项目中所有人处移除。任务不会受到影响。",
-  "deleteSavedViewOk": "删除"
+  "deleteSavedViewOk": "删除",
+  "NewTab": "新标签页"
 }

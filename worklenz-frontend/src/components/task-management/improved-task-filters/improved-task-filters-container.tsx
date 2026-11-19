@@ -1006,7 +1006,29 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
           {isSoftwareProject && <SoftwareQuickFilterChips onChange={refetchCurrentView} />}
 
           {position === 'list' && !isCompactToolbar && (
-            <SortDropdown themeClasses={themeClasses} isDarkMode={isDarkMode} />
+            <SortDropdown
+              themeClasses={themeClasses}
+              isDarkMode={isDarkMode}
+              showArchived={showArchived}
+              onToggleArchived={toggleArchived}
+            />
+          )}
+
+          {position === 'board' && !isSoftwareProject && (
+            <label
+              className={`inline-flex items-center gap-2 cursor-pointer px-2.5 py-1.5 rounded-md border text-xs ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`}
+            >
+              <input
+                type="checkbox"
+                checked={showArchived}
+                onChange={toggleArchived}
+                className={`w-3.5 h-3.5 rounded focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${isDarkMode
+                    ? 'border-[#303030] bg-[#141414] focus:ring-offset-gray-800'
+                    : 'border-gray-300 bg-white focus:ring-offset-white'
+                  }`}
+              />
+              <span>{t('showArchivedText', { defaultValue: 'Show Archived' })}</span>
+            </label>
           )}
 
           {isCompactToolbar ? null : isDataLoaded ? (
@@ -1067,8 +1089,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
                   inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
                   border transition-all duration-200 ease-in-out flex-shrink-0
                   ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}
-                  hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
-                  ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
+                  hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset active:ring-0
                 `}
               >
                 <MenuOutlined className="w-3.5 h-3.5" />
@@ -1081,32 +1102,6 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         <div className="flex flex-wrap items-center gap-2 ml-auto min-w-0 shrink-0">
           <AssigneeScopeIndicator />
 
-          {activeFiltersCount > 0 && (
-            <div className="flex items-center gap-1.5">
-              <span className={`text-xs ${themeClasses.secondaryText}`}>
-                {activeFiltersCount}{' '}
-                {activeFiltersCount !== 1
-                  ? t('filtersActive', { defaultValue: 'Filters Active' })
-                  : t('filterActive', { defaultValue: 'Filter Active' })}
-              </span>
-              <button
-                onClick={clearAllFilters}
-                disabled={clearingFilters}
-                className={`text-xs font-medium transition-colors duration-150 ${
-                  clearingFilters
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : isDarkMode
-                      ? 'text-gray-400 hover:text-gray-300'
-                      : 'text-gray-600 hover:text-gray-700'
-                }`}
-              >
-                {clearingFilters
-                  ? t('clearing', { defaultValue: 'Clearing' })
-                  : t('clearAll', { defaultValue: 'Clear All' })}
-              </button>
-            </div>
-          )}
-
           {!isCompactToolbar && (
             <FilteredTaskExportButton
               position={position}
@@ -1115,23 +1110,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
             />
           )}
 
-          {!isCompactToolbar && (
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showArchived}
-                onChange={toggleArchived}
-                className={`w-3.5 h-3.5 text-gray-600 rounded focus:ring-gray-500 transition-colors duration-150 ${
-                  isDarkMode
-                    ? 'border-[#303030] bg-[#141414] focus:ring-offset-gray-800'
-                    : 'border-gray-300 bg-white focus:ring-offset-white'
-                }`}
-              />
-              <span className={`text-xs ${themeClasses.optionText}`}>
-                {t('showArchivedText', { defaultValue: 'Show Archived' })}
-              </span>
-            </label>
-          )}
+          {extraActions}
 
           {position === 'list' && !isCompactToolbar && (
             <FieldsDropdown
@@ -1140,8 +1119,6 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
               createDebouncedFunction={createDebouncedFunction}
             />
           )}
-
-          {extraActions}
         </div>
       </div>
 

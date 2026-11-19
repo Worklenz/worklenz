@@ -2,8 +2,7 @@ import React from 'react';
 import { Button, Dropdown } from '@/shared/antd-imports';
 import { ExportOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import { FILTER_PILL_BUTTON_STYLE } from '@/components/common/filters/MultiSelectFilterPill';
-
+import './analytics-report-controls.css';
 export type AnalyticsExportFormat = 'csv' | 'pdf' | 'png' | 'svg' | 'excel';
 
 /** Formats most analytics reports support (Excel is Velocity-only). */
@@ -54,10 +53,10 @@ export const AnalyticsExportMenu: React.FC<AnalyticsExportMenuProps> = ({
       trigger={['click']}
     >
       <Button
+        className="analytics-blue-action"
         icon={<ExportOutlined />}
         loading={loading}
         disabled={disabled}
-        style={FILTER_PILL_BUTTON_STYLE}
         aria-haspopup="menu"
       >
         {t('export', { defaultValue: 'Export' })}

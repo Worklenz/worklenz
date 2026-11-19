@@ -463,5 +463,6 @@
   "deleteSavedView": "Fshi skedën",
   "deleteSavedViewTitle": "Të fshihet \"{{name}}\"?",
   "deleteSavedViewContent": "Kjo skedë do të hiqet për të gjithë në projekt. Detyrat nuk preken.",
-  "deleteSavedViewOk": "Fshi"
+  "deleteSavedViewOk": "Fshi",
+  "NewTab": "Skedë e re"
 }

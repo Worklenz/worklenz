@@ -19,7 +19,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
   // Helper method to build billable query with custom table alias
   private static buildBillableQueryWithAlias(selectedStatuses: { billable: boolean; nonBillable: boolean }, tableAlias: string = 'tasks'): string {
     const { billable, nonBillable } = selectedStatuses;
-  
+
     if (billable && nonBillable) {
       // Both are enabled, no need to filter
       return "";
@@ -40,15 +40,15 @@ export default class ReportingAllocationController extends ReportingControllerBa
       // Use SqlHelper.buildInClause for safe IN clauses
       // Start from $2 because $1 is used for 'archived' parameter in subqueries
       const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, 2);
-      
+
       // For getTotalTimeLogsByUser: duration comes after projectIds, then userIds
       const { clause: durationClauseForUser, params: durationParamsForUser } = this.getDateRangeClause(key || DATE_RANGES.LAST_WEEK, dateRange, 2 + projectIdsParams.length);
       const { clause: userIdsClauseForUser, params: userIdsParamsForUser } = SqlHelper.buildInClause(users, 2 + projectIdsParams.length + durationParamsForUser.length);
-      
+
       // For getTotalTimeLogsByProject: duration comes after projectIds, then userIds
       const { clause: durationClauseForProject, params: durationParamsForProject } = this.getDateRangeClause(key || DATE_RANGES.LAST_WEEK, dateRange, 2 + projectIdsParams.length);
       const { clause: userIdsClauseForProject, params: userIdsParamsForProject } = SqlHelper.buildInClause(users, 2 + projectIdsParams.length + durationParamsForProject.length);
-      
+
       let paramOffset = 2 + projectIdsParams.length + userIdsParamsForProject.length + durationParamsForProject.length;
 
       let archivedClause = "";
@@ -455,7 +455,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
         WHERE ${projectsFilter} ${durationClause} ${archivedClause} ${categoriesFilter} ${billableQuery}
         GROUP BY p.id, p.name, p.color_code
         ORDER BY logged_time DESC;`;
-    
+
     const result = await db.query(q, [...projectIdsParams, ...durationParams, ...archivedParams, ...categoryParams]);
 
     const utilization = (req.body.utilization || []) as string[];
@@ -474,7 +474,6 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
     return res.status(200).send(new ServerResponse(true, data));
   }
-
 
   @HandleExceptions()
   public static async getMemberTimeSheets(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
@@ -648,7 +647,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
     // Create a Set of holiday dates for efficient lookup
     const holidayDates = new Set<string>();
-    
+
     // Add organization holidays
     orgHolidaysResult.rows.forEach(row => {
       holidayDates.add(moment(row.date).format('YYYY-MM-DD'));
@@ -680,7 +679,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
     while (current.isSameOrBefore(endDate, 'day')) {
       const day = current.isoWeekday();
       const currentDateStr = current.format('YYYY-MM-DD');
-      
+
       // Check if it's a working day AND not a holiday
       if (
         !holidayDates.has(currentDateStr) && (
@@ -703,11 +702,11 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const orgWorkingHoursQuery = `SELECT hours_per_day FROM organizations WHERE id = (SELECT t.organization_id FROM teams t WHERE t.id IN (${teamIdsClause}) LIMIT 1)`;
     const orgWorkingHoursResult = await db.query(orgWorkingHoursQuery, teamIdsParams);
     const orgWorkingHours = orgWorkingHoursResult.rows[0]?.hours_per_day || 8;
-    
+
     // Calculate total working hours with minimum baseline for non-working day scenarios
     let totalWorkingHours = workingDays * orgWorkingHours;
     let isNonWorkingPeriod = false;
-    
+
     // If no working days but there might be logged time, set minimum baseline
     // This ensures that time logged on non-working days is treated as over-utilization
     // Business Logic: If someone works on weekends/holidays when workingDays = 0,
@@ -721,12 +720,12 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const members = (req.body.members || []) as string[];
     const practiceIds = (req.body.practice_ids || []) as string[];
     const departmentIds = (req.body.department_ids || []) as string[];
-    
+
     // Build all filters in the order they appear in the query to ensure parameter positions match
     // Query parameter order: teams (main WHERE), dates (subquery), projects (subquery), categories (subquery), archived (subquery), practices (main WHERE), departments (main WHERE), members (main WHERE)
-    
+
     let paramOffsetForFilters = teamIdsParams.length + 1;
-    
+
     // 1. Duration filter (appears first in subquery)
     let customDurationClause = "";
     let customDurationParams: any[] = [];
@@ -865,7 +864,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
       // Still need to check utilization filter, but we'll do a quick check
       const utilization = (req.body.utilization || []) as string[];
       const hasUtilizationFilter = utilization.length > 0;
-      
+
       if (!hasUtilizationFilter) {
         return res.status(200).send(new ServerResponse(true, { filteredRows: [], totals: { total_time_logs: "0", total_estimated_hours: "0", total_utilization: "0" } }));
       }
@@ -994,11 +993,11 @@ export default class ReportingAllocationController extends ReportingControllerBa
       const member = result.rows[i];
       const loggedSeconds = member.logged_time ? parseFloat(member.logged_time) : 0;
       const utilizedHours = loggedSeconds / 3600;
-      
+
       // For individual members, use the same logic as total calculation
       let memberWorkingHours;
       let utilizationPercent;
-      
+
       if (isNonWorkingPeriod) {
         // Non-working period: each member's expected working hours is 0
         memberWorkingHours = 0;
@@ -1041,6 +1040,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
       }
     }
 
+
     // Apply utilization filter
     let filteredRows;
     if (utilization.length > 0) {
@@ -1053,9 +1053,19 @@ export default class ReportingAllocationController extends ReportingControllerBa
       filteredRows = result.rows;
     }
 
+    // Optionally exclude members with no logged time
+    const showOnlyMembersWithTimeLogs =
+      req.body.showOnlyMembersWithTimeLogs === true;
+
+    if (showOnlyMembersWithTimeLogs) {
+      filteredRows = filteredRows.filter(
+        member => Number(member.logged_time) > 0
+      );
+    }
+
     // Calculate totals
     const total_time_logs = filteredRows.reduce((sum, member) => sum + parseFloat(member.logged_time || '0'), 0);
-    
+
     let total_estimated_hours;
     let total_utilization;
 
@@ -1164,11 +1174,11 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
     const teams = (req.body.teams || []) as string[];
     const projects = (req.body.projects || []) as string[];
-    
+
     // Use parameterized queries - start from $1 since teams aren't used in the query
     const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, 1);
     let paramOffset = projectIdsParams.length + 1;
-    
+
     const categories = (req.body.categories || []) as string[];
     const noCategory = req.body.selectNoCategory || req.body.noCategory || false;
     const { type, billable } = req.body;
@@ -1236,7 +1246,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
         WHERE p.id IN (${projectIdsClause}) ${durationClause} ${archivedClause} ${categoriesFilter} ${billableQuery}
         GROUP BY p.id, p.name, p.end_date, p.hours_per_day, p.estimated_man_days, p.estimated_working_days, p.color_code
         ORDER BY logged_time DESC;`;
-    
+
     const queryParams = [...projectIdsParams, ...durationParams, ...archivedParams, ...categoryParams];
     const result = await db.query(q, queryParams);
 
