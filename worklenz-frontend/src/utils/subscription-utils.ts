@@ -96,6 +96,7 @@ const LEGACY_BUSINESS_FEATURES = new Set([
   'planner_schedule',
   'planner_timeline',
   'planner_workload',
+  'gantt_edit',
   'task_export',
   'advanced_reporting',
 ]);
