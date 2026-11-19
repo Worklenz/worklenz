@@ -1,5 +1,6 @@
 import { PoolClient } from "pg";
 import axios from "axios";
+import { assertSafeExternalHost, publicHttpAgent, publicHttpsAgent } from "../../shared/ssrf-guard";
 import { getKey, uploadBuffer } from "../../shared/storage";
 import {
   ImportedJiraAttachment,
@@ -178,10 +179,19 @@ export const importTaskAttachments = async (
     );
     const contentType = attachment?.mimeType || "application/octet-stream";
     try {
+      const parsedUrl = new URL(sourceUrl);
+      if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") throw new Error("Unsupported attachment URL");
+      assertSafeExternalHost(sourceUrl);
+      const jiraHost = ctx.jiraDomain ? assertSafeExternalHost(ctx.jiraDomain) : null;
+      const canSendCredentials = parsedUrl.protocol === "https:" && jiraHost === parsedUrl.hostname;
       const response = await axios.get<ArrayBuffer>(sourceUrl, {
+        httpAgent: publicHttpAgent,
+        httpsAgent: publicHttpsAgent,
+        maxRedirects: 0,
+        proxy: false,
         responseType: "arraybuffer",
         timeout: 30000,
-        headers: ctx.jiraAuthHeader
+        headers: ctx.jiraAuthHeader && canSendCredentials
           ? { Authorization: ctx.jiraAuthHeader, Accept: "*/*" }
           : { Accept: "*/*" },
       });

@@ -1215,6 +1215,7 @@ class ImportsService {
         targetProjectId: job.target_project_id as string,
         createdByUserId: job.created_by,
         jiraAuthHeader,
+        jiraDomain: typeof jiraAuth.domain === "string" ? jiraAuth.domain : null,
       };
 
       const importTaskComments = (taskId: string, raw: unknown) =>

@@ -1,4 +1,7 @@
-import { isIP } from "net";
+import dns from "dns";
+import http from "http";
+import https from "https";
+import { isIP, LookupFunction } from "net";
 import createHttpError from "http-errors";
 
 /**
@@ -126,3 +129,20 @@ export function assertSafeExternalHost(rawInput: string | undefined | null): str
 
   return host;
 }
+
+/** Resolve and validate the addresses used by the actual connection. */
+export const safePublicLookup: LookupFunction = (hostname, options, callback) => {
+  dns.lookup(hostname, { all: true, verbatim: true }, (error, addresses) => {
+    if (error) return callback(error, "", 4);
+    if (!addresses.length || addresses.some(({ address }) =>
+      isIP(address) === 6 ? isPrivateIPv6(address) : isPrivateIPv4(address))) {
+      return callback(new Error(`Blocked non-public address for ${hostname}`), "", 4);
+    }
+    if (options.all) return (callback as unknown as (error: null, addresses: dns.LookupAddress[]) => void)(null, addresses);
+    return callback(null, addresses[0].address, addresses[0].family);
+  });
+};
+
+// Disable keep-alive so each outbound connection is resolved and checked independently.
+export const publicHttpAgent = new http.Agent({ lookup: safePublicLookup });
+export const publicHttpsAgent = new https.Agent({ lookup: safePublicLookup });
