@@ -29,8 +29,14 @@ beforeAll(async () => {
   const passport = new Passport();
   passport.serializeUser((user: { id: string }, done) => done(null, user.id));
   passport.deserializeUser((id: string, done) => done(null, { id }));
+  app.set('trust proxy', 1);
   app.use(express.json());
-  app.use(session({ secret: 's'.repeat(64), resave: false, saveUninitialized: true }));
+  app.use(session({
+    secret: 's'.repeat(64),
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: true },
+  }));
   app.use(passport.initialize());
   app.use(passport.session());
   const csrf = csrfSync({ getTokenFromRequest: req => req.headers['x-csrf-token'] as string });
@@ -51,13 +57,17 @@ beforeAll(async () => {
 afterAll(async () => { await new Promise<void>(resolve => server.close(() => resolve())); });
 
 it('requires CSRF and an allowed browser origin before issuing a challenge or logging in', async () => {
-  const client = axios.create({ baseURL: baseUrl, validateStatus: () => true });
+  const client = axios.create({
+    baseURL: baseUrl,
+    validateStatus: () => true,
+    headers: { 'X-Forwarded-Proto': 'https' },
+  });
   const csrf = await client.get('/csrf-token');
   const cookie = csrf.headers['set-cookie']![0].split(';')[0];
-  const headers = { Cookie: cookie, Origin: origin, 'X-CSRF-Token': csrf.data.token };
-  expect((await client.post('/secure/google/one-tap/challenge', {}, { headers: { Cookie: cookie, Origin: origin } })).status).toBe(403);
+  const headers = { Cookie: cookie, Origin: origin, 'X-CSRF-Token': csrf.data.token, 'X-Forwarded-Proto': 'https' };
+  expect((await client.post('/secure/google/one-tap/challenge', {}, { headers: { Cookie: cookie, Origin: origin, 'X-Forwarded-Proto': 'https' } })).status).toBe(403);
   expect((await client.post('/secure/google/one-tap/challenge', {}, { headers: { ...headers, Origin: 'http://evil.example' } })).status).toBe(403);
-  expect((await client.post('/secure/google/one-tap/challenge', {}, { headers: { Cookie: cookie, 'X-CSRF-Token': csrf.data.token } })).status).toBe(403);
+  expect((await client.post('/secure/google/one-tap/challenge', {}, { headers: { Cookie: cookie, 'X-CSRF-Token': csrf.data.token, 'X-Forwarded-Proto': 'https' } })).status).toBe(403);
   expect((await client.post('/secure/google/one-tap/challenge', {}, { headers: { ...headers, 'X-Session-ID': 'attacker' } })).status).toBe(403);
   expect(issueGoogleChallenge).not.toHaveBeenCalled();
 
@@ -70,6 +80,8 @@ it('requires CSRF and an allowed browser origin before issuing a challenge or lo
   (resolveGoogleAccount as jest.Mock).mockResolvedValue({ id: 'user-id', email: 'test@example.com' });
   const login = await client.post('/secure/google/one-tap/login', { credential: 'credential' }, { headers });
   expect(login.status).toBe(200);
-  expect(login.headers['set-cookie']?.[0].split(';')[0]).not.toBe(cookie);
+  const loginCookies = login.headers['set-cookie'];
+  expect(loginCookies).toBeDefined();
+  expect(loginCookies![0].split(';')[0]).not.toBe(cookie);
   expect(verifyGoogleCredential).toHaveBeenCalledWith('credential', sessionId, expect.objectContaining({ clientId: '123.apps.googleusercontent.com' }));
 });

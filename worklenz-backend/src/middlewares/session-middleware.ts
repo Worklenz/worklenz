@@ -69,5 +69,13 @@ export default (req: any, res: any, next: any) => {
   }
   
   // Always call the original session middleware (handles both cookie and header-converted cases)
-  sessionMiddleware(req, res, next);
+  sessionMiddleware(req, res, (err: any) => {
+    if (err) {
+      return next(err);
+    }
+    if (req.session?.cookie) {
+      req.session.cookie.secure = sessionConfig.cookie.secure;
+    }
+    next();
+  });
 };
