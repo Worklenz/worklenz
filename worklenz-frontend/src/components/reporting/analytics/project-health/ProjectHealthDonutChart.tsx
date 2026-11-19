@@ -1,10 +1,18 @@
-import React, { useMemo } from 'react';
-import { ArcElement, Chart as ChartJS, Legend, Tooltip, type ChartOptions } from 'chart.js';
+import React, { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
+import {
+  ArcElement,
+  Chart as ChartJS,
+  Legend,
+  Tooltip,
+  type Chart as ChartInstance,
+  type ChartOptions,
+} from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { Badge, Flex, Typography, theme } from '@/shared/antd-imports';
 import { MetricCalcHint } from '../MetricCalcHint';
 import { InChartEmptyState } from '../states/ReportStateViews';
+import { chartToPngDataUrl } from '@/lib/reporting/chart-export';
 import { PROJECT_HEALTH_TONE_COLORS } from './project-health-colors';
 import type {
   ProjectHealthKpis,
@@ -14,6 +22,10 @@ import type {
 ChartJS.register(ArcElement, Legend, Tooltip);
 
 const { Text } = Typography;
+
+export interface ProjectHealthDonutChartHandle {
+  toPngDataUrl: () => string | null;
+}
 
 interface ProjectHealthDonutChartProps {
   kpis: ProjectHealthKpis;
@@ -39,11 +51,17 @@ const TONE_META: Record<
 
 const TONE_ORDER: ProjectHealthTone[] = ['on_track', 'at_risk', 'off_track', 'not_set'];
 
-export const ProjectHealthDonutChart: React.FC<ProjectHealthDonutChartProps> = ({
-  kpis,
-}) => {
+export const ProjectHealthDonutChart = forwardRef<
+  ProjectHealthDonutChartHandle,
+  ProjectHealthDonutChartProps
+>(({ kpis }, ref) => {
   const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
+  const chartRef = useRef<ChartInstance<'doughnut'>>(null);
+
+  useImperativeHandle(ref, () => ({
+    toPngDataUrl: () => chartToPngDataUrl(chartRef.current),
+  }));
 
   const slices = useMemo((): HealthSlice[] => {
     const counts: Record<ProjectHealthTone, number> = {
@@ -140,7 +158,7 @@ export const ProjectHealthDonutChart: React.FC<ProjectHealthDonutChartProps> = (
       </Flex>
       <Flex gap={24} align="center" wrap="wrap">
         <div style={{ width: 180, height: 180, flexShrink: 0, position: 'relative' }}>
-          <Doughnut data={chartData} options={options} />
+          <Doughnut ref={chartRef} data={chartData} options={options} />
           <Flex
             vertical
             align="center"
@@ -188,4 +206,6 @@ export const ProjectHealthDonutChart: React.FC<ProjectHealthDonutChartProps> = (
       </Text>
     </div>
   );
-};
+});
+
+ProjectHealthDonutChart.displayName = 'ProjectHealthDonutChart';

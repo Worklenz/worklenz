@@ -435,9 +435,21 @@ export async function renderScheduleChartPngs(
   const configs = configsForSource(source);
   if (!configs.length) return [];
 
+  const isProjectHealthPair =
+    source.kind === "project-health" && configs.length === 2;
+
   const buffers = await Promise.all(
     configs.map((config, index) => {
       const isDonut = config.type === "doughnut";
+      // Project Health PDF: bar ~3/4 + donut ~1/4 side-by-side.
+      if (isProjectHealthPair) {
+        return renderChartConfigPng(
+          config,
+          isDonut || index === 1
+            ? { width: 360, height: 360 }
+            : { width: 900, height: 360 }
+        );
+      }
       return renderChartConfigPng(
         config,
         isDonut

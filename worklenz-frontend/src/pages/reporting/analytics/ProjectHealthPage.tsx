@@ -35,7 +35,10 @@ import {
   ProjectHealthChart,
   type ProjectHealthChartHandle,
 } from '@/components/reporting/analytics/project-health/ProjectHealthChart';
-import { ProjectHealthDonutChart } from '@/components/reporting/analytics/project-health/ProjectHealthDonutChart';
+import {
+  ProjectHealthDonutChart,
+  type ProjectHealthDonutChartHandle,
+} from '@/components/reporting/analytics/project-health/ProjectHealthDonutChart';
 import { ProjectHealthKpiTiles } from '@/components/reporting/analytics/project-health/ProjectHealthKpiTiles';
 import { ProjectHealthTable } from '@/components/reporting/analytics/project-health/ProjectHealthTable';
 import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
@@ -121,6 +124,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
   const [barProjectOverrideIds, setBarProjectOverrideIds] = useState<string[] | null>(null);
 
   const chartRef = useRef<ProjectHealthChartHandle>(null);
+  const donutRef = useRef<ProjectHealthDonutChartHandle>(null);
   /** Tracks team keys we already seeded with the latest-20 project default. */
   const projectOptionsScope = JSON.stringify([session?.team_id, session?.id, customTemplateId]);
   const seededProjectsForTeamsRef = useScopedAnalyticsProjectSeed(projectOptionsScope);
@@ -417,11 +421,13 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       }
       if (format === 'pdf') {
         const png = chartRef.current?.toPngDataUrl();
+        const donutPng = donutRef.current?.toPngDataUrl() ?? null;
         await downloadAnalyticsBrandedPdf({
           title,
           filename: `project-health-${stamp}.pdf`,
           logoUrl: resolveAnalyticsPdfLogoUrl(teamsList, session?.team_id),
           chartPngDataUrl: png,
+          secondaryChartPngDataUrl: donutPng,
           tableRows: [
             ['Project', 'Health', 'Progress %', 'Open', 'Overdue'],
             ...data.projects.map(row => [
@@ -548,7 +554,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
           rowCount={data.projects.length}
           chart={
             <Flex gap={16} wrap="wrap" align="stretch" style={{ width: '100%' }}>
-              <div style={{ flex: '2 1 420px', minWidth: 280 }}>
+              <div style={{ flex: '3 1 420px', minWidth: 280 }}>
                 <Flex align="center" gap={6} style={{ marginBottom: 4 }}>
                   <Text strong style={{ fontSize: 14 }}>
                     {t('phProgressBudgetTitle', { defaultValue: 'Progress & budget' })}
@@ -583,8 +589,8 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
                   projects={barChartProjects}
                 />
               </div>
-              <div style={{ flex: '1 1 280px', minWidth: 260, maxWidth: 420 }}>
-                <ProjectHealthDonutChart kpis={data.kpis} />
+              <div style={{ flex: '1 1 200px', minWidth: 200, maxWidth: 320 }}>
+                <ProjectHealthDonutChart ref={donutRef} kpis={data.kpis} />
               </div>
             </Flex>
           }

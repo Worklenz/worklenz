@@ -13,6 +13,11 @@ export interface AnalyticsBrandedPdfOptions {
   filename: string;
   kpis?: AnalyticsPdfKpiTile[];
   chartPngDataUrl?: string | null;
+  /**
+   * Optional second chart (e.g. Project Health donut).
+   * When set with `chartPngDataUrl`, charts render side-by-side at ~3/4 + ~1/4.
+   */
+  secondaryChartPngDataUrl?: string | null;
   /** First row = headers, following rows = data (same as the on-screen table). */
   tableRows?: string[][];
   /** Organization / team logo URL when available; falls back to Worklenz mark. */
@@ -311,11 +316,34 @@ export async function downloadAnalyticsBrandedPdf(
   let cursorY = drawHeader(doc, options.title, exportedOn, logoDataUrl);
   cursorY = drawKpiCards(doc, options.kpis || [], cursorY);
 
-  if (options.chartPngDataUrl) {
+  const primaryChart = options.chartPngDataUrl;
+  const secondaryChart = options.secondaryChartPngDataUrl;
+  if (primaryChart && secondaryChart) {
+    // Project Health-style layout: bar ~3/4 left, donut ~1/4 right, same row as KPIs page.
+    const available = PAGE.width - PAGE.marginX * 2;
+    const gap = 12;
+    const barW = available * 0.74;
+    const donutW = available - barW - gap;
+    const chartH = Math.min(200, PAGE.height - cursorY - PAGE.marginBottom - 80);
+    try {
+      doc.addImage(primaryChart, 'PNG', PAGE.marginX, cursorY, barW, chartH);
+      doc.addImage(
+        secondaryChart,
+        'PNG',
+        PAGE.marginX + barW + gap,
+        cursorY,
+        donutW,
+        chartH
+      );
+      cursorY += chartH + 16;
+    } catch {
+      // Skip charts if embedding fails.
+    }
+  } else if (primaryChart) {
     const chartW = PAGE.width - PAGE.marginX * 2;
     const chartH = Math.min(220, PAGE.height - cursorY - PAGE.marginBottom - 80);
     try {
-      doc.addImage(options.chartPngDataUrl, 'PNG', PAGE.marginX, cursorY, chartW, chartH);
+      doc.addImage(primaryChart, 'PNG', PAGE.marginX, cursorY, chartW, chartH);
       cursorY += chartH + 16;
     } catch {
       // Skip chart if embedding fails.

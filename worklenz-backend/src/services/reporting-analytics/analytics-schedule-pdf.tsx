@@ -163,8 +163,28 @@ const pdfStyles = StyleSheet.create({
     fontSize: 8,
     color: "#8c8c8c",
   },
+  summaryAndCharts: {
+    marginBottom: 4,
+  },
+  chartsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
   chart: { width: "100%", height: 180, marginBottom: 10, objectFit: "contain" },
-  chartCompact: { width: "55%", height: 160, marginBottom: 10, objectFit: "contain" },
+  /** Project Health: bar takes ~3/4 of the page width. */
+  chartBar: {
+    width: "74%",
+    height: 200,
+    marginRight: "2%",
+    objectFit: "contain",
+  },
+  /** Project Health: donut takes ~1/4 of the page width. */
+  chartDonut: {
+    width: "24%",
+    height: 200,
+    objectFit: "contain",
+  },
   tableBlock: { marginTop: 4 },
   tableFrame: {
     borderWidth: 1.25,
@@ -352,8 +372,9 @@ const TableHeaderRow = ({ header }: { header: string[] }) => (
 );
 
 /**
- * Data table: column header always sits above data rows.
- * Header repeats on every continuation page; cells use clear grid borders.
+ * Data table: single in-flow column header above data rows.
+ * (A fixed `pageNumber > 1` repeat header doubled on the table page because
+ * KPIs/charts already occupy document page 1.)
  */
 const ScheduleTable = ({ header, body, truncated }: ScheduleTableProps) => {
   if (header.length === 0 && body.length === 0) {
@@ -367,15 +388,7 @@ const ScheduleTable = ({ header, body, truncated }: ScheduleTableProps) => {
         Report data ({body.length} row{body.length === 1 ? "" : "s"})
       </Text>
       <View style={pdfStyles.tableFrame}>
-        {/* In-flow header so it always appears before the first data rows. */}
         <TableHeaderRow header={header} />
-        {/* Repeat the same header on later pages when rows wrap. */}
-        <View
-          fixed
-          render={({ pageNumber }) =>
-            pageNumber > 1 ? <TableHeaderRow header={header} /> : null
-          }
-        />
         {body.map((r, ri) => (
           <View
             key={`r-${ri}`}
@@ -424,32 +437,32 @@ const SchedulePdfDocument = ({
     .filter(buf => buf?.length)
     .map(buf => `data:image/png;base64,${buf.toString("base64")}`);
   const hasCharts = charts.length > 0;
+  const isSideBySideCharts = charts.length === 2;
 
-  const chartsBlock = hasCharts ? (
-    <View wrap={false}>
+  const chartsBlock = !hasCharts ? null : isSideBySideCharts ? (
+    <View style={pdfStyles.chartsRow}>
+      <Image src={charts[0]} style={pdfStyles.chartBar} />
+      <Image src={charts[1]} style={pdfStyles.chartDonut} />
+    </View>
+  ) : (
+    <View>
       {charts.map((src, index) => (
-        <Image
-          key={`chart-${index}`}
-          src={src}
-          style={
-            charts.length > 1 && index === charts.length - 1
-              ? pdfStyles.chartCompact
-              : pdfStyles.chart
-          }
-        />
+        <Image key={`chart-${index}`} src={src} style={pdfStyles.chart} />
       ))}
     </View>
-  ) : null;
+  );
 
-  // Page 1: branding + KPI cards + charts.
+  // Page 1: branding + KPI cards + charts (side-by-side when bar + donut).
   // Page 2+: table with column header always above data rows (repeats on wrap).
   return (
     <Document>
       <Page size="A4" orientation="landscape" style={pdfStyles.page} wrap>
         <ScheduleHeader title={title} exportedOn={exportedOn} logo={logo} />
         <ScheduleFooter title={title} exportedOn={exportedOn} footerNote={footerNote} />
-        <KpiCards kpis={kpis} />
-        {chartsBlock}
+        <View style={pdfStyles.summaryAndCharts} wrap={false}>
+          <KpiCards kpis={kpis} />
+          {chartsBlock}
+        </View>
       </Page>
       <Page size="A4" orientation="landscape" style={pdfStyles.page} wrap>
         <ScheduleHeader title={title} exportedOn={exportedOn} logo={logo} />
