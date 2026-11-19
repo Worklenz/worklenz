@@ -357,7 +357,7 @@ export default class ReportingAllTasksController extends ReportingControllerBase
     res.end();
   }
 
-  private static async getTasksData(req: IWorkLenzRequest, body: IAllTasksRequest) {
+  public static async getTasksData(req: IWorkLenzRequest, body: IAllTasksRequest) {
     const page = body.index || 1;
     const pageSize = body.size || 50;
     const offset = (page - 1) * pageSize;

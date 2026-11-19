@@ -375,7 +375,8 @@ export const useTaskListColumns = ({
 
       // Use the UUID for API calls, not the key (nanoid)
       // For custom columns, prioritize the uuid field over id field
-      const columnId = (columnData as any)?.uuid || columnData?.id || columnKey;
+      const columnId = columnData?.uuid;
+      if (!columnId) return;
 
       dispatch(
         setCustomColumnModalAttributes({
