@@ -9,6 +9,14 @@ const makeSession = (roleName = 'member', businessPlan = false): ILocalSession =
 });
 
 describe('getTaskCreationPermission', () => {
+  it('blocks creation when the project scheme denies it', () => {
+    const result = getTaskCreationPermission({
+      session: makeSession('member'),
+      project: { task_role_permissions: { create_tasks: false } },
+      orgConfig: {},
+    });
+    expect(result.canCreateTask).toBe(false);
+  });
   it('blocks guest users from creating tasks even without task creation restrictions', () => {
     const result = getTaskCreationPermission({
       session: makeSession('member'),

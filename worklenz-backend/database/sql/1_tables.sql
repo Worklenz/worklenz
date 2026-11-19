@@ -642,7 +642,8 @@ CREATE TABLE IF NOT EXISTS organizations (
     is_lkr_billing           BOOLEAN                  DEFAULT FALSE,
     working_hours            DOUBLE PRECISION         DEFAULT 8                  NOT NULL,
     business_plan_override   BOOLEAN                  DEFAULT FALSE              NOT NULL,
-    team_member_limit_override BOOLEAN                DEFAULT FALSE              NOT NULL
+    team_member_limit_override BOOLEAN                DEFAULT FALSE              NOT NULL,
+    enforce_daily_time_limit BOOLEAN                  DEFAULT TRUE               NOT NULL
 );
 
 COMMENT ON COLUMN organizations.business_plan_override IS 'Manual override to grant business plan feature access (client portal, Slack, finance, etc.) regardless of subscription status. Set manually by admins.';

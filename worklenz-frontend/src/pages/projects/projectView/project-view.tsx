@@ -1,7 +1,9 @@
-import React, { useEffect, useState, useMemo, useCallback, Suspense, useRef } from 'react';
+import { ProjectViewPortals } from './project-view-portals';
+import React, { useEffect, useState, useMemo, useCallback, useRef, startTransition } from 'react';
+import { isTaskListProfilingEnabled, recordTaskListRender } from '@/components/task-list-v2/task-list-profiling';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { releaseDocsEditors } from '@/pages/projects/project-view-1/docs/docs-editor-release';
-import { createPortal } from 'react-dom';
+import { loadProjectMetadata, startInitialTaskListLoad } from './project-metadata-loader';
 
 // Centralized Ant Design imports
 import {
@@ -28,10 +30,15 @@ import { SocketEvents } from '@/shared/socket-events';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { hasFinanceViewPermission } from '@/utils/finance-permissions';
-import { getProject, setProjectId, setProjectView, clearProjectAccessForId } from '@/features/project/project.slice';
 import {
-  fetchStatuses,
-  fetchStatusesCategories,
+  getProject,
+  setProjectId,
+  setProjectView,
+  setStatusCategoryOrder,
+  clearProjectAccessForId,
+} from '@/features/project/project.slice';
+import type { IStatusCategoryOrderChangedEvent } from '@/types/project/status-category-order.types';
+import {
   resetStatuses,
 } from '@/features/taskAttributes/taskStatusSlice';
 import { projectsApiService } from '@/api/projects/projects.api.service';
@@ -43,7 +50,7 @@ import { CreateIssueModal } from '@/components/projects/create-issue/create-issu
 import { resetSoftwareQuickFilters } from '@/features/projects/singleProject/quick-filters/software-quick-filters.slice';
 import { resetReleases } from '@/features/projects/singleProject/releases/releases.slice';
 import './project-view.css';
-import { resetTaskListData, restoreFilters, setTaskListProjectId, fetchTaskAssignees, fetchLabelsByProject, startFilterRestoration, endFilterRestoration, restoreStatusFilters } from '@/features/tasks/tasks.slice';
+import { resetTaskListData, restoreFilters, setTaskListProjectId, startFilterRestoration, endFilterRestoration, restoreStatusFilters } from '@/features/tasks/tasks.slice';
 import { resetBoardData } from '@/features/board/board-slice';
 import { resetTaskManagement, fetchTasksV3 } from '@/features/task-management/task-management.slice';
 import { store } from '@/app/store';
@@ -55,7 +62,6 @@ import {
 } from '@/features/task-management/grouping.slice';
 import { resetSelection } from '@/features/task-management/selection.slice';
 import { resetFields, setProjectContext } from '@/features/task-management/taskListFields.slice';
-import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import {
   tabItems,
@@ -72,7 +78,6 @@ import {
 } from '@/features/task-drawer/task-drawer.slice';
 import { resetState as resetEnhancedKanbanState, initKanbanGroupingFromServer, IGroupBy } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { setProjectId as setInsightsProjectId } from '@/features/projects/insights/project-insights.slice';
-import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import ProjectViewSkeleton from './project-view-skeleton';
 import { ProjectSetupBanner } from '@/components/projects/project-setup-banner/project-setup-banner';
 import { useTranslation } from 'react-i18next';
@@ -97,9 +102,6 @@ import { setProjectMemberDefaultView } from '@/features/projects/projectsSlice';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 
 // Import critical components synchronously to avoid suspense interruptions
-import TaskDrawer from '@components/task-drawer/task-drawer';
-import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
-import { fetchTaskListColumns } from '@/features/task-management/task-management.slice';
 import TaskListV2 from '@/components/task-list-v2/TaskListV2';
 import { SavedViewTabLabel } from '@/components/projects/saved-views/saved-view-tab-label';
 import {
@@ -114,18 +116,6 @@ import {
   parseSavedViewTabKey,
   toSavedViewTabKey,
 } from '@/features/projects/singleProject/saved-views/saved-view-config';
-
-// Lazy load non-critical components with better error handling
-const DeleteStatusDrawer = React.lazy(
-  () => import('@/components/project-task-filters/delete-status-drawer/delete-status-drawer')
-);
-const PhaseDrawer = React.lazy(() => import('@/features/projects/singleProject/phase/PhaseDrawer'));
-const StatusDrawer = React.lazy(
-  () => import('@/components/project-task-filters/create-status-drawer/create-status-drawer')
-);
-const InviteProjectMembers = React.lazy(
-  () => import('@/components/common/invite-project-members/InviteProjectMembers')
-);
 
 const ProjectView = React.memo(() => {
   const location = useLocation();
@@ -176,6 +166,9 @@ const ProjectView = React.memo(() => {
 
   // Use ref to prevent duplicate API calls and error messages
   const isLoadingRef = useRef(false);
+  const initializationProjectRef = useRef<string | undefined>(undefined);
+  const initializationAttemptRef = useRef(0);
+  const cleanupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasShownErrorRef = useRef(false);
 
   // Initialize timer state from backend when project view loads
@@ -232,12 +225,32 @@ const ProjectView = React.memo(() => {
       if (!isCurrentUserAffected) return;
 
       dispatch(clearProjectAccessForId(projectId));
+      dispatch(projectsApi.util.invalidateTags([{ type: 'Projects', id: projectId }]));
       void dispatch(getProject(projectId));
 
       message.warning(
         t('permissionLostDesc', {
           defaultValue:
             'Your permissions on this project were updated. Reloading your view.',
+        })
+      );
+    };
+
+    const handleStatusCategoryOrderChanged = (payload?: IStatusCategoryOrderChangedEvent) => {
+      if (
+        payload?.project_id !== projectId ||
+        !Array.isArray(payload.category_order) ||
+        payload.category_order.length !== 3 ||
+        !payload.category_order.every(categoryId => typeof categoryId === 'string')
+      ) {
+        return;
+      }
+      dispatch(setStatusCategoryOrder(payload.category_order));
+      dispatch(
+        projectsApi.util.updateQueryData('getProject', projectId, draft => {
+          if (draft?.body) {
+            draft.body.status_category_order = payload.category_order;
+          }
         })
       );
     };
@@ -250,6 +263,8 @@ const ProjectView = React.memo(() => {
       [SocketEvents.PROJECT_END_DATE_CHANGE.toString()]: notify('projectDatesUpdatedDesc'),
       [SocketEvents.PROJECT_CATEGORY_CHANGE.toString()]: notify('projectCategoryUpdatedDesc'),
       [SocketEvents.PROJECT_PERMISSION_CHANGED.toString()]: handlePermissionChanged,
+      [SocketEvents.PROJECT_STATUS_CATEGORY_ORDER_CHANGED.toString()]:
+        handleStatusCategoryOrderChanged,
     };
 
     Object.entries(handlers).forEach(([event, handler]) => socket.on(event, handler));
@@ -376,9 +391,18 @@ const ProjectView = React.memo(() => {
 
   // Effect for handling component unmount (leaving project view entirely)
   useEffect(() => {
-    // This cleanup only runs when the component unmounts
+    if (cleanupTimerRef.current) {
+      clearTimeout(cleanupTimerRef.current);
+      cleanupTimerRef.current = null;
+    }
     return () => {
-      resetAllProjectData();
+      // Strict Mode immediately re-runs this effect; defer cleanup so that its
+      // simulated unmount does not reset an initialization already in flight.
+      cleanupTimerRef.current = setTimeout(() => {
+        initializationProjectRef.current = undefined;
+        initializationAttemptRef.current += 1;
+        resetAllProjectData();
+      }, 0);
     };
   }, [resetAllProjectData]);
 
@@ -394,6 +418,9 @@ const ProjectView = React.memo(() => {
 
   // Reset initialization when project changes - must run first
   useEffect(() => {
+    if (initializationProjectRef.current === projectId) return;
+    initializationProjectRef.current = projectId;
+    initializationAttemptRef.current += 1;
     setIsInitialized(false);
     isLoadingRef.current = false;
     hasShownErrorRef.current = false;
@@ -409,7 +436,9 @@ const ProjectView = React.memo(() => {
         if (isLoadingRef.current) {
           return;
         }
+        const currentAttempt = ++initializationAttemptRef.current;
         isLoadingRef.current = true;
+        performance.mark('worklenz-project-view-start');
 
         try {
           // Clean up previous project data before loading new project
@@ -441,22 +470,16 @@ const ProjectView = React.memo(() => {
             dispatch(startFilterRestoration());
           }
 
-          // Load project metadata first. The task list itself is fetched once, below,
-          // after grouping and filters are known — so the request is never repeated.
-          const [projectResult] = await Promise.allSettled([
-            dispatch(getProject(projectId)),
-            dispatch(fetchStatuses(projectId)),
-            dispatch(fetchLabels()),
-            ...(shouldPreloadTaskList
-              ? [
-                  dispatch(fetchTaskListColumns(projectId)),
-                  dispatch(fetchPhasesByProjectId(projectId)),
-                  dispatch(fetchStatusesCategories()),
-                  dispatch(fetchTaskAssignees(projectId)),
-                  dispatch(fetchLabelsByProject(projectId)),
-                ]
-              : []),
-          ]);
+          const [projectResult] = await loadProjectMetadata(
+            dispatch, projectId, shouldPreloadTaskList, requestedTab === 'backlog'
+          );
+
+          if (
+            initializationProjectRef.current !== projectId ||
+            initializationAttemptRef.current !== currentAttempt
+          ) {
+            return;
+          }
 
           // Check if project fetch was rejected (access denied or not found)
           if (projectResult.status === 'rejected') {
@@ -523,8 +546,8 @@ const ProjectView = React.memo(() => {
             dispatch(initKanbanGroupingFromServer({ groupBy: boardGroupBy as IGroupBy, projectId }));
 
             if (shouldPreloadTaskList) {
-              // Statuses, members and labels are loaded above, so saved filter IDs can be
-              // matched against real entities synchronously — no polling needed.
+              // Selected filter entities are ready; unselected pickers may still
+              // load in the background. Restore IDs before starting the task request.
               dispatch(restoreFilters());
               const availableStatuses = store.getState().taskStatusReducer?.status || [];
               if (availableStatuses.length > 0) {
@@ -533,8 +556,20 @@ const ProjectView = React.memo(() => {
                 dispatch(endFilterRestoration());
               }
 
-              // Grouping and filters are now correct: fetch the task list exactly once.
-              await dispatch(fetchTasksV3(projectId));
+              // Prepare the shell during task I/O instead of initializing every
+              // header/filter control only after the response has arrived.
+              await startInitialTaskListLoad(dispatch, {
+                projectId,
+                tab: requestedTab,
+                hasTaskDeepLink: Boolean(searchParams.get('task')),
+                onShellReady: () => startTransition(() => setIsInitialized(true)),
+              });
+              if (
+            initializationProjectRef.current !== projectId ||
+            initializationAttemptRef.current !== currentAttempt
+          ) {
+            return;
+          }
             }
           }
 
@@ -562,7 +597,12 @@ const ProjectView = React.memo(() => {
           console.error('Error loading project data:', error);
           navigate('/worklenz/projects');
         } finally {
-          isLoadingRef.current = false;
+          if (
+            initializationProjectRef.current === projectId &&
+            initializationAttemptRef.current === currentAttempt
+          ) {
+            isLoadingRef.current = false;
+          }
         }
       };
 
@@ -979,20 +1019,6 @@ const ProjectView = React.memo(() => {
     translationsReady,
   ]);
 
-  // Optimized secondary components loading with better UX
-  const [shouldLoadSecondaryComponents, setShouldLoadSecondaryComponents] = useState(false);
-
-  useEffect(() => {
-    if (isInitialized) {
-      // Reduce delay and load secondary components after core data is ready
-      const timer = setTimeout(() => {
-        setShouldLoadSecondaryComponents(true);
-      }, 500); // Reduced from 1000ms to 500ms
-
-      return () => clearTimeout(timer);
-    }
-  }, [isInitialized]);
-
   // Open the project settings modal on arrival when asked to via `open_settings=1`
   // (e.g. "Customize before creating" from a route that doesn't mount
   // <ProjectSettingsModal/> itself, like the navbar's global QuickActionButton).
@@ -1016,41 +1042,6 @@ const ProjectView = React.memo(() => {
     nextParams.delete('settings_section');
     setSearchParams(nextParams, { replace: true });
   }, [projectId, searchParams, selectedProject, dispatch, setSearchParams]);
-
-  // Optimized portal elements with better error boundaries
-  const portalElements = useMemo(
-    () => (
-      <>
-        {/* Critical component - load immediately without suspense */}
-        {createPortal(<TaskDrawer />, document.body, 'task-drawer')}
-
-        {/* Non-critical components - load after delay with suspense fallback */}
-        {shouldLoadSecondaryComponents && (
-          <Suspense fallback={<SuspenseFallback />}>
-            {/* This drawer's open/close state is a single global flag
-                (state.projectMemberReducer.isDrawerOpen), not scoped to this instance.
-                Safe today only because this page and the other place InviteProjectMembers
-                is rendered inline (Planner/Home's "New Task" modals) sit on mutually
-                exclusive routes — if that ever changes, toggling the flag from one place
-                would also pop open this instance. */}
-            {selectedProject &&
-              createPortal(
-                <InviteProjectMembers
-                  projectId={selectedProject.id || ''}
-                  projectName={decodeHtmlEntities(selectedProject.name) || ''}
-                />,
-                document.body,
-                'project-member-drawer'
-              )}
-            {createPortal(<PhaseDrawer />, document.body, 'phase-drawer')}
-            {createPortal(<StatusDrawer />, document.body, 'status-drawer')}
-            {createPortal(<DeleteStatusDrawer />, document.body, 'delete-status-drawer')}
-          </Suspense>
-        )}
-      </>
-    ),
-    [shouldLoadSecondaryComponents]
-  );
 
   // Show skeleton while project is being fetched or translations are loading
   if (projectLoading || !isInitialized || !translationsReady) {
@@ -1107,7 +1098,9 @@ const ProjectView = React.memo(() => {
         size="small"
       />
 
-      {portalElements}
+      {isTaskListProfilingEnabled ? (
+        <React.Profiler id="project-portals" onRender={recordTaskListRender}><ProjectViewPortals /></React.Profiler>
+      ) : <ProjectViewPortals />}
     </div>
   );
 });
@@ -1135,4 +1128,8 @@ const writeHeaderPinnedTabs = (projectId: string, tabKeys: string[]) => {
   }
 };
 
-export default ProjectView;
+const ProfiledProjectView = () => (
+  <React.Profiler id="project-view" onRender={recordTaskListRender}><ProjectView /></React.Profiler>
+);
+
+export default isTaskListProfilingEnabled ? ProfiledProjectView : ProjectView;

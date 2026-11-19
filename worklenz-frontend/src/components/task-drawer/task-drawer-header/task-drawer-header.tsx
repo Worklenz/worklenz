@@ -459,9 +459,7 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
                     size="small"
                     type="link"
                     style={{
-                      color: '#1677ff',
-                      opacity: 1,
-                      visibility: 'visible',
+                      padding: 0,
                     }}
                     onClick={() => navigate(`/worklenz/t/${copiedTaskId}`)}
                   >

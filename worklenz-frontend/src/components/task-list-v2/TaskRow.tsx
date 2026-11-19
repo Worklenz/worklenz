@@ -9,6 +9,7 @@ import { useTaskRowState } from './hooks/useTaskRowState';
 import { useTaskRowActions } from './hooks/useTaskRowActions';
 import { useTaskRowColumns } from './hooks/useTaskRowColumns';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { isTaskListProfilingEnabled, recordTaskListRender } from './task-list-profiling';
 
 interface TaskRowProps {
   taskId: string;
@@ -53,10 +54,9 @@ const TaskRow: React.FC<TaskRowProps> = memo(
     // Get task data and selection state from Redux
     const task = useAppSelector(state => selectTaskById(state, taskId));
     const isSelected = useAppSelector(state => selectIsTaskSelected(state, taskId));
-    const drawerSelectedTaskId = useAppSelector(state => state.taskDrawerReducer.selectedTaskId);
+    const isDrawerActive = useAppSelector(state => state.taskDrawerReducer.selectedTaskId === taskId);
     const themeMode = useAppSelector(state => state.themeReducer.mode);
     const isDarkMode = themeMode === 'dark';
-    const isDrawerActive = drawerSelectedTaskId === taskId;
     const safeTask = useMemo(
       () =>
         task || {
@@ -150,11 +150,6 @@ const TaskRow: React.FC<TaskRowProps> = memo(
       isGuest: isRowReadOnly,
     });
 
-    // Render null only after all hooks are called to keep hook ordering stable
-    if (!task) {
-      return null;
-    }
-
     // Memoize style object to prevent unnecessary re-renders
     const style = useMemo(
       () => ({
@@ -164,6 +159,9 @@ const TaskRow: React.FC<TaskRowProps> = memo(
       }),
       [transform, transition, isDragging]
     );
+
+    // A deletion must not skip the style hook used by the previous render.
+    if (!task) return null;
 
     return (
       <div
@@ -194,17 +192,12 @@ const TaskRow: React.FC<TaskRowProps> = memo(
             currentBg = rowBackgrounds.dragOver;
           }
 
-          return (
-            <React.Fragment key={column.id}>
-              {renderColumn(
-                column.id,
-                column.width,
-                column.isSticky,
-                index,
-                currentBg
-              )}
-            </React.Fragment>
-          );
+          const cell = renderColumn(column.id, column.width, column.isSticky, index, currentBg);
+          return isTaskListProfilingEnabled ? (
+            <React.Profiler key={column.id} id={`cell:${column.id}`} onRender={recordTaskListRender}>
+              {cell}
+            </React.Profiler>
+          ) : <React.Fragment key={column.id}>{cell}</React.Fragment>;
         })}
       </div>
     );

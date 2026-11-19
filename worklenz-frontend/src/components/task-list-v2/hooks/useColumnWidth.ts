@@ -1,87 +1,122 @@
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
+
+interface ColumnWidthEntry {
+  width: number;
+  cssWidth: string;
+  needsMeasurement: boolean;
+  listeners: Set<() => void>;
+}
+
+const DEFAULT_COLUMN_WIDTH = 160;
+const columnWidths = new Map<string, ColumnWidthEntry>();
+let observer: MutationObserver | null = null;
+let frame: number | null = null;
+let subscriberCount = 0;
 
 /**
- * Hook to reactively read a column's width from CSS custom properties
- * Watches for changes to document.documentElement.style and re-reads the value
- * Optimized with debouncing for smoother resize performance
- * 
- * @param columnId - The column ID (e.g., 'labels')
- * @returns The current width in pixels as a number
+ * All visible label cells share one root-style observer and one width snapshot
+ * per column. Reading inline pixel widths avoids forcing computed style/layout
+ * once per row during mounting and resizing.
  */
-export const useColumnWidth = (columnId: string): number => {
-  const [width, setWidth] = useState<number>(() => {
-    const cssVar = getComputedStyle(document.documentElement)
-      .getPropertyValue(`--col-width-${columnId}`)
-      .trim();
-    return parseCssWidth(cssVar);
-  });
-
-  const rafRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    const updateWidth = () => {
-      const cssVar = getComputedStyle(document.documentElement)
-        .getPropertyValue(`--col-width-${columnId}`)
-        .trim();
-      const newWidth = parseCssWidth(cssVar);
-      setWidth(newWidth);
-    };
-
-    // Use requestAnimationFrame for smoother updates during resize
-    const handleStyleChange = () => {
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
+export const useColumnWidth = (columnId: string, isEnabled = true): number => {
+  const subscribe = useCallback(
+    (listener: () => void) => {
+      if (!isEnabled) return () => {};
+      const entry = getEntry(columnId);
+      entry.listeners.add(listener);
+      subscriberCount++;
+      if (!observer) {
+        observer = new MutationObserver(scheduleWidthUpdate);
+        observer.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ['style'],
+        });
       }
-      rafRef.current = requestAnimationFrame(updateWidth);
-    };
-
-    // Create a MutationObserver to watch for style attribute changes
-    const observer = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-          handleStyleChange();
+      // Catch width changes committed between rendering and subscribing.
+      updateWidths();
+      return () => {
+        entry.listeners.delete(listener);
+        subscriberCount--;
+        if (entry.listeners.size === 0) columnWidths.delete(columnId);
+        if (subscriberCount === 0) {
+          observer?.disconnect();
+          observer = null;
+          if (frame !== null) cancelAnimationFrame(frame);
+          frame = null;
+          columnWidths.clear();
         }
-      }
-    });
-
-    // Observe the document.documentElement for style attribute changes
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['style'],
-    });
-
-    return () => {
-      observer.disconnect();
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
-      }
-    };
-  }, [columnId]);
-
-  return width;
+      };
+    },
+    [columnId, isEnabled]
+  );
+  const getSnapshot = useCallback(
+    () => (isEnabled ? getEntry(columnId).width : DEFAULT_COLUMN_WIDTH),
+    [columnId, isEnabled]
+  );
+  return useSyncExternalStore(subscribe, getSnapshot, () => DEFAULT_COLUMN_WIDTH);
 };
 
-/**
- * Parse CSS width value to number (pixels)
- * @param cssValue - CSS value like "160px" or "10rem"
- * @returns Width in pixels
- */
-function parseCssWidth(cssValue: string): number {
-  if (!cssValue) return 160; // Default fallback
-
-  // Handle px values
-  if (cssValue.endsWith('px')) {
-    return parseInt(cssValue.replace('px', ''), 10) || 160;
+function getEntry(columnId: string): ColumnWidthEntry {
+  let entry = columnWidths.get(columnId);
+  if (!entry) {
+    const cssWidth = readCssWidth(columnId);
+    const needsMeasurement = Boolean(cssWidth) && !isPixelWidth(cssWidth);
+    entry = {
+      width: needsMeasurement ? DEFAULT_COLUMN_WIDTH : parseCssWidth(cssWidth),
+      cssWidth,
+      needsMeasurement,
+      listeners: new Set(),
+    };
+    columnWidths.set(columnId, entry);
   }
+  return entry;
+}
 
-  // Handle other units by creating a temporary element
-  const temp = document.createElement('div');
-  temp.style.width = cssValue;
-  temp.style.position = 'absolute';
-  temp.style.visibility = 'hidden';
-  document.body.appendChild(temp);
-  const width = temp.offsetWidth;
-  document.body.removeChild(temp);
+function scheduleWidthUpdate() {
+  if (frame === null)
+    frame = requestAnimationFrame(() => {
+      frame = null;
+      updateWidths();
+    });
+}
 
-  return width || 160;
+function updateWidths() {
+  columnWidths.forEach((entry, columnId) => {
+    const cssWidth = readCssWidth(columnId);
+    if (entry.cssWidth === cssWidth && !entry.needsMeasurement) return;
+    entry.cssWidth = cssWidth;
+    entry.needsMeasurement = false;
+    const width = parseCssWidth(cssWidth);
+    if (entry.width === width) return;
+    entry.width = width;
+    entry.listeners.forEach(listener => listener());
+  });
+}
+
+function readCssWidth(columnId: string): string {
+  const property = `--col-width-${columnId}`;
+  // The table and its resize handlers publish pixel widths inline on the root.
+  return (
+    document.documentElement.style.getPropertyValue(property).trim() ||
+    getComputedStyle(document.documentElement).getPropertyValue(property).trim()
+  );
+}
+
+function parseCssWidth(cssWidth: string): number {
+  if (!cssWidth) return DEFAULT_COLUMN_WIDTH;
+  if (isPixelWidth(cssWidth)) return parseFloat(cssWidth) || DEFAULT_COLUMN_WIDTH;
+
+  // Retain support for widths supplied in other CSS units. This measurement is
+  // shared by the column, so it is never repeated for every visible task row.
+  const element = document.createElement('div');
+  element.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none';
+  element.style.width = cssWidth;
+  document.body.appendChild(element);
+  const width = element.offsetWidth;
+  element.remove();
+  return width || DEFAULT_COLUMN_WIDTH;
+}
+
+function isPixelWidth(cssWidth: string): boolean {
+  return /^\d+(\.\d+)?px$/.test(cssWidth);
 }

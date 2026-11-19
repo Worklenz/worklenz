@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useStore } from 'react-redux';
 import { PlusOutlined, UserAddOutlined, theme } from '@/shared/antd-imports';
 import { RootState } from '@/app/store';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
@@ -129,9 +129,9 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   const rollbackSnapshotRef = useRef<AssigneesSnapshot | null>(null);
   const pendingAcksRef = useRef(0);
 
-  const { projectId: activeProjectId } = useSelector((state: RootState) => state.projectReducer);
+  const store = useStore<RootState>();
+  const activeProjectId = useSelector((state: RootState) => state.projectReducer.projectId);
   const projectId = projectIdOverride ?? activeProjectId;
-  const members = useSelector((state: RootState) => state.teamMembersReducer.teamMembers);
   const currentSession = useAuthService().getCurrentSession();
   const { socket } = useSocket();
   const dispatch = useAppDispatch();
@@ -327,6 +327,9 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
             if (membersRequestId.current === requestId) setIsLoadingMembers(false);
           });
       } else {
+        // Read the current roster on activation. Closed row pickers do not need
+        // to render again whenever team-member data is refreshed.
+        const members = store.getState().teamMembersReducer.teamMembers;
         const membersData = (members?.data || []).map(member => ({
           ...member,
           selected: assignees?.includes(member.id),

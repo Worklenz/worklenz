@@ -92,6 +92,13 @@ export class TaskListGroup implements ITaskGroup {
 }
 
 export default class TasksControllerV2 extends TasksControllerBase {
+  private static hasInvalidCustomColumnIds(value: unknown): boolean {
+    if (value === undefined) return false;
+    if (typeof value !== "string") return true;
+    return value.split(/[\s,]+/).filter(Boolean).some(
+      id => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    );
+  }
   private static isCountsOnly(query: ParsedQs) {
     return query.count === "true";
   }
@@ -528,8 +535,21 @@ export default class TasksControllerV2 extends TasksControllerBase {
       options.filterBy as string
     );
 
+    const includeCustomColumnValues =
+      !!options.customColumns && options.customColumns !== "false";
+    const includeAttachmentDetails = options.include_attachments !== "false";
+    const includeLatestComment = options.include_latest_comment !== "false";
+    const customColumnIds = typeof options.custom_column_ids === "string"
+      ? options.custom_column_ids.split(/[\s,]+/).filter(Boolean)
+      : null;
+    let customColumnIdsParamNum = 0;
+    if (includeCustomColumnValues && customColumnIds?.length) {
+      queryParams.push(customColumnIds);
+      customColumnIdsParamNum = paramOffset++;
+    }
+
     // Custom columns data query
-    const customColumnsQuery = options.customColumns
+    const customColumnsQuery = includeCustomColumnValues
       ? `, (SELECT COALESCE(
             jsonb_object_agg(
               custom_cols.key,
@@ -551,6 +571,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
             FROM cc_column_values ccv
             JOIN cc_custom_columns cc ON ccv.column_id = cc.id
             WHERE ccv.task_id = t.id
+              ${customColumnIdsParamNum ? `AND ccv.column_id = ANY($${customColumnIdsParamNum}::UUID[])` : ""}
           ) AS custom_cols
           WHERE custom_cols.value IS NOT NULL) AS custom_column_values`
       : "";
@@ -814,7 +835,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
     // The outer query then joins the 1:1 lookups (project, parent, status, priority,
     // phase, reporter) that were previously correlated scalar subqueries per row.
     const passThroughColumns = [
-      options.customColumns ? "t.custom_column_values" : "",
+      includeCustomColumnValues ? "t.custom_column_values" : "",
       options.filterBy === "member" ? "t.statuses" : "",
     ]
       .filter((c) => !!c)
@@ -866,7 +887,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         SELECT task_id, COUNT(*) AS comments_count
         FROM task_comments WHERE task_id IN (SELECT id FROM base) GROUP BY task_id
       )`,
-      `latest_comment_agg AS (
+      ...(includeLatestComment ? [`latest_comment_agg AS (
         SELECT DISTINCT ON (tc.task_id)
                tc.task_id,
            tc.id AS latest_comment_id,
@@ -882,11 +903,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
         WHERE tc.task_id IN (SELECT id FROM base)
           AND COALESCE(tc.is_deleted, FALSE) IS FALSE
         ORDER BY tc.task_id, tc.created_at DESC, tcc.index DESC
-      )`,
+      )`] : []),
       `attachments_agg AS (
         SELECT ta.task_id,
                COUNT(*) AS attachments_count,
-               COALESCE(JSON_AGG(
+               ${includeAttachmentDetails ? `COALESCE(JSON_AGG(
                  JSON_BUILD_OBJECT(
                    'id', ta.id,
                    'name', ta.name,
@@ -896,9 +917,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
                    'created_at', ta.created_at,
                    'uploader_name', u.name
                  ) ORDER BY ta.created_at ASC
-               ), '[]'::JSON) AS attachments
+               ), '[]'::JSON)` : "'[]'::JSON"} AS attachments
         FROM task_attachments ta
-        LEFT JOIN users u ON u.id = ta.uploaded_by
+        ${includeAttachmentDetails ? "LEFT JOIN users u ON u.id = ta.uploaded_by" : ""}
         WHERE ta.task_id IN (SELECT id FROM base)
         GROUP BY ta.task_id
       )`,
@@ -1016,10 +1037,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
              COALESCE(cma.comments_count, 0) AS comments_count,
              COALESCE(ata.attachments_count, 0) AS attachments_count,
              COALESCE(ata.attachments, '[]'::JSON) AS attachments,
-             lc.latest_comment_id,
-             lc.latest_comment,
-             lc.latest_comment_at,
-             lc.latest_comment_author,
+             ${includeLatestComment
+               ? "lc.latest_comment_id, lc.latest_comment, lc.latest_comment_at, lc.latest_comment_author"
+               : "NULL AS latest_comment_id, NULL AS latest_comment, NULL AS latest_comment_at, NULL AS latest_comment_author"},
              CASE WHEN t.archived IS FALSE AND stsc.is_done IS TRUE THEN 1 ELSE 0 END AS parent_task_completed,
              COALESCE(asg.assignees, '[]'::JSON) AS assignees,
              COALESCE(cca.completed_sub_tasks, 0) AS completed_sub_tasks,
@@ -1050,7 +1070,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
       LEFT JOIN users ru ON ru.id = t.reporter_id
       LEFT JOIN comments_agg cma ON cma.task_id = t.id
       LEFT JOIN attachments_agg ata ON ata.task_id = t.id
-      LEFT JOIN latest_comment_agg lc ON lc.task_id = t.id
+      ${includeLatestComment ? "LEFT JOIN latest_comment_agg lc ON lc.task_id = t.id" : ""}
       LEFT JOIN worklog_agg wla ON wla.task_id = t.id
       LEFT JOIN subscribers_agg sub ON sub.task_id = t.id
       LEFT JOIN dependencies_agg dep ON dep.task_id = t.id
@@ -1076,29 +1096,53 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
   public static async getGroups(
     groupBy: string,
-    projectId: string
+    projectId: string,
+    categoryOrder?: string[]
   ): Promise<ITaskGroup[]> {
     let q = "";
     let params: any[] = [];
     switch (groupBy) {
       case GroupBy.STATUS:
-        q = `
-          SELECT id,
-                 name,
-                COALESCE(task_statuses.color_code,
-                   (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id)
-                 ) AS color_code,
-                 COALESCE(task_statuses.color_code,
-                   (SELECT color_code_dark FROM sys_task_status_categories WHERE id = task_statuses.category_id),
-                   (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id)
-                 ) AS color_code_dark,
-                 category_id
-                 category_id
-          FROM task_statuses
-          WHERE project_id = $1
-          ORDER BY sort_order;
-        `;
-        params = [projectId];
+        if (categoryOrder && categoryOrder.length === 3) {
+          // NFR-1: category_rank derived from status metadata, not task scan
+          q = `
+            SELECT id,
+                   name,
+                  COALESCE(task_statuses.color_code,
+                     (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id)
+                   ) AS color_code,
+                   COALESCE(task_statuses.color_code,
+                     (SELECT color_code_dark FROM sys_task_status_categories WHERE id = task_statuses.category_id),
+                     (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id)
+                   ) AS color_code_dark,
+                   category_id
+                   category_id
+            FROM task_statuses
+            WHERE project_id = $1
+            -- NFR-1: category_rank derived from status metadata, not task scan
+            ORDER BY array_position($2::uuid[], category_id),
+                     sort_order;
+          `;
+          params = [projectId, categoryOrder];
+        } else {
+          q = `
+            SELECT id,
+                   name,
+                  COALESCE(task_statuses.color_code,
+                     (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id)
+                   ) AS color_code,
+                   COALESCE(task_statuses.color_code,
+                     (SELECT color_code_dark FROM sys_task_status_categories WHERE id = task_statuses.category_id),
+                     (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id)
+                   ) AS color_code_dark,
+                   category_id
+                   category_id
+            FROM task_statuses
+            WHERE project_id = $1
+            ORDER BY sort_order;
+          `;
+          params = [projectId];
+        }
         break;
       case GroupBy.PRIORITY:
         q = `SELECT id, name, color_code, color_code_dark
@@ -1150,6 +1194,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
+    if (TasksControllerV2.hasInvalidCustomColumnIds(req.query.custom_column_ids)) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid custom column IDs"));
+    }
     const startTime = performance.now();
 
     // PERFORMANCE OPTIMIZATION: Skip expensive progress calculation by default
@@ -1281,6 +1328,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
+    if (TasksControllerV2.hasInvalidCustomColumnIds(req.query.custom_column_ids)) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid custom column IDs"));
+    }
     const startTime = performance.now();
 
     if (req.query.refresh_progress === "true" && req.params.id) {
@@ -2245,11 +2295,36 @@ export default class TasksControllerV2 extends TasksControllerBase {
     }
   }
 
+  private static async queryTasksWithoutJit(query: string, params: unknown[]) {
+    const client = await db.connect();
+    let shouldDiscardClient = false;
+    try {
+      await client.query("BEGIN READ ONLY");
+      await client.query("SET LOCAL jit = off");
+      const result = await client.query(query, params);
+      await client.query("COMMIT");
+      return result;
+    } catch (error) {
+      try {
+        await client.query("ROLLBACK");
+      } catch (_rollbackError) {
+        // Do not return a connection with an unknown transaction state to the pool.
+        shouldDiscardClient = true;
+      }
+      throw error;
+    } finally {
+      client.release(shouldDiscardClient);
+    }
+  }
+
   @HandleExceptions()
   public static async getTasksV3(
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
+    if (TasksControllerV2.hasInvalidCustomColumnIds(req.query.custom_column_ids)) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid custom column IDs"));
+    }
     const startTime = performance.now();
     const groupBy = (req.query.group || GroupBy.STATUS) as string;
 
@@ -2274,11 +2349,39 @@ export default class TasksControllerV2 extends TasksControllerBase {
       req.params.id,
       assigneeScope
     );
-    const result = await db.query(q, params);
+    // Task data and group metadata are independent reads. Run them together so
+    // the request does not pay for two sequential database round trips.
+    let taskQueryTime = 0;
+    let groupsQueryTime = 0;
+    const [result, groups] = await Promise.all([
+      (async () => {
+        const queryStart = performance.now();
+        try {
+          return await this.queryTasksWithoutJit(q, params);
+        } finally {
+          taskQueryTime = performance.now() - queryStart;
+        }
+      })(),
+      (async () => {
+        const queryStart = performance.now();
+        try {
+          // Resolve ordering inside the metadata branch so task I/O stays parallel.
+          let categoryOrderForGroups: string[] | undefined;
+          if (groupBy === GroupBy.STATUS && req.query.category_order === "true") {
+            try {
+              const { resolveProjectCategoryOrder } = await import('../shared/status-category-order');
+              categoryOrderForGroups = await resolveProjectCategoryOrder(req.params.id);
+            } catch (_err) {
+              categoryOrderForGroups = undefined;
+            }
+          }
+          return await this.getGroups(groupBy, req.params.id, categoryOrderForGroups);
+        } finally {
+          groupsQueryTime = performance.now() - queryStart;
+        }
+      })(),
+    ]);
     const tasks = [...result.rows];
-
-    // Get groups metadata dynamically from database
-    const groups = await this.getGroups(groupBy, req.params.id);
 
     // Create priority value to name mapping
     const priorityMap: Record<string, string> = {
@@ -2581,13 +2684,16 @@ export default class TasksControllerV2 extends TasksControllerBase {
     }
 
     if (groupBy === GroupBy.ASSIGNEE) {
+      const assigneeGroups = TasksControllerV2.buildAssigneeGroups(
+        filteredTransformedTasks,
+        tasks,
+        req.query.include_empty === "true"
+      );
       return res.status(200).send(
         new ServerResponse(true, {
-          groups: TasksControllerV2.buildAssigneeGroups(
-            filteredTransformedTasks,
-            tasks,
-            req.query.include_empty === "true"
-          ),
+          groups: req.query.group_tasks === "false"
+            ? assigneeGroups.map(({ tasks: _tasks, ...group }) => group)
+            : assigneeGroups,
           allTasks: filteredTransformedTasks,
           grouping: groupBy,
           totalTasks: filteredTransformedTasks.length,
@@ -2808,13 +2914,17 @@ export default class TasksControllerV2 extends TasksControllerBase {
       log_error(
         `[PERFORMANCE WARNING] Slow request detected: ${totalTime.toFixed(
           2
-        )}ms for project ${req.params.id} with ${transformedTasks.length} tasks`
+        )}ms total (${taskQueryTime.toFixed(2)}ms task query, ${groupsQueryTime.toFixed(
+          2
+        )}ms groups query) for project ${req.params.id} with ${transformedTasks.length} tasks`
       );
     }
 
     return res.status(200).send(
       new ServerResponse(true, {
-        groups: responseGroups,
+        groups: req.query.group_tasks === "false"
+          ? responseGroups.map(({ tasks: _tasks, ...group }) => group)
+          : responseGroups,
         allTasks: filteredTransformedTasks,
         grouping: groupBy,
         totalTasks: filteredTransformedTasks.length,

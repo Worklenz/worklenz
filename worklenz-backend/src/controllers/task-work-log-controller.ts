@@ -19,6 +19,8 @@ import {
 import { isTeamOwner, isTeamAdmin } from "../shared/team-permissions";
 import { resolveTaskWorkLogManageAccess } from "../shared/task-work-log-access";
 import { sanitizeCsvValue } from "../shared/csv-export";
+import { DailyTimeEntry } from "../shared/daily-time-limit";
+import { checkDailyTimeLimit, getDailyTimeAllowance } from "../services/daily-time-limit.service";
 
 type GroupByDimension = "member" | "client" | "project";
 
@@ -141,23 +143,97 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
-    const { id, seconds_spent, description, created_at, formatted_start } =
+    const { id, seconds_spent, description, created_at, formatted_start, entries } =
       req.body;
-    const q = `INSERT INTO task_work_log (time_spent, description, task_id, user_id, created_at)
-               VALUES ($1, $2, $3, $4, $5);`;
-    const params = [
-      seconds_spent,
-      description,
-      id,
-      req.user?.id,
-      formatted_start,
-    ];
-    const result = await db.query(q, params);
-    const [data] = result.rows;
 
-    await this.emitTaskTimeLogUpdated(req.user?.team_id, id);
+    const rawEntries: Array<{ id: string; seconds_spent: number; description?: string; formatted_start: string }> =
+      Array.isArray(entries) && entries.length > 0
+        ? entries.map(e => ({
+            id: e.id || id,
+            seconds_spent: Number(e.seconds_spent),
+            description: e.description ?? description,
+            formatted_start: e.formatted_start,
+          }))
+        : [
+            {
+              id,
+              seconds_spent: Number(seconds_spent),
+              description,
+              formatted_start,
+            },
+          ];
 
-    return res.status(200).send(new ServerResponse(true, data));
+    const additions: DailyTimeEntry[] = rawEntries.map(e => ({
+      start: e.formatted_start,
+      seconds: e.seconds_spent,
+      isTimedSession: false,
+    }));
+
+    const client = await db.connect();
+    try {
+      await client.query("BEGIN");
+
+      const check = await checkDailyTimeLimit(
+        client,
+        req.user?.team_id as string,
+        req.user?.id as string,
+        additions,
+        []
+      );
+
+      if (!check.allowed) {
+        await client.query("ROLLBACK");
+        const remainingHours = Math.floor((check.remainingSeconds || 0) / 3600);
+        const remainingMins = Math.round(((check.remainingSeconds || 0) % 3600) / 60);
+        const remainingStr = `${remainingHours}h ${remainingMins}m`;
+        return res.status(400).send(
+          new ServerResponse(
+            false,
+            {
+              code: "DAILY_TIME_LIMIT_EXCEEDED",
+              day: check.exceededDay,
+              remaining_seconds: check.remainingSeconds,
+              remaining_formatted: remainingStr,
+            },
+            `Daily time limit of 24 hours exceeded for ${check.exceededDay}. You have ${remainingStr} remaining.`
+          )
+        );
+      }
+
+      const inserted = [];
+      const affectedTaskIds = new Set<string>();
+
+      for (const entry of rawEntries) {
+        const q = `INSERT INTO task_work_log (time_spent, description, task_id, user_id, created_at)
+                   VALUES ($1, $2, $3, $4, $5)
+                   RETURNING *;`;
+        const params = [
+          entry.seconds_spent,
+          entry.description || null,
+          entry.id,
+          req.user?.id,
+          entry.formatted_start,
+        ];
+        const result = await client.query(q, params);
+        if (result.rows[0]) {
+          inserted.push(result.rows[0]);
+          affectedTaskIds.add(entry.id);
+        }
+      }
+
+      await client.query("COMMIT");
+
+      for (const taskId of affectedTaskIds) {
+        await this.emitTaskTimeLogUpdated(req.user?.team_id, taskId);
+      }
+
+      return res.status(200).send(new ServerResponse(true, inserted.length === 1 ? inserted[0] : inserted));
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   // Sums task_work_log time across every descendant subtask (recursive, not just
@@ -279,37 +355,94 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     }
 
     const oldTaskId = access.task_id;
-
-    // If new_task_id is provided and differs from the current task, move the log
     const targetTaskId = new_task_id || oldTaskId;
 
-    const q = `
-      UPDATE task_work_log
-      SET time_spent  = $2,
-          description = $3,
-          created_at  = $4,
-          task_id = $5
-      WHERE id = $1
-      RETURNING task_id;
-    `;
-    const params = [
-      req.params.id,
-      seconds_spent,
-      description || null,
-      formatted_start,
-      targetTaskId,
-    ];
-    const result = await db.query(q, params);
-    const [data] = result.rows;
+    const client = await db.connect();
+    try {
+      await client.query("BEGIN");
 
-    // Notify the new (or same) task
-    await this.emitTaskTimeLogUpdated(req.user?.team_id, data?.task_id);
-    // If the log was moved, also notify the old task so its totals refresh
-    if (oldTaskId && oldTaskId !== data?.task_id) {
-      await this.emitTaskTimeLogUpdated(req.user?.team_id, oldTaskId);
+      const logRes = await client.query(
+        `SELECT twl.logged_by_timer, p.team_id
+         FROM task_work_log twl
+         JOIN tasks t ON t.id = twl.task_id
+         JOIN projects p ON p.id = t.project_id
+         WHERE twl.id = $1::uuid
+         FOR UPDATE;`,
+        [req.params.id]
+      );
+      const isTimer = Boolean(logRes.rows[0]?.logged_by_timer);
+      const teamId = req.user?.team_id || access.team_id || logRes.rows[0]?.team_id;
+
+      const additions: DailyTimeEntry[] = [
+        {
+          start: formatted_start,
+          seconds: Number(seconds_spent),
+          isTimedSession: isTimer,
+        },
+      ];
+
+      const check = await checkDailyTimeLimit(
+        client,
+        teamId,
+        access.user_id, // Member whose limit applies!
+        additions,
+        [req.params.id]
+      );
+
+      if (!check.allowed) {
+        await client.query("ROLLBACK");
+        const remainingHours = Math.floor((check.remainingSeconds || 0) / 3600);
+        const remainingMins = Math.round(((check.remainingSeconds || 0) % 3600) / 60);
+        const remainingStr = `${remainingHours}h ${remainingMins}m`;
+        return res.status(400).send(
+          new ServerResponse(
+            false,
+            {
+              code: "DAILY_TIME_LIMIT_EXCEEDED",
+              day: check.exceededDay,
+              remaining_seconds: check.remainingSeconds,
+              remaining_formatted: remainingStr,
+            },
+            `Daily time limit of 24 hours exceeded for ${check.exceededDay}. You have ${remainingStr} remaining.`
+          )
+        );
+      }
+
+      const q = `
+        UPDATE task_work_log
+        SET time_spent  = $2,
+            description = $3,
+            created_at  = $4,
+            task_id = $5
+        WHERE id = $1
+        RETURNING task_id;
+      `;
+      const params = [
+        req.params.id,
+        seconds_spent,
+        description || null,
+        formatted_start,
+        targetTaskId,
+      ];
+      const result = await client.query(q, params);
+      const [data] = result.rows;
+
+      await client.query("COMMIT");
+
+      // Notify the new (or same) task
+      await this.emitTaskTimeLogUpdated(req.user?.team_id, data?.task_id);
+      // If the log was moved, also notify the old task so its totals refresh
+      if (oldTaskId && oldTaskId !== data?.task_id) {
+        await this.emitTaskTimeLogUpdated(req.user?.team_id, oldTaskId);
+      }
+
+      return res.status(200).send(new ServerResponse(true, data));
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
     }
-
-    return res.status(200).send(new ServerResponse(true, data));
   }
 
   @HandleExceptions()
@@ -367,37 +500,94 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     const { seconds_spent, description, formatted_start } = req.body;
     const canEditOthers = isTeamOwner(req.user) || isTeamAdmin(req.user);
 
-    const q = `
-      UPDATE task_work_log AS twl
-      SET time_spent  = $5,
-          description = $6,
-          created_at  = $7
-      WHERE twl.id = $1
-        AND ${timeLogModifiableByUser(2, 3, 4)}
-      RETURNING twl.task_id;
-    `;
-    const result = await db.query(q, [
-      req.params.id,
-      req.user?.id,
-      canEditOthers,
-      req.user?.team_id,
-      seconds_spent,
-      description || null,
-      formatted_start,
-    ]);
-    const [data] = result.rows;
+    const client = await db.connect();
+    try {
+      await client.query("BEGIN");
 
-    // Nothing matched: not the caller's entry and the caller isn't an owner/admin (or it no
-    // longer exists). Say so rather than reporting a success that changed nothing.
-    if (!data) {
-      return res.status(403).send(
-        new ServerResponse(false, null, "You can only edit your own time entries.")
+      const lockQ = `
+        SELECT twl.task_id, twl.user_id, twl.logged_by_timer, p.team_id
+        FROM task_work_log AS twl
+        INNER JOIN tasks t ON t.id = twl.task_id
+        INNER JOIN projects p ON p.id = t.project_id
+        WHERE twl.id = $1
+          AND ${timeLogModifiableByUser(2, 3, 4)}
+        FOR UPDATE;
+      `;
+      const lockRes = await client.query(lockQ, [
+        req.params.id,
+        req.user?.id,
+        canEditOthers,
+        req.user?.team_id,
+      ]);
+      const originalLog = lockRes.rows[0];
+      if (!originalLog) {
+        await client.query("ROLLBACK");
+        return res.status(403).send(
+          new ServerResponse(false, null, "You can only edit your own time entries.")
+        );
+      }
+
+      const additions: DailyTimeEntry[] = [
+        {
+          start: formatted_start,
+          seconds: Number(seconds_spent),
+          isTimedSession: Boolean(originalLog.logged_by_timer),
+        },
+      ];
+
+      const check = await checkDailyTimeLimit(
+        client,
+        req.user?.team_id || originalLog.team_id,
+        originalLog.user_id, // Member whose limit applies!
+        additions,
+        [req.params.id]
       );
+      if (!check.allowed) {
+        await client.query("ROLLBACK");
+        const remainingHours = Math.floor((check.remainingSeconds || 0) / 3600);
+        const remainingMins = Math.round(((check.remainingSeconds || 0) % 3600) / 60);
+        const remainingStr = `${remainingHours}h ${remainingMins}m`;
+        return res.status(400).send(
+          new ServerResponse(
+            false,
+            {
+              code: "DAILY_TIME_LIMIT_EXCEEDED",
+              day: check.exceededDay,
+              remaining_seconds: check.remainingSeconds,
+              remaining_formatted: remainingStr,
+            },
+            `Daily time limit of 24 hours exceeded for ${check.exceededDay}. You have ${remainingStr} remaining.`
+          )
+        );
+      }
+
+      const q = `
+        UPDATE task_work_log AS twl
+        SET time_spent  = $2,
+            description = $3,
+            created_at  = $4
+        WHERE twl.id = $1
+        RETURNING twl.task_id;
+      `;
+      const result = await client.query(q, [
+        req.params.id,
+        seconds_spent,
+        description || null,
+        formatted_start,
+      ]);
+      const [data] = result.rows;
+
+      await client.query("COMMIT");
+
+      await this.emitTaskTimeLogUpdated(req.user?.team_id, data?.task_id);
+
+      return res.status(200).send(new ServerResponse(true, data));
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
     }
-
-    await this.emitTaskTimeLogUpdated(req.user?.team_id, data.task_id);
-
-    return res.status(200).send(new ServerResponse(true, data));
   }
 
   /** Time Entries page ONLY (DELETE /task-time-log/entries/:id) — same rule as updateTimeEntry(). */
@@ -501,6 +691,46 @@ export default class TaskWorklogController extends WorklenzControllerBase {
       const { task_id: originalTaskId, user_id: originalUserId } = originalLog;
       taskId = originalTaskId;
 
+      const additions: DailyTimeEntry[] = [
+        {
+          start: segment1.formatted_start,
+          seconds: Number(segment1.seconds_spent),
+          isTimedSession: false,
+        },
+        {
+          start: segment2.formatted_start,
+          seconds: Number(segment2.seconds_spent),
+          isTimedSession: false,
+        },
+      ];
+
+      const check = await checkDailyTimeLimit(
+        client,
+        req.user?.team_id as string,
+        originalUserId,
+        additions,
+        [req.params.id]
+      );
+
+      if (!check.allowed) {
+        await client.query("ROLLBACK");
+        const remainingHours = Math.floor((check.remainingSeconds || 0) / 3600);
+        const remainingMins = Math.round(((check.remainingSeconds || 0) % 3600) / 60);
+        const remainingStr = `${remainingHours}h ${remainingMins}m`;
+        return res.status(400).send(
+          new ServerResponse(
+            false,
+            {
+              code: "DAILY_TIME_LIMIT_EXCEEDED",
+              day: check.exceededDay,
+              remaining_seconds: check.remainingSeconds,
+              remaining_formatted: remainingStr,
+            },
+            `Daily time limit of 24 hours exceeded for ${check.exceededDay}. You have ${remainingStr} remaining.`
+          )
+        );
+      }
+
       // Update segment 1 (the existing row).
       await client.query(
         `UPDATE task_work_log
@@ -540,6 +770,26 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     await this.emitTaskTimeLogUpdated(req.user?.team_id, taskId);
 
     return res.status(200).send(new ServerResponse(true, null));
+  }
+
+  @HandleExceptions()
+  public static async getDailyAllowance(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
+    const dateParam = (req.query.date as string) || undefined;
+    const client = await db.connect();
+    try {
+      const allowance = await getDailyTimeAllowance(
+        client,
+        req.user?.team_id as string,
+        req.user?.id as string,
+        dateParam
+      );
+      return res.status(200).send(new ServerResponse(true, allowance));
+    } finally {
+      client.release();
+    }
   }
 
   private static async getExportMetadata(id: string) {

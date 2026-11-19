@@ -101,5 +101,6 @@
     "dragDisabledInChronological": "Passa all’ordine manuale per riordinare le fasi trascinandole"
   },
   "unscheduledTasksTitle": "Attività non pianificate",
-  "noUnscheduledTasks": "Nessuna attività non pianificata disponibile."
+  "noUnscheduledTasks": "Nessuna attività non pianificata disponibile.",
+  "statusReorderSameCategory": "Gli stati possono essere riordinati solo all’interno della stessa categoria."
 }

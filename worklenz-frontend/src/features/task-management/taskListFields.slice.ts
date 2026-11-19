@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
-import { updateColumnVisibility } from './task-management.slice';
+import { updateColumnVisibility, fetchTaskListColumns } from './task-management.slice';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
 import logger from '@/utils/errorLogger';
 
@@ -211,6 +211,21 @@ const taskListFieldsSlice = createSlice({
   },
   extraReducers: builder => {
     builder
+      .addCase(fetchTaskListColumns.fulfilled, (state, action) => {
+        if (state.currentProjectId !== action.meta.arg) return;
+        // Resolve visibility in the same Redux update as the loaded columns.
+        // The first task request must already know whether heavy fields are visible.
+        const columns = new Map((action.payload.standard || []).map(column => [column.key, column]));
+        let hasChanges = false;
+        state.fields.forEach(field => {
+          const visible = columns.get(field.key)?.pinned;
+          if (typeof visible === 'boolean' && field.visible !== visible) {
+            field.visible = visible;
+            hasChanges = true;
+          }
+        });
+        if (hasChanges) saveFields(state.fields, state.currentProjectId);
+      })
       .addCase(syncFieldWithDatabase.fulfilled, (state, action) => {
         // Field visibility has been synced with database
         const { fieldKey, visible } = action.payload;

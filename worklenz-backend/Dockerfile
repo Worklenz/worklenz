@@ -35,6 +35,7 @@ COPY --from=builder /usr/src/app/worklenz-email-templates ./worklenz-email-templ
 COPY --from=builder /usr/src/app/scripts/migrate.js ./scripts/migrate.js
 COPY --from=builder /usr/src/app/scripts/migrate-bootstrap.js ./scripts/migrate-bootstrap.js
 COPY --from=builder /usr/src/app/database/pg-migrations ./database/pg-migrations
+COPY --from=builder /usr/src/app/database/pg-migrations-support ./database/pg-migrations-support
 
 
 EXPOSE 3000

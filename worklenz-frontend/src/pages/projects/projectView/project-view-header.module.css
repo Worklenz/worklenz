@@ -38,7 +38,7 @@
 .titleContainer {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px; 
   width: 100%;
   min-width: 0;
   flex-wrap: nowrap;
@@ -49,8 +49,9 @@
 }
 
 .projectTitle {
-  flex: 1 1 0;
-  width: 0;
+  flex: 0 1 auto;      
+  width: auto;          
+  max-width: 300px;     
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -61,10 +62,10 @@
 
 .projectAttributes {
   display: flex;
-  gap: 4px;
+  gap: 8px;              
   align-items: center;
   flex-wrap: wrap;
-  flex-shrink: 0;
+  flex-shrink: 0;       
 }
 
 /* Button Styles */

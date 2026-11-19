@@ -38,7 +38,7 @@ const mockGetCurrentSession = vi.fn(() => ({
   subscription_type: 'PADDLE',
   plan_name: 'Business Plan',
 }));
-const mockHasBusinessFeatureAccess = vi.fn((..._args: unknown[]) => true);
+const mockCanUseFeature = vi.fn((..._args: unknown[]) => true);
 const mockDispatch = vi.fn();
 const mockToggleUpgradeModal = vi.fn(() => ({ type: 'upgrade/toggle' }));
 
@@ -68,8 +68,8 @@ vi.mock('@/hooks/useAuth', () => ({
 }));
 
 vi.mock('@/utils/subscription-utils', () => ({
-  hasBusinessFeatureAccess: (...args: unknown[]) =>
-    mockHasBusinessFeatureAccess(...args),
+  canUseFeature: (...args: unknown[]) =>
+    mockCanUseFeature(...args),
 }));
 
 vi.mock('@/hooks/useIsProjectManager', () => ({
@@ -165,7 +165,7 @@ describe('FilteredTaskExportButton (TE-33 / TE-38 Flows 3–5)', () => {
     mockIsOwnerOrAdmin.mockReturnValue(true);
     mockIsProjectManager.mockReturnValue(false);
     mockAuthRole.mockReturnValue('Admin');
-    mockHasBusinessFeatureAccess.mockReturnValue(true);
+    mockCanUseFeature.mockReturnValue(true);
     mockState = {
       projectReducer: { projectId: 'proj-1' },
       taskManagement: {
@@ -189,7 +189,7 @@ describe('FilteredTaskExportButton (TE-33 / TE-38 Flows 3–5)', () => {
   });
 
   it('shows Export for Free/Pro and opens upgrade modal on click', async () => {
-    mockHasBusinessFeatureAccess.mockReturnValue(false);
+    mockCanUseFeature.mockReturnValue(false);
     const user = userEvent.setup();
 
     render(<FilteredTaskExportButton position="list" hasActiveFilters />);

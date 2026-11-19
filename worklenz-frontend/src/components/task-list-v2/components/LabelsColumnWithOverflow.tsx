@@ -23,11 +23,12 @@ interface LabelsColumnWithOverflowProps {
 export const LabelsColumnWithOverflow: React.FC<LabelsColumnWithOverflowProps> = memo(
   ({ width, task, labelsAdapter, isDarkMode, columnId, disabled = false }) => {
     // Reactively read the column width from CSS custom property
-    const columnWidth = useColumnWidth(columnId);
+    const labels = task.all_labels || task.labels;
+    const columnWidth = useColumnWidth(columnId, Boolean(labels?.length));
 
     // Calculate which labels are visible and which overflow
     const { visibleLabels, hiddenLabels, overflowCount } = useLabelsOverflow(
-      task.all_labels || task.labels,
+      labels,
       columnWidth
     );
 

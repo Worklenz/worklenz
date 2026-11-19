@@ -1,5 +1,5 @@
 import { EyeInvisibleOutlined, EyeOutlined } from '@/shared/antd-imports';
-import { Button, Card, Form, Input, Row, Typography } from '@/shared/antd-imports';
+import { Button, Card, Form, Input, Modal, Row, Typography } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { profileSettingsApiService } from '@/api/settings/profile/profile-settings.api.service';
@@ -13,6 +13,11 @@ const ChangePassword: React.FC = () => {
   const authService = useAuthService();
   const session = authService.getCurrentSession();
   const [loading, setLoading] = useState<boolean>(false);
+  const [pendingValues, setPendingValues] = useState<{
+    currentPassword?: string;
+    newPassword: string;
+    confirmPassword: string;
+  } | null>(null);
   // Only accounts with no password yet (e.g. Google-only signups) may skip the current password.
   const [askForCurrentPassword, setAskForCurrentPassword] = useState<boolean>(
     () => session?.has_password !== false
@@ -32,20 +37,28 @@ const ChangePassword: React.FC = () => {
     return Promise.resolve();
   };
 
-  const handleFormSubmit = async (values: {
+  const handleFormSubmit = (values: {
     currentPassword?: string;
     newPassword: string;
     confirmPassword: string;
   }) => {
+    setPendingValues(values);
+  };
+
+  const submitPasswordChange = async (logoutOtherSessions: boolean) => {
+    if (!pendingValues) return;
+
     try {
       setLoading(true);
       const body = {
-        new_password: values.newPassword,
-        confirm_password: values.confirmPassword,
-        password: askForCurrentPassword ? values.currentPassword || '' : '',
+        new_password: pendingValues.newPassword,
+        confirm_password: pendingValues.confirmPassword,
+        password: askForCurrentPassword ? pendingValues.currentPassword || '' : '',
+        logout_other_sessions: logoutOtherSessions,
       };
 
       const res = await profileSettingsApiService.changePassword(body);
+      setPendingValues(null);
       if (res.done) {
         form.resetFields();
         const currentSession = authService.getCurrentSession();
@@ -53,6 +66,9 @@ const ChangePassword: React.FC = () => {
           authService.setCurrentSession({ ...currentSession, has_password: true });
         }
         setAskForCurrentPassword(true);
+        if (logoutOtherSessions) {
+          window.location.href = '/auth/logging-out';
+        }
         return;
       }
 
@@ -61,6 +77,7 @@ const ChangePassword: React.FC = () => {
         setAskForCurrentPassword(true);
       }
     } catch (error) {
+      setPendingValues(null);
       logger.error('Error changing password', error);
     } finally {
       setLoading(false);
@@ -82,6 +99,26 @@ const ChangePassword: React.FC = () => {
 
   return (
     <Card style={{ width: '100%' }}>
+      <Modal
+        open={pendingValues !== null}
+        title={t('logoutOtherSessionsTitle', { defaultValue: 'Log out other sessions?' })}
+        onOk={() => submitPasswordChange(true)}
+        onCancel={() => submitPasswordChange(false)}
+        okText={t('logoutOtherSessionsYes', { defaultValue: 'Yes, log out other sessions' })}
+        cancelText={t('logoutOtherSessionsNo', { defaultValue: 'No, keep them signed in' })}
+        confirmLoading={loading}
+        cancelButtonProps={{ disabled: loading }}
+        closable={false}
+        keyboard={false}
+        maskClosable={false}
+      >
+        <Typography.Text>
+          {t('logoutOtherSessionsDescription', {
+            defaultValue:
+              'Do you want to log out all browsers and devices using your account, including this one?',
+          })}
+        </Typography.Text>
+      </Modal>
       <Form layout="vertical" form={form} onFinish={handleFormSubmit}>
         {!askForCurrentPassword && (
           <Row style={{ width: '350px', marginBottom: '16px' }}>

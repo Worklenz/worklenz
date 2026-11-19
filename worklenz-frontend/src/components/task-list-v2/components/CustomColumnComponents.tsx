@@ -326,7 +326,7 @@ export const CustomColumnHeader: React.FC<{
       return;
     }
 
-    const columnId = column.id || column.uuid;
+    const columnId = column.uuid;
     const openInitialSetupModal = (columnData: typeof column) => {
       if (!columnId) return;
 
@@ -397,6 +397,7 @@ export const CustomColumnHeader: React.FC<{
       // Update the local column immediately so the header reflects the saved name.
       const updatedColumn = {
         ...column,
+        id: columnId,
         name: editValue.trim(),
         pinned: column.pinned ?? true,
         custom_column: true,

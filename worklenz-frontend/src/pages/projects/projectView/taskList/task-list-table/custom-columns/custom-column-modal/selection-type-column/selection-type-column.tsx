@@ -18,7 +18,12 @@ export type SelectionType = {
   parent_selection_id?: string | null;
 };
 
-const SelectionTypeColumn = () => {
+interface SelectionTypeColumnProps {
+  /** When false, new selections cannot be added (e.g. a parent that other fields depend on). */
+  canAddSelections?: boolean;
+}
+
+const SelectionTypeColumn = ({ canAddSelections = true }: SelectionTypeColumnProps) => {
   const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
 
@@ -92,7 +97,7 @@ const SelectionTypeColumn = () => {
     const nextSelection = selections[index + 1];
     if (nextSelection) {
       setPendingFocusId(nextSelection.selection_id);
-    } else {
+    } else if (canAddSelections) {
       handleAddSelection();
     }
   };
@@ -175,14 +180,23 @@ const SelectionTypeColumn = () => {
           ))}
         </Flex>
 
-        <Button
-          type="link"
-          size="small"
-          onClick={handleAddSelection}
-          style={{ width: 'fit-content', padding: 0 }}
-        >
-          {t('customColumns.fieldTypeForms.addSelection')}
-        </Button>
+        {canAddSelections ? (
+          <Button
+            type="link"
+            size="small"
+            onClick={handleAddSelection}
+            style={{ width: 'fit-content', padding: 0 }}
+          >
+            {t('customColumns.fieldTypeForms.addSelection')}
+          </Button>
+        ) : (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {t('customColumns.dependentSelection.parentOptionsLocked', {
+              defaultValue:
+                'New parent options cannot be added here because other fields depend on this field.',
+            })}
+          </Typography.Text>
+        )}
       </Flex>
     </div>
   );

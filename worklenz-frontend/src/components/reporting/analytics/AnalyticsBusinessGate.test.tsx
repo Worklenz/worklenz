@@ -7,12 +7,30 @@ import { AnalyticsBusinessGate, AnalyticsFinanceGate } from './AnalyticsBusiness
 import { flatAnalyticsNavItems } from '@/lib/reporting/analytics-nav';
 import reportingRoutes from '@/app/routes/reporting-routes';
 
-const state = vi.hoisted(() => ({ session: null as ILocalSession | null, dispatch: vi.fn(), renderReport: vi.fn() }));
+const state = vi.hoisted(() => ({
+  session: null as ILocalSession | null,
+  dispatch: vi.fn(),
+  renderReport: vi.fn(),
+  canViewFinance: true,
+}));
 vi.mock('@/hooks/useAuth', () => ({ useAuthService: () => ({ getCurrentSession: () => state.session }) }));
 vi.mock('@/hooks/useAppDispatch', () => ({ useAppDispatch: () => state.dispatch }));
+vi.mock('@/hooks/useOrganizationPermission', () => ({
+  useOrganizationPermission: () => ({
+    hasPermission: state.canViewFinance,
+    isLoading: false,
+  }),
+}));
 vi.mock('@/features/admin-center/admin-center.slice', () => ({ openUpgradeModal: (payload: string) => ({ type: 'upgrade', payload }) }));
 vi.mock('@/hooks/useDoumentTItle', () => ({ useDocumentTitle: vi.fn() }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (_key: string, options: { defaultValue: string }) => options.defaultValue }) }));
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  return {
+    ...actual,
+    Navigate: ({ to }: { to: string }) => <div>Redirected to {to}</div>,
+  };
+});
 vi.mock('./ReportPageShell', () => ({ ReportPageShell: ({ children }: { children: React.ReactNode }) => <main>{children}</main> }));
 vi.mock('@/shared/antd-imports', async () => {
   const antd = await import('antd');
@@ -25,6 +43,9 @@ vi.mock('@/lib/reporting/reporting-constants', () => ({ reportingsItems: [] }));
 vi.mock('@/components/suspense-fallback/suspense-fallback', () => ({ SuspenseFallback: () => null }));
 vi.mock('@/features/navigation/NavSurfaceIndexRedirect', () => ({ default: () => null }));
 vi.mock('@/guards/GuestRedirect', () => ({ default: () => null }));
+vi.mock('@/guards/OrganizationPermissionGuard', () => ({
+  OrganizationPermissionGuard: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
 vi.mock('@/hooks/useAuthStatus', () => ({ useAuthStatus: vi.fn() }));
 vi.mock('@/pages/reporting/analytics/ProjectHealthPage', () => ({ default: () => { state.renderReport(); return <div>Report content</div>; } }));
 vi.mock('@/pages/reporting/analytics/BudgetTrackingPage', () => ({ default: () => { state.renderReport(); return <div>Report content</div>; } }));
@@ -34,7 +55,11 @@ const setFeatures = (features: string[]) => {
     entitlements: { tier: 'business', features, enforced: true, guest_limit: -1, seat_limit: -1, primary_source: 'test' },
   } as ILocalSession;
 };
-beforeEach(() => { vi.clearAllMocks(); state.session = null; });
+beforeEach(() => {
+  vi.clearAllMocks();
+  state.session = null;
+  state.canViewFinance = true;
+});
 
 for (const [mode, algorithm] of [['light', theme.defaultAlgorithm], ['dark', theme.darkAlgorithm]] as const) {
   describe(`finance gate in ${mode} theme`, () => {
@@ -56,6 +81,16 @@ for (const [mode, algorithm] of [['light', theme.defaultAlgorithm], ['dark', the
       </ConfigProvider>);
       expect(screen.getByText('Report content')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /Upgrade to Business/ })).not.toBeInTheDocument();
+    });
+
+    it('redirects when View finance permission is missing', () => {
+      state.canViewFinance = false;
+      setFeatures(['finance_module']);
+      render(<ConfigProvider theme={{ algorithm }}>
+        <AnalyticsFinanceGate titleKey="projectHealth" titleDefault="Project Health"><div>Report content</div></AnalyticsFinanceGate>
+      </ConfigProvider>);
+      expect(screen.queryByText('Report content')).not.toBeInTheDocument();
+      expect(screen.getByText(/Redirected to/)).toBeInTheDocument();
     });
   });
 }

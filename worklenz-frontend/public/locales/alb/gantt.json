@@ -101,5 +101,6 @@
     "dragDisabledInChronological": "Kalo te Rendi manual për të tërhequr-rirenditur fazat"
   },
   "unscheduledTasksTitle": "Detyra të paplanifikuara",
-  "noUnscheduledTasks": "Nuk ka detyra të paplanifikuara të disponueshme."
+  "noUnscheduledTasks": "Nuk ka detyra të paplanifikuara të disponueshme.",
+  "statusReorderSameCategory": "Statuset mund të rirenditen vetëm brenda së njëjtës kategori."
 }

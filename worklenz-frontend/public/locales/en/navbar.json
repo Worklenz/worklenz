@@ -81,7 +81,12 @@
     "stopAndStart": "Stop and Start",
     "cancel": "Cancel",
     "logTime": "Log time",
-    "openTimeLogPanel": "Open time log for {{taskName}}"
+    "openTimeLogPanel": "Open time log for {{taskName}}",
+    "dailyLimitExceededTitle": "Daily Time Limit Exceeded",
+    "dailyLimitExceededDesc": "Total logged time cannot exceed 24 hours per day. This timer ran for {{elapsed}}, but you only have {{remaining}} remaining for {{day}}.",
+    "logRemainingAllowance": "Log Remaining ({{remaining}})",
+    "discardTimer": "Discard Timer",
+    "keepRunning": "Keep Running"
   },
   "ownerRole": "Owner",
   "adminRole": "Admin",

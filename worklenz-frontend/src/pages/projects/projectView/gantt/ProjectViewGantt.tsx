@@ -35,6 +35,8 @@ import { exportRoadmapFile } from './services/roadmap-export.api';
 import { downloadBlob } from '@/lib/reporting/download-file';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useOrderedStatuses } from '@/hooks/useOrderedStatuses';
+import { canReorderStatuses } from '@/utils/status-category-order';
 import {
   setShowTaskDrawer,
   setSelectedTaskId,
@@ -112,8 +114,8 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   const containerRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // Get statuses and priorities from Redux
-  const statuses = useAppSelector(state => state.taskStatusReducer?.status || []);
+  // Get statuses (configured category order) and priorities from Redux
+  const statuses = useOrderedStatuses();
   const statusCategories = useAppSelector(state => state.taskStatusReducer?.statusCategories || []);
   const priorities = useAppSelector(state => state.priorityReducer?.priorities || []);
   const currentProject = useAppSelector(state => state.projectReducer?.project);
@@ -949,6 +951,13 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
         return;
       }
 
+      if (!canReorderStatuses(statuses, oldIndex, newIndex)) {
+        message.info(t('statusReorderSameCategory', {
+          defaultValue: 'Statuses can only be reordered within the same category.',
+        }));
+        return;
+      }
+
       const reorderedStatuses = [...statuses];
       const [moved] = reorderedStatuses.splice(oldIndex, 1);
       reorderedStatuses.splice(newIndex, 0, moved);
@@ -976,7 +985,7 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
         message.error(err?.data?.message || 'Failed to update status order');
       }
     },
-    [projectId, statuses, dispatch, refetchTasks]
+    [projectId, statuses, dispatch, refetchTasks, t]
   );
 
   const authUser = useAppSelector(state => state.auth?.user);

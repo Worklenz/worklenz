@@ -31,19 +31,25 @@ export interface ITaskListConfigV2 {
   count?: boolean;
   parent_task?: string;
   group?: string;
+  /** Apply the project status-category order to task-list status groups. */
+  category_order?: boolean;
   isSubtasksInclude: boolean;
   include_empty?: string; // Include empty groups in response
   customColumns?: boolean; // Include custom column values in response
+  custom_column_ids?: string;
+  include_attachments?: boolean;
+  include_latest_comment?: boolean;
+  group_tasks?: boolean;
 }
 
 export interface ITaskListV3Response {
   groups: Array<{
     id: string;
     title: string;
-    groupType: 'status' | 'priority' | 'phase';
+    groupType: 'status' | 'priority' | 'phase' | 'assignee';
     groupValue: string;
     collapsed: boolean;
-    tasks: any[];
+    tasks?: any[];
     taskIds: string[];
     color: string;
   }>;

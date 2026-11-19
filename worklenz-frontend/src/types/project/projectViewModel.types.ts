@@ -2,6 +2,7 @@ import { IProject } from '@/types/project/project.types';
 import { ITeamMemberViewModel } from '../teamMembers/teamMembersGetResponse.types';
 import { ITask } from '../tasks/task.types';
 import { InlineMember } from '../teamMembers/inlineMember.types';
+import { StatusCategoryOrder } from './status-category-order.types';
 
 export interface IProjectPermissions {
   settings: boolean;
@@ -29,6 +30,8 @@ export interface IProjectPermissions {
 }
 
 export interface IProjectViewModel extends IProject {
+  task_role_permissions?: { create_tasks: boolean; edit_tasks: boolean; delete_tasks: boolean; comment: boolean };
+  status_category_order?: StatusCategoryOrder | null;
   key?: string;
   client_name?: string | null;
   project_owner?: string;
@@ -126,4 +129,3 @@ export interface IProjectViewModel extends IProject {
 }
 
 export type ProjectType = 'general' | 'software';
-

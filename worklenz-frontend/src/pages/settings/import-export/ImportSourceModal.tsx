@@ -467,6 +467,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({
   );
 
   React.useEffect(() => {
+    if (!open) return;
     let cancelled = false;
     const fetchStatuses = async () => {
       try {
@@ -497,15 +498,15 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [defaultWorkTypes]);
+  }, [open, defaultWorkTypes]);
 
   // Categories a newly-created status must belong to (To Do / Doing / Done) — needed
   // when the user chooses to create a new status during CSV status mapping. Reuses
   // the shared taskStatusReducer slice (same data the task-board "add status" UI
   // fetches) instead of a component-local request, so it's cached across the app.
   React.useEffect(() => {
-    if (!statusCategories.length) dispatch(fetchStatusesCategories());
-  }, [dispatch, statusCategories.length]);
+    if (open && !statusCategories.length) dispatch(fetchStatusesCategories());
+  }, [dispatch, open, statusCategories.length]);
 
   React.useEffect(() => {
     if (!csvText.trim()) return;
