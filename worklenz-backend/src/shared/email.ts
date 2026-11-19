@@ -122,6 +122,7 @@ export interface IEmailAttachment {
 
 export interface IEmail {
   to?: string[];
+  cc?: string[];
   subject: string;
   html: string;
   attachments?: IEmailAttachment[];
@@ -411,6 +412,15 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
       await filterDeletedAccountEmails(options.to);
     }
 
+    options.cc = Array.isArray(options.cc)
+      ? Array.from(new Set(options.cc.map(address => address.trim()).filter(isValidateEmail)))
+      : [];
+    if (options.cc.length) {
+      await filterBouncedEmails(options.cc);
+      await filterSpamEmails(options.cc);
+      await filterDeletedAccountEmails(options.cc);
+    }
+
     // Double-check that we still have valid emails after filtering
     if (!options.to.length) {
       return {
@@ -496,6 +506,7 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
       const response = await createSmtpTransport().sendMail({
         from,
         to: options.to,
+        cc: options.cc,
         subject: options.subject,
         html: options.html,
         text: plainText,
