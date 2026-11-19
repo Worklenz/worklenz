@@ -238,7 +238,8 @@
       "projectNotStartedWarningDesc": "Este projeto está programado para começar em {{date}}. O tempo não pode ser registrado antes da data de início do projeto.",
       "projectStartDateHint": "Data de início do projeto: {{date}}"
     },
-    "rollupLoggedTooltip": "Soma do tempo logado nas subtarefas"
+    "rollupLoggedTooltip": "Soma do tempo logado nas subtarefas",
+    "moveToProject": "Mover para o projeto"
   },
   "taskActivityLogTab": {
     "title": "Registro de atividade",
@@ -290,5 +291,6 @@
     "description": "Você está atribuído a uma subtarefa desta tarefa. Você pode ver a tarefa pai para contexto, mas não pode editá-la."
   },
   "today": "Hoje",
-  "yesterday": "Ontem"
+  "yesterday": "Ontem",
+  "more": "Mais op??es"
 }

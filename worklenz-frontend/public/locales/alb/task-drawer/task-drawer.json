@@ -238,7 +238,8 @@
       "projectNotStartedWarningDesc": "Ky projekt është planifikuar të fillojë më {{date}}. Koha nuk mund të regjistrohet para datës së fillimit të projektit.",
       "projectStartDateHint": "Data e fillimit të projektit: {{date}}"
     },
-    "rollupLoggedTooltip": "Shuma e kohës së regjistruar në nën-detyrat"
+    "rollupLoggedTooltip": "Shuma e kohës së regjistruar në nën-detyrat",
+    "moveToProject": "L?viz n? projekt"
   },
   "taskActivityLogTab": {
     "title": "Regjistri i aktivitetit",
@@ -290,5 +291,6 @@
     "description": "Ju jeni caktuar në një nëndetyrë të kësaj detyre. Mund ta shihni prindin për kontekst, por nuk mund ta përpunoni."
   },
   "today": "Sot",
-  "yesterday": "Dje"
+  "yesterday": "Dje",
+  "more": "M? shum? opsione"
 }
