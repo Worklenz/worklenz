@@ -1,6 +1,7 @@
 import express from "express";
 
 import ProjectDocumentsController from "../../controllers/project-documents-controller";
+import { requireFeature } from "../../shared/entitlements/gates";
 import { attachDocumentProject, attachTaskProject } from "../../middlewares/project-document-access";
 import { documentFavoriteRateLimiter } from "../../middlewares/project-document-favorite-rate-limiter";
 import idParamValidator from "../../middlewares/validators/id-param-validator";
@@ -11,6 +12,7 @@ import safeControllerFunction from "../../shared/safe-controller-function";
 import { isValidUuid } from "../../shared/validation-helpers";
 
 const projectDocumentsApiRouter = express.Router();
+projectDocumentsApiRouter.use(requireFeature("project_docs"));
 const docsPermission = requireProjectPermission("docs");
 
 projectDocumentsApiRouter.get(

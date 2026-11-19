@@ -5,6 +5,8 @@ import { InfoCircleOutlined } from '@ant-design/icons';
 import ManagePhaseContent from '@/components/task-management/ManagePhaseContent';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import SettingsCard from '../components/settings-card';
+import { useAuthService } from '@/hooks/useAuth';
+import { canUseFeature } from '@/utils/subscription-utils';
 
 interface PhasesSettingsSectionProps {
   projectId?: string | null;
@@ -19,6 +21,7 @@ const PhasesSettingsSection = ({
 }: PhasesSettingsSectionProps) => {
   const { t } = useTranslation('project-drawer');
   const { token } = theme.useToken();
+  const canUsePhaseAssignee = canUseFeature(useAuthService().getCurrentSession(), 'phase_assignee');
 
   const { project } = useAppSelector(state => state.projectDrawerReducer);
   const { phaseList } = useAppSelector(state => state.phaseReducer);
@@ -69,7 +72,7 @@ const PhasesSettingsSection = ({
           style={{ marginBottom: 0 }}
         >
           <Switch
-            disabled={disabled}
+            disabled={disabled || !canUsePhaseAssignee}
             aria-label={t('phaseAssigneesEnabled', { defaultValue: 'Enable Phase Assignees' })}
           />
         </Form.Item>

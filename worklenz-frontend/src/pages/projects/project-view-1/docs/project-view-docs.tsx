@@ -1,7 +1,10 @@
-import { Alert, Button, Empty, Flex, Modal, message, theme } from '@/shared/antd-imports';
+import { Alert, Button, Empty, Flex, Modal, Result, message, theme } from '@/shared/antd-imports';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useSearchParams } from 'react-router-dom';
+import { useAuthService } from '@/hooks/useAuth';
+import { canUseFeature } from '@/utils/subscription-utils';
+import { openUpgradeModal } from '@/features/admin-center/admin-center.slice';
 
 import { projectDocumentsApiService } from '@/api/projects/docs/project-documents.api.service';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -26,7 +29,7 @@ import { useDocsFavorites } from './use-docs-favorites';
 import { useDocsAutosave } from './use-docs-autosave';
 import { useDocsSearchReplace } from './docs-search-guard';
 
-const ProjectViewDocs = () => {
+const ProjectViewDocsContent = () => {
   const { t } = useTranslation('project-view-docs');
   const { token } = theme.useToken();
   const { projectId = '' } = useParams();
@@ -495,6 +498,20 @@ const ProjectViewDocs = () => {
         ) : null}
       </Flex>
     </Flex>
+  );
+};
+
+const ProjectViewDocs = () => {
+  const { t } = useTranslation('project-view-docs');
+  const dispatch = useAppDispatch();
+  const session = useAuthService().getCurrentSession();
+  if (canUseFeature(session, 'project_docs')) return <ProjectViewDocsContent />;
+  return (
+    <Result
+      title={t('proRequired', { defaultValue: 'Pro plan required' })}
+      subTitle={t('docsProRequired', { defaultValue: 'Project Docs are available on the Pro plan and above.' })}
+      extra={<Button type="primary" onClick={() => dispatch(openUpgradeModal('default'))}>{t('upgrade', { defaultValue: 'Upgrade plan' })}</Button>}
+    />
   );
 };
 

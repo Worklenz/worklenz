@@ -59,6 +59,17 @@ describe("canUseFeature: client portal (enforced even in legacy mode)", () => {
   });
 });
 
+describe("Free plan feature restrictions", () => {
+  it.each(["project_docs", "phase_assignee", "csv_import"] as const)(
+    "%s is available to Pro and Business but not Free in legacy mode",
+    feature => {
+      expect(canUseFeature(free, feature)).toBe(false);
+      expect(canUseFeature(proClassic, feature)).toBe(true);
+      expect(canUseFeature(business, feature)).toBe(true);
+    }
+  );
+});
+
 describe("canUseFeature: client portal in self-hosted deployments", () => {
   afterEach(() => {
     process.env.WORKLENZ_DEPLOYMENT_MODE = "cloud";

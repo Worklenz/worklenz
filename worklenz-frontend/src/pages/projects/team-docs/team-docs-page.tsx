@@ -1,4 +1,4 @@
-import { Alert, Button, Empty, Flex, Modal, message, theme } from '@/shared/antd-imports';
+import { Alert, Button, Empty, Flex, Modal, Result, message, theme } from '@/shared/antd-imports';
 import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +8,9 @@ import { projectDocumentsApiService } from '@/api/projects/docs/project-document
 import { teamDocumentsApiService } from '@/api/projects/docs/team-documents.api.service';
 import TaskDrawer from '@/components/task-drawer/task-drawer';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAuthService } from '@/hooks/useAuth';
+import { canUseFeature } from '@/utils/subscription-utils';
+import { openUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { fetchTask, setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
@@ -28,7 +31,7 @@ import { useDocsFavorites } from '@/pages/projects/project-view-1/docs/use-docs-
 import { useDocsAutosave } from '@/pages/projects/project-view-1/docs/use-docs-autosave';
 import { useDocsSearchReplace } from '@/pages/projects/project-view-1/docs/docs-search-guard';
 
-const TeamDocsPage = () => {
+const TeamDocsContent = () => {
   const { t } = useTranslation('project-view-docs');
   const { token } = theme.useToken();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -490,6 +493,20 @@ const TeamDocsPage = () => {
       </Flex>
       {createPortal(<TaskDrawer />, document.body, 'team-docs-task-drawer')}
     </>
+  );
+};
+
+const TeamDocsPage = () => {
+  const { t } = useTranslation('project-view-docs');
+  const dispatch = useAppDispatch();
+  const session = useAuthService().getCurrentSession();
+  if (canUseFeature(session, 'project_docs')) return <TeamDocsContent />;
+  return (
+    <Result
+      title={t('proRequired', { defaultValue: 'Pro plan required' })}
+      subTitle={t('docsProRequired', { defaultValue: 'Project Docs are available on the Pro plan and above.' })}
+      extra={<Button type="primary" onClick={() => dispatch(openUpgradeModal('default'))}>{t('upgrade', { defaultValue: 'Upgrade plan' })}</Button>}
+    />
   );
 };
 

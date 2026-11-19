@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom';
 
 import { projectDocumentsApiService } from '@/api/projects/docs/project-documents.api.service';
 import { IProjectDocumentBacklink } from '@/types/project/project-documents.types';
+import { useAuthService } from '@/hooks/useAuth';
+import { canUseFeature } from '@/utils/subscription-utils';
 
 interface MentionedInDocsProps {
   taskId: string;
@@ -16,10 +18,11 @@ const MentionedInDocs = ({ taskId, isGuest = false }: MentionedInDocsProps) => {
   const { t } = useTranslation('project-view-docs');
   const { token } = theme.useToken();
   const navigate = useNavigate();
+  const canViewDocs = canUseFeature(useAuthService().getCurrentSession(), 'project_docs');
   const [links, setLinks] = useState<IProjectDocumentBacklink[]>([]);
 
   useEffect(() => {
-    if (!taskId || isGuest) {
+    if (!taskId || isGuest || !canViewDocs) {
       setLinks([]);
       return;
     }
@@ -35,7 +38,7 @@ const MentionedInDocs = ({ taskId, isGuest = false }: MentionedInDocsProps) => {
     return () => {
       cancelled = true;
     };
-  }, [isGuest, taskId]);
+  }, [isGuest, taskId, canViewDocs]);
 
   if (isGuest || links.length === 0) return null;
 

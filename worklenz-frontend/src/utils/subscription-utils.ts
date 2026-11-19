@@ -106,6 +106,9 @@ const LEGACY_BUSINESS_FEATURES = new Set([
  * Business, which the legacy "Business only" check cannot express.
  */
 const ALWAYS_ENFORCED_FEATURES = new Set([
+  'project_docs',
+  'phase_assignee',
+  'csv_import',
   'client_portal',
   'client_portal_requests',
   'client_portal_chats',

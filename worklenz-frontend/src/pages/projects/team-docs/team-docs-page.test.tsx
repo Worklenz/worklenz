@@ -8,6 +8,9 @@ import { EMPTY_MENTIONS, IProjectDocument } from '@/types/project/project-docume
 
 import TeamDocsPage from './team-docs-page';
 
+vi.mock('@/hooks/useAuth', () => ({ useAuthService: () => ({ getCurrentSession: () => ({}) }) }));
+vi.mock('@/utils/subscription-utils', () => ({ canUseFeature: () => true }));
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (_key: string, options: { defaultValue: string }) => options.defaultValue,

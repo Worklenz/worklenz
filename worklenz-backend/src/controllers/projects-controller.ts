@@ -15,6 +15,7 @@ import { SocketEvents } from "../socket.io/events";
 import { IO } from "../shared/io";
 import { notifyProjectDateChanges } from "../shared/project-date-notifications";
 import { getCurrentProjectsCount, getFreePlanSettings } from "../shared/paddle-utils";
+import { canUseFeature } from "../shared/entitlements/gates";
 import { ActivityLoggingService } from "../services/activity-logging.service";
 import { NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE } from "../shared/guest-access-sql";
 import { getProjectAccessForRequest } from "../shared/project-access";
@@ -81,6 +82,9 @@ export default class ProjectsController extends WorklenzControllerBase {
     }
   })
   public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    if ((req.body.phase_assignees_enabled === true || req.body.phase_assignees_enabled === "true") && !canUseFeature(req.user, "phase_assignee")) {
+      return res.status(403).send(new ServerResponse(false, null, "Phase assignees require a Pro plan"));
+    }
     if (req.user?.subscription_status === "free" && req.user?.owner_id) {
       const limits = await getFreePlanSettings();
       const projectsCount = await getCurrentProjectsCount(req.user.owner_id);
@@ -1034,6 +1038,15 @@ export default class ProjectsController extends WorklenzControllerBase {
     }
   })
   public static async update(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    if ((req.body.phase_assignees_enabled === true || req.body.phase_assignees_enabled === "true") && !canUseFeature(req.user, "phase_assignee")) {
+      const existing = await db.query(
+        `SELECT phase_assignees_enabled FROM projects WHERE id = $1 AND team_id = $2`,
+        [req.params.id, req.user?.team_id]
+      );
+      if (!existing.rows[0]?.phase_assignees_enabled) {
+        return res.status(403).send(new ServerResponse(false, null, "Phase assignees require a Pro plan"));
+      }
+    }
     const q = `SELECT update_project($1) AS project;`;
 
     const key = req.body.key?.toString().trim().toUpperCase();

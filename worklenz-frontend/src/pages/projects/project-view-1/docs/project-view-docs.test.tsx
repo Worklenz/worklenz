@@ -5,7 +5,9 @@ import { EMPTY_MENTIONS, IProjectDocument } from '@/types/project/project-docume
 import ProjectViewDocs from './project-view-docs';
 import { Modal } from '@/shared/antd-imports';
 
-const mocks = vi.hoisted(() => ({ setSearchParams: vi.fn(), dispatch: vi.fn() }));
+const mocks = vi.hoisted(() => ({ setSearchParams: vi.fn(), dispatch: vi.fn(), canAccess: true }));
+vi.mock('@/hooks/useAuth', () => ({ useAuthService: () => ({ getCurrentSession: () => ({}) }) }));
+vi.mock('@/utils/subscription-utils', () => ({ canUseFeature: () => mocks.canAccess }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (_key: string, options: { defaultValue: string }) => options.defaultValue,
@@ -98,6 +100,7 @@ const first: IProjectDocument = {
 };
 const second = { ...first, id: 'second', title: 'Second page' };
 beforeEach(() => {
+  mocks.canAccess = true;
   vi.mocked(projectDocumentsApiService.list).mockResolvedValue({
     done: true,
     body: [first, second],
@@ -110,6 +113,14 @@ beforeEach(() => {
   vi.mocked(projectDocumentsApiService.create).mockReset();
   vi.mocked(projectDocumentsApiService.duplicate).mockReset();
   vi.mocked(projectDocumentsApiService.remove).mockReset();
+});
+
+it('shows an upgrade state for a Free plan without loading documents', () => {
+  mocks.canAccess = false;
+  vi.mocked(projectDocumentsApiService.list).mockClear();
+  render(<ProjectViewDocs />);
+  expect(screen.getByText('Pro plan required')).toBeTruthy();
+  expect(projectDocumentsApiService.list).not.toHaveBeenCalled();
 });
 afterEach(() => {
   cleanup();
