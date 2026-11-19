@@ -34,8 +34,6 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'worklenz_backend') THEN
     CREATE ROLE worklenz_backend WITH NOLOGIN;
-  ELSE
-    ALTER ROLE worklenz_backend WITH NOLOGIN;
   END IF;
 END
 $$;

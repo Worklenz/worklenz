@@ -21,17 +21,17 @@ function cacheCert(url: string, cert: string): void {
 }
 
 /**
- * Checks that the topic ARN is either in the configured allowlist (if set)
- * or matches an expected Amazon SNS ARN format.
+ * Checks that the topic ARN matches the configured allowlist.
+ * Fails closed (returns false) if neither AWS_SNS_TOPIC_ARNS nor AWS_SES_TOPIC_ARN is configured.
  */
 export function isAllowedTopicArn(topicArn?: string): boolean {
   if (!topicArn || typeof topicArn !== "string") return false;
   const configuredArns = process.env.AWS_SNS_TOPIC_ARNS || process.env.AWS_SES_TOPIC_ARN;
-  if (configuredArns) {
-    const allowed = configuredArns.split(",").map(a => a.trim()).filter(Boolean);
-    return allowed.includes(topicArn);
+  if (!configuredArns) {
+    return false;
   }
-  return /^arn:aws:sns:[a-zA-Z0-9-]+:\d{12}:[a-zA-Z0-9-_]+$/.test(topicArn);
+  const allowed = configuredArns.split(",").map(a => a.trim()).filter(Boolean);
+  return allowed.includes(topicArn);
 }
 
 /**
@@ -258,8 +258,12 @@ export async function verifySnsNotification(
     // Handle subscription confirmation if needed
     if (body.Type === "SubscriptionConfirmation") {
       console.log(`[SNS] SubscriptionConfirmation received for topic ${body.TopicArn || ""}`);
-      if (body.SubscribeURL && validateSnsSubscribeUrl(body.SubscribeURL, body.TopicArn, body.Token)) {
-        const confirmUrl = new URL(body.SubscribeURL);
+      if (!body.SubscribeURL || !validateSnsSubscribeUrl(body.SubscribeURL, body.TopicArn, body.Token)) {
+        return res.status(400).json(new ServerResponse(false, null, "Invalid or missing SNS SubscribeURL"));
+      }
+
+      const confirmUrl = new URL(body.SubscribeURL);
+      try {
         await new Promise<void>((resolve, reject) => {
           const req = https.get(
             {
@@ -283,11 +287,12 @@ export async function verifySnsNotification(
             req.destroy();
             reject(new Error("Timeout confirming subscription"));
           });
-        }).catch(err => {
-          log_error(`[SNS] Subscription confirmation error: ${err.message}`);
         });
+        return res.status(200).json(new ServerResponse(true, null, "Subscription confirmed"));
+      } catch (err: any) {
+        log_error(`[SNS] Subscription confirmation error: ${err.message}`);
+        return res.status(500).json(new ServerResponse(false, null, "Failed to confirm SNS subscription"));
       }
-      return res.status(200).json(new ServerResponse(true, null, "Subscription confirmed"));
     }
 
     next();
