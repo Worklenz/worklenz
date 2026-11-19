@@ -346,7 +346,7 @@ export default class TaskRecurringController extends WorklenzControllerBase {
         schedule_type,
         days_of_week || null,
         date_of_month || null,
-        day_of_month || null,
+        day_of_month === 0 ? 0 : (day_of_month || null), // 0 is Sunday, not "unset"
         week_of_month || null,
         interval_days || null,
         interval_weeks || null,

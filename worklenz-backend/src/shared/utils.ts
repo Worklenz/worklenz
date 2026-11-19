@@ -490,9 +490,16 @@ export function calculateNextEndDate(schedule: IRecurringSchedule, lastDate: mom
     case "monthly":
       if (schedule.date_of_month) {
         nextDate.add(1, "month").date(schedule.date_of_month);
-      } else if (schedule.day_of_month && schedule.week_of_month) {
-        nextDate.add(1, "month").startOf("month").day(schedule.day_of_month);
+      } else if (schedule.day_of_month != null && schedule.week_of_month) {
+        // Count weeks from the first day of the month. moment's .day(n) moves within the
+        // current Sunday-Saturday week, which can land in the previous month. day_of_month
+        // is a weekday (0 = Sunday), so compare with null rather than relying on truthiness.
+        nextDate.add(1, "month").startOf("month");
+        const targetMonth = nextDate.month();
+        nextDate.add((schedule.day_of_month - nextDate.day() + 7) % 7, "days");
         nextDate.add(schedule.week_of_month - 1, "weeks");
+        // Week 5 ("last") past the end of the month means the last one in the month
+        if (nextDate.month() !== targetMonth) nextDate.subtract(1, "week");
       } else {
         nextDate.add(1, "month");
       }
