@@ -379,15 +379,15 @@ const DescriptionEditor = ({
     []
   );
 
- const extractWordCount = useCallback((html: string) => {
-  if (!html) return 0;
+  const extractWordCount = useCallback((html: string) => {
+    if (!html) return 0;
 
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-  const text = doc.body.textContent?.trim() || '';
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const text = doc.body.textContent?.trim() || '';
 
-  return text ? text.split(/\s+/).length : 0;
-}, []);
+    return text ? text.split(/\s+/).length : 0;
+  }, []);
 
   // Classifies a list element as ordered or bulleted. Quill 1 used <ul>/<ol>;
   // Quill 2 emits <ol> for both and marks the items with data-list, so the tag
@@ -619,10 +619,31 @@ const DescriptionEditor = ({
   }, [isEditorOpen, handleDiscardClick]);
 
   const filteredMentionMembers = useMemo(() => {
-    if (!mentionQuery) return [];
+    if (!mentionQuery || !quillRef.current) return [];
+
     const query = mentionQuery.query.trim().toLocaleLowerCase();
+    const editor = quillRef.current.getEditor();
+    const text = editor.getText();
+
+    // Exclude the mention currently being typed from duplicate detection.
+    const textWithoutCurrentQuery =
+      text.slice(0, mentionQuery.start) + text.slice(mentionQuery.end);
+
+    const existingMentions = new Set(
+      findMentionRanges(textWithoutCurrentQuery, mentionMembers).map(({ start, length }) =>
+        textWithoutCurrentQuery.slice(start, start + length).toLocaleLowerCase()
+      )
+    );
+
     return mentionMembers
-      .filter(member => member.name.toLocaleLowerCase().includes(query))
+      .filter(member => {
+        const normalizedName = member.name.trim().toLocaleLowerCase();
+
+        return (
+          normalizedName.includes(query) &&
+          !existingMentions.has(`@${normalizedName}`)
+        );
+      })
       .slice(0, 8);
   }, [mentionMembers, mentionQuery]);
   filteredMentionMembersRef.current = filteredMentionMembers;
