@@ -25,6 +25,17 @@ function sendScheduleError(res: IWorkLenzResponse, error: unknown): IWorkLenzRes
   return null;
 }
 
+function parseFormats(body: Record<string, unknown>): AnalyticsScheduleFormat[] {
+  if (Array.isArray(body.formats)) {
+    return body.formats.map(v => String(v)) as AnalyticsScheduleFormat[];
+  }
+  // Backward compatible: single `format` field.
+  if (body.format != null) {
+    return [String(body.format) as AnalyticsScheduleFormat];
+  }
+  return ["PDF"];
+}
+
 function parseUpsertBody(body: Record<string, unknown>) {
   return {
     reportKind: String(body.report_kind || ""),
@@ -44,7 +55,7 @@ function parseUpsertBody(body: Record<string, unknown>) {
     sendTime: String(body.send_time || "08:00"),
     timezone: typeof body.timezone === "string" ? body.timezone : "UTC",
     recipients: Array.isArray(body.recipients) ? (body.recipients as string[]) : [],
-    format: (body.format || "PDF") as AnalyticsScheduleFormat,
+    formats: parseFormats(body),
     message: typeof body.message === "string" ? body.message : null,
     filters:
       body.filters && typeof body.filters === "object" && !Array.isArray(body.filters)
@@ -181,8 +192,8 @@ export default class AnalyticsSchedulesController extends WorklenzControllerBase
           ? (body.recipients as string[])
           : [];
       }
-      if (body.format !== undefined) {
-        patch.format = body.format as AnalyticsScheduleFormat;
+      if (body.formats !== undefined || body.format !== undefined) {
+        patch.formats = parseFormats(body);
       }
       if (body.message !== undefined) {
         patch.message = typeof body.message === "string" ? body.message : null;

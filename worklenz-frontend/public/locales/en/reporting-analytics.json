@@ -548,5 +548,7 @@
   "tisCalcIssues": "Number of tasks with status history included in this report.",
   "tisCalcVisits": "Total times tasks entered a status (one task can visit multiple statuses).",
   "tisCalcAvgCycle": "Sum of average days spent in each status — an estimate of overall cycle time.",
-  "tisCalcOutliers": "Tasks whose time in a status is unusually high compared with peers (statistical outliers)."
+  "tisCalcOutliers": "Tasks whose time in a status is unusually high compared with peers (statistical outliers).",
+  "scheduleFormatsRequired": "Select at least one format",
+  "scheduleFormatsPlaceholder": "Select one or more formats"
 }

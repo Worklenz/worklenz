@@ -20,7 +20,7 @@ export interface AnalyticsReportSchedule {
   send_time: string;
   timezone: string;
   recipients: string[];
-  format: AnalyticsScheduleFormat;
+  formats: AnalyticsScheduleFormat[];
   message: string | null;
   filters_json: Record<string, unknown>;
   paused: boolean;
@@ -45,7 +45,7 @@ export interface AnalyticsScheduleUpsertPayload {
   send_time: string;
   timezone?: string;
   recipients: string[];
-  format: AnalyticsScheduleFormat;
+  formats: AnalyticsScheduleFormat[];
   message?: string | null;
   filters?: Record<string, unknown>;
   paused?: boolean;

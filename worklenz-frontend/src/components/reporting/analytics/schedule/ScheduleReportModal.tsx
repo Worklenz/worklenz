@@ -45,7 +45,7 @@ interface ScheduleFormValues {
   interval_months?: number;
   send_time: Dayjs;
   recipients: string[];
-  format: AnalyticsScheduleFormat;
+  formats: AnalyticsScheduleFormat[];
   message?: string;
 }
 
@@ -176,7 +176,10 @@ export const ScheduleReportModal: React.FC<ScheduleReportModalProps> = ({
       interval_months: existing?.interval_months ?? 1,
       send_time: toDayjsTime(existing?.send_time, '08:00'),
       recipients,
-      format: existing?.format || 'PDF',
+      formats:
+        existing?.formats?.length
+          ? existing.formats
+          : (['PDF'] as AnalyticsScheduleFormat[]),
       message: existing?.message || undefined,
     });
   }, [open, existing, defaultRecipient, reportName, form]);
@@ -190,7 +193,7 @@ export const ScheduleReportModal: React.FC<ScheduleReportModalProps> = ({
       send_time: values.send_time.format('HH:mm'),
       timezone,
       recipients: values.recipients,
-      format: values.format,
+      formats: values.formats,
       message: values.message?.trim() || null,
       filters: getFilters(),
       paused: false,
@@ -509,11 +512,26 @@ export const ScheduleReportModal: React.FC<ScheduleReportModalProps> = ({
         </Form.Item>
 
         <Form.Item
-          name="format"
+          name="formats"
           label={t('scheduleFormat', { defaultValue: 'Format' })}
-          rules={[{ required: true }]}
+          rules={[
+            {
+              required: true,
+              type: 'array',
+              min: 1,
+              message: t('scheduleFormatsRequired', {
+                defaultValue: 'Select at least one format',
+              }),
+            },
+          ]}
         >
-          <Select options={formatOptions} />
+          <Select
+            mode="multiple"
+            options={formatOptions}
+            placeholder={t('scheduleFormatsPlaceholder', {
+              defaultValue: 'Select one or more formats',
+            })}
+          />
         </Form.Item>
 
         <Form.Item

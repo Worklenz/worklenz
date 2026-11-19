@@ -49,7 +49,7 @@ export interface AnalyticsScheduleRow {
   send_time: string;
   timezone: string;
   recipients: string[];
-  format: AnalyticsScheduleFormat;
+  formats: AnalyticsScheduleFormat[];
   message: string | null;
   filters_json: Record<string, unknown>;
   paused: boolean;
@@ -84,7 +84,7 @@ export interface UpsertScheduleInput {
   sendTime: string;
   timezone?: string;
   recipients: string[];
-  format: AnalyticsScheduleFormat;
+  formats: AnalyticsScheduleFormat[];
   message?: string | null;
   filters?: Record<string, unknown>;
   paused?: boolean;
@@ -95,9 +95,25 @@ const SELECT_COLS = `
   schedule_type, days_of_week, day_of_month, date_of_month, week_of_month,
   interval_days, interval_weeks, interval_months,
   to_char(send_time, 'HH24:MI') AS send_time,
-  timezone, recipients, format, message, filters_json,
+  timezone, recipients, formats, message, filters_json,
   paused, last_sent_at, next_send_at, created_at, updated_at
 `;
+
+function mapFormats(raw: unknown): AnalyticsScheduleFormat[] {
+  if (Array.isArray(raw)) {
+    const parsed = raw
+      .map(v => String(v))
+      .filter((v): v is AnalyticsScheduleFormat =>
+        (FORMATS as readonly string[]).includes(v)
+      );
+    if (parsed.length) return [...new Set(parsed)];
+  }
+  // Legacy single-format column fallback (pre-migration rows / mixed deploys).
+  if (typeof raw === "string" && (FORMATS as readonly string[]).includes(raw)) {
+    return [raw as AnalyticsScheduleFormat];
+  }
+  return ["PDF"];
+}
 
 function mapRow(row: Record<string, unknown>): AnalyticsScheduleRow {
   const filters =
@@ -123,7 +139,7 @@ function mapRow(row: Record<string, unknown>): AnalyticsScheduleRow {
     send_time: String(row.send_time || "08:00").slice(0, 5),
     timezone: String(row.timezone || "UTC"),
     recipients: Array.isArray(row.recipients) ? (row.recipients as string[]) : [],
-    format: row.format as AnalyticsScheduleFormat,
+    formats: mapFormats(row.formats ?? row.format),
     message: row.message == null ? null : String(row.message),
     filters_json: filters,
     paused: !!row.paused,
@@ -497,11 +513,32 @@ interface NormalizedScheduleFields {
   templateId: string | null;
   recipients: string[];
   filters: Record<string, unknown>;
-  format: AnalyticsScheduleFormat;
+  formats: AnalyticsScheduleFormat[];
   message: string | null;
   paused: boolean;
   cadence: ReturnType<typeof normalizeCadence>;
   nextSendAt: Date | null;
+}
+
+function normalizeFormats(raw: unknown): AnalyticsScheduleFormat[] {
+  const list = Array.isArray(raw) ? raw : raw != null ? [raw] : [];
+  const formats = [
+    ...new Set(
+      list
+        .map(v => String(v))
+        .filter((v): v is AnalyticsScheduleFormat =>
+          (FORMATS as readonly string[]).includes(v)
+        )
+    ),
+  ];
+  if (!formats.length) {
+    throw new ScheduleServiceError(
+      i18next.t("analyticsSchedules.formatsRequired", {
+        defaultValue: "Select at least one format (PDF, CSV, or Excel)",
+      })
+    );
+  }
+  return formats;
 }
 
 function normalizeScheduleFields(input: UpsertScheduleInput): NormalizedScheduleFields {
@@ -513,14 +550,7 @@ function normalizeScheduleFields(input: UpsertScheduleInput): NormalizedSchedule
     );
   }
 
-  if (!FORMATS.includes(input.format)) {
-    throw new ScheduleServiceError(
-      i18next.t("analyticsSchedules.invalidFormat", {
-        defaultValue: "Format must be PDF, CSV, or Excel",
-      })
-    );
-  }
-
+  const formats = normalizeFormats(input.formats);
   const reportName = normalizeReportName(input.reportName);
   const recipients = normalizeRecipients(input.recipients);
   const filters = normalizeFilters(input.filters);
@@ -555,7 +585,7 @@ function normalizeScheduleFields(input: UpsertScheduleInput): NormalizedSchedule
     templateId,
     recipients,
     filters,
-    format: input.format,
+    formats,
     message: input.message?.trim() || null,
     paused,
     cadence,
@@ -586,13 +616,13 @@ export async function upsertSchedule(
        team_id, owner_id, report_kind, report_name, template_id,
        schedule_type, days_of_week, day_of_month, date_of_month, week_of_month,
        interval_days, interval_weeks, interval_months,
-       send_time, timezone, recipients, format, message, filters_json,
+       send_time, timezone, recipients, formats, message, filters_json,
        paused, next_send_at
      ) VALUES (
        $1::UUID, $2::UUID, $3, $4, $5::UUID,
        $6::SCHEDULE_TYPE, $7::INT[], $8, $9, $10,
        $11, $12, $13,
-       $14::TIME, $15, $16::TEXT[], $17, $18, $19::jsonb,
+       $14::TIME, $15, $16::TEXT[], $17::TEXT[], $18, $19::jsonb,
        $20, $21
      )
      RETURNING ${SELECT_COLS}`,
@@ -613,7 +643,7 @@ export async function upsertSchedule(
       fields.cadence.sendTime,
       fields.cadence.timezone,
       fields.recipients,
-      fields.format,
+      fields.formats,
       fields.message,
       JSON.stringify(fields.filters),
       fields.paused,
@@ -660,7 +690,7 @@ export async function updateSchedule(
     sendTime: input.sendTime ?? existing.send_time,
     timezone: input.timezone ?? existing.timezone,
     recipients: input.recipients ?? existing.recipients,
-    format: input.format ?? existing.format,
+    formats: input.formats ?? existing.formats,
     message: input.message !== undefined ? input.message : existing.message,
     filters: input.filters ?? existing.filters_json,
     paused: input.paused !== undefined ? input.paused : existing.paused,
@@ -683,7 +713,7 @@ export async function updateSchedule(
        send_time = $13::TIME,
        timezone = $14,
        recipients = $15::TEXT[],
-       format = $16,
+       formats = $16::TEXT[],
        message = $17,
        filters_json = $18::jsonb,
        paused = $19,
@@ -707,7 +737,7 @@ export async function updateSchedule(
       fields.cadence.sendTime,
       fields.cadence.timezone,
       fields.recipients,
-      fields.format,
+      fields.formats,
       fields.message,
       JSON.stringify(fields.filters),
       fields.paused,

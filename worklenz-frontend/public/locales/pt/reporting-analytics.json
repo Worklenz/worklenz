@@ -548,5 +548,7 @@
   "scheduleName": "Name",
   "scheduleNameRequired": "Enter a schedule name",
   "scheduleNameTooLong": "Name must be at most {{max}} characters",
-  "scheduleNamePlaceholder": "e.g. Weekly time report"
+  "scheduleNamePlaceholder": "e.g. Weekly time report",
+  "scheduleFormatsRequired": "Select at least one format",
+  "scheduleFormatsPlaceholder": "Select one or more formats"
 }

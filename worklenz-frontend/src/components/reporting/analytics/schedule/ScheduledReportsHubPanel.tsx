@@ -211,9 +211,12 @@ export const ScheduledReportsHubPanel: React.FC = () => {
     },
     {
       title: t('scheduleFormat', { defaultValue: 'Format' }),
-      dataIndex: 'format',
-      key: 'format',
-      width: 88,
+      key: 'formats',
+      width: 140,
+      render: (_, row) =>
+        Array.isArray(row.formats) && row.formats.length
+          ? row.formats.join(', ')
+          : '—',
     },
     {
       title: t('rowActions', { defaultValue: 'Actions' }),

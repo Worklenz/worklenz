@@ -232,6 +232,55 @@ async function buildLivePayload(
   }
 }
 
+async function buildExportFilesFromPayload(input: {
+  reportName: string;
+  formats: AnalyticsScheduleFormat[];
+  csv: string;
+  chartSource: ScheduleChartSource | null;
+}): Promise<ScheduleExportFile[]> {
+  const base = slugFilename(input.reportName);
+  const date = new Date().toISOString().slice(0, 10);
+  const uniqueFormats = [...new Set(input.formats)];
+  const files: ScheduleExportFile[] = [];
+
+  let chartPngs: Buffer[] | null = null;
+
+  for (const format of uniqueFormats) {
+    if (format === "CSV") {
+      files.push({
+        filename: `${base}-${date}.csv`,
+        contentType: "text/csv; charset=utf-8",
+        content: Buffer.from(input.csv, "utf8"),
+      });
+      continue;
+    }
+
+    if (format === "Excel") {
+      files.push({
+        filename: `${base}-${date}.xlsx`,
+        contentType:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        // Native Excel charts bound to ChartData cells (not PNG images).
+        content: await csvToExcelBuffer(input.csv, input.reportName, input.chartSource),
+      });
+      continue;
+    }
+
+    if (chartPngs == null) {
+      chartPngs = input.chartSource
+        ? await renderScheduleChartPngs(input.chartSource)
+        : [];
+    }
+    files.push({
+      filename: `${base}-${date}.pdf`,
+      contentType: "application/pdf",
+      content: await csvToPdfBuffer(input.reportName, input.csv, chartPngs),
+    });
+  }
+
+  return files;
+}
+
 /**
  * Generate a live export file for a saved schedule using current data and
  * the filters captured when the schedule was saved.
@@ -247,6 +296,25 @@ export async function buildLiveScheduleExport(input: {
   /** Schedule timezone — used to re-resolve relative date presets at send time. */
   timezone?: string | null;
 }): Promise<ScheduleExportFile> {
+  const files = await buildLiveScheduleExports({
+    ...input,
+    formats: [input.format],
+  });
+  return files[0];
+}
+
+/**
+ * Generate one or more live export files for a schedule (shared CSV payload).
+ */
+export async function buildLiveScheduleExports(input: {
+  reportKind: string;
+  reportName: string;
+  ownerId: string;
+  teamId: string;
+  formats: AnalyticsScheduleFormat[];
+  filtersJson: Record<string, unknown>;
+  timezone?: string | null;
+}): Promise<ScheduleExportFile[]> {
   const { csv: rawCsv, chartSource } = await buildLivePayload(
     input.reportKind,
     input.ownerId,
@@ -256,32 +324,10 @@ export async function buildLiveScheduleExport(input: {
   );
   // Shared by CSV / Excel / PDF so project names decode the same in every format.
   const csv = normalizeScheduleExportCsv(rawCsv);
-  const base = slugFilename(input.reportName);
-  const date = new Date().toISOString().slice(0, 10);
-
-  if (input.format === "CSV") {
-    return {
-      filename: `${base}-${date}.csv`,
-      contentType: "text/csv; charset=utf-8",
-      content: Buffer.from(csv, "utf8"),
-    };
-  }
-
-  if (input.format === "Excel") {
-    return {
-      filename: `${base}-${date}.xlsx`,
-      contentType:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      // Native Excel charts bound to ChartData cells (not PNG images).
-      content: await csvToExcelBuffer(csv, input.reportName, chartSource),
-    };
-  }
-
-  const chartPngs = chartSource ? await renderScheduleChartPngs(chartSource) : [];
-
-  return {
-    filename: `${base}-${date}.pdf`,
-    contentType: "application/pdf",
-    content: await csvToPdfBuffer(input.reportName, csv, chartPngs),
-  };
+  return buildExportFilesFromPayload({
+    reportName: input.reportName,
+    formats: input.formats.length ? input.formats : ["PDF"],
+    csv,
+    chartSource,
+  });
 }

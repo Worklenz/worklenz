@@ -5,7 +5,7 @@ import db from "../config/db";
 import { sendEmail } from "../shared/email";
 import { log_error } from "../shared/utils";
 import { formatScheduleTimeRangeNote } from "../services/reporting-analytics/analytics-schedule-date-bounds";
-import { buildLiveScheduleExport } from "../services/reporting-analytics/analytics-schedule-export.service";
+import { buildLiveScheduleExports } from "../services/reporting-analytics/analytics-schedule-export.service";
 import {
   AnalyticsScheduleRow,
   bumpScheduleNextSend,
@@ -61,12 +61,12 @@ function buildEmailHtml(schedule: AnalyticsScheduleRow, sentAt: Date = new Date(
 }
 
 async function processSchedule(schedule: AnalyticsScheduleRow): Promise<boolean> {
-  const exportFile = await buildLiveScheduleExport({
+  const exportFiles = await buildLiveScheduleExports({
     reportKind: schedule.report_kind,
     reportName: schedule.report_name,
     ownerId: schedule.owner_id,
     teamId: schedule.team_id,
-    format: schedule.format,
+    formats: schedule.formats?.length ? schedule.formats : ["PDF"],
     filtersJson: schedule.filters_json,
     timezone: schedule.timezone,
   });
@@ -75,13 +75,11 @@ async function processSchedule(schedule: AnalyticsScheduleRow): Promise<boolean>
     to: schedule.recipients,
     subject: `Scheduled report: ${schedule.report_name}`,
     html: buildEmailHtml(schedule),
-    attachments: [
-      {
-        filename: exportFile.filename,
-        content: exportFile.content,
-        contentType: exportFile.contentType,
-      },
-    ],
+    attachments: exportFiles.map(exportFile => ({
+      filename: exportFile.filename,
+      content: exportFile.content,
+      contentType: exportFile.contentType,
+    })),
   });
 
   if (!result) {
