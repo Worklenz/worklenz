@@ -36,6 +36,12 @@ describe("SNS signature verification", () => {
       expect(validateSnsCertUrl("https://sns.us-east-1.amazonaws.com/cert.txt")).toBe(false);
       expect(validateSnsCertUrl("https://sns.us-east-1.amazonaws.com/cert.js")).toBe(false);
     });
+
+    it("rejects URLs with query strings, hashes, or path traversal", () => {
+      expect(validateSnsCertUrl("https://sns.us-east-1.amazonaws.com/cert.pem?redirect=evil.com")).toBe(false);
+      expect(validateSnsCertUrl("https://sns.us-east-1.amazonaws.com/cert.pem#fragment")).toBe(false);
+      expect(validateSnsCertUrl("https://sns.us-east-1.amazonaws.com/../evil.pem")).toBe(false);
+    });
   });
 
   describe("buildSnsStringToSign", () => {
@@ -115,6 +121,37 @@ describe("SNS signature verification", () => {
       await verifySnsNotification(req, res, next);
 
       expect(next).toHaveBeenCalledTimes(1);
+    });
+
+    it("confirms subscription without outbound HTTP requests when signature is valid", async () => {
+      const msg: Record<string, any> = {
+        Type: "SubscriptionConfirmation",
+        Message: "Subscription confirmation",
+        MessageId: "sub-123",
+        SubscribeURL: "https://sns.us-east-1.amazonaws.com/?Action=ConfirmSubscription",
+        Timestamp: "2026-11-19T12:00:00Z",
+        Token: "236245235342",
+        TopicArn: "arn:aws:sns:us-east-1:123456789012:worklenz-ses",
+        SignatureVersion: "1",
+        SigningCertURL: "https://sns.us-east-1.amazonaws.com/cert.pem"
+      };
+
+      const stringToSign = buildSnsStringToSign(msg)!;
+      const signer = crypto.createSign("RSA-SHA1");
+      signer.update(stringToSign, "utf8");
+      msg.Signature = signer.sign(privateKey, "base64");
+
+      const { snsCertFetcher } = require("../shared/sns-validator");
+      jest.spyOn(snsCertFetcher, "fetch").mockResolvedValue(publicKey);
+
+      const req = createMockRequest({ body: JSON.stringify(msg) });
+      const res = createMockResponse();
+      const next = jest.fn();
+
+      await verifySnsNotification(req, res, next);
+
+      expect(res.statusCode).toBe(200);
+      expect(next).not.toHaveBeenCalled();
     });
   });
 });

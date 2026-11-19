@@ -58,8 +58,8 @@ export default class ClientPortalAttachmentController {
 
       // If base64 data includes a data URL scheme, verify that embedded mime matches allowed types
       if (typeof fileData === "string" && fileData.startsWith("data:")) {
-        const mimeMatch = fileData.match(/^data:([^;]+);base64,/);
-        if (mimeMatch && !allowedTypes.includes(mimeMatch[1])) {
+        const mimeMatch = fileData.match(/^data:([^;,]+)(?:;[^,]*)?;base64,/i);
+        if (!mimeMatch || !allowedTypes.includes(mimeMatch[1].toLowerCase())) {
           return res.status(400).json(new ServerResponse(false, null, "File type not allowed"));
         }
       }

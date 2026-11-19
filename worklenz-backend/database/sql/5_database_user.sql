@@ -29,7 +29,7 @@ GRANT SELECT ON sys_project_healths TO worklenz_client;
 
 -- Role created without a hardcoded default password. To enable password login for this
 -- role, set a strong password in your deployment environment:
---   ALTER ROLE worklenz_backend WITH PASSWORD 'your_secure_password';
+--   ALTER ROLE worklenz_backend WITH LOGIN PASSWORD 'your_secure_password';
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'worklenz_backend') THEN

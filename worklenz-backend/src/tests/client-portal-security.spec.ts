@@ -81,5 +81,23 @@ describe("client portal security", () => {
       expect(res.statusCode).toBe(400);
       expect((res as any).body?.message).toContain("File type not allowed");
     });
+
+    it("rejects data URL with parameters and disallowed mime type", async () => {
+      const req = {
+        clientId: "client-1",
+        organizationId: "org-1",
+        body: {
+          fileName: "test.svg",
+          fileType: "image/png",
+          fileData: "data:image/svg+xml;charset=utf-8;base64,PHN2Zz4="
+        }
+      };
+      const res = createMockResponse();
+
+      await ClientPortalAttachmentController.uploadFile(req as any, res as any);
+
+      expect(res.statusCode).toBe(400);
+      expect((res as any).body?.message).toContain("File type not allowed");
+    });
   });
 });

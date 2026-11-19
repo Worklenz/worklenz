@@ -3,10 +3,22 @@ import https from "https";
 import { Request, Response, NextFunction } from "express";
 import { ServerResponse } from "../models/server-response";
 import { log_error } from "./utils";
+import { publicHttpsAgent } from "./ssrf-guard";
 
-// In-memory cache for SNS certificates: URL -> PEM certificate string
+// In-memory bounded cache for SNS certificates: URL -> PEM certificate string
+const MAX_CERT_CACHE_SIZE = 50;
 const certCache = new Map<string, { cert: string; expires: number }>();
 const CERT_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+function cacheCert(url: string, cert: string): void {
+  if (certCache.size >= MAX_CERT_CACHE_SIZE) {
+    const oldestKey = certCache.keys().next().value;
+    if (oldestKey) {
+      certCache.delete(oldestKey);
+    }
+  }
+  certCache.set(url, { cert, expires: Date.now() + CERT_CACHE_TTL_MS });
+}
 
 /**
  * Validates that the SigningCertURL is hosted on an official Amazon AWS SNS endpoint
@@ -14,18 +26,26 @@ const CERT_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
  */
 export function validateSnsCertUrl(certUrl: string): boolean {
   if (!certUrl || typeof certUrl !== "string") return false;
+  if (certUrl.includes("..")) return false;
 
   try {
     const parsed = new URL(certUrl);
+    // Protocol must strictly be HTTPS
     if (parsed.protocol !== "https:") return false;
+
+    // Reject query parameters, fragments, and credentials to prevent URL manipulation / SSRF tricks
+    if (parsed.search || parsed.hash || parsed.username || parsed.password) return false;
+
     // Host must match sns.<region>.amazonaws.com or sns.<region>.amazonaws.com.cn
     if (!/^sns\.[a-zA-Z0-9-]+\.amazonaws\.com(\.cn)?$/.test(parsed.hostname)) {
       return false;
     }
-    // File must be a .pem certificate
-    if (!parsed.pathname.endsWith(".pem")) {
+
+    // Pathname must strictly be a .pem file name without directory traversal
+    if (!/^\/[a-zA-Z0-9-_.]+\.pem$/.test(parsed.pathname) || parsed.pathname.includes("..")) {
       return false;
     }
+
     return true;
   } catch {
     return false;
@@ -68,13 +88,27 @@ export function buildSnsStringToSign(message: Record<string, any>): string | nul
  * Fetches the PEM certificate from the validated AWS SNS URL
  */
 export async function fetchSnsCertificate(certUrl: string): Promise<string> {
-  const cached = certCache.get(certUrl);
+  if (!validateSnsCertUrl(certUrl)) {
+    throw new Error("Invalid or untrusted SNS certificate URL");
+  }
+
+  const parsed = new URL(certUrl);
+  const cacheKey = parsed.origin + parsed.pathname;
+  const cached = certCache.get(cacheKey);
   if (cached && cached.expires > Date.now()) {
     return cached.cert;
   }
 
   return new Promise((resolve, reject) => {
-    const req = https.get(certUrl, { timeout: 5000 }, res => {
+    const requestOptions: https.RequestOptions = {
+      protocol: "https:",
+      hostname: parsed.hostname,
+      path: parsed.pathname,
+      agent: publicHttpsAgent,
+      timeout: 5000,
+    };
+
+    const req = https.get(requestOptions, res => {
       if (res.statusCode !== 200) {
         return reject(new Error(`Failed to fetch SNS cert: HTTP ${res.statusCode}`));
       }
@@ -88,9 +122,13 @@ export async function fetchSnsCertificate(certUrl: string): Promise<string> {
         }
       });
       res.on("end", () => {
-        certCache.set(certUrl, { cert: data, expires: Date.now() + CERT_CACHE_TTL_MS });
+        if (!res.complete) {
+          return reject(new Error("SNS certificate stream was interrupted"));
+        }
+        cacheCert(cacheKey, data);
         resolve(data);
       });
+      res.on("error", reject);
     });
 
     req.on("error", reject);
@@ -158,22 +196,15 @@ export async function verifySnsNotification(
     return res.status(400).json(new ServerResponse(false, null, "Malformed SNS payload"));
   }
 
-  // Handle subscription confirmation if needed
-  if (body.Type === "SubscriptionConfirmation") {
-    const isValid = await verifySnsSignature(body);
-    if (!isValid) {
-      return res.status(403).json(new ServerResponse(false, null, "Invalid SNS signature"));
-    }
-    // Safely confirm subscription if SubscribeURL is an AWS URL
-    if (body.SubscribeURL && validateSnsCertUrl(body.SubscribeURL.split("?")[0])) {
-      https.get(body.SubscribeURL, () => {});
-    }
-    return res.status(200).json(new ServerResponse(true, null, "Subscription confirmed"));
-  }
-
   const isValid = await verifySnsSignature(body);
   if (!isValid) {
     return res.status(403).json(new ServerResponse(false, null, "Invalid SNS signature"));
+  }
+
+  // Handle subscription confirmation if needed
+  if (body.Type === "SubscriptionConfirmation") {
+    console.log(`[SNS] SubscriptionConfirmation received for topic ${body.TopicArn || ""}`);
+    return res.status(200).json(new ServerResponse(true, null, "Subscription confirmed"));
   }
 
   next();

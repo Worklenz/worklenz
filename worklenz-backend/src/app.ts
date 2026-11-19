@@ -499,23 +499,30 @@ app.get("/csrf-token", (req: Request, res: Response) => {
 });
 
 // Webhook endpoints (no CSRF required; SNS signature verified)
+// Support AWS SNS text/plain content type alongside application/json
+const snsBodyParser = express.text({ type: ["text/plain", "application/json"], limit: "10mb" });
+
 app.post(
   "/webhook/emails/bounce",
+  snsBodyParser,
   verifySnsNotification,
   safeControllerFunction(AwsSesController.handleBounceResponse),
 );
 app.post(
   "/webhook/emails/complaints",
+  snsBodyParser,
   verifySnsNotification,
   safeControllerFunction(AwsSesController.handleComplaintResponse),
 );
 app.post(
   "/webhook/emails/delivery",
+  snsBodyParser,
   verifySnsNotification,
   safeControllerFunction(AwsSesController.handleDeliveryEvents),
 );
 app.post(
   "/webhook/emails/reply",
+  snsBodyParser,
   verifySnsNotification,
   safeControllerFunction(AwsSesController.handleReplies),
 );
