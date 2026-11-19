@@ -237,13 +237,38 @@ export default class PtTasksController extends PtTasksControllerBase {
 
     @HandleExceptions()
     public static async bulkDelete(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-      const deletedTasks = req.body.tasks.map((t: any) => t.id);
-
-      const result: any = {deleted_tasks: deletedTasks};
-
-      const q = `SELECT bulk_delete_pt_tasks($1) AS task;`;
-      await db.query(q, [JSON.stringify(req.body)]);
-      return res.status(200).send(new ServerResponse(true, result));
+      const teamId = req.user?.team_id;
+      const userId = req.user?.id;
+      const tasks: unknown = req.body.tasks;
+      if (!teamId || !userId) return res.status(401).send(new ServerResponse(false, null, "Authentication required"));
+      if (!Array.isArray(tasks) || !tasks.length || tasks.some(task =>
+        typeof task?.id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(task.id))) {
+        return res.status(400).send(new ServerResponse(false, null, "Invalid task IDs"));
+      }
+      const ids: string[] = [...new Set<string>(tasks.map(task => task.id as string))];
+      // Check the entire batch and delete in one statement; a mixed-team batch
+      // must never partially delete the caller's tasks.
+      const q = `
+        WITH requested AS (SELECT UNNEST($1::uuid[]) AS id),
+        allowed AS (
+          SELECT t.id FROM cpt_tasks t
+          JOIN custom_project_templates cpt ON cpt.id = t.template_id
+          JOIN team_members tm ON tm.team_id = cpt.team_id AND tm.user_id = $3 AND tm.active IS TRUE
+          WHERE t.id IN (SELECT id FROM requested) AND cpt.team_id = $2 AND tm.is_guest IS FALSE
+        ),
+        deleted AS (
+          DELETE FROM cpt_tasks WHERE id IN (SELECT id FROM allowed)
+            AND (SELECT COUNT(*) FROM allowed) = (SELECT COUNT(*) FROM requested)
+          RETURNING id
+        )
+        SELECT ARRAY(SELECT id FROM deleted) AS deleted_tasks;
+      `;
+      const result = await db.query(q, [ids, teamId, userId]);
+      const deletedTasks: string[] = result.rows[0]?.deleted_tasks || [];
+      if (deletedTasks.length !== ids.length) {
+        return res.status(403).send(new ServerResponse(false, null, "You do not have permission to delete these tasks"));
+      }
+      return res.status(200).send(new ServerResponse(true, { deleted_tasks: deletedTasks }));
     }
 
 }
