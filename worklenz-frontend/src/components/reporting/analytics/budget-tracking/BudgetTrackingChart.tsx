@@ -62,14 +62,13 @@ export const BudgetTrackingChart = forwardRef<
   const chartProjects = projects;
 
   useImperativeHandle(ref, () => ({
-        toPngDataUrl: () => chartToPngDataUrl(chartRef.current, token.colorBgContainer),
-    toSvgMarkup: () =>
-      chartToSvgMarkup(
-        chartRef.current,
-        t('budgetTracking', { defaultValue: 'Budget Tracking' }),
-        token.colorBgContainer
-      ),
-  }));
+      toPngDataUrl: () => chartToPngDataUrl(chartRef.current),
+      toSvgMarkup: () =>
+        chartToSvgMarkup(
+          chartRef.current,
+          t('budgetTracking', { defaultValue: 'Budget Tracking' })
+        ),
+    }));
 
   const chartData = useMemo((): ChartData<'bar'> => {
     return {

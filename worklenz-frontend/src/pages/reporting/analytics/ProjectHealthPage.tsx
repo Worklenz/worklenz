@@ -7,7 +7,10 @@ import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
 import { MetricCalcHint } from '@/components/reporting/analytics/MetricCalcHint';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { jsPDF } from 'jspdf';
+import {
+  downloadAnalyticsBrandedPdf,
+  resolveAnalyticsPdfLogoUrl,
+} from '@/lib/reporting/analytics-branded-pdf';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -83,6 +86,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     userId: session?.id,
   });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
+  const teamsList = useAppSelector(state => state.teamReducer.teamsList);
   const { projectHealths } = useAppSelector(state => state.projectHealthReducer);
 
   const {
@@ -413,22 +417,48 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       }
       if (format === 'pdf') {
         const png = chartRef.current?.toPngDataUrl();
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-        doc.setFontSize(16);
-        doc.text(title, 40, 40);
-        doc.setFontSize(11);
-        doc.text(
-          `${t('statOnTrack', { defaultValue: 'On track' })}: ${data.kpis.on_track}  |  ` +
-            `${t('statAtRisk', { defaultValue: 'At risk' })}: ${data.kpis.at_risk}  |  ` +
-            `${t('statOffTrack', { defaultValue: 'Off track' })}: ${data.kpis.off_track}  |  ` +
-            `${t('statOverdueTasks', { defaultValue: 'Overdue tasks' })}: ${data.kpis.overdue_tasks}`,
-          40,
-          60
-        );
-        if (png) {
-          doc.addImage(png, 'PNG', 40, 80, 720, 360);
-        }
-        doc.save(`project-health-${stamp}.pdf`);
+        await downloadAnalyticsBrandedPdf({
+          title,
+          filename: `project-health-${stamp}.pdf`,
+          logoUrl: resolveAnalyticsPdfLogoUrl(teamsList, session?.team_id),
+          chartPngDataUrl: png,
+          tableRows: [
+            ['Project', 'Health', 'Progress %', 'Open', 'Overdue'],
+            ...data.projects.map(row => [
+              row.project_name,
+              row.health_name,
+              String(row.progress_pct),
+              String(row.open_tasks),
+              String(row.overdue_tasks),
+            ]),
+          ],
+          kpis: [
+            {
+              label: t('statOnTrack', { defaultValue: 'On track' }),
+              value: String(data.kpis.on_track),
+              sub: t('statProjects', { defaultValue: 'projects' }),
+              tone: '#52c41a',
+            },
+            {
+              label: t('statAtRisk', { defaultValue: 'At risk' }),
+              value: String(data.kpis.at_risk),
+              sub: t('statProjects', { defaultValue: 'projects' }),
+              tone: '#faad14',
+            },
+            {
+              label: t('statOffTrack', { defaultValue: 'Off track' }),
+              value: String(data.kpis.off_track),
+              sub: t('statProjects', { defaultValue: 'projects' }),
+              tone: '#ff4d4f',
+            },
+            {
+              label: t('statOverdueTasks', { defaultValue: 'Overdue tasks' }),
+              value: String(data.kpis.overdue_tasks),
+              sub: t('statAcrossSelection', { defaultValue: 'across selection' }),
+              tone: '#1890ff',
+            },
+          ],
+        });
       }
     } catch {
       message.error(t('exportFailed', { defaultValue: 'Export failed' }));

@@ -53,13 +53,12 @@ export const UtilizationChart = forwardRef<UtilizationChartHandle, UtilizationCh
     const chartRef = useRef<ChartJS<'bar'>>(null);
 
     useImperativeHandle(ref, () => ({
-          toPngDataUrl: () => chartToPngDataUrl(chartRef.current, token.colorBgContainer),
-    toSvgMarkup: () =>
-      chartToSvgMarkup(
-        chartRef.current,
-        t('utilization', { defaultValue: 'Utilization' }),
-        token.colorBgContainer
-      ),
+      toPngDataUrl: () => chartToPngDataUrl(chartRef.current),
+      toSvgMarkup: () =>
+        chartToSvgMarkup(
+          chartRef.current,
+          t('utilization', { defaultValue: 'Utilization' })
+        ),
     }));
 
     const chartData = useMemo((): ChartData<'bar'> => {

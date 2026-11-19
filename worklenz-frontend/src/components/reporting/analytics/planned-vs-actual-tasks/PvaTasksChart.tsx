@@ -52,13 +52,12 @@ export const PvaTasksChart = forwardRef<PvaTasksChartHandle, PvaTasksChartProps>
     const chartRef = useRef<ChartJS<'bar'>>(null);
 
     useImperativeHandle(ref, () => ({
-          toPngDataUrl: () => chartToPngDataUrl(chartRef.current, token.colorBgContainer),
-    toSvgMarkup: () =>
-      chartToSvgMarkup(
-        chartRef.current,
-        t('plannedVsActualTasks', { defaultValue: 'Planned vs Actual: Tasks' }),
-        token.colorBgContainer
-      ),
+      toPngDataUrl: () => chartToPngDataUrl(chartRef.current),
+      toSvgMarkup: () =>
+        chartToSvgMarkup(
+          chartRef.current,
+          t('plannedVsActualTasks', { defaultValue: 'Planned vs Actual: Tasks' })
+        ),
     }));
 
     const chartData = useMemo((): ChartData<'bar'> => {

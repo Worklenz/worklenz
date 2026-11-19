@@ -48,7 +48,8 @@
     "build:addons": "node scripts/build-addons.js",
     "migrate:bootstrap": "node scripts/migrate-bootstrap.js",
     "migrate:reconcile-legacy-ids": "node scripts/reconcile-legacy-migration-ids.js",
-    "migrate:validate-ids": "node scripts/validate-migration-ids.js"
+    "migrate:validate-ids": "node scripts/validate-migration-ids.js",
+    "sample:analytics-pdf": "ts-node --transpile-only -O \"{\\\"module\\\":\\\"commonjs\\\",\\\"jsx\\\":\\\"react\\\"}\" scripts/generate-sample-analytics-pdf.ts"
   },
   "jestSonar": {
     "reportPath": "coverage",

@@ -53,13 +53,12 @@ export const TimeReportChart = forwardRef<TimeReportChartHandle, TimeReportChart
     const chartRef = useRef<ChartJS<'bar'>>(null);
 
     useImperativeHandle(ref, () => ({
-          toPngDataUrl: () => chartToPngDataUrl(chartRef.current, token.colorBgContainer),
-    toSvgMarkup: () =>
-      chartToSvgMarkup(
-        chartRef.current,
-        t('timeReport', { defaultValue: 'Time Report' }),
-        token.colorBgContainer
-      ),
+      toPngDataUrl: () => chartToPngDataUrl(chartRef.current),
+      toSvgMarkup: () =>
+        chartToSvgMarkup(
+          chartRef.current,
+          t('timeReport', { defaultValue: 'Time Report' })
+        ),
     }));
 
     const chartData = useMemo((): ChartData<'bar'> => {

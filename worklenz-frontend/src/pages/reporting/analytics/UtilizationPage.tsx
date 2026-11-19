@@ -5,7 +5,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { jsPDF } from 'jspdf';
+import {
+  downloadAnalyticsBrandedPdf,
+  resolveAnalyticsPdfLogoUrl,
+} from '@/lib/reporting/analytics-branded-pdf';
 import { BOUNDED_ANALYTICS_DATE_PRESETS, resolveAnalyticsDateBounds } from '@/utils/date-presets';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
@@ -74,6 +77,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
     userId: session?.id,
   });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
+  const teamsList = useAppSelector(state => state.teamReducer.teamsList);
 
   const {
     datePreset,
@@ -329,22 +333,44 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
       }
       if (format === 'pdf') {
         const png = chartRef.current?.toPngDataUrl();
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-        doc.setFontSize(16);
-        doc.text(title, 40, 40);
-        doc.setFontSize(11);
-        doc.text(
-          `${t('utilStatAvg', { defaultValue: 'Avg. Utilization' })}: ${data.kpis.avg_utilization_pct}%  |  ` +
-            `${t('utilStatTeamSize', { defaultValue: 'Team Size' })}: ${data.kpis.team_size}  |  ` +
-            `${t('utilStatOverutilized', { defaultValue: 'Overutilized' })}: ${data.kpis.overutilized_count}  |  ` +
-            `${t('utilStatUnderutilized', { defaultValue: 'Underutilized' })}: ${data.kpis.underutilized_count}`,
-          40,
-          60
-        );
-        if (png) {
-          doc.addImage(png, 'PNG', 40, 80, 720, 360);
-        }
-        doc.save(`utilization-${stamp}.pdf`);
+        await downloadAnalyticsBrandedPdf({
+          title,
+          filename: `utilization-${stamp}.pdf`,
+          logoUrl: resolveAnalyticsPdfLogoUrl(teamsList, session?.team_id),
+          chartPngDataUrl: png,
+          tableRows: [
+            ['Member', 'Capacity', 'Logged', 'Utilization %', 'Status'],
+            ...data.members.map(row => [
+              row.member_name,
+              String(row.capacity_hours),
+              String(row.logged_hours),
+              String(row.utilization_pct),
+              row.status,
+            ]),
+          ],
+          kpis: [
+            {
+              label: t('utilStatAvg', { defaultValue: 'Avg. Utilization' }),
+              value: `${data.kpis.avg_utilization_pct}%`,
+              tone: '#1890ff',
+            },
+            {
+              label: t('utilStatTeamSize', { defaultValue: 'Team Size' }),
+              value: String(data.kpis.team_size),
+              tone: '#722ed1',
+            },
+            {
+              label: t('utilStatOverutilized', { defaultValue: 'Overutilized' }),
+              value: String(data.kpis.overutilized_count),
+              tone: '#ff4d4f',
+            },
+            {
+              label: t('utilStatUnderutilized', { defaultValue: 'Underutilized' }),
+              value: String(data.kpis.underutilized_count),
+              tone: '#faad14',
+            },
+          ],
+        });
       }
     } catch {
       message.error(t('exportFailed', { defaultValue: 'Export failed' }));

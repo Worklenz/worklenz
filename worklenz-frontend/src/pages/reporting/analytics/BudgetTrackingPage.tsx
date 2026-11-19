@@ -6,7 +6,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { jsPDF } from 'jspdf';
+import {
+  downloadAnalyticsBrandedPdf,
+  resolveAnalyticsPdfLogoUrl,
+} from '@/lib/reporting/analytics-branded-pdf';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -86,6 +89,7 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
     userId: session?.id,
   });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
+  const teamsList = useAppSelector(state => state.teamReducer.teamsList);
 
   const {
     datePreset,
@@ -388,22 +392,56 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
       }
       if (format === 'pdf') {
         const png = chartRef.current?.toPngDataUrl();
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-        doc.setFontSize(16);
-        doc.text(title, 40, 40);
-        doc.setFontSize(11);
-        doc.text(
-          `${t('btStatTotalBudget', { defaultValue: 'Total budget' })}: ${fmtMoney(data.kpis.total_budget, displayCurrency)}  |  ` +
-            `${t('btStatSpent', { defaultValue: 'Spent' })}: ${fmtMoney(data.kpis.spent, displayCurrency)}  |  ` +
-            `${t('btStatRemaining', { defaultValue: 'Remaining' })}: ${fmtMoney(data.kpis.remaining, displayCurrency)}  |  ` +
-            `${t('btStatOverBudget', { defaultValue: 'Over budget' })}: ${data.kpis.over_budget_count}`,
-          40,
-          60
-        );
-        if (png) {
-          doc.addImage(png, 'PNG', 40, 80, 720, 360);
-        }
-        doc.save(`budget-tracking-${stamp}.pdf`);
+        await downloadAnalyticsBrandedPdf({
+          title,
+          filename: `budget-tracking-${stamp}.pdf`,
+          logoUrl: resolveAnalyticsPdfLogoUrl(teamsList, session?.team_id),
+          chartPngDataUrl: png,
+          tableRows: [
+            ['Project', 'Budget', 'Spent', 'Remaining', 'Burn %'],
+            ...data.projects.map(row => [
+              row.project_name,
+              String(row.budget),
+              String(row.spent),
+              String(row.remaining),
+              String(row.burn_pct),
+            ]),
+          ],
+          kpis: [
+            {
+              label: t('btStatTotalBudget', { defaultValue: 'Total budget' }),
+              value: fmtMoney(data.kpis.total_budget, displayCurrency),
+              sub: t('btStatTotalBudgetSub', {
+                defaultValue: 'across projects with a budget',
+              }),
+              tone: '#1890ff',
+            },
+            {
+              label: t('btStatSpent', { defaultValue: 'Spent' }),
+              value: fmtMoney(data.kpis.spent, displayCurrency),
+              sub: t('btStatSpentSub', {
+                defaultValue: '{{pct}}% of budget used',
+                pct: data.kpis.utilization_pct,
+              }),
+              tone: '#faad14',
+            },
+            {
+              label: t('btStatRemaining', { defaultValue: 'Remaining' }),
+              value: fmtMoney(data.kpis.remaining, displayCurrency),
+              sub: t('statProjects', { defaultValue: 'projects' }),
+              tone: data.kpis.remaining < 0 ? '#ff4d4f' : '#52c41a',
+            },
+            {
+              label: t('btStatOverBudget', { defaultValue: 'Over budget' }),
+              value: String(data.kpis.over_budget_count),
+              sub:
+                data.kpis.over_budget_count > 0
+                  ? t('btStatOverBudgetSub', { defaultValue: 'projects over budget' })
+                  : t('statProjects', { defaultValue: 'projects' }),
+              tone: data.kpis.over_budget_count > 0 ? '#ff4d4f' : '#52c41a',
+            },
+          ],
+        });
       }
     } catch {
       message.error(t('exportFailed', { defaultValue: 'Export failed' }));

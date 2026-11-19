@@ -77,13 +77,12 @@ export const VelocityChart = forwardRef<VelocityChartHandle, VelocityChartProps>
     const chartRef = useRef<ChartJS<'bar'>>(null);
 
     useImperativeHandle(ref, () => ({
-          toPngDataUrl: () => chartToPngDataUrl(chartRef.current, token.colorBgContainer),
-    toSvgMarkup: () =>
-      chartToSvgMarkup(
-        chartRef.current,
-        t('velocity', { defaultValue: 'Velocity' }),
-        token.colorBgContainer
-      ),
+      toPngDataUrl: () => chartToPngDataUrl(chartRef.current),
+      toSvgMarkup: () =>
+        chartToSvgMarkup(
+          chartRef.current,
+          t('velocity', { defaultValue: 'Velocity' })
+        ),
     }));
 
     const chartData = useMemo((): ChartData<'bar'> => {

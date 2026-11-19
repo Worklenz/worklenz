@@ -4,7 +4,10 @@ import { CSV_UTF8_BOM, formatCsvCell } from "../../shared/csv-utils";
 import { decodeHtmlEntities } from "../../shared/html-entity-utils";
 import type { ScheduleChartSource } from "./analytics-schedule-charts";
 import { buildExcelNativeChartPlan } from "./analytics-schedule-excel-charts";
-import { renderSchedulePdf } from "./analytics-schedule-pdf";
+import {
+  renderSchedulePdf,
+  type SchedulePdfKpiTile,
+} from "./analytics-schedule-pdf";
 
 export interface ScheduleExportFile {
   filename: string;
@@ -191,12 +194,36 @@ export async function csvToExcelBuffer(
   return buffer;
 }
 
+export interface SchedulePdfExportOptions {
+  chartPngs?: Buffer[] | Buffer | null;
+  logo?: Buffer | null;
+  kpis?: SchedulePdfKpiTile[];
+  footerNote?: string;
+  exportedOn?: string;
+}
+
 export async function csvToPdfBuffer(
   title: string,
   csv: string,
-  chartPngs?: Buffer[] | Buffer | null
+  chartPngsOrOptions?: Buffer[] | Buffer | null | SchedulePdfExportOptions
 ): Promise<Buffer> {
-  return renderSchedulePdf(title, parseCsvRows(csv), chartPngs);
+  const options: SchedulePdfExportOptions =
+    chartPngsOrOptions &&
+    !Buffer.isBuffer(chartPngsOrOptions) &&
+    !Array.isArray(chartPngsOrOptions) &&
+    typeof chartPngsOrOptions === "object"
+      ? chartPngsOrOptions
+      : { chartPngs: chartPngsOrOptions as Buffer[] | Buffer | null | undefined };
+
+  return renderSchedulePdf({
+    title,
+    rows: parseCsvRows(csv),
+    chartPngs: options.chartPngs,
+    logo: options.logo,
+    kpis: options.kpis,
+    footerNote: options.footerNote,
+    exportedOn: options.exportedOn,
+  });
 }
 
 export function slugFilename(name: string): string {

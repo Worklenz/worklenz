@@ -5,7 +5,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { jsPDF } from 'jspdf';
+import {
+  downloadAnalyticsBrandedPdf,
+  resolveAnalyticsPdfLogoUrl,
+} from '@/lib/reporting/analytics-branded-pdf';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -75,6 +78,7 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
     userId: session?.id,
   });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
+  const teamsList = useAppSelector(state => state.teamReducer.teamsList);
 
   const {
     datePreset,
@@ -333,22 +337,44 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
       }
       if (format === 'pdf') {
         const png = chartRef.current?.toPngDataUrl();
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-        doc.setFontSize(16);
-        doc.text(title, 40, 40);
-        doc.setFontSize(11);
-        doc.text(
-          `${t('pvaMsStatMilestones', { defaultValue: 'Milestones' })}: ${data.kpis.milestones}  |  ` +
-            `${t('pvaMsStatLate', { defaultValue: 'Late' })}: ${data.kpis.late}  |  ` +
-            `${t('pvaMsStatOnTime', { defaultValue: 'On time' })}: ${data.kpis.on_time}  |  ` +
-            `${t('pvaMsStatAvgSlip', { defaultValue: 'Avg slip' })}: ${data.kpis.avg_slip_days}d`,
-          40,
-          60
-        );
-        if (png) {
-          doc.addImage(png, 'PNG', 40, 80, 720, 360);
-        }
-        doc.save(`planned-vs-actual-milestones-${stamp}.pdf`);
+        await downloadAnalyticsBrandedPdf({
+          title,
+          filename: `planned-vs-actual-milestones-${stamp}.pdf`,
+          logoUrl: resolveAnalyticsPdfLogoUrl(teamsList, session?.team_id),
+          chartPngDataUrl: png,
+          tableRows: [
+            ['Milestone', 'Project', 'Planned', 'Actual', 'Variance'],
+            ...data.milestones.map(row => [
+              row.milestone_name,
+              row.project_name,
+              row.planned_date,
+              row.actual_date ?? '',
+              String(row.variance_days),
+            ]),
+          ],
+          kpis: [
+            {
+              label: t('pvaMsStatMilestones', { defaultValue: 'Milestones' }),
+              value: String(data.kpis.milestones),
+              tone: '#1890ff',
+            },
+            {
+              label: t('pvaMsStatOnTime', { defaultValue: 'On time' }),
+              value: String(data.kpis.on_time),
+              tone: '#52c41a',
+            },
+            {
+              label: t('pvaMsStatLate', { defaultValue: 'Late' }),
+              value: String(data.kpis.late),
+              tone: '#ff4d4f',
+            },
+            {
+              label: t('pvaMsStatAvgSlip', { defaultValue: 'Avg slip' }),
+              value: `${data.kpis.avg_slip_days}d`,
+              tone: '#faad14',
+            },
+          ],
+        });
       }
     } catch {
       message.error(t('exportFailed', { defaultValue: 'Export failed' }));

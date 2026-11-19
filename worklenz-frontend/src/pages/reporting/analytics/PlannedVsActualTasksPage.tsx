@@ -6,7 +6,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { jsPDF } from 'jspdf';
+import {
+  downloadAnalyticsBrandedPdf,
+  resolveAnalyticsPdfLogoUrl,
+} from '@/lib/reporting/analytics-branded-pdf';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -80,6 +83,7 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
     userId: session?.id,
   });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
+  const teamsList = useAppSelector(state => state.teamReducer.teamsList);
 
   const {
     datePreset,
@@ -377,22 +381,44 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
       }
       if (format === 'pdf') {
         const png = chartRef.current?.toPngDataUrl();
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-        doc.setFontSize(16);
-        doc.text(title, 40, 40);
-        doc.setFontSize(11);
-        doc.text(
-          `${t('pvaTasksStatPlanned', { defaultValue: 'Planned tasks' })}: ${data.kpis.planned}  |  ` +
-            `${t('pvaTasksStatCompleted', { defaultValue: 'Completed' })}: ${data.kpis.completed}  |  ` +
-            `${t('pvaTasksStatOverdue', { defaultValue: 'Overdue' })}: ${data.kpis.overdue}  |  ` +
-            `${t('pvaTasksStatAvgVariance', { defaultValue: 'Avg variance' })}: ${data.kpis.avg_variance_days}d`,
-          40,
-          60
-        );
-        if (png) {
-          doc.addImage(png, 'PNG', 40, 80, 720, 360);
-        }
-        doc.save(`planned-vs-actual-tasks-${stamp}.pdf`);
+        await downloadAnalyticsBrandedPdf({
+          title,
+          filename: `planned-vs-actual-tasks-${stamp}.pdf`,
+          logoUrl: resolveAnalyticsPdfLogoUrl(teamsList, session?.team_id),
+          chartPngDataUrl: png,
+          tableRows: [
+            ['Project', 'Planned', 'Completed', 'Overdue', 'Variance'],
+            ...data.projects.map(row => [
+              row.project_name,
+              String(row.planned),
+              String(row.completed),
+              String(row.overdue),
+              String(row.variance_days),
+            ]),
+          ],
+          kpis: [
+            {
+              label: t('pvaTasksStatPlanned', { defaultValue: 'Planned tasks' }),
+              value: String(data.kpis.planned),
+              tone: '#1890ff',
+            },
+            {
+              label: t('pvaTasksStatCompleted', { defaultValue: 'Completed' }),
+              value: String(data.kpis.completed),
+              tone: '#52c41a',
+            },
+            {
+              label: t('pvaTasksStatOverdue', { defaultValue: 'Overdue' }),
+              value: String(data.kpis.overdue),
+              tone: '#ff4d4f',
+            },
+            {
+              label: t('pvaTasksStatAvgVariance', { defaultValue: 'Avg variance' }),
+              value: `${data.kpis.avg_variance_days}d`,
+              tone: '#faad14',
+            },
+          ],
+        });
       }
     } catch {
       message.error(t('exportFailed', { defaultValue: 'Export failed' }));
