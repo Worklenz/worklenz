@@ -37,5 +37,7 @@
     "special": "Ein Sonderzeichen"
   },
   "strongPasswordPlaceholder": "Geben Sie ein sicheres Passwort ein",
-  "passwordValidationAltText": "Passwortanforderungen"
+  "passwordValidationAltText": "Passwortanforderungen",
+  "invitationCodeLabel": "Einladungscode",
+  "invitationCodeRequired": "Geben Sie den Einladungscode aus Ihrer E-Mail ein."
 }
