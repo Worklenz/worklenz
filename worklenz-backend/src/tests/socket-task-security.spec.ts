@@ -216,7 +216,7 @@ describe("socket task security", () => {
       });
 
       expect(mockDb).toHaveBeenLastCalledWith(
-        expect.stringContaining("DELETE"),
+        expect.stringMatching(/DELETE\s+FROM task_subscribers[\s\S]*user_id\s*=\s*\$3/),
         ["task-1", "tm-1", "user-1"]
       );
       expect(socket.emit).toHaveBeenCalledWith("23", expect.any(Array));
