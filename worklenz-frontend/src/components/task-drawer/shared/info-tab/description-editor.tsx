@@ -111,11 +111,11 @@ const SANITIZE_CONFIG = {
 };
 
 
-const findMentionRanges = (text: string, members: MentionMember[]) => {
-  const normalize = (value: string) =>
-    Array.from(value, character => character.toLocaleLowerCase()).join('');
 
-  const normalizedText = normalize(text);
+const normalizeMentionText = (value: string) => value.toLocaleLowerCase();
+
+const findMentionRanges = (text: string, members: MentionMember[]) => {
+  const normalizedText = normalizeMentionText(text);
   const normalizedToOriginal = new Map<number, number>();
   normalizedToOriginal.set(0, 0);
 
@@ -135,7 +135,7 @@ const findMentionRanges = (text: string, members: MentionMember[]) => {
     const mention = `@${member.name.trim()}`;
     if (mention.length < 2) return;
 
-    const normalizedMention = normalize(mention);
+    const normalizedMention = normalizeMentionText(mention);
     let searchFrom = 0;
     let matchIndex = normalizedText.indexOf(normalizedMention, searchFrom);
 
@@ -175,6 +175,7 @@ const findMentionRanges = (text: string, members: MentionMember[]) => {
 
   return ranges;
 };
+
 
 const applyMentionFormatting = (editor: QuillEditorInstance, members: MentionMember[]) => {
   const text = editor.getText();
@@ -652,7 +653,7 @@ const DescriptionEditor = ({
   const filteredMentionMembers = useMemo(() => {
     if (!mentionQuery || !quillRef.current) return [];
 
-    const query = mentionQuery.query.trim().toLocaleLowerCase();
+    const query = normalizeMentionText(mentionQuery.query.trim());
     const editor = quillRef.current.getEditor();
     const text = editor.getText();
 
@@ -662,13 +663,15 @@ const DescriptionEditor = ({
 
     const existingMentions = new Set(
       findMentionRanges(textWithoutCurrentQuery, mentionMembers).map(({ start, length }) =>
-        textWithoutCurrentQuery.slice(start, start + length).toLocaleLowerCase()
+        normalizeMentionText(
+          textWithoutCurrentQuery.slice(start, start + length)
+        )
       )
     );
 
     return mentionMembers
       .filter(member => {
-        const normalizedName = member.name.trim().toLocaleLowerCase();
+        const normalizedName = normalizeMentionText(member.name.trim());
 
         return (
           normalizedName.includes(query) &&
