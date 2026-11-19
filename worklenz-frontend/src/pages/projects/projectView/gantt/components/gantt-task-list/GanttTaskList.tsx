@@ -637,7 +637,8 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
     ref
   ) => {
     const { canCreateTask: hasTaskPermission } = useTaskCreationPermission();
-    const canCreateTask = hasTaskPermission && canUseFeature(useAuthService().getCurrentSession(), 'gantt_edit');
+    const authService = useAuthService();
+    const canCreateTask = hasTaskPermission && canUseFeature(authService.getCurrentSession(), 'gantt_edit');
     const { token } = theme.useToken();
     const { t } = useTranslation('gantt');
     // Collapsed by default — `task.expanded` is a data artifact set true on every task by

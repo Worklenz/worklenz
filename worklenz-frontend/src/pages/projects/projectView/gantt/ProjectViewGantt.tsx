@@ -1426,7 +1426,7 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
                   expandedTasks={expandedTasks}
                   onExpandedTasksChange={setExpandedTasks}
                   animatingTasks={animatingTasks}
-                  onTaskNameClick={canEditRoadmap ? handleTaskNameClick : undefined}
+                  onTaskNameClick={handleTaskNameClick}
                   onSectionPositionUpdate={handleSectionPositionUpdate}
                 />
                 {/* Resize handle */}

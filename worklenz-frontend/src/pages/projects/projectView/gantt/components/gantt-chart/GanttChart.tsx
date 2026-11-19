@@ -1646,7 +1646,9 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
     const { t } = useTranslation('gantt');
     const { token } = theme.useToken();
     const { canCreateTask: hasTaskPermission } = useTaskCreationPermission();
-    const canCreateTask = hasTaskPermission && canUseFeature(useAuthService().getCurrentSession(), 'gantt_edit');
+    const authService = useAuthService();
+    const canEditRoadmap = canUseFeature(authService.getCurrentSession(), 'gantt_edit');
+    const canCreateTask = hasTaskPermission && canEditRoadmap;
     // Get timeline calculator, grouping mode, highlighted date range, and shouldScroll from context
     const contextValue = useGanttContext();
     const { timelineCalculator, groupingMode, setHighlightedDateRange, shouldScroll } = contextValue;
@@ -3196,7 +3198,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
                   });
                 })()}
               </svg>
-              {canCreateTask && hoveredDependencyControl && (
+              {canEditRoadmap && hoveredDependencyControl && (
                 <div
                   className="gantt-dependency-remove-control"
                   style={{
