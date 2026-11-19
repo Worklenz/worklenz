@@ -184,17 +184,39 @@ export const importTaskAttachments = async (
       assertSafeExternalHost(sourceUrl);
       const jiraHost = ctx.jiraDomain ? assertSafeExternalHost(ctx.jiraDomain) : null;
       const canSendCredentials = parsedUrl.protocol === "https:" && jiraHost === parsedUrl.hostname;
-      const response = await axios.get<ArrayBuffer>(sourceUrl, {
+      let response = await axios.get<ArrayBuffer>(sourceUrl, {
         httpAgent: publicHttpAgent,
         httpsAgent: publicHttpsAgent,
         maxRedirects: 0,
         proxy: false,
         responseType: "arraybuffer",
         timeout: 30000,
+        validateStatus: status => (status >= 200 && status < 300) || status === 303,
         headers: ctx.jiraAuthHeader && canSendCredentials
           ? { Authorization: ctx.jiraAuthHeader, Accept: "*/*" }
           : { Accept: "*/*" },
       });
+
+      if (response.status === 303 && response.headers?.location) {
+        const redirectUrl = new URL(response.headers.location, sourceUrl).toString();
+        const redirectParsed = new URL(redirectUrl);
+        if (redirectParsed.protocol !== "http:" && redirectParsed.protocol !== "https:") {
+          throw new Error("Unsupported attachment redirect URL");
+        }
+        assertSafeExternalHost(redirectUrl);
+        const canSendRedirectCreds = redirectParsed.protocol === "https:" && jiraHost === redirectParsed.hostname;
+        response = await axios.get<ArrayBuffer>(redirectUrl, {
+          httpAgent: publicHttpAgent,
+          httpsAgent: publicHttpsAgent,
+          maxRedirects: 0,
+          proxy: false,
+          responseType: "arraybuffer",
+          timeout: 30000,
+          headers: ctx.jiraAuthHeader && canSendRedirectCreds
+            ? { Authorization: ctx.jiraAuthHeader, Accept: "*/*" }
+            : { Accept: "*/*" },
+        });
+      }
       const buffer = Buffer.from(response.data);
       const sizeBytes =
         attachment?.size && attachment.size > 0

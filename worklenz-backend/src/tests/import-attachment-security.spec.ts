@@ -42,4 +42,32 @@ describe("import attachment URL security", () => {
     await request("https://other.example.com/file");
     expect(axios.get).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ headers: { Accept: "*/*" } }));
   });
+  it("follows safe 303 redirect and strips credentials for external target", async () => {
+    (axios.get as jest.Mock)
+      .mockResolvedValueOnce({
+        status: 303,
+        headers: { location: "https://cdn.example.com/download.pdf" }
+      })
+      .mockResolvedValueOnce({
+        status: 200,
+        data: Buffer.from("pdf-data")
+      });
+
+    const result = await request("https://jira.example.com/file");
+    expect(result).toEqual({ attachments: 1, attachmentFailures: 0 });
+    expect(axios.get).toHaveBeenCalledTimes(2);
+    expect(axios.get).toHaveBeenLastCalledWith("https://cdn.example.com/download.pdf", expect.objectContaining({
+      headers: { Accept: "*/*" }
+    }));
+  });
+  it("rejects 303 redirect pointing to internal host", async () => {
+    (axios.get as jest.Mock).mockResolvedValueOnce({
+      status: 303,
+      headers: { location: "http://127.0.0.1/admin" }
+    });
+
+    const result = await request("https://jira.example.com/file");
+    expect(result).toEqual({ attachments: 0, attachmentFailures: 1 });
+    expect(axios.get).toHaveBeenCalledTimes(1);
+  });
 });
