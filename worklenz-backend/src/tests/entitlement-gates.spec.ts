@@ -96,6 +96,16 @@ describe("canUseFeature: enforce mode", () => {
 });
 
 describe("requireFeature", () => {
+  it("allows self-hosted Roadmap editing even with a Free subscription row", () => {
+    process.env.WORKLENZ_DEPLOYMENT_MODE = "self_hosted";
+    try {
+      const next = jest.fn();
+      requireFeature("gantt_edit")({ user: free } as any, makeRes(), next);
+      expect(next).toHaveBeenCalled();
+    } finally {
+      process.env.WORKLENZ_DEPLOYMENT_MODE = "cloud";
+    }
+  });
   it("allows Roadmap editing for Business but denies Pro and Free", () => {
     for (const user of [proClassic, free]) {
       const res = makeRes();
