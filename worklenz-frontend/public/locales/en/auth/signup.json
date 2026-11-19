@@ -37,5 +37,7 @@
     "special": "One special character"
   },
   "strongPasswordPlaceholder": "Enter a strong password",
-  "passwordValidationAltText": "Password requirements"
+  "passwordValidationAltText": "Password requirements",
+  "invitationCodeLabel": "Invitation code",
+  "invitationCodeRequired": "Enter the invitation code from your email."
 }
