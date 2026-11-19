@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CrownOutlined, Empty, Typography, theme } from '@/shared/antd-imports';
+import { Button, CrownOutlined, Empty, Typography, theme } from '@/shared/antd-imports';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
@@ -372,9 +372,9 @@ const AllReportsPage: React.FC = () => {
         const sparkValues =
           pointCount > 0
             ? Array.from({ length: Math.min(10, pointCount) }, (_, offset) => {
-                const index = pointCount - Math.min(10, pointCount) + offset;
-                return (series ?? []).reduce((sum, row) => sum + (row.values[index] ?? 0), 0);
-              })
+              const index = pointCount - Math.min(10, pointCount) + offset;
+              return (series ?? []).reduce((sum, row) => sum + (row.values[index] ?? 0), 0);
+            })
             : [];
         next['cumulative-flow'] = {
           primary: `${indicators.current_wip ?? 0}`,
@@ -441,32 +441,23 @@ const AllReportsPage: React.FC = () => {
 
         <div
           className="all-reports-hub__tabs"
-          style={{ borderColor, background: tabsBg }}
           role="tablist"
           aria-label={t('hubTabsAria', { defaultValue: 'Report categories' })}
         >
           {tabs.map(item => {
             const active = tab === item.key;
+
             return (
-              <button
+              <Button
                 key={item.key}
-                type="button"
+                type="default"
                 role="tab"
                 aria-selected={active}
                 className={`all-reports-hub__tab${active ? ' is-active' : ''}`}
-                style={{
-                  color: active ? token.colorText : muted,
-                  background: active ? cardBg : 'transparent',
-                  boxShadow: active
-                    ? isDark
-                      ? '0 0 0 1px #303030'
-                      : '0 1px 2px rgba(0,0,0,0.06)'
-                    : 'none',
-                }}
                 onClick={() => setTab(item.key)}
               >
                 {item.label}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -552,18 +543,18 @@ const AllReportsPage: React.FC = () => {
                 aria-label={
                   isBusinessLocked
                     ? t('hubBusinessLockedAria', {
-                        defaultValue: '{{name}} — Business plan required',
-                        name: reportName,
-                      })
+                      defaultValue: '{{name}} — Business plan required',
+                      name: reportName,
+                    })
                     : isFinanceLocked
                       ? t('hubFinanceLockedAria', {
-                          defaultValue: '{{name}} — View finance permission required',
-                          name: reportName,
-                        })
+                        defaultValue: '{{name}} — View finance permission required',
+                        name: reportName,
+                      })
                       : t('hubOpenReportAria', {
-                          defaultValue: 'Open {{name}}',
-                          name: reportName,
-                        })
+                        defaultValue: 'Open {{name}}',
+                        name: reportName,
+                      })
                 }
               >
                 <div className="all-reports-hub__card-top">
@@ -607,8 +598,8 @@ const AllReportsPage: React.FC = () => {
                     ? t('upgradeToBusiness', { defaultValue: 'Upgrade to Business' })
                     : isFinanceLocked
                       ? t('hubFinancePermissionHint', {
-                          defaultValue: 'Requires View finance permission',
-                        })
+                        defaultValue: 'Requires View finance permission',
+                      })
                       : t('hubOpenReport', { defaultValue: 'Open report →' })}
                 </div>
               </button>
