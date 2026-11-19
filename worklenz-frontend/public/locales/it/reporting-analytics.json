@@ -158,7 +158,7 @@
   "actionShare": "Condividi",
   "actionSchedule": "Pianifica",
   "scheduleReportTitle": "Pianifica report",
-  "scheduleReportDescription": "Invia via e-mail un'istantanea di {{name}} con i filtri correnti.",
+  "scheduleReportDescription": "Email a snapshot of this report with the current filters.",
   "scheduleFrequency": "Frequenza",
   "scheduleFrequencyRequired": "Seleziona una frequenza",
   "scheduleDaysRequired": "Seleziona almeno un giorno",
@@ -544,5 +544,9 @@
   "tisCalcIssues": "Numero di attività con cronologia degli stati incluse in questo report.",
   "tisCalcVisits": "Numero di volte in cui le attività sono entrate in uno stato (un'attività può visitare più stati).",
   "tisCalcAvgCycle": "Somma dei giorni medi trascorsi in ciascuno stato: una stima del tempo di ciclo complessivo.",
-  "tisCalcOutliers": "Attività il cui tempo trascorso in uno stato è insolitamente elevato rispetto ai pari (valori statistici)."
+  "tisCalcOutliers": "Attività il cui tempo trascorso in uno stato è insolitamente elevato rispetto ai pari (valori statistici).",
+  "scheduleName": "Name",
+  "scheduleNameRequired": "Enter a schedule name",
+  "scheduleNameTooLong": "Name must be at most {{max}} characters",
+  "scheduleNamePlaceholder": "e.g. Weekly time report"
 }

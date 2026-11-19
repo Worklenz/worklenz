@@ -158,7 +158,7 @@
   "actionShare": "Compartilhar",
   "actionSchedule": "Agendar",
   "scheduleReportTitle": "Agendar relatório",
-  "scheduleReportDescription": "Enviar por e-mail um instantâneo de {{name}} com os filtros atuais.",
+  "scheduleReportDescription": "Email a snapshot of this report with the current filters.",
   "scheduleFrequency": "Frequência",
   "scheduleFrequencyRequired": "Selecione uma frequência",
   "scheduleDaysRequired": "Selecione pelo menos um dia",
@@ -544,5 +544,9 @@
   "tisCalcIssues": "Número de tarefas com histórico de estado incluídas neste relatório.",
   "tisCalcVisits": "Total de vezes que as tarefas entraram num estado (uma tarefa pode visitar vários estados).",
   "tisCalcAvgCycle": "Soma dos dias médios em cada estado — estimativa do tempo de ciclo global.",
-  "tisCalcOutliers": "Tarefas cujo tempo num estado é invulgarmente alto face aos pares (valores atípicos)."
+  "tisCalcOutliers": "Tarefas cujo tempo num estado é invulgarmente alto face aos pares (valores atípicos).",
+  "scheduleName": "Name",
+  "scheduleNameRequired": "Enter a schedule name",
+  "scheduleNameTooLong": "Name must be at most {{max}} characters",
+  "scheduleNamePlaceholder": "e.g. Weekly time report"
 }

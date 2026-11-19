@@ -158,7 +158,7 @@
   "actionShare": "Ndaj",
   "actionSchedule": "Planifiko",
   "scheduleReportTitle": "Planifiko raportin",
-  "scheduleReportDescription": "Dërgo me email një pamje të {{name}} me filtrat aktualë.",
+  "scheduleReportDescription": "Email a snapshot of this report with the current filters.",
   "scheduleFrequency": "Frekuenca",
   "scheduleFrequencyRequired": "Zgjidhni një frekuencë",
   "scheduleDaysRequired": "Zgjidhni të paktën një ditë",
@@ -544,5 +544,9 @@
   "tisCalcIssues": "Numri i detyrave me historik statusi të përfshira në këtë raport.",
   "tisCalcVisits": "Totali i herëve që detyrat hynë në një status (një detyrë mund të vizitojë disa statuse).",
   "tisCalcAvgCycle": "Shuma e ditëve mesatare në çdo status — vlerësim i kohës së ciklit të përgjithshëm.",
-  "tisCalcOutliers": "Detyra koha e të cilave në një status është jashtëzakonisht e lartë krahasuar me të tjerat (outliers)."
+  "tisCalcOutliers": "Detyra koha e të cilave në një status është jashtëzakonisht e lartë krahasuar me të tjerat (outliers).",
+  "scheduleName": "Name",
+  "scheduleNameRequired": "Enter a schedule name",
+  "scheduleNameTooLong": "Name must be at most {{max}} characters",
+  "scheduleNamePlaceholder": "e.g. Weekly time report"
 }

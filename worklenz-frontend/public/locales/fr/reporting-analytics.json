@@ -158,7 +158,7 @@
   "actionShare": "Partager",
   "actionSchedule": "Planifier",
   "scheduleReportTitle": "Planifier le rapport",
-  "scheduleReportDescription": "Envoyer par e-mail un instantané de {{name}} avec les filtres actuels.",
+  "scheduleReportDescription": "Email a snapshot of this report with the current filters.",
   "scheduleFrequency": "Fréquence",
   "scheduleFrequencyRequired": "Sélectionnez une fréquence",
   "scheduleDaysRequired": "Sélectionnez au moins un jour",
@@ -544,5 +544,9 @@
   "tisCalcIssues": "Nombre de tâches avec historique de statut incluses dans ce rapport.",
   "tisCalcVisits": "Nombre total d’entrées dans un statut (une tâche peut visiter plusieurs statuts).",
   "tisCalcAvgCycle": "Somme des jours moyens passés dans chaque statut — estimation du temps de cycle global.",
-  "tisCalcOutliers": "Tâches dont le temps dans un statut est anormalement élevé par rapport aux autres (valeurs aberrantes)."
+  "tisCalcOutliers": "Tâches dont le temps dans un statut est anormalement élevé par rapport aux autres (valeurs aberrantes).",
+  "scheduleName": "Name",
+  "scheduleNameRequired": "Enter a schedule name",
+  "scheduleNameTooLong": "Name must be at most {{max}} characters",
+  "scheduleNamePlaceholder": "e.g. Weekly time report"
 }

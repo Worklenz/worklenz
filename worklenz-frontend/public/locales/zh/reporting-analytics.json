@@ -158,7 +158,7 @@
   "actionShare": "分享",
   "actionSchedule": "计划",
   "scheduleReportTitle": "计划报告",
-  "scheduleReportDescription": "按当前筛选条件通过电子邮件发送 {{name}} 的快照。",
+  "scheduleReportDescription": "Email a snapshot of this report with the current filters.",
   "scheduleFrequency": "频率",
   "scheduleFrequencyRequired": "请选择频率",
   "scheduleDaysRequired": "请至少选择一天",
@@ -544,5 +544,9 @@
   "tisCalcIssues": "本报告中包含状态历史的任务数量。",
   "tisCalcVisits": "任务进入某个状态的总次数（同一任务可访问多个状态）。",
   "tisCalcAvgCycle": "各状态平均停留天数之和——对整体周期时间的估计。",
-  "tisCalcOutliers": "在某一状态停留时间相对同行异常偏高的任务（统计异常值）。"
+  "tisCalcOutliers": "在某一状态停留时间相对同行异常偏高的任务（统计异常值）。",
+  "scheduleName": "Name",
+  "scheduleNameRequired": "Enter a schedule name",
+  "scheduleNameTooLong": "Name must be at most {{max}} characters",
+  "scheduleNamePlaceholder": "e.g. Weekly time report"
 }

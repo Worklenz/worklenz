@@ -30,7 +30,10 @@ const EMAIL_RE =
 
 const monthlyDateOptions = Array.from({ length: 28 }, (_, i) => i + 1);
 
+const REPORT_NAME_MAX = 120;
+
 interface ScheduleFormValues {
+  report_name: string;
   schedule_type: ITaskRecurring;
   days_of_week?: number[];
   monthly_mode?: 'date' | 'day';
@@ -161,6 +164,7 @@ export const ScheduleReportModal: React.FC<ScheduleReportModalProps> = ({
           : 'date';
 
     form.setFieldsValue({
+      report_name: existing?.report_name?.trim() || reportName,
       schedule_type: (existing?.schedule_type as ITaskRecurring) || ITaskRecurring.Weekly,
       days_of_week: existing?.days_of_week?.length ? existing.days_of_week : [1],
       monthly_mode: monthlyModeValue,
@@ -175,12 +179,12 @@ export const ScheduleReportModal: React.FC<ScheduleReportModalProps> = ({
       format: existing?.format || 'PDF',
       message: existing?.message || undefined,
     });
-  }, [open, existing, defaultRecipient, form]);
+  }, [open, existing, defaultRecipient, reportName, form]);
 
   const buildPayload = (values: ScheduleFormValues): AnalyticsScheduleUpsertPayload => {
     const payload: AnalyticsScheduleUpsertPayload = {
       report_kind: reportKind,
-      report_name: reportName,
+      report_name: values.report_name.trim(),
       template_id: templateId ?? null,
       schedule_type: values.schedule_type,
       send_time: values.send_time.format('HH:mm'),
@@ -289,12 +293,40 @@ export const ScheduleReportModal: React.FC<ScheduleReportModalProps> = ({
     >
       <Paragraph type="secondary" style={{ marginTop: 0 }}>
         {t('scheduleReportDescription', {
-          defaultValue: 'Email a snapshot of {{name}} with the current filters.',
-          name: reportName,
+          defaultValue: 'Email a snapshot of this report with the current filters.',
         })}
       </Paragraph>
 
       <Form form={form} layout="vertical" requiredMark={false}>
+        <Form.Item
+          name="report_name"
+          label={t('scheduleName', { defaultValue: 'Name' })}
+          rules={[
+            {
+              required: true,
+              whitespace: true,
+              message: t('scheduleNameRequired', {
+                defaultValue: 'Enter a schedule name',
+              }),
+            },
+            {
+              max: REPORT_NAME_MAX,
+              message: t('scheduleNameTooLong', {
+                defaultValue: 'Name must be at most {{max}} characters',
+                max: REPORT_NAME_MAX,
+              }),
+            },
+          ]}
+        >
+          <Input
+            maxLength={REPORT_NAME_MAX}
+            placeholder={t('scheduleNamePlaceholder', {
+              defaultValue: 'e.g. Weekly time report',
+            })}
+            aria-label={t('scheduleName', { defaultValue: 'Name' })}
+          />
+        </Form.Item>
+
         <Row gutter={16}>
           <Col xs={24} sm={12}>
             <Form.Item
