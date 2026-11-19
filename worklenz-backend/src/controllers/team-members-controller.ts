@@ -1908,9 +1908,12 @@ export default class TeamMembersController extends WorklenzControllerBase {
         "u.name",
       ]);
     const { start, end, project, status, teamId } = req.query;
+    if (!req.user?.team_id || (teamId && teamId !== req.user.team_id)) {
+      return res.status(403).send(new ServerResponse(false, null, "You are not authorized to perform this action"));
+    }
 
     const teamMembers = await this.getTeamMemberInsightData(
-      teamId as string,
+      req.user.team_id,
       start,
       end,
       project,
@@ -2467,6 +2470,12 @@ export default class TeamMembersController extends WorklenzControllerBase {
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
     req.body.team_id = req.params?.id || null;
+
+    // The role validator applies to the active team, so it cannot authorize a
+    // different team supplied in the route.
+    if (!req.user?.team_id || req.body.team_id !== req.user.team_id) {
+      return res.status(403).send(new ServerResponse(false, null, "You are not authorized to perform this action"));
+    }
 
     if (!req.body.team_id || !req.user?.id)
       return res

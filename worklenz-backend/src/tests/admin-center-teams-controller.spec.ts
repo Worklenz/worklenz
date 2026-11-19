@@ -458,7 +458,18 @@ describe("AdminCenterTeamsController", () => {
       expect(res.body.message).toBe("You cannot remove yourself from the team.");
     });
 
+    it("rejects member removal outside the caller's organization", async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [] });
+      const req = createMockRequest({ user: mockUser, params: { id: "tm-other" }, body: { teamId: "foreign-team" } });
+      const res = createMockResponse();
+      await AdminCenterTeamsController.deleteById(req, res);
+      expect(res.statusCode).toBe(403);
+      expect(mockCheckTeamSubscriptionStatus).not.toHaveBeenCalled();
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining("tm.team_id = t.id"), ["foreign-team", "tm-other", mockUser.owner_id]);
+    });
+
     it("returns 200 false when subscription status is excluded", async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [{ authorized: 1 }] });
       mockCheckTeamSubscriptionStatus.mockResolvedValueOnce({
         subscription_status: "past_due",
       });
@@ -487,6 +498,7 @@ describe("AdminCenterTeamsController", () => {
       });
 
       mockQuery.mockImplementation(async (sql: string) => {
+        if (sql.includes("JOIN team_members tm ON tm.team_id = t.id")) return { rows: [{ authorized: 1 }] };
         if (sql.includes("remove_team_member")) {
           return { rows: [{ member: { id: "user-removed", team: "Engineering" } }] };
         }
@@ -534,6 +546,7 @@ describe("AdminCenterTeamsController", () => {
       });
 
       mockQuery.mockImplementation(async (sql: string) => {
+        if (sql.includes("JOIN team_members tm ON tm.team_id = t.id")) return { rows: [{ authorized: 1 }] };
         if (sql.includes("remove_team_member")) {
           return { rows: [{ member: { id: "user-removed", team: "Engineering" } }] };
         }
