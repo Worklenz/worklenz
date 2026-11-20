@@ -52,7 +52,15 @@ export default class ClientPortalAttachmentController {
         "text/plain", "text/csv"
       ];
 
-      if (fileType && !allowedTypes.includes(fileType)) {
+      if (!fileType || !allowedTypes.includes(fileType)) {
+        return res.status(400).json(new ServerResponse(false, null, "File type not allowed"));
+      }
+
+      // Require a base64 data URL whose embedded MIME type is allowed
+      const mimeMatch = typeof fileData === "string"
+        ? fileData.match(/^data:([^;,]+)(?:;[^,]*)?;base64,/i)
+        : null;
+      if (!mimeMatch || !allowedTypes.includes(mimeMatch[1].toLowerCase())) {
         return res.status(400).json(new ServerResponse(false, null, "File type not allowed"));
       }
 

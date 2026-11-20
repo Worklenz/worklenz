@@ -1,4 +1,5 @@
 import express from "express";
+import { verifyReportingScope } from "../../middlewares/verify-reporting-scope";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import ReportingOverviewExportController from "../../controllers/reporting/overview/reporting-overview-export-controller";
 import ReportingAllocationController from "../../controllers/reporting/reporting-allocation-controller";
@@ -11,18 +12,18 @@ import { validateEnumParam } from "../../middlewares/validators/query-param-vali
 
 const reportingExportApiRouter = express.Router();
 
-reportingExportApiRouter.get("/overview/projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewExportController.getProjectsByTeamOrMember));
-reportingExportApiRouter.get("/overview/members", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewExportController.getMembersByTeam));
+reportingExportApiRouter.get("/overview/projects", teamOwnerOrAdminValidator, verifyReportingScope({ resource: "team", location: "query", field: "team_id" }), safeControllerFunction(ReportingOverviewExportController.getProjectsByTeamOrMember));
+reportingExportApiRouter.get("/overview/members", teamOwnerOrAdminValidator, verifyReportingScope({ resource: "team", location: "query", field: "team_id" }), safeControllerFunction(ReportingOverviewExportController.getMembersByTeam));
 reportingExportApiRouter.get("/allocation/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.export));
 reportingExportApiRouter.get("/projects/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingProjectsExportController.export));
 reportingExportApiRouter.get("/portfolio", teamOwnerOrAdminValidator, validateEnumParam("period", ["yearly", "quarterly", "monthly"]), validateEnumParam("type", ["summary", "detailed"]), safeControllerFunction(ReportingPortfolioController.export));
 reportingExportApiRouter.get("/projects-time-log-breakdown/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingProjectsExportController.exportProjectTimeLogs));
 reportingExportApiRouter.get("/members/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.export));
-reportingExportApiRouter.get("/project-members/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewExportController.exportProjectMembers));
-reportingExportApiRouter.get("/project-tasks/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewExportController.exportProjectTasks));
-reportingExportApiRouter.get("/project-member-tasks/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewExportController.exportProjectMemberTasks));
+reportingExportApiRouter.get("/project-members/export", teamOwnerOrAdminValidator, verifyReportingScope({ resource: "project", location: "query", field: "project_id" }), safeControllerFunction(ReportingOverviewExportController.exportProjectMembers));
+reportingExportApiRouter.get("/project-tasks/export", teamOwnerOrAdminValidator, verifyReportingScope({ resource: "project", location: "query", field: "project_id" }), safeControllerFunction(ReportingOverviewExportController.exportProjectTasks));
+reportingExportApiRouter.get("/project-member-tasks/export", teamOwnerOrAdminValidator, verifyReportingScope({ resource: "member", location: "query", field: "team_member_id" }), verifyReportingScope({ resource: "project", location: "query", field: "project_id" }), safeControllerFunction(ReportingOverviewExportController.exportProjectMemberTasks));
 reportingExportApiRouter.get("/member-projects/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.exportMemberProjects));
-reportingExportApiRouter.get("/member-tasks/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewExportController.exportMemberTasks));
+reportingExportApiRouter.get("/member-tasks/export", teamOwnerOrAdminValidator, verifyReportingScope({ resource: "member", location: "query", field: "team_member_id" }), safeControllerFunction(ReportingOverviewExportController.exportMemberTasks));
 reportingExportApiRouter.get("/flat-tasks/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewExportController.exportFlatTasks));
 reportingExportApiRouter.get("/member-time-log-breakdown/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.exportTimeLogs));
 reportingExportApiRouter.get("/member-activity-log-breakdown/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.exportActivityLogs));

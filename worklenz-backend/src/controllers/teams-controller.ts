@@ -106,6 +106,9 @@ export default class TeamsController extends WorklenzControllerBase {
       req.user?.id,
     ]);
     const [data] = result.rows;
+    if (!data?.invitation) {
+      return res.status(403).send(new ServerResponse(false, null, "Invalid or expired invitation"));
+    }
 
     if (req.body.show_alert) {
       return res.status(200).send(new ServerResponse(true, data.invitation, "Team invitation accepted"));

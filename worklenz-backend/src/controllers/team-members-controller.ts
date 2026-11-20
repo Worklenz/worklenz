@@ -1496,6 +1496,10 @@ export default class TeamMembersController extends WorklenzControllerBase {
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
     const { selected, team, archived } = req.query;
+    if (!req.user?.team_id || (team && team !== req.user.team_id)) {
+      return res.status(403).send(new ServerResponse(false, null, "You are not authorized to perform this action"));
+    }
+    const targetTeam = req.user.team_id;
 
     let q = "";
 
@@ -1618,7 +1622,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
                  WHERE team_id = $1) rec`;
     }
 
-    const result = await db.query(q, [team, req.user?.id, archived]);
+    const result = await db.query(q, [targetTeam, req.user?.id, archived]);
     const [data] = result.rows;
 
     const obj: any[] = [];
@@ -1681,6 +1685,17 @@ export default class TeamMembersController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
+    if (!req.user?.team_id) {
+      return res.status(401).send(new ServerResponse(false, null, "Authentication required"));
+    }
+    const memberCheck = await db.query(
+      `SELECT 1 FROM team_members WHERE id = $1 AND team_id = $2;`,
+      [req.params.id, req.user.team_id]
+    );
+    if (!memberCheck.rowCount) {
+      return res.status(403).send(new ServerResponse(false, null, "You are not authorized to perform this action"));
+    }
+
     const { project, status, startDate, endDate } = req.query;
 
     // Use parameterized queries
@@ -1908,9 +1923,12 @@ export default class TeamMembersController extends WorklenzControllerBase {
         "u.name",
       ]);
     const { start, end, project, status, teamId } = req.query;
+    if (!req.user?.team_id || (teamId && teamId !== req.user.team_id)) {
+      return res.status(403).send(new ServerResponse(false, null, "You are not authorized to perform this action"));
+    }
 
     const teamMembers = await this.getTeamMemberInsightData(
-      teamId as string,
+      req.user.team_id,
       start,
       end,
       project,
@@ -1946,6 +1964,19 @@ export default class TeamMembersController extends WorklenzControllerBase {
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
     const { selected, id } = req.query;
+    if (!req.user?.team_id) {
+      return res.status(401).send(new ServerResponse(false, null, "Authentication required"));
+    }
+    if (!id) {
+      return res.status(400).send(new ServerResponse(false, null, "Member ID is required"));
+    }
+    const memberCheck = await db.query(
+      `SELECT 1 FROM team_members WHERE id = $1 AND team_id = $2;`,
+      [id, req.user.team_id]
+    );
+    if (!memberCheck.rowCount) {
+      return res.status(403).send(new ServerResponse(false, null, "You are not authorized to perform this action"));
+    }
 
     let valueString = `(SELECT sum(time_spent)
         FROM task_work_log
@@ -2467,6 +2498,12 @@ export default class TeamMembersController extends WorklenzControllerBase {
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
     req.body.team_id = req.params?.id || null;
+
+    // The role validator applies to the active team, so it cannot authorize a
+    // different team supplied in the route.
+    if (!req.user?.team_id || req.body.team_id !== req.user.team_id) {
+      return res.status(403).send(new ServerResponse(false, null, "You are not authorized to perform this action"));
+    }
 
     if (!req.body.team_id || !req.user?.id)
       return res

@@ -4,12 +4,14 @@ import LabelsController from "../../controllers/labels-controller";
 import idParamValidator from "../../middlewares/validators/id-param-validator";
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
+import verifyTaskAccess from "../../middlewares/verify-task-access";
+import verifyProjectAccess from "../../middlewares/verify-project-access";
 
 const labelsApiRouter = express.Router();
 
 labelsApiRouter.get("/", safeControllerFunction(LabelsController.get));
-labelsApiRouter.get("/tasks/:id", idParamValidator, safeControllerFunction(LabelsController.getByTask));
-labelsApiRouter.get("/project/:id", idParamValidator, safeControllerFunction(LabelsController.getByProject));
+labelsApiRouter.get("/tasks/:id", idParamValidator, verifyTaskAccess("params", "id"), safeControllerFunction(LabelsController.getByTask));
+labelsApiRouter.get("/project/:id", idParamValidator, verifyProjectAccess("params", "id"), safeControllerFunction(LabelsController.getByProject));
 labelsApiRouter.post("/", teamOwnerOrAdminValidator, safeControllerFunction(LabelsController.create));
 labelsApiRouter.put("/tasks/:id", idParamValidator, teamOwnerOrAdminValidator, safeControllerFunction(LabelsController.updateColor));
 labelsApiRouter.put("/team/:id", idParamValidator, teamOwnerOrAdminValidator, safeControllerFunction(LabelsController.updateLabel));

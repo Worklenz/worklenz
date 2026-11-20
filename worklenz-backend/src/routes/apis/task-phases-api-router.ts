@@ -6,6 +6,7 @@ import taskPhaseCreateSchema from "../../json_schemas/task-phase-create-schema";
 import taskPhaseNameValidator from "../../middlewares/validators/task-phase-name-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import { requireProjectPermission } from "../../middlewares/validators/require-project-permission";
+import verifyProjectAccess from "../../middlewares/verify-project-access";
 
 const taskPhasesApiRouter = express.Router();
 
@@ -14,7 +15,7 @@ const requirePhases = requireProjectPermission("phases", {
 });
 
 taskPhasesApiRouter.post("/", requirePhases, safeControllerFunction(TaskPhasesController.create));
-taskPhasesApiRouter.get("/", safeControllerFunction(TaskPhasesController.get));
+taskPhasesApiRouter.get("/", verifyProjectAccess("query", "id"), safeControllerFunction(TaskPhasesController.get));
 taskPhasesApiRouter.put("/update-sort-order", requirePhases, safeControllerFunction(TaskPhasesController.updateSortOrder));
 taskPhasesApiRouter.put(
   "/label/:id",
