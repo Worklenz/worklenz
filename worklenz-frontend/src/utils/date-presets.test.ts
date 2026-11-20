@@ -184,3 +184,28 @@ describe('this_week', () => {
     }
   });
 });
+
+describe('analytics date bounds', () => {
+  it('preserves selected calendar dates in UTC timestamps', async () => {
+    const { resolveAnalyticsDateBounds } = await import('./date-presets');
+    expect(resolveAnalyticsDateBounds('custom', ['2026-11-16', '2026-11-17'])).toEqual({
+      date_from: '2026-11-16T00:00:00.000Z',
+      date_to: '2026-11-17T23:59:59.999Z',
+    });
+  });
+
+  it('only offers all time when the caller allows it', async () => {
+    const { BOUNDED_ANALYTICS_DATE_PRESETS, REPORTING_DATE_PRESETS } = await import('./date-presets');
+    expect(BOUNDED_ANALYTICS_DATE_PRESETS).not.toContain('all_time');
+    expect(REPORTING_DATE_PRESETS).toContain('all_time');
+  });
+
+  it('resolves previously saved presets', () => {
+    expect(getDatePresetRange('this_quarter', at('2026-11-16'))).toEqual({
+      from: '2026-10-01', to: '2026-11-16',
+    });
+    expect(getDatePresetRange('last_14_days', at('2026-11-16'))).toEqual({
+      from: '2026-11-02', to: '2026-11-16',
+    });
+  });
+});

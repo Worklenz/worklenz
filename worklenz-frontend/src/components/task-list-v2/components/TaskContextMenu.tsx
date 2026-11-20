@@ -3,6 +3,7 @@ import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useOrderedStatuses } from '@/hooks/useOrderedStatuses';
 import { useSocket } from '@/socket/socketContext';
 import { useAuthService } from '@/hooks/useAuth';
 import { isFreeUser } from '@/utils/subscription-utils';
@@ -78,7 +79,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   const isFree = isFreeUser(currentSession);
   const { trackMixpanelEvent } = useMixpanelTracking();
 
-  const statusList = useAppSelector(state => state.taskStatusReducer.status);
+  const statusList = useOrderedStatuses();
   const priorityList = useAppSelector(state => state.priorityReducer.priorities);
   const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
   const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
@@ -723,8 +724,8 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
       description: task.description,
       start_date: task.startDate,
       end_date: task.dueDate,
-      total_hours: task.timeTracking?.estimated || 0,
-      total_minutes: task.timeTracking?.logged || 0,
+      total_hours: Math.floor(task.timeTracking?.estimated || 0),
+      total_minutes: Math.round(((task.timeTracking?.estimated || 0) % 1) * 60),
       progress: task.progress,
       sub_tasks_count: task.sub_tasks_count || 0,
       parent_task_id: task.parent_task_id,

@@ -5,6 +5,7 @@ export interface IUserSignUpRequest {
   team_name?: string;
   team_id?: string; // if from invitation
   team_member_id?: string;
+  invitation_token?: string;
   timezone?: string;
   project_id?: string;
 }

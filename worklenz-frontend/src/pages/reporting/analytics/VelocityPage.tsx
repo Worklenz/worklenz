@@ -2,6 +2,7 @@ import { useLatestAnalyticsSeriesRequest } from '@/hooks/useLatestAnalyticsSerie
 import { useScopedAnalyticsSeriesData } from '@/hooks/useScopedAnalyticsSeriesData';
 import { areAnalyticsProjectResponsesComplete, useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
 import { formatCsvText } from '@/lib/reporting/csv-export';
+import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -11,10 +12,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
-import quarterOfYear from 'dayjs/plugin/quarterOfYear';
 import { jsPDF } from 'jspdf';
-
-dayjs.extend(quarterOfYear);
+import { resolveAnalyticsDateBounds } from '@/utils/date-presets';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -92,7 +91,8 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
 
   const {
     datePreset,
-    setDatePreset,
+    customRange,
+    setDateFilter,
     selectedProjectIds,
     setSelectedProjectIds,
     setAutomaticProjectIds,
@@ -144,17 +144,10 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       }));
   }, [teamMembersState]);
 
-  const dateBounds = useMemo(() => {
-    const end = dayjs();
-    let start = end.subtract(30, 'day');
-    if (datePreset === 'last_7_days') start = end.subtract(7, 'day');
-    if (datePreset === 'last_90_days') start = end.subtract(90, 'day');
-    if (datePreset === 'this_quarter') start = end.startOf('quarter');
-    return {
-      date_from: start.startOf('day').toISOString(),
-      date_to: end.endOf('day').toISOString(),
-    };
-  }, [datePreset]);
+  const dateBounds = useMemo(
+    () => resolveAnalyticsDateBounds(datePreset, customRange),
+    [datePreset, customRange]
+  );
 
   const filters: VelocitySeriesFilters = useMemo(
     () => ({
@@ -253,11 +246,13 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
   templateContextRef.current = { customTemplateId, hasRestoredFilters };
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
-    const f = template.filters_json ?? {};
-    if (Array.isArray(f.project_ids)) setSelectedProjectIds(f.project_ids.map(String));
-    if (Array.isArray(f.member_ids)) setSelectedMemberIds(f.member_ids.map(String));
-    if (Array.isArray(f.team_ids)) setSelectedTeamIds(f.team_ids.map(String));
-  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds]);
+    applyCommonAnalyticsTemplateFilters(template.filters_json, {
+      setSelectedProjectIds,
+      setSelectedMemberIds,
+      setSelectedTeamIds,
+      setDateFilter,
+    });
+  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds, setDateFilter]);
 
   const loadTemplates = useCallback(async () => {
     // Capture before awaits so a workspace switch mid-flight cannot leak templates.
@@ -458,7 +453,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
         name: values.name,
         is_workspace_shared: values.is_workspace_shared,
         is_default: values.is_default,
-        filters: { ...filters },
+        filters: { ...filters, date_preset: datePreset, custom_range: customRange },
       });
       if (res.done) {
         message.success(
@@ -487,8 +482,8 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       selectedMemberIds={selectedMemberIds}
       onMembersChange={setSelectedMemberIds}
       datePreset={datePreset}
-      onDatePresetChange={setDatePreset}
-      availableDatePresets={['last_7_days', 'last_30_days', 'last_90_days', 'this_quarter']}
+      customRange={customRange}
+      onDateChange={setDateFilter}
       loading={filtersLoading}
     />
   );

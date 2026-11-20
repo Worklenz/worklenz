@@ -87,7 +87,7 @@
     "react-quill-new": "^3.8.3",
     "react-redux": "^9.2.0",
     "react-responsive": "^10.0.0",
-    "react-router-dom": "^6.28.1",
+    "react-router-dom": "^7.18.5",
     "react-timer-hook": "^3.0.8",
     "react-virtuoso": "^4.13.0",
     "react-window": "^1.8.11",

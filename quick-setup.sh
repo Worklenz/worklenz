@@ -7,7 +7,7 @@
 # 1. Checks for .env file
 # 2. Auto-generates all secrets
 # 3. Configures URLs based on DOMAIN variable
-# 4. Sets up SSL (self-signed for localhost, Let's Encrypt for production)
+# 4. Uses a self-signed localhost certificate or an externally provisioned domain certificate
 # 5. Installs and starts Worklenz
 # ============================================================================
 
@@ -173,133 +173,6 @@ else
     fi
 fi
 
-# Ask for domain
-echo ""
-echo -e "${YELLOW}Domain Configuration${NC}"
-echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
-echo "Enter your domain name:"
-echo "  - For local testing: enter 'localhost'"
-echo "  - For production: enter your domain (e.g., worklenz.example.com)"
-echo ""
-read -p "Domain [localhost]: " domain
-domain=${domain:-localhost}
-
-# Update DOMAIN in .env
-sed -i.bak "s/^DOMAIN=.*/DOMAIN=$domain/" "$ENV_FILE"
-rm -f "$ENV_FILE.bak"
-
-print_success "Domain set to: $domain"
-
-# Ask if user wants to build and push Docker images
-echo ""
-echo -e "${YELLOW}Docker Image Build${NC}"
-echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
-echo "Do you want to build and push Docker images to Docker Hub?"
-echo "  - Answer 'yes' if you want to create custom images"
-echo "  - Answer 'no' to use pre-built images from Docker Hub"
-echo ""
-read -p "Build and push images? (y/N): " build_images
-
-if [[ "$build_images" =~ ^[Yy]$ ]]; then
-    echo ""
-    echo "Enter your Docker Hub username:"
-    read -p "Docker Hub username: " docker_username
-
-    if [ -n "$docker_username" ]; then
-        # Save to .env
-        sed -i.bak "s/^DOCKER_USERNAME=.*/DOCKER_USERNAME=$docker_username/" "$ENV_FILE"
-        rm -f "$ENV_FILE.bak"
-
-        # Update docker-compose.yaml with the new Docker Hub username
-        print_info "Updating docker-compose.yaml with Docker Hub username..."
-        if [ -f "$SCRIPT_DIR/docker-compose.yaml" ]; then
-            sed -i.bak "s|image: .*/worklenz-backend:latest|image: $docker_username/worklenz-backend:latest|" "$SCRIPT_DIR/docker-compose.yaml"
-            sed -i.bak "s|image: .*/worklenz-frontend:latest|image: $docker_username/worklenz-frontend:latest|" "$SCRIPT_DIR/docker-compose.yaml"
-            rm -f "$SCRIPT_DIR/docker-compose.yaml.bak"
-        fi
-
-        print_success "Docker Hub username saved: $docker_username"
-        print_success "docker-compose.yaml updated with your username"
-        BUILD_IMAGES=true
-    else
-        print_warning "No username provided, skipping image build"
-        BUILD_IMAGES=false
-    fi
-else
-    BUILD_IMAGES=false
-
-    # Ask if user wants to update Docker Hub username anyway (for pulling pre-built images)
-    echo ""
-    echo "Do you want to use a custom Docker Hub username for pulling images?"
-    echo "  - Answer 'yes' to use your own pre-built images"
-    echo "  - Answer 'no' to use default images (chamikajaycey/worklenz-*)"
-    echo ""
-    read -p "Use custom Docker Hub username? (y/N): " use_custom_username
-
-    if [[ "$use_custom_username" =~ ^[Yy]$ ]]; then
-        echo ""
-        echo "Enter your Docker Hub username:"
-        read -p "Docker Hub username: " docker_username
-
-        if [ -n "$docker_username" ]; then
-            # Update docker-compose.yaml with the new Docker Hub username
-            print_info "Updating docker-compose.yaml with Docker Hub username..."
-            if [ -f "$SCRIPT_DIR/docker-compose.yaml" ]; then
-                sed -i.bak "s|image: .*/worklenz-backend:latest|image: $docker_username/worklenz-backend:latest|" "$SCRIPT_DIR/docker-compose.yaml"
-                sed -i.bak "s|image: .*/worklenz-frontend:latest|image: $docker_username/worklenz-frontend:latest|" "$SCRIPT_DIR/docker-compose.yaml"
-                rm -f "$SCRIPT_DIR/docker-compose.yaml.bak"
-
-                print_success "docker-compose.yaml updated to use: $docker_username"
-            fi
-        fi
-    fi
-fi
-
-# If production domain, ask for Let's Encrypt email
-if [[ "$domain" != "localhost" && "$domain" != "127.0.0.1" && "$domain" != "0.0.0.0" ]]; then
-    echo ""
-    echo -e "${YELLOW}SSL Certificate Setup${NC}"
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo ""
-    echo "For Let's Encrypt SSL certificates, we need an email address."
-    echo "This email will be used for:"
-    echo "  - Certificate expiration notifications"
-    echo "  - Important account updates"
-    echo ""
-    read -p "Enter email for Let's Encrypt: " letsencrypt_email
-
-    if [ -n "$letsencrypt_email" ]; then
-        # Uncomment and set LETSENCRYPT_EMAIL
-        sed -i.bak "s/^# LETSENCRYPT_EMAIL=.*/LETSENCRYPT_EMAIL=$letsencrypt_email/" "$ENV_FILE"
-        sed -i.bak "s/^LETSENCRYPT_EMAIL=.*/LETSENCRYPT_EMAIL=$letsencrypt_email/" "$ENV_FILE"
-        rm -f "$ENV_FILE.bak"
-        print_success "Let's Encrypt email configured"
-    fi
-fi
-
-# Build and push images if requested
-if [ "$BUILD_IMAGES" = true ]; then
-    echo ""
-    echo -e "${YELLOW}Building and Pushing Docker Images${NC}"
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo ""
-
-    if [ -f "$SCRIPT_DIR/manage.sh" ]; then
-        chmod +x "$SCRIPT_DIR/manage.sh"
-        "$SCRIPT_DIR/manage.sh" build
-
-        if [ $? -ne 0 ]; then
-            print_error "Image build failed!"
-            exit 1
-        fi
-    else
-        print_error "manage.sh not found!"
-        exit 1
-    fi
-fi
-
 # Call the manage.sh script to complete the installation
 echo ""
 echo -e "${YELLOW}Starting Automated Installation${NC}"
@@ -327,8 +200,13 @@ echo -e "${CYAN}║                    ${GREEN}Installation Complete!${CYAN}    
 echo -e "${CYAN}╚════════════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-if [[ "$domain" == "localhost" ]]; then
-    echo -e "  ${GREEN}Access Worklenz at:${NC} ${BLUE}https://localhost${NC}"
+# The installer may have changed the domain while it was running.
+domain=$(sed -n 's/^DOMAIN=//p' "$ENV_FILE" | tail -n 1)
+domain=${domain:-localhost}
+if [[ "$domain" == "localhost" || "$domain" == "127.0.0.1" || "$domain" == "0.0.0.0" ]]; then
+    local_url_domain="$domain"
+    [[ "$domain" == "0.0.0.0" ]] && local_url_domain=localhost
+    echo -e "  ${GREEN}Access Worklenz at:${NC} ${BLUE}https://${local_url_domain}${NC}"
     echo ""
     echo -e "  ${YELLOW}Note:${NC} You'll see a browser warning about the self-signed certificate."
     echo "  This is normal for localhost. Click 'Advanced' and 'Proceed' to access."

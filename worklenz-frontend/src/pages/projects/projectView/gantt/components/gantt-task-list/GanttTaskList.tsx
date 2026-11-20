@@ -35,6 +35,8 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { addTask } from '../../../../../../features/task-management/task-management.slice';
 import { useTranslation } from 'react-i18next';
 import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
+import { useAuthService } from '@/hooks/useAuth';
+import { canUseFeature } from '@/utils/subscription-utils';
 
 // Utility function to add alpha channel to hex color
 const addAlphaToHex = (hex: string, alpha: number): string => {
@@ -634,7 +636,9 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
     },
     ref
   ) => {
-    const { canCreateTask } = useTaskCreationPermission();
+    const { canCreateTask: hasTaskPermission } = useTaskCreationPermission();
+    const authService = useAuthService();
+    const canCreateTask = hasTaskPermission && canUseFeature(authService.getCurrentSession(), 'gantt_edit');
     const { token } = theme.useToken();
     const { t } = useTranslation('gantt');
     // Collapsed by default — `task.expanded` is a data artifact set true on every task by
@@ -1087,6 +1091,7 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
                       onCreateTask={onCreateTask}
                       onCreateQuickTask={onCreateQuickTask}
                       activeId={activeId}
+                      isDraggable={canCreateTask}
                       overId={overId}
                       animationClass={animationClass}
                       onTaskNameClick={onTaskNameClick}

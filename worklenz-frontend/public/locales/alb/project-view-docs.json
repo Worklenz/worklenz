@@ -107,5 +107,8 @@
   "copyLink": "Kopjo lidhjen",
   "removeLink": "Hiq lidhjen",
   "linkCopied": "Lidhja u kopjua",
-  "linkCopyFailed": "Kopjimi dështoi. Zgjidhni adresën për ta kopjuar."
+  "linkCopyFailed": "Kopjimi dështoi. Zgjidhni adresën për ta kopjuar.",
+  "proRequired": "Kërkohet plani Pro",
+  "docsProRequired": "Dokumentet e projektit ofrohen në planin Pro e lart.",
+  "upgrade": "Përmirëso planin"
 }

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Flex from 'antd/es/flex';
 import Checkbox from 'antd/es/checkbox';
 import Typography from 'antd/es/typography';
@@ -31,9 +31,10 @@ import PhaseFilterDropdown from '@components/project-task-filters/filter-dropdow
 import AssigneeScopeIndicator from '@/components/task-management/assignee-scope-indicator';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
-import { useState } from 'react';
 import { ITaskStatus } from '@/types/tasks/taskStatus.types';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
+import { selectEffectiveStatusCategoryOrder } from '@/features/project/project.slice';
+import { sortStatusesByCategory } from '@/utils/status-category-order';
 
 
 interface TaskListFiltersProps {
@@ -51,8 +52,13 @@ const TaskListFilters: React.FC<TaskListFiltersProps> = ({ position }) => {
   const priorities = useAppSelector(state => state.priorityReducer.priorities);
   const projectId = useAppSelector(state => state.projectReducer.projectId);
   const archived = useAppSelector(state => state.taskReducer.archived);
+  const statusCategoryOrder = useAppSelector(selectEffectiveStatusCategoryOrder);
   const [statuses, setStatusList] = useState<ITaskStatus[]>([]);
-const [phases, setPhaseList] = useState<ITaskPhase[]>([]);
+  const [phases, setPhaseList] = useState<ITaskPhase[]>([]);
+  const orderedStatuses = useMemo(
+    () => sortStatusesByCategory(statuses, statusCategoryOrder),
+    [statuses, statusCategoryOrder]
+  );
 
 
   const handleShowArchivedChange = () => dispatch(toggleArchived());
@@ -119,7 +125,7 @@ const [phases, setPhaseList] = useState<ITaskPhase[]>([]);
         <SearchDropdown />
         {projectView === 'list' && <SortFilterDropdown />}
         <PriorityFilterDropdown priorities={priorities} />
-        <StatusFilterDropdown statuses={statuses} />
+        <StatusFilterDropdown statuses={orderedStatuses} />
         <PhaseFilterDropdown phases={phases} />
         <LabelsFilterDropdown />
         <MembersFilterDropdown />

@@ -14,10 +14,12 @@ import {
   writeAnalyticsFilterSession,
   type AnalyticsPersistedFilterState,
 } from '@/lib/reporting/analytics-filter-persistence';
+import type { ReportingCustomRange } from '@/utils/date-presets';
 import { getUserSession } from '@/utils/session-helper';
 
 export interface AnalyticsFilterFields {
   datePreset: AnalyticsDatePreset;
+  customRange: ReportingCustomRange;
   selectedProjectIds: string[];
   selectedMemberIds: string[];
   selectedTeamIds: string[];
@@ -28,6 +30,7 @@ export interface AnalyticsFilterFields {
 
 export const DEFAULT_ANALYTICS_FILTER_FIELDS: AnalyticsFilterFields = {
   datePreset: 'last_30_days',
+  customRange: null,
   selectedProjectIds: [],
   selectedMemberIds: [],
   selectedTeamIds: [],
@@ -140,7 +143,34 @@ export const usePersistedAnalyticsFilters = (
     action => {
       setState(prev => {
         const next = toSetStateAction(action, prev.datePreset);
-        return next === prev.datePreset ? prev : { ...prev, datePreset: next };
+        if (next === prev.datePreset) return prev;
+        return {
+          ...prev,
+          datePreset: next,
+          customRange: next === 'custom' ? prev.customRange : null,
+        };
+      });
+    },
+    [setState]
+  );
+
+  const setCustomRange = useCallback<Dispatch<SetStateAction<ReportingCustomRange>>>(
+    action => {
+      setState(prev => {
+        const next = toSetStateAction(action, prev.customRange);
+        if (next === prev.customRange) return prev;
+        return { ...prev, customRange: next };
+      });
+    },
+    [setState]
+  );
+
+  const setDateFilter = useCallback(
+    (datePreset: AnalyticsDatePreset, customRange: ReportingCustomRange) => {
+      setState(prev => {
+        const nextRange = datePreset === 'custom' ? customRange : null;
+        if (prev.datePreset === datePreset && prev.customRange === nextRange) return prev;
+        return { ...prev, datePreset, customRange: nextRange };
       });
     },
     [setState]
@@ -216,6 +246,7 @@ export const usePersistedAnalyticsFilters = (
 
   return {
     datePreset: state.datePreset,
+    customRange: state.customRange,
     selectedProjectIds: state.selectedProjectIds,
     selectedMemberIds: state.selectedMemberIds,
     selectedTeamIds: state.selectedTeamIds,
@@ -223,6 +254,8 @@ export const usePersistedAnalyticsFilters = (
     selectedHealthIds: state.selectedHealthIds,
     includeDone: state.includeDone,
     setDatePreset,
+    setCustomRange,
+    setDateFilter,
     setSelectedProjectIds,
     setAutomaticProjectIds,
     setAutomaticTeamIds,
@@ -252,6 +285,9 @@ export const hasMeaningfulAnalyticsFilters = (
     state.datePreset &&
     state.datePreset !== (defaults.datePreset ?? DEFAULT_ANALYTICS_FILTER_FIELDS.datePreset)
   ) {
+    return true;
+  }
+  if (state.datePreset === 'custom' && state.customRange) {
     return true;
   }
   return false;

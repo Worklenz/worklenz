@@ -7,6 +7,7 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { TASK_STATUS_COLOR_ALPHA } from "../shared/constants";
 import { getColor } from "../shared/utils";
+import { resolveProjectCategoryOrder } from "../shared/status-category-order";
 import { captureProjectSettings, logProjectSettingChanges } from "../services/project-settings-audit.service";
 import moment from "moment";
 import Excel from "exceljs";
@@ -408,6 +409,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
     }> = [];
 
     if (groupBy === "status") {
+      const categoryOrder = await resolveProjectCategoryOrder(projectId);
       const q = `
         SELECT 
           ts.id,
@@ -417,9 +419,10 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
         FROM task_statuses ts
         INNER JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
         WHERE ts.project_id = $1
-        ORDER BY ts.sort_order;
+        ORDER BY array_position($2::uuid[], ts.category_id),
+                 ts.sort_order;
       `;
-      groups = (await db.query(q, [projectId])).rows;
+      groups = (await db.query(q, [projectId, categoryOrder])).rows;
     } else if (groupBy === "priority") {
       const q = `
         SELECT 
@@ -1457,6 +1460,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
     }> = [];
 
     if (groupBy === "status") {
+      const categoryOrder = await resolveProjectCategoryOrder(projectId);
       const q = `
         SELECT 
           ts.id,
@@ -1466,9 +1470,10 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
         FROM task_statuses ts
         INNER JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
         WHERE ts.project_id = $1
-        ORDER BY ts.sort_order;
+        ORDER BY array_position($2::uuid[], ts.category_id),
+                 ts.sort_order;
       `;
-      groups = (await db.query(q, [projectId])).rows;
+      groups = (await db.query(q, [projectId, categoryOrder])).rows;
     } else if (groupBy === "priority") {
       const q = `
         SELECT 

@@ -110,4 +110,54 @@ describe('AnalyticsFilterBar', () => {
 
     expect(onMembersChange).toHaveBeenCalledWith(['m1', 'm2']);
   });
+
+  const datePill = (label: string) =>
+    screen.getByRole('button', { name: new RegExp(`^caret-down\\s+${label}`) });
+
+  it('shows Classic Time Logs date presets and applies a selection via onDateChange', async () => {
+    const onDateChange = vi.fn();
+    renderBar({
+      selectedProjectIds: [],
+      selectedTeamIds: ['t-default'],
+      datePreset: 'last_30_days',
+      customRange: null,
+      onDateChange,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Filter/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /caret-down\s+Last 30 Days/ }));
+
+    expect(await screen.findByRole('option', { name: /This Week/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Today/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Custom Range/ })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /This quarter/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('option', { name: /This Week/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(onDateChange).toHaveBeenCalledWith('this_week', null);
+  });
+
+  it('disables Apply when Custom Range is selected without dates', async () => {
+    renderBar({
+      selectedProjectIds: [],
+      selectedTeamIds: ['t-default'],
+      datePreset: 'last_30_days',
+      customRange: null,
+      onDateChange: vi.fn(),
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Filter/ }));
+    fireEvent.click(datePill('Last 30 Days'));
+    fireEvent.click(await screen.findByRole('option', { name: /Custom Range/ }));
+
+    expect(screen.getByRole('button', { name: 'Apply' })).toBeDisabled();
+  });
+  it('hides custom ranges from preset-only callers even when explicitly allowed', async () => {
+    renderBar({ datePreset: 'last_30_days', onDatePresetChange: vi.fn(),
+      availableDatePresets: ['last_30_days', 'custom'] });
+    fireEvent.click(screen.getByRole('button', { name: /Filter/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /caret-down\s+Last 30 Days/ }));
+    expect(screen.queryByRole('option', { name: /Custom Range/ })).not.toBeInTheDocument();
+  });
 });

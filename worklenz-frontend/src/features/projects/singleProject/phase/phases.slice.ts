@@ -7,6 +7,8 @@ type PhaseState = {
   phaseList: ITaskPhase[];
   loadingPhases: boolean;
   currentFetchRequestId: string | null;
+  loadedProjectId: string | null;
+  loadingProjectId: string | null;
 };
 
 const initialState: PhaseState = {
@@ -14,6 +16,8 @@ const initialState: PhaseState = {
   phaseList: [],
   loadingPhases: false,
   currentFetchRequestId: null,
+  loadedProjectId: null,
+  loadingProjectId: null,
 };
 
 export const addPhaseOption = createAsyncThunk(
@@ -293,15 +297,20 @@ const phaseSlice = createSlice({
           : phase.color_code,
       }));
       state.loadingPhases = false;
+      state.loadedProjectId = action.meta.arg;
+      state.loadingProjectId = null;
       state.currentFetchRequestId = null;
     });
     builder.addCase(fetchPhasesByProjectId.pending, (state, action) => {
       state.loadingPhases = true;
+      if (state.loadedProjectId !== action.meta.arg) state.loadedProjectId = null;
+      state.loadingProjectId = action.meta.arg;
       state.currentFetchRequestId = action.meta.requestId;
     });
     builder.addCase(fetchPhasesByProjectId.rejected, (state, action) => {
       if (state.currentFetchRequestId !== action.meta.requestId) return;
       state.loadingPhases = false;
+      state.loadingProjectId = null;
       state.currentFetchRequestId = null;
     });
     builder.addCase(updatePhaseDefaultAssignee.fulfilled, (state, action) => {

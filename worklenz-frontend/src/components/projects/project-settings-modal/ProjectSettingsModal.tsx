@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, ReactNode } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Button, Flex, Form, Skeleton, Typography, theme } from '@/shared/antd-imports';
 import { Modal as AntModal } from '@/shared/antd-imports';
@@ -172,7 +172,14 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
   const { handleDeleteProject, isDeletingProject } = useProjectDeletion(projectId, project);
 
   // Effects
+  const hasRequestedLookupsRef = useRef(false);
   useEffect(() => {
+    if (!modalVisible) {
+      hasRequestedLookupsRef.current = false;
+      return;
+    }
+    if (hasRequestedLookupsRef.current) return;
+    hasRequestedLookupsRef.current = true;
     const loadInitialData = async () => {
       const fetchPromises = [];
       if (projectStatuses.length === 0) fetchPromises.push(dispatch(fetchProjectStatuses()));
@@ -188,7 +195,8 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
     };
 
     loadInitialData();
-  }, [dispatch, priorities.length]);
+  }, [dispatch, modalVisible, priorities.length, projectStatuses.length,
+    projectCategories.length, projectHealths.length, clients.data?.length]);
 
   useEffect(() => {
     if (modalVisible && projectId && project && !projectLoading) {

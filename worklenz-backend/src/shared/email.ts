@@ -1,5 +1,8 @@
 import { SendEmailCommand, SESClient } from "@aws-sdk/client-ses";
+import { SESv2Client, SendEmailCommand as SendEmailV2Command } from "@aws-sdk/client-sesv2";
 import nodemailer from "nodemailer";
+import addressparser from "nodemailer/lib/addressparser";
+import { encodeWord } from "nodemailer/lib/mime-funcs";
 import { Validator } from "jsonschema";
 import { QueryResult } from "pg";
 import lodash from "lodash";
@@ -9,6 +12,7 @@ import emailRequestSchema from "../json_schemas/email-request-schema";
 import db from "../config/db";
 
 const sesClient = new SESClient({ region: process.env.AWS_REGION });
+const sesV2Client = new SESv2Client({ region: process.env.AWS_REGION });
 
 type EmailProvider = "ses" | "smtp";
 
@@ -37,6 +41,13 @@ function getEmailConfiguration(): EmailConfiguration {
     // Backwards-compatible default for existing SES installations.
     from: process.env.EMAIL_FROM?.trim() || "Worklenz <noreply@worklenz.com>",
   };
+}
+
+/** Encodes only a non-ASCII display name for SES structured messages. */
+function getSesSource(from: string): string {
+  const [sender] = addressparser(from, { flatten: true });
+  if (!sender?.address || !/[^\x00-\x7f]/.test(sender.name)) return from;
+  return `${encodeWord(sender.name, "B", 52)} <${sender.address}>`;
 }
 
 /** Lists configuration problems without exposing credential values. */
@@ -101,8 +112,10 @@ function createSmtpTransport() {
 
 export interface IEmail {
   to?: string[];
+  cc?: string[];
   subject: string;
   html: string;
+  attachments?: { filename: string; content: string | Buffer; contentType: string }[];
 }
 
 export interface IEmailResult {
@@ -276,6 +289,15 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
       await filterDeletedAccountEmails(options.to);
     }
 
+    options.cc = Array.isArray(options.cc)
+      ? Array.from(new Set(options.cc.map(address => address.trim()).filter(isValidateEmail)))
+      : [];
+    if (options.cc.length) {
+      await filterBouncedEmails(options.cc);
+      await filterSpamEmails(options.cc);
+      await filterDeletedAccountEmails(options.cc);
+    }
+
     // Double-check that we still have valid emails after filtering
     if (!options.to.length) {
       return {
@@ -342,14 +364,38 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
       const response = await createSmtpTransport().sendMail({
         from,
         to: options.to,
+        cc: options.cc,
         subject: options.subject,
         html: options.html,
         text: plainText,
+        attachments: options.attachments,
       });
       messageId = response.messageId;
+    } else if (options.attachments?.length) {
+      const response = await sesV2Client.send(new SendEmailV2Command({
+        FromEmailAddress: from,
+        Destination: { ToAddresses: options.to, CcAddresses: options.cc },
+        Content: {
+          Simple: {
+            Subject: { Charset: charset, Data: options.subject },
+            Body: {
+              Html: { Charset: charset, Data: options.html },
+              Text: { Charset: charset, Data: plainText },
+            },
+            Attachments: options.attachments.map(attachment => ({
+              FileName: attachment.filename,
+              ContentType: attachment.contentType,
+              ContentDisposition: "ATTACHMENT",
+              ContentTransferEncoding: "BASE64",
+              RawContent: Buffer.isBuffer(attachment.content) ? attachment.content : Buffer.from(attachment.content, "utf8"),
+            })),
+          },
+        },
+      }));
+      messageId = response.MessageId;
     } else {
       const command = new SendEmailCommand({
-        Destination: { ToAddresses: options.to },
+        Destination: { ToAddresses: options.to, CcAddresses: options.cc },
         Message: {
           Subject: { Charset: charset, Data: options.subject },
           Body: {
@@ -357,7 +403,7 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
             Text: { Charset: charset, Data: plainText },
           },
         },
-        Source: from,
+        Source: getSesSource(from),
       });
       const response = await sesClient.send(command);
       messageId = response.MessageId;

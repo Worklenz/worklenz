@@ -10,7 +10,7 @@ import {
   toggleField,
 } from '@/features/task-management/taskListFields.slice';
 import { selectColumns } from '@/features/task-management/task-management.selectors';
-import { toggleColumnVisibility } from '@/features/task-management/task-management.slice';
+import { fetchTasksV3, toggleColumnVisibility } from '@/features/task-management/task-management.slice';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { ThemeClasses } from './types';
@@ -163,6 +163,9 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
               is_visible: !currentVisible,
             });
           }
+          if (!currentVisible) {
+            dispatch(fetchTasksV3({ projectId, silent: true }));
+          }
         }
         return;
       }
@@ -178,6 +181,9 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
             columns,
           })
         );
+        if (!currentVisible && (fieldKey === 'COMMENTS' || fieldKey === 'ATTACHMENTS')) {
+          dispatch(fetchTasksV3({ projectId, silent: true }));
+        }
       }
     },
     [columns, dispatch, projectId, socket]

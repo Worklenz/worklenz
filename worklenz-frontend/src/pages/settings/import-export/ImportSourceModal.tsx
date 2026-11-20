@@ -6,6 +6,7 @@ import {
   Button,
   Typography,
   Steps,
+  Result,
   message,
   theme,
 } from '@/shared/antd-imports';
@@ -21,6 +22,9 @@ import { projectsApiService } from '@/api/projects/projects.api.service';
 import { IProjectStatus } from '@/types/project/projectStatus.types';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAuthService } from '@/hooks/useAuth';
+import { canUseFeature } from '@/utils/subscription-utils';
+import { openUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
 import {
   stepSet,
@@ -71,6 +75,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({
   const activeSource = source || selectedSource;
 
   const { t } = useTranslation('settings/import-export');
+  const canImportCsv = canUseFeature(useAuthService().getCurrentSession(), 'csv_import');
   const { token: themeToken } = theme.useToken();
   const tt = React.useCallback(
     (key: string, defaultValue: string, options?: Record<string, unknown>) =>
@@ -126,7 +131,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({
   }, [open, source]);
 
   React.useEffect(() => {
-    if (!open || !activeSource) return;
+    if (!open || !activeSource || (integrationType === 'csv' && !canImportCsv)) return;
 
     setStep(0);
     setReviewSubScreen('main');
@@ -174,7 +179,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [open, activeSource, authNeeded, initialProjectName, integrationType, providerForApi]);
+  }, [open, activeSource, authNeeded, initialProjectName, integrationType, providerForApi, canImportCsv]);
 
   // Steps for each flow
   const steps =
@@ -467,6 +472,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({
   );
 
   React.useEffect(() => {
+    if (!open) return;
     let cancelled = false;
     const fetchStatuses = async () => {
       try {
@@ -497,15 +503,15 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [defaultWorkTypes]);
+  }, [open, defaultWorkTypes]);
 
   // Categories a newly-created status must belong to (To Do / Doing / Done) — needed
   // when the user chooses to create a new status during CSV status mapping. Reuses
   // the shared taskStatusReducer slice (same data the task-board "add status" UI
   // fetches) instead of a component-local request, so it's cached across the app.
   React.useEffect(() => {
-    if (!statusCategories.length) dispatch(fetchStatusesCategories());
-  }, [dispatch, statusCategories.length]);
+    if (open && !statusCategories.length) dispatch(fetchStatusesCategories());
+  }, [dispatch, open, statusCategories.length]);
 
   React.useEffect(() => {
     if (!csvText.trim()) return;
@@ -785,6 +791,18 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({
         modalTitle={modalTitle}
         onSourcePick={handleSourcePick}
       />
+    );
+  }
+
+  if (integrationType === 'csv' && !canImportCsv) {
+    return (
+      <Modal open={open} onCancel={onClose} footer={null} title={modalTitle}>
+        <Result
+          title={t('proRequired', { defaultValue: 'Pro plan required' })}
+          subTitle={t('csvProRequired', { defaultValue: 'CSV import is available on the Pro plan and above.' })}
+          extra={<Button type="primary" onClick={() => dispatch(openUpgradeModal('default'))}>{t('upgradePlan', { defaultValue: 'Upgrade plan' })}</Button>}
+        />
+      </Modal>
     );
   }
 

@@ -262,7 +262,7 @@ const PhaseModal: React.FC<PhaseModalProps> = ({ visible, phase, onClose, onUpda
                 <DatePicker className="w-full dark:bg-gray-700 dark:border-gray-600" />
               </Form.Item>
             ) : (
-              <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+              <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 overflow-hidden relative">
                 <div className="flex items-center gap-2">
                   <CalendarOutlined className="text-gray-600 dark:text-gray-400" />
                   <span className="font-medium text-gray-900 dark:text-gray-100">Start:</span>
@@ -282,7 +282,7 @@ const PhaseModal: React.FC<PhaseModalProps> = ({ visible, phase, onClose, onUpda
                 <DatePicker className="w-full dark:bg-gray-700 dark:border-gray-600" />
               </Form.Item>
             ) : (
-              <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+              <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 overflow-hidden relative">
                 <div className="flex items-center gap-2">
                   <CalendarOutlined className="text-gray-600 dark:text-gray-400" />
                   <span className="font-medium text-gray-900 dark:text-gray-100">End:</span>
@@ -324,42 +324,63 @@ const PhaseModal: React.FC<PhaseModalProps> = ({ visible, phase, onClose, onUpda
             <List
               dataSource={phase.tasks}
               renderItem={(task: PhaseTask) => (
-                <List.Item>
-                  <List.Item.Meta
-                    avatar={getTaskStatusIcon(task.status)}
-                    title={
-                      <div className="flex justify-between items-center">
-                        <Typography.Text strong>{decodeHtmlEntities(task.name)}</Typography.Text>
-                        <Space>
-                          <Tag color={getPriorityColor(task.priority)}>{task.priority}</Tag>
-                          <Progress percent={task.progress} size="small" style={{ width: 100 }} />
-                        </Space>
-                      </div>
-                    }
-                    description={
-                      <div>
-                        <Typography.Text type="secondary">{task.description}</Typography.Text>
-                        <div className="mt-2 flex justify-between items-center">
-                          <Space>
-                            <CalendarOutlined />
-                            <Typography.Text type="secondary">
-                              {task.startDate.toLocaleDateString()} -{' '}
-                              {task.endDate.toLocaleDateString()}
-                            </Typography.Text>
+                <List.Item className="min-w-0 overflow-hidden">
+                    <List.Item.Meta
+                      className="min-w-0"
+                      style={{ minWidth: 0 }}
+                      avatar={getTaskStatusIcon(task.status)}
+                      title={
+                        <div className="flex justify-between items-start min-w-0 w-full gap-2 overflow-hidden">
+                          <Typography.Text
+                            strong
+                            className="min-w-0 flex-1"
+                            style={{
+                              wordBreak: 'break-word',
+                              overflowWrap: 'anywhere',
+                              whiteSpace: 'normal',
+                            }}
+                          >
+                            {decodeHtmlEntities(task.name)}
+                          </Typography.Text>
+
+                          <Space className="flex-shrink-0" size={4}>
+                            <Tag color={getPriorityColor(task.priority)}>{task.priority}</Tag>
+                            <Progress percent={task.progress} size="small" style={{ width: 80 }} />
                           </Space>
-                          {task.assigneeName && (
+                        </div>
+                      }
+                      description={
+                        <div className="min-w-0">
+                          <Typography.Text
+                            type="secondary"
+                            className="block"
+                            style={{
+                              wordBreak: 'break-word',
+                              overflowWrap: 'anywhere',
+                            }}
+                          >
+                            {task.description}
+                          </Typography.Text>
+                          <div className="mt-2 flex justify-between items-center flex-wrap gap-2">
                             <Space>
-                              <TeamOutlined />
+                              <CalendarOutlined />
                               <Typography.Text type="secondary">
-                                {task.assigneeName}
+                                {task.startDate.toLocaleDateString()} - {task.endDate.toLocaleDateString()}
                               </Typography.Text>
                             </Space>
-                          )}
+                            {task.assigneeName && (
+                              <Space>
+                                <TeamOutlined />
+                                <Typography.Text type="secondary" style={{ overflowWrap: 'anywhere' }}>
+                                  {task.assigneeName}
+                                </Typography.Text>
+                              </Space>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    }
-                  />
-                </List.Item>
+                      }
+                    />
+                  </List.Item>
               )}
             />
           </TabPane>

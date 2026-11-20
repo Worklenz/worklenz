@@ -13,5 +13,8 @@
   "limitTimelogBackdatingTooltip": "When enabled, members cannot create a time log dated earlier than the allowed number of days. Applies to everyone, including Owners and Admins. Running timers and imported logs are unaffected.",
   "timelogBackdateLimitDays": "Maximum days a time log can be backdated",
   "timelogBackdateLimitNote": "Note: Existing time logs are never altered. Editing an already-old log stays possible as long as its date is not changed.",
-  "days": "days"
+  "days": "days",
+  "enforceDailyTimeLimit": "Enforce 24-hour daily time tracking limit",
+  "enforceDailyTimeLimitTooltip": "When enabled, members cannot log more than 24 hours of work per day across all tasks.",
+  "enforceDailyTimeLimitNote": "Note: Existing historical entries exceeding 24 hours are preserved. Editing an existing over-limit entry is permitted as long as the duration is reduced."
 }

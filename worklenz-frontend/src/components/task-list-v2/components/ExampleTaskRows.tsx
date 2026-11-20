@@ -1,19 +1,20 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Input, message } from '@/shared/antd-imports';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAuthService } from '@/hooks/useAuth';
-import {
-  UNMAPPED_PHASE_ID,
-  useTaskListMode,
-} from '@/features/task-management/task-list-mode-context';
-import { assignTaskToMember } from '@/utils/assign-task-to-member';
-import { isSoftwareProjectType } from '@/lib/project/software-project';
+import type { InputRef } from 'antd';
 import { useSocket } from '@/socket/socketContext';
+import { useAuthService } from '@/hooks/useAuth';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import {
+  useTaskListMode,
+  UNMAPPED_PHASE_ID,
+} from '@/features/task-management/task-list-mode-context';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { assignTaskToMember } from '@/utils/assign-task-to-member';
 import { SocketEvents } from '@/shared/socket-events';
-import { EpicColumn } from './EpicColumn';
-import { PointsColumn } from './PointsColumn';
-import { DatePickerColumn } from './DatePickerColumn';
+import type { Task } from '@/types/task-management.types';
+import type { ITaskCreateRequest } from '@/types/tasks/task-create-request.types';
+import type { ColumnConfig } from '../constants/columns';
 import {
   DragHandleColumn,
   CheckboxColumn,
@@ -30,9 +31,12 @@ import {
   ReporterColumn,
   DescriptionColumn,
 } from './TaskRowColumns';
+import { EpicColumn } from './EpicColumn';
+import { PointsColumn } from './PointsColumn';
+import { DatePickerColumn } from './DatePickerColumn';
 
-export const ExampleTaskRows: React.FC<{
-  visibleColumns: any[];
+interface ExampleTaskRowsProps {
+  visibleColumns: ColumnConfig[];
   isDarkMode?: boolean;
   groupId: string;
   groupType: string;
@@ -44,13 +48,14 @@ export const ExampleTaskRows: React.FC<{
   /** When false, examples are visual only (used before the first sprint exists). */
   interactive?: boolean;
   onTaskCreated: (
-    task: any,
+    task: Task,
     options?: { openDrawer: boolean; insertAfterTaskId?: string | null }
   ) => void;
-}> = ({
+}
+
+export const ExampleTaskRows = ({
   visibleColumns,
   isDarkMode = false,
-  groupId,
   groupType,
   groupValue,
   groupName,
@@ -59,25 +64,27 @@ export const ExampleTaskRows: React.FC<{
   canCreateTask = true,
   interactive = true,
   onTaskCreated,
-}) => {
+}: ExampleTaskRowsProps) => {
   const { t } = useTranslation('task-list-table');
   const { socket, connected } = useSocket();
   const currentSession = useAuthService().getCurrentSession();
-  const priorities = useAppSelector((state: any) => state.priorityReducer?.priorities || []);
-  const mediumPriority =
-    priorities.find((p: any) => p.value === '1' || p.value === 1) || priorities[0];
+  const priorities = useAppSelector(state => state.priorityReducer?.priorities || []);
+  const mediumPriority = priorities.find(p => String(p.value) === '1') || priorities[0];
 
   const [showPlaceholders, setShowPlaceholders] = React.useState(false);
   const [activeRowIndex, setActiveRowIndex] = React.useState<number | null>(null);
   const [taskName, setTaskName] = React.useState('');
   const [creatingTask, setCreatingTask] = React.useState(false);
-  const inputRef = React.useRef<any>(null);
+  const inputRef = React.useRef<InputRef>(null);
   const isMounted = React.useRef(true);
   const isRequestPending = React.useRef(false);
   React.useEffect(() => {
     isMounted.current = true;
-    return () => { isMounted.current = false; };
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
+
   const listMode = useTaskListMode();
 
   const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
@@ -115,9 +122,10 @@ export const ExampleTaskRows: React.FC<{
 
   const handleCreateTask = React.useCallback(
     (openDrawer: boolean = false) => {
-      if (isRequestPending.current || !currentSession || !taskName.trim() || !socket || !connected) return;
+      if (isRequestPending.current || !currentSession || !taskName.trim() || !socket || !connected)
+        return;
 
-      const body: any = {
+      const body: ITaskCreateRequest & Record<string, unknown> = {
         name: taskName.trim(),
         project_id: projectId,
         reporter_id: currentSession.id,
@@ -149,37 +157,43 @@ export const ExampleTaskRows: React.FC<{
       isRequestPending.current = true;
       let hasSettled = false;
       setCreatingTask(true);
-      socket.timeout(15000).emit(
-        SocketEvents.QUICK_TASK.toString(),
-        JSON.stringify(body),
-        (error: Error | null, task: { id?: string; error?: boolean } | null) => {
-          if (hasSettled) return;
-          hasSettled = true;
-          isRequestPending.current = false;
-          if (isMounted.current) setCreatingTask(false);
-          if (error || !task?.id || task.error) {
-            if (isMounted.current) message.error(t('exampleTaskCreateFailed', {
-              defaultValue: 'Could not confirm task creation. Check the task list before retrying.',
-            }));
-            return;
+      socket
+        .timeout(15000)
+        .emit(
+          SocketEvents.QUICK_TASK.toString(),
+          JSON.stringify(body),
+          (error: Error | null, task: (Task & { error?: boolean }) | null) => {
+            if (hasSettled) return;
+            hasSettled = true;
+            isRequestPending.current = false;
+            if (isMounted.current) setCreatingTask(false);
+            if (error || !task?.id || task.error) {
+              if (isMounted.current)
+                message.error(
+                  t('exampleTaskCreateFailed', {
+                    defaultValue:
+                      'Could not confirm task creation. Check the task list before retrying.',
+                  })
+                );
+              return;
+            }
+            if (groupType === 'assignee') {
+              assignTaskToMember({
+                socket,
+                taskId: task.id,
+                projectId,
+                teamMemberId: groupValue,
+                reporterId: currentSession.id,
+                teamId: currentSession.team_id,
+              });
+            }
+            if (isMounted.current) {
+              setTaskName('');
+              setActiveRowIndex(null);
+              onTaskCreated(task, { openDrawer, insertAfterTaskId: null });
+            }
           }
-          if (groupType === 'assignee') {
-            assignTaskToMember({
-              socket,
-              taskId: task.id,
-              projectId,
-              teamMemberId: groupValue,
-              reporterId: currentSession.id,
-              teamId: currentSession.team_id,
-            });
-          }
-          if (isMounted.current) {
-            setTaskName('');
-            setActiveRowIndex(null);
-            onTaskCreated(task, { openDrawer, insertAfterTaskId: null });
-          }
-        }
-      );
+        );
     },
     [
       creatingTask,
@@ -221,17 +235,17 @@ export const ExampleTaskRows: React.FC<{
       {exampleTaskNames.map((name, rowIndex) => {
         // Build a minimal mock task so real column components render correctly.
         // pointer-events:none on the wrapper prevents any socket/API calls.
-        const mockTask: any = {
+        const mockTask: ExampleTask = {
           id: `_example_${rowIndex}`,
           name,
           title: name,
           // Status — pass display fields so StatusColumn renders the badge
           status_id: groupType === 'status' ? groupValue : undefined,
-          status: groupType === 'status' ? groupName : undefined,
+          status: groupType === 'status' ? groupName : '',
           color_code: groupType === 'status' ? groupColor : undefined,
           // Priority — use group data when grouped by priority, otherwise default to Medium
           priority_id: groupType === 'priority' ? groupValue : mediumPriority?.id,
-          priority: groupType === 'priority' ? groupName : mediumPriority?.name,
+          priority: groupType === 'priority' ? groupName : mediumPriority?.name || '',
           priority_color: groupType === 'priority' ? groupColor : mediumPriority?.color_code,
           priority_color_dark:
             groupType === 'priority'
@@ -321,7 +335,9 @@ export const ExampleTaskRows: React.FC<{
                       <button
                         type="button"
                         disabled={!canActivateRow}
-                        onClick={() => { if (canActivateRow) setActiveRowIndex(rowIndex); }}
+                        onClick={() => {
+                          if (canActivateRow) setActiveRowIndex(rowIndex);
+                        }}
                         className="text-sm text-gray-400 dark:text-gray-500 truncate bg-transparent border-0 p-0 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
                         style={{
                           opacity: showPlaceholders ? 1 : 0,
@@ -485,7 +501,9 @@ export const ExampleTaskRows: React.FC<{
               return (
                 <div
                   key={column.id}
-                  ref={element => { if (element) element.inert = true; }}
+                  ref={element => {
+                    if (element) element.inert = true;
+                  }}
                   aria-hidden="true"
                   style={{
                     ...colStyle,
@@ -504,3 +522,15 @@ export const ExampleTaskRows: React.FC<{
     </>
   );
 };
+
+interface ExampleTask extends Task {
+  done: boolean;
+  archived: boolean;
+  status_id?: string;
+  color_code?: string;
+  priority_id?: string;
+  priority_color?: string;
+  priority_color_dark?: string;
+  priority_value?: string | number;
+  phase_id?: string;
+}

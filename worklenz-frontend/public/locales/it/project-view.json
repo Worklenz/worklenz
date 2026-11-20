@@ -463,5 +463,6 @@
   "deleteSavedView": "Elimina scheda",
   "deleteSavedViewTitle": "Eliminare \"{{name}}\"?",
   "deleteSavedViewContent": "Questa scheda verrà rimossa per tutti nel progetto. Le attività non sono interessate.",
-  "deleteSavedViewOk": "Elimina"
+  "deleteSavedViewOk": "Elimina",
+  "NewTab": "Nuova scheda"
 }

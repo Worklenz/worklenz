@@ -44,12 +44,18 @@ const ConfigurationSettings = () => {
     form.setFieldsValue({
       restrict_task_creation: orgConfig.restrict_task_creation,
       timelog_backdate_limit_days: orgConfig.timelog_backdate_limit_days,
+      enforce_daily_time_limit: orgConfig.enforce_daily_time_limit,
     });
-  }, [form, orgConfig.restrict_task_creation, orgConfig.timelog_backdate_limit_days]);
+  }, [form, orgConfig.restrict_task_creation, orgConfig.timelog_backdate_limit_days, orgConfig.enforce_daily_time_limit]);
 
   const handleRestrictTaskCreationChange = async (checked: boolean) => {
     if (!canRestrictTaskCreation) return;
     await dispatch(updateOrgConfig({ restrict_task_creation: checked }));
+  };
+
+  const handleDailyTimeLimitToggle = async (checked: boolean) => {
+    if (!isOwnerOrAdmin) return;
+    await dispatch(updateOrgConfig({ enforce_daily_time_limit: checked }));
   };
 
   // 0 means "no limit", so toggling on needs a sensible starting value.
@@ -177,6 +183,44 @@ const ConfigurationSettings = () => {
         {renderBusinessPlanAlert(!hasBusinessAccess)}
 
         <Form form={form} layout="vertical">
+          <Form.Item
+            valuePropName="checked"
+            style={{ marginBlockEnd: 12 }}
+            label={
+              <Flex gap={8} align="center">
+                <Typography.Text>
+                  {t('enforceDailyTimeLimit', {
+                    defaultValue: 'Enforce 24-hour daily time tracking limit',
+                  })}
+                </Typography.Text>
+                <Tooltip
+                  title={t('enforceDailyTimeLimitTooltip', {
+                    defaultValue:
+                      'When enabled, members cannot log more than 24 hours of work per day across all tasks. Running timers that exceed the remaining allowance cannot be stopped without adjusting or resolving the excess.',
+                  })}
+                >
+                  <InfoCircleOutlined
+                    style={{ color: token.colorTextSecondary }}
+                    aria-label={t('enforceDailyTimeLimitTooltip', {
+                      defaultValue:
+                        'When enabled, members cannot log more than 24 hours of work per day across all tasks.',
+                    })}
+                  />
+                </Tooltip>
+              </Flex>
+            }
+          >
+            <Switch
+              checked={orgConfig.enforce_daily_time_limit}
+              disabled={!isOwnerOrAdmin}
+              loading={orgConfig.isLoading}
+              onChange={handleDailyTimeLimitToggle}
+              aria-label={t('enforceDailyTimeLimit', {
+                defaultValue: 'Enforce 24-hour daily time tracking limit',
+              })}
+            />
+          </Form.Item>
+
           <Form.Item
             valuePropName="checked"
             style={{ marginBlockEnd: 12 }}

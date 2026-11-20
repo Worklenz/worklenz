@@ -13,5 +13,8 @@
   "limitTimelogBackdatingTooltip": "Se attivata, i membri non possono creare registrazioni del tempo antecedenti al numero di giorni consentito. Si applica a tutti, inclusi proprietari e amministratori. I timer attivi e le registrazioni importate non sono interessati.",
   "timelogBackdateLimitDays": "Numero massimo di giorni per la registrazione retroattiva",
   "timelogBackdateLimitNote": "Nota: le registrazioni esistenti non vengono mai modificate. È possibile modificare una registrazione precedente purché la data non cambi.",
-  "days": "giorni"
+  "days": "giorni",
+  "enforceDailyTimeLimit": "Applica il limite giornaliero di 24 ore",
+  "enforceDailyTimeLimitTooltip": "Quando abilitato, i membri non possono registrare più di 24 ore di lavoro al giorno in tutte le attività.",
+  "enforceDailyTimeLimitNote": "Nota: Le voci storiche esistenti che superano le 24 ore vengono conservate. La modifica di una voce esistente è consentita purché la durata venga ridotta."
 }

@@ -667,8 +667,15 @@ const TimeLogForm = ({
           }
         }
       } else {
-        for (const body of requestBodies) {
-          await taskTimeLogsApiService.create(body);
+        if (requestBodies.length > 1) {
+          await taskTimeLogsApiService.create({
+            id: requestBodies[0].id,
+            entries: requestBodies,
+          });
+        } else {
+          for (const body of requestBodies) {
+            await taskTimeLogsApiService.create(body);
+          }
         }
       }
 
@@ -859,7 +866,7 @@ const TimeLogForm = ({
             <Flex gap={8} wrap="wrap" style={{ width: '100%' }}>
               <Form.Item
                 name="date"
-                label={t('taskTimeLogTab.timeLogForm.date')}
+                label={t('taskTimeLogTab.timeLogForm.date', { defaultValue: 'Date' })}
                 extra={
                   effectiveProjectStartDate
                     ? t('taskTimeLogTab.timeLogForm.projectStartDateHint', {
@@ -871,7 +878,7 @@ const TimeLogForm = ({
                 rules={[
                   {
                     required: true,
-                    message: t('taskTimeLogTab.timeLogForm.selectDateError'),
+                    message: t('taskTimeLogTab.timeLogForm.selectDateError', { defaultValue: 'Please select a date' }),
                   },
                 ]}
                 style={{ flex: 1.4, minWidth: 170, marginBlockEnd: 0 }}
@@ -1073,11 +1080,11 @@ const TimeLogForm = ({
 
         <Form.Item
           name="description"
-          label={t('taskTimeLogTab.timeLogForm.workDescription')}
+          label={t('taskTimeLogTab.timeLogForm.workDescription', { defaultValue: 'Work Description' })}
           style={{ marginBlockEnd: 10 }}
         >
           <Input.TextArea
-            placeholder={t('taskTimeLogTab.timeLogForm.descriptionPlaceholder')}
+            placeholder={t('taskTimeLogTab.timeLogForm.descriptionPlaceholder', { defaultValue: 'Describe what you worked on...' })}
             maxLength={500}
             showCount
             autoSize={{ minRows: 2, maxRows: 6 }}
@@ -1110,7 +1117,7 @@ const TimeLogForm = ({
 
         <Form.Item style={{ marginBlockEnd: 0 }}>
           <Flex gap={8} justify={inModal ? 'flex-end' : undefined}>
-            <Button onClick={onCancel}>{t('taskTimeLogTab.timeLogForm.cancel')}</Button>
+            <Button onClick={onCancel}>{t('taskTimeLogTab.timeLogForm.cancel', { defaultValue: 'Cancel' })}</Button>
             <Button
               type="primary"
               icon={<ClockCircleOutlined />}
@@ -1120,7 +1127,7 @@ const TimeLogForm = ({
             >
               {mode === 'edit'
                 ? t('taskTimeLogTab.timeLogForm.updateTime', { defaultValue: 'Update' })
-                : t('taskTimeLogTab.timeLogForm.logTime')}
+                : t('taskTimeLogTab.timeLogForm.logTime', { defaultValue: 'Log Time' })}
             </Button>
           </Flex>
         </Form.Item>

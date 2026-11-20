@@ -15,6 +15,8 @@ import ManageStatusModal from '@components/task-management/ManageStatusModal';
 import PhaseDetailsModal from './components/phase-details-modal/PhaseDetailsModal';
 import { GanttViewMode, GanttGroupingMode, PhaseSortMode, GanttTask, GanttPhase } from './types/gantt-types';
 import { getUserSession } from '@/utils/session-helper';
+import { useAuthService } from '@/hooks/useAuth';
+import { canUseFeature } from '@/utils/subscription-utils';
 import {
   roadmapApi,
   useGetRoadmapTasksQuery,
@@ -35,6 +37,8 @@ import { exportRoadmapFile } from './services/roadmap-export.api';
 import { downloadBlob } from '@/lib/reporting/download-file';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useOrderedStatuses } from '@/hooks/useOrderedStatuses';
+import { canReorderStatuses } from '@/utils/status-category-order';
 import {
   setShowTaskDrawer,
   setSelectedTaskId,
@@ -60,6 +64,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   const { socket } = useSocket();
   const { t } = useTranslation('gantt');
   const { token } = theme.useToken();
+  const canEditRoadmap = canUseFeature(useAuthService().getCurrentSession(), 'gantt_edit');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   // Resizable panel hook
@@ -112,8 +117,8 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   const containerRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // Get statuses and priorities from Redux
-  const statuses = useAppSelector(state => state.taskStatusReducer?.status || []);
+  // Get statuses (configured category order) and priorities from Redux
+  const statuses = useOrderedStatuses();
   const statusCategories = useAppSelector(state => state.taskStatusReducer?.statusCategories || []);
   const priorities = useAppSelector(state => state.priorityReducer?.priorities || []);
   const currentProject = useAppSelector(state => state.projectReducer?.project);
@@ -949,6 +954,13 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
         return;
       }
 
+      if (!canReorderStatuses(statuses, oldIndex, newIndex)) {
+        message.info(t('statusReorderSameCategory', {
+          defaultValue: 'Statuses can only be reordered within the same category.',
+        }));
+        return;
+      }
+
       const reorderedStatuses = [...statuses];
       const [moved] = reorderedStatuses.splice(oldIndex, 1);
       reorderedStatuses.splice(newIndex, 0, moved);
@@ -976,7 +988,7 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
         message.error(err?.data?.message || 'Failed to update status order');
       }
     },
-    [projectId, statuses, dispatch, refetchTasks]
+    [projectId, statuses, dispatch, refetchTasks, t]
   );
 
   const authUser = useAppSelector(state => state.auth?.user);
@@ -1399,15 +1411,15 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
                   tasks={tasks}
                   projectId={projectId || ''}
                   viewMode={viewMode}
-                  onTaskClick={handleTaskClick}
-                  onPhaseClick={handlePhaseClick}
-                  onCreateTask={handleCreateTask}
-                  onCreateQuickTask={handleCreateQuickTask}
-                  onCreatePhase={handleCreatePhase}
-                  onCreateStatus={handleCreateStatus}
-                  onPhaseReorder={handlePhaseReorder}
-                  onStatusReorder={handleStatusReorder}
-                  onTaskReorder={handleTaskReorder}
+                  onTaskClick={canEditRoadmap ? handleTaskClick : undefined}
+                  onPhaseClick={canEditRoadmap ? handlePhaseClick : undefined}
+                  onCreateTask={canEditRoadmap ? handleCreateTask : undefined}
+                  onCreateQuickTask={canEditRoadmap ? handleCreateQuickTask : undefined}
+                  onCreatePhase={canEditRoadmap ? handleCreatePhase : undefined}
+                  onCreateStatus={canEditRoadmap ? handleCreateStatus : undefined}
+                  onPhaseReorder={canEditRoadmap ? handlePhaseReorder : undefined}
+                  onStatusReorder={canEditRoadmap ? handleStatusReorder : undefined}
+                  onTaskReorder={canEditRoadmap ? handleTaskReorder : undefined}
                   groupingMode={groupingMode}
                   ref={taskListRef}
                   onScroll={handleTaskListScroll}
@@ -1442,8 +1454,8 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
                   viewMode={viewMode}
                   ref={chartRef}
                   onScroll={handleChartScroll}
-                  onPhaseClick={handlePhaseClick}
-                  onTaskClick={handleTaskClick}
+                  onPhaseClick={canEditRoadmap ? handlePhaseClick : undefined}
+                  onTaskClick={canEditRoadmap ? handleTaskClick : undefined}
                   containerRef={containerRef}
                   dateRange={dateRange}
                   phases={phases}
@@ -1451,7 +1463,7 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
                   animatingTasks={animatingTasks}
                   isAllCollapsed={isAllCollapsed}
                   onExpandedTasksChange={setExpandedTasks}
-                  onCreateQuickTask={handleCreateQuickTask}
+                  onCreateQuickTask={canEditRoadmap ? handleCreateQuickTask : undefined}
                   projectId={projectId || ''}
                   onRefresh={handleRefresh}
                 />

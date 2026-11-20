@@ -272,7 +272,7 @@ export const useBulkActions = () => {
   );
 
   const handleBulkAddLabels = useCallback(
-    async (labelIds: string[], selectedTaskIds: string[]) => {
+    async (labelIds: string[], selectedTaskIds: string[], text?: string | null) => {
       if (!projectId || !selectedTaskIds.length) return;
 
       try {
@@ -283,7 +283,7 @@ export const useBulkActions = () => {
         const body: IBulkTasksLabelsRequest = {
           tasks: selectedTaskIds,
           labels: labelIds.map(id => ({ id, name: '', color: '' })) as ITaskLabel[],
-          text: null,
+          text: text ?? null,
         };
 
         const res = await taskListBulkActionsApiService.assignLabels(body, projectId);

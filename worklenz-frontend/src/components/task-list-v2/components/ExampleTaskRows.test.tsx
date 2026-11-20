@@ -17,7 +17,7 @@ vi.mock('./PointsColumn', () => ({ PointsColumn: () => null }));
 vi.mock('./DatePickerColumn', () => ({ DatePickerColumn: () => null }));
 vi.mock('./TaskRowColumns', () => new Proxy({}, { get: (_target, property) => property === 'then' ? undefined : () => <button>Mock control</button> }));
 
-const props = { visibleColumns: [{ id: 'title', width: '200px' }, { id: 'epic', width: '100px' }], groupId: 'g', groupType: 'assignee', groupValue: 'member', groupName: 'Group', groupColor: '', projectId: 'project', onTaskCreated: vi.fn() };
+const props = { visibleColumns: [{ id: 'title', label: 'Task', width: '200px' }, { id: 'epic', label: 'Epic', width: '100px' }], groupId: 'g', groupType: 'assignee', groupValue: 'member', groupName: 'Group', groupColor: '', projectId: 'project', onTaskCreated: vi.fn() };
 
 describe('ExampleTaskRows', () => {
   beforeEach(() => vi.clearAllMocks());

@@ -22,6 +22,7 @@ import {
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useOrderedStatuses } from '@/hooks/useOrderedStatuses';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { colors } from '@/styles/colors';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
@@ -90,7 +91,7 @@ const TaskListBulkActionsBar = () => {
 
   // Selectors
   const { selectedTaskIdsList, selectedTasks } = useAppSelector(state => state.bulkActionReducer);
-  const statusList = useAppSelector(state => state.taskStatusReducer.status);
+  const statusList = useOrderedStatuses();
   const priorityList = useAppSelector(state => state.priorityReducer.priorities);
   const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
   const labelsList = useAppSelector(state => state.taskLabelsReducer.labels);

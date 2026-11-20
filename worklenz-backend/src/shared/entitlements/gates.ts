@@ -48,6 +48,7 @@ export async function teamCanUseFeature(
   legacy?: (subscriptionData: any) => boolean | Promise<boolean>,
 ): Promise<boolean> {
   if (!teamId) return false;
+  if (isSelfHostedDeployment()) return true;
   const subscriptionData = await checkTeamSubscriptionStatus(teamId);
   if (!subscriptionData) return false;
   if (!isEnforceMode() && legacy && !FEATURE_REGISTRY[feature].alwaysEnforce) return legacy(subscriptionData);

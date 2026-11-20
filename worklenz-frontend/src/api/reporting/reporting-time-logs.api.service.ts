@@ -2,6 +2,7 @@ import apiClient from '../api-client';
 import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
 import { toQueryString } from '@/utils/toQueryString';
+import config from '@/config/env';
 import {
   ITimeLogGroupsPage,
   ITimeLogGroupsRequest,
@@ -19,7 +20,7 @@ import {
 } from '@/types/reporting/time-logs.types';
 
 const rootUrl = `${API_BASE_URL}/reporting/time-logs`;
-const exportUrl = `${import.meta.env.VITE_API_URL}${API_BASE_URL}/reporting-export/time-logs/export`;
+const exportUrl = `${config.apiUrl}${API_BASE_URL}/reporting-export/time-logs/export`;
 
 export interface ITimeLogsExportParams {
   format: TimeLogsExportFormat;

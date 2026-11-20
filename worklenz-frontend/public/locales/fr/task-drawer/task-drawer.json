@@ -238,7 +238,8 @@
       "projectNotStartedWarningDesc": "Ce projet doit débuter le {{date}}. Le temps ne peut pas être enregistré avant la date de début du projet.",
       "projectStartDateHint": "Date de début du projet : {{date}}"
     },
-    "rollupLoggedTooltip": "Somme du temps passé sur les sous-tâches"
+    "rollupLoggedTooltip": "Somme du temps passé sur les sous-tâches",
+    "moveToProject": "Déplacer vers le projet"
   },
   "taskActivityLogTab": {
     "title": "Journal d'activité",
@@ -290,5 +291,6 @@
     "description": "Vous êtes affecté à une sous-tâche de cette tâche. Vous pouvez afficher le parent pour le contexte, mais vous ne pouvez pas le modifier."
   },
   "today": "Aujourd'hui",
-  "yesterday": "Hier"
+  "yesterday": "Hier",
+  "more": "Plus d’options"
 }

@@ -10,6 +10,7 @@ import {
   SaveAnalyticsTemplateModal,
   type SaveAnalyticsTemplateValues,
 } from './SaveAnalyticsTemplateModal';
+import '@/components/reporting/analytics/analytics-report-controls.css';
 
 interface AnalyticsTemplateActionsProps {
   /** @deprecated Unused ? templates live under Custom reports in the sidebar. */
@@ -54,19 +55,20 @@ export const AnalyticsTemplateActions: React.FC<AnalyticsTemplateActionsProps> =
   return (
     <>
       <Button
+        className="analytics-blue-action"
         icon={<SaveOutlined />}
         onClick={handleClick}
         disabled={canSaveTemplate ? saveDisabled : false}
         aria-label={
           canSaveTemplate
-            ? t('saveAsTemplate', { defaultValue: 'Save as Template' })
-            : t('saveAsTemplateUpgradeAria', {
-                defaultValue: 'Save as Template ? Business plan required',
-              })
+            ? t('saveReport', { defaultValue: 'Save Report' })
+            : t('saveReportUpgradeAria', {
+              defaultValue: 'Save Report – Business plan required',
+            })
         }
       >
         <Space size={6}>
-          <span>{t('saveAsTemplate', { defaultValue: 'Save as Template' })}</span>
+          <span>{t('saveReport', { defaultValue: 'Save Report' })}</span>
           {!canSaveTemplate && (
             <CrownOutlined
               style={{ fontSize: 14, color: '#faad14' }}
