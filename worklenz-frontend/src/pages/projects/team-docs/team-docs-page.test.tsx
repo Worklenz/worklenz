@@ -8,7 +8,8 @@ import { EMPTY_MENTIONS, IProjectDocument } from '@/types/project/project-docume
 
 import TeamDocsPage from './team-docs-page';
 
-vi.mock('@/hooks/useAuth', () => ({ useAuthService: () => ({ getCurrentSession: () => ({}) }) }));
+const mocks = vi.hoisted(() => ({ hasEntitlements: true }));
+vi.mock('@/hooks/useAuth', () => ({ useAuthService: () => ({ getCurrentSession: () => ({ entitlements: mocks.hasEntitlements ? {} : undefined }) }) }));
 vi.mock('@/utils/subscription-utils', () => ({ canUseFeature: () => true }));
 
 vi.mock('react-i18next', () => ({
@@ -121,6 +122,7 @@ const waitForAutosave = async () => {
 };
 
 beforeEach(() => {
+  mocks.hasEntitlements = true;
   vi.mocked(teamDocumentsApiService.list).mockResolvedValue({
     done: true,
     body: [summary(first), summary(pageB), summary(pageC)],
@@ -129,6 +131,13 @@ beforeEach(() => {
     status: 'ok',
     document: { ...pageC, title: 'C draft', updated_at: '2026-10-21T00:00:01Z' },
   });
+});
+
+it('does not load team documents when the entitlement snapshot is missing', () => {
+  mocks.hasEntitlements = false;
+  render(<TeamDocsPage />);
+  expect(screen.getByText('Pro plan required')).toBeTruthy();
+  expect(teamDocumentsApiService.list).not.toHaveBeenCalled();
 });
 
 afterEach(() => {

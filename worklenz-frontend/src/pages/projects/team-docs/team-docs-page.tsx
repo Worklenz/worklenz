@@ -500,7 +500,7 @@ const TeamDocsPage = () => {
   const { t } = useTranslation('project-view-docs');
   const dispatch = useAppDispatch();
   const session = useAuthService().getCurrentSession();
-  if (canUseFeature(session, 'project_docs')) return <TeamDocsContent />;
+  if (session?.entitlements && canUseFeature(session, 'project_docs')) return <TeamDocsContent />;
   return (
     <Result
       title={t('proRequired', { defaultValue: 'Pro plan required' })}
