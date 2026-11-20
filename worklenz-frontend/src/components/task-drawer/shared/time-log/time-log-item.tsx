@@ -1,6 +1,14 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Divider, Flex, Popconfirm, Typography, Space } from '@/shared/antd-imports';
+import {
+  Button,
+  Divider,
+  Flex,
+  Modal,
+  Typography,
+  Dropdown,
+  MoreOutlined,
+} from '@/shared/antd-imports';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { formatLogTimeline } from '@/utils/format-date-time-with-user-timezone';
@@ -21,6 +29,7 @@ type TimeLogItemProps = {
 
 const TimeLogItem = ({ log, onDelete, isGuest = false }: TimeLogItemProps) => {
   const { t } = useTranslation('task-drawer/task-drawer');
+  const [modal, contextHolder] = Modal.useModal();
   const {
     user_name,
     avatar_url,
@@ -84,41 +93,76 @@ const TimeLogItem = ({ log, onDelete, isGuest = false }: TimeLogItemProps) => {
     );
   };
 
+  const handleMoveToProject = () => {
+    dispatch(
+      setTimeLogEditing({
+        isEditing: true,
+        logBeingEdited: log,
+      })
+    );
+  };
+
   const renderActionButtons = () => {
     if (!canManageLog) return null;
 
     return (
-      <Space size={8}>
+      <Dropdown
+        trigger={['click']}
+        placement="bottomRight"
+        menu={{
+          items: [
+            {
+              key: 'edit',
+              label: t('taskTimeLogTab.edit', {
+                defaultValue: 'Edit',
+              }),
+            },
+            {
+              key: 'moveToProject',
+              label: t('taskTimeLogTab.moveToProject', {
+                defaultValue: 'Move to Project',
+              }),
+            },
+            {
+              key: 'delete',
+              danger: true,
+              label: t('taskTimeLogTab.delete', { defaultValue: 'Delete' }),
+            },
+          ],
+          onClick: ({ key }) => {
+            if (key === 'edit') {
+              handleEdit();
+            }
+
+            if (key === 'moveToProject') {
+              handleMoveToProject();
+            }
+
+            if (key === 'delete') {
+              modal.confirm({
+                title: t('taskTimeLogTab.confirmDelete', { defaultValue: 'Are you sure you want to delete this time log?' }),
+                okText: t('taskTimeLogTab.confirmDeleteYes', { defaultValue: 'Yes' }),
+                cancelText: t('taskTimeLogTab.confirmDeleteNo', { defaultValue: 'No' }),
+                okButtonProps: { danger: true },
+                onOk: handleDeleteTimeLog,
+              });
+            }
+          },
+        }}
+      >
         <Button
-          type="link"
-          onClick={handleEdit}
-          style={{ padding: '0', height: 'auto', fontSize: '14px' }}
-          aria-label={t('taskTimeLogTab.edit', { defaultValue: 'Edit' })}
-        >
-          {t('taskTimeLogTab.edit', { defaultValue: 'Edit' })}
-        </Button>
-        <Popconfirm
-          title={t('taskTimeLogTab.confirmDelete', {
-            defaultValue: 'Are you sure you want to delete this time log?',
-          })}
-          onConfirm={handleDeleteTimeLog}
-          okText={t('taskTimeLogTab.confirmDeleteYes', { defaultValue: 'Yes' })}
-          cancelText={t('taskTimeLogTab.confirmDeleteNo', { defaultValue: 'No' })}
-        >
-          <Button
-            type="link"
-            style={{ padding: '0', height: 'auto', fontSize: '14px' }}
-            aria-label={t('taskTimeLogTab.delete', { defaultValue: 'Delete' })}
-          >
-            {t('taskTimeLogTab.delete', { defaultValue: 'Delete' })}
-          </Button>
-        </Popconfirm>
-      </Space>
+          type="text"
+          size="small"
+          icon={<MoreOutlined />}
+          aria-label={t('more', { defaultValue: 'More Options' })}
+        />
+      </Dropdown>
     );
   };
 
   return (
     <div className="time-log-item">
+      {contextHolder}
       <Flex vertical gap={8}>
         <Flex align="start" gap={12}>
           <SingleAvatar avatarUrl={avatar_url} name={user_name} />
