@@ -115,8 +115,22 @@ export default class TeamsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async activate(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `SELECT activate_team($1, $2)`;
-    await db.query(q, [req.body.id, req.user?.id ?? null]);
+    // Update the active team and its suppression deadline under the same row
+    // lock, so other replicas cannot auto-switch between the two writes.
+    await db.query(
+      `WITH switched AS (
+         UPDATE users SET active_team = $1,
+           manual_team_switch_until = clock_timestamp() + interval '15 seconds'
+         WHERE id = $2 AND EXISTS (
+           SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2
+         ) RETURNING id
+       ), removed_invitations AS (
+         DELETE FROM email_invitations WHERE team_id = $1 AND team_member_id IN (
+           SELECT id FROM team_members WHERE team_id = $1 AND user_id = $2
+         ) AND EXISTS (SELECT 1 FROM switched)
+       ) SELECT id FROM switched`,
+      [req.body.id, req.user?.id ?? null]
+    );
 
     // Refresh the user session with updated team data to ensure the new active_team
     // is immediately reflected in req.user. Without this, the session remains stale

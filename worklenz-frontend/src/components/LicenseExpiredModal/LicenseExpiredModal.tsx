@@ -10,7 +10,7 @@ import {
   Divider,
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import {
   ClockCircleOutlined,
@@ -29,9 +29,9 @@ import { fetchTeams, setActiveTeam } from '@/features/teams/teamSlice';
 import { verifyAuthentication } from '@/features/auth/authSlice';
 import { setUser } from '@/features/user/userSlice';
 import { navigateAfterTeamSwitch } from '@/utils/team-switch-navigation';
+import { setSession } from '@/utils/session-helper';
 import CustomAvatar from '@/components/CustomAvatar';
 import { colors } from '@/styles/colors';
-import { createAuthService } from '@/services/auth/auth.service';
 import './LicenseExpiredModal.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -46,11 +46,9 @@ export const LicenseExpiredModal = ({
   subscriptionType = ISUBSCRIPTION_TYPE.TRIAL,
 }: LicenseExpiredModalProps) => {
   const navigate = useNavigate();
-  const location = useLocation();
   const dispatch = useAppDispatch();
   const { t } = useTranslation('common');
   const authService = useAuthService();
-  const authServiceInstance = createAuthService(navigate);
   const isOwnerOrAdmin = authService?.isOwnerOrAdmin() ?? false;
   const [visible, setVisible] = useState(open);
   const [isContactingSupport, setIsContactingSupport] = useState(false);
@@ -79,27 +77,22 @@ export const LicenseExpiredModal = ({
     return teamId === session.team_id;
   };
 
-  const handleVerifyAuth = async () => {
-    const result = await dispatch(verifyAuthentication()).unwrap();
-    if (result.authenticated) {
-      dispatch(setUser(result.user));
-      authServiceInstance.setCurrentSession(result.user);
-    }
-  };
-
   const handleTeamSelect = async (id: string) => {
     if (!id) return;
+    if (session?.team_id === id) return;
 
     try {
-      // Switch team and wait for backend to complete
+      // setActiveTeam only returns { subdomain } — not session fields — so
+      // refresh via verify after activate. Safe here: license-expired has no
+      // project-view / getProject prefetch race that the navbar switch guards
+      // against. Persist localStorage before the hard navigate.
       await dispatch(setActiveTeam(id)).unwrap();
-      
-      // Add delay to ensure database transaction is committed
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Verify authentication with updated session
-      await handleVerifyAuth();
-      navigateAfterTeamSwitch(location.pathname);
+      const authResult = await dispatch(verifyAuthentication()).unwrap();
+      if (authResult.authenticated && authResult.user) {
+        dispatch(setUser(authResult.user));
+        setSession(authResult.user);
+      }
+      navigateAfterTeamSwitch(window.location.pathname);
     } catch (error) {
       console.error('Failed to switch team:', error);
     }

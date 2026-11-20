@@ -1733,6 +1733,7 @@ CREATE TABLE IF NOT EXISTS users (
     email           WL_EMAIL                                                                NOT NULL,
     password        TEXT,
     active_team     UUID,
+    manual_team_switch_until TIMESTAMP WITH TIME ZONE,
     avatar_url      TEXT,
     setup_completed BOOLEAN                  DEFAULT FALSE                                  NOT NULL,
     user_no         BIGINT                   DEFAULT NEXTVAL('users_user_no_seq'::REGCLASS) NOT NULL,
