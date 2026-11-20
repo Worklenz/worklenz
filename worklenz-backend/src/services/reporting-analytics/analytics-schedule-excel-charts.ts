@@ -168,7 +168,7 @@ export function buildExcelNativeChartPlan(
       height,
       horizontal: type === "bar" ? true : undefined,
       stacked: stacked || undefined,
-      legend: type === "doughnut" || type === "pie" ? "r" : "b",
+      legend: "b",
     });
 
     cursorRow = blockEnd + 1 + CHART_BLOCK_GAP;

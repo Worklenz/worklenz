@@ -23,12 +23,19 @@ function decodeCell(value: string): string {
 }
 
 /** True for numeric table values (counts, %, currency, "+3 days") — body cells only. */
-function isNumericCellValue(value: string): boolean {
+export function isNumericCellValue(value: string): boolean {
   const trimmed = value.trim();
   if (!trimmed) return false;
   if (/^[+-]?\d+(\.\d+)?\s+days$/i.test(trimmed)) return true;
   const normalized = trimmed.replace(/[,\s]/g, "");
   return /^-?\$?\(?\d+(\.\d+)?\)?%?$/.test(normalized);
+}
+
+/** Columns whose body values are numeric (right-aligned like the on-demand export PDF). */
+export function detectNumericColumns(header: string[], body: string[][]): boolean[] {
+  return header.map((_, ci) =>
+    body.some(row => isNumericCellValue(decodeCell(row[ci] ?? "")))
+  );
 }
 
 export interface SchedulePdfKpiTile {
@@ -44,6 +51,12 @@ export interface RenderSchedulePdfOptions {
   chartPngs?: Buffer[] | Buffer | null;
   /** Topic above each chart PNG (e.g. "Progress & budget", "Health status"). */
   chartTitles?: string[] | null;
+  /** Optional hint under each chart topic (PDF text — not baked into the PNG). */
+  chartHints?: string[] | null;
+  /** Optional point-wise legends per chart (e.g. health statuses under the donut). */
+  chartLegends?: Array<
+    Array<{ label: string; color: string; count: number }>
+  > | null;
   /**
    * Optional hex text colors matching `rows` (null = default).
    * Used for tinted numeric/status cells (variance, utilization, burn, etc.).
@@ -199,9 +212,46 @@ const pdfStyles = StyleSheet.create({
     fontSize: 11,
     fontWeight: 700,
     color: "#262626",
-    marginBottom: 8,
+    marginBottom: 4,
     alignSelf: "flex-start",
     width: "100%",
+  },
+  chartHint: {
+    fontSize: 9,
+    color: "#595959",
+    marginBottom: 6,
+    alignSelf: "flex-start",
+    width: "100%",
+    lineHeight: 1.35,
+  },
+  chartLegend: {
+    marginTop: 8,
+    width: "100%",
+    alignSelf: "stretch",
+  },
+  chartLegendRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 5,
+  },
+  chartLegendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 2,
+    marginRight: 6,
+    flexShrink: 0,
+  },
+  chartLegendLabel: {
+    flexGrow: 1,
+    flexShrink: 1,
+    fontSize: 9,
+    color: "#262626",
+  },
+  chartLegendCount: {
+    fontSize: 9,
+    color: "#8c8c8c",
+    flexShrink: 0,
+    marginLeft: 4,
   },
   chartsRow: {
     flexDirection: "row",
@@ -243,16 +293,24 @@ const pdfStyles = StyleSheet.create({
     fontSize: 8,
     borderRightWidth: 1.25,
     borderRightColor: "#8c8c8c",
+    justifyContent: "center",
   },
   headerCell: {
-    fontSize: 10,
-    fontWeight: 700,
     paddingVertical: 10,
   },
   cellLast: {
     borderRightWidth: 0,
   },
-  cellNumeric: {
+  cellText: {
+    width: "100%",
+    fontSize: 8,
+  },
+  headerCellText: {
+    width: "100%",
+    fontSize: 10,
+    fontWeight: 700,
+  },
+  cellTextRight: {
     textAlign: "right",
   },
   empty: { marginTop: 12, color: "#8c8c8c" },
@@ -283,12 +341,20 @@ const pdfStyles = StyleSheet.create({
   },
 });
 
+interface ScheduleChartLegendItem {
+  label: string;
+  color: string;
+  count: number;
+}
+
 interface SchedulePdfProps {
   title: string;
   exportedOn: string;
   rows: string[][];
   chartPngs?: Buffer[];
   chartTitles?: string[];
+  chartHints?: string[];
+  chartLegends?: ScheduleChartLegendItem[][];
   tableCellColors?: Array<Array<string | null>>;
   logo?: Buffer | null;
   kpis?: SchedulePdfKpiTile[];
@@ -296,12 +362,51 @@ interface SchedulePdfProps {
   footerNote?: string;
 }
 
+const ChartLegendList = ({ items }: { items: ScheduleChartLegendItem[] }) => {
+  if (!items.length) return null;
+  return (
+    <View style={pdfStyles.chartLegend}>
+      {items.map(item => (
+        <View key={item.label} style={pdfStyles.chartLegendRow} wrap={false}>
+          <View
+            style={[pdfStyles.chartLegendDot, { backgroundColor: item.color }]}
+          />
+          <Text style={pdfStyles.chartLegendLabel}>{item.label}</Text>
+          <Text style={pdfStyles.chartLegendCount}>{item.count}</Text>
+        </View>
+      ))}
+    </View>
+  );
+};
+
 interface ScheduleTableProps {
   header: string[];
   body: string[][];
   truncated: boolean;
   /** Body-aligned colors (index 0 = first data row). */
   bodyCellColors?: Array<Array<string | null>>;
+  /** Total data rows across all table pages (for the caption). */
+  totalRowCount?: number;
+  /** Show the "Table" section title (first table page only). */
+  showSectionTitle?: boolean;
+  /** Precomputed numeric column flags (from the full table body). */
+  numericColumns?: boolean[];
+}
+
+/**
+ * Landscape A4 usable height is tight once branding + column header are included.
+ * Keep this conservative so each Page fits without react-pdf splitting mid-table
+ * (which would drop the column header on the overflow page).
+ */
+export const TABLE_ROWS_PER_PAGE = 12;
+
+export function chunkRows<T>(rows: T[], size: number): T[][] {
+  if (rows.length === 0) return [[]];
+  const pages: T[][] = [];
+  for (let i = 0; i < rows.length; i += size) {
+    pages.push(rows.slice(i, i + size));
+  }
+  return pages;
 }
 
 function logoSrc(logo: Buffer | null | undefined): string | null {
@@ -329,7 +434,7 @@ function readPngPixelSize(buf: Buffer): { width: number; height: number } | null
 }
 
 /** Fit image into a box without stretching (keeps chart fonts sharp). */
-function fitContainedSize(
+export function fitContainedSize(
   pxW: number,
   pxH: number,
   boxW: number,
@@ -453,46 +558,63 @@ const KpiCards = ({ kpis }: { kpis: SchedulePdfKpiTile[] }) => {
   );
 };
 
-const TableHeaderRow = ({ header }: { header: string[] }) => (
+const TableHeaderRow = ({
+  header,
+  numericColumns = [],
+}: {
+  header: string[];
+  numericColumns?: boolean[];
+}) => (
   <View style={[pdfStyles.row, pdfStyles.headerRow]} wrap={false}>
-    {header.map((cell, i) => (
-      <Text
-        key={`h-${i}`}
-        style={
-          i === header.length - 1
-            ? [pdfStyles.cell, pdfStyles.headerCell, pdfStyles.cellLast]
-            : [pdfStyles.cell, pdfStyles.headerCell]
-        }
-      >
-        {decodeCell(cell)}
-      </Text>
-    ))}
+    {header.map((cell, i) => {
+      const isNumeric = !!numericColumns[i];
+      const cellStyles = [
+        pdfStyles.cell,
+        pdfStyles.headerCell,
+        ...(i === header.length - 1 ? [pdfStyles.cellLast] : []),
+      ];
+      const textStyles = [
+        pdfStyles.headerCellText,
+        ...(isNumeric ? [pdfStyles.cellTextRight] : []),
+      ];
+      return (
+        <View key={`h-${i}`} style={cellStyles}>
+          <Text style={textStyles}>{decodeCell(cell)}</Text>
+        </View>
+      );
+    })}
   </View>
 );
 
 /**
- * Data table: single in-flow column header above data rows.
- * (A fixed `pageNumber > 1` repeat header doubled on the table page because
- * KPIs/charts already occupy document page 1.)
+ * Data table for one PDF page. Column headers are in-flow on every table page
+ * (pages are chunked so react-pdf does not wrap mid-table without a header).
  */
 const ScheduleTable = ({
   header,
   body,
   truncated,
   bodyCellColors = [],
+  totalRowCount,
+  showSectionTitle = true,
+  numericColumns: numericColumnsProp,
 }: ScheduleTableProps) => {
   if (header.length === 0 && body.length === 0) {
     return <Text style={pdfStyles.empty}>No rows for the saved filters.</Text>;
   }
 
+  const rowCount = totalRowCount ?? body.length;
+  const numericColumns =
+    numericColumnsProp ?? detectNumericColumns(header, body);
+
   return (
     <View style={pdfStyles.tableBlock}>
-      <Text style={pdfStyles.sectionTitle}>Table</Text>
+      {showSectionTitle ? <Text style={pdfStyles.sectionTitle}>Table</Text> : null}
       <Text style={pdfStyles.tableContinues}>
-        Report data ({body.length} row{body.length === 1 ? "" : "s"})
+        Report data ({rowCount} row{rowCount === 1 ? "" : "s"})
       </Text>
       <View style={pdfStyles.tableFrame}>
-        <TableHeaderRow header={header} />
+        <TableHeaderRow header={header} numericColumns={numericColumns} />
         {body.map((r, ri) => (
           <View
             key={`r-${ri}`}
@@ -506,16 +628,20 @@ const ScheduleTable = ({
             {header.map((_, ci) => {
               const text = decodeCell(r[ci] ?? "");
               const color = bodyCellColors[ri]?.[ci] || undefined;
-              const styles = [
+              const isNumeric = numericColumns[ci] || isNumericCellValue(text);
+              const cellStyles = [
                 pdfStyles.cell,
                 ...(ci === header.length - 1 ? [pdfStyles.cellLast] : []),
-                ...(isNumericCellValue(text) ? [pdfStyles.cellNumeric] : []),
+              ];
+              const textStyles = [
+                pdfStyles.cellText,
+                ...(isNumeric ? [pdfStyles.cellTextRight] : []),
                 ...(color ? [{ color }] : []),
               ];
               return (
-                <Text key={`c-${ri}-${ci}`} style={styles}>
-                  {text}
-                </Text>
+                <View key={`c-${ri}-${ci}`} style={cellStyles}>
+                  <Text style={textStyles}>{text}</Text>
+                </View>
               );
             })}
           </View>
@@ -534,6 +660,8 @@ const SchedulePdfDocument = ({
   rows,
   chartPngs = [],
   chartTitles = [],
+  chartHints = [],
+  chartLegends = [],
   tableCellColors = [],
   logo = null,
   kpis = [],
@@ -550,33 +678,60 @@ const SchedulePdfDocument = ({
   const hasCharts = charts.length > 0;
   const isSideBySideCharts = charts.length === 2;
   const topics = chartTitles || [];
+  const hints = chartHints || [];
+  const legends = chartLegends || [];
   const primaryTopic = topics[0] || title;
   const secondaryTopic = topics[1] || "";
+  const primaryHint = (hints[0] || "").trim();
+  const secondaryHint = (hints[1] || "").trim();
+  const primaryLegend = legends[0] || [];
+  const secondaryLegend = legends[1] || [];
 
-  // Landscape content width ≈ A4 landscape minus horizontal padding (28×2) and card padding.
+  // Landscape A4 page 1: size charts to fit with header + KPIs (do not overflow
+  // onto page 2). Cap height so side-by-side Project Health stays on page 1.
+  const PAGE_H = 595.28;
+  const PAGE_PAD_TOP = 28;
+  const PAGE_PAD_BOTTOM = 48;
+  const HEADER_EST = 68;
+  const KPI_EST = kpis.length ? 124 : 0;
+  const hasAnyHint = !!(primaryHint || secondaryHint);
+  const hasAnyLegend = primaryLegend.length > 0 || secondaryLegend.length > 0;
+  // topic (+ hint) + optional 4-row legend under donut + card padding
+  const CHART_CARD_CHROME =
+    (hasAnyHint ? 48 : 32) + (hasAnyLegend ? 78 : 0);
   const pageContentW = 841.89 - 56;
   const chartInnerW = pageContentW - 24;
-  const chartRowH = 180;
-  const singleChartH = 170;
+  const remainingH =
+    PAGE_H - PAGE_PAD_TOP - PAGE_PAD_BOTTOM - HEADER_EST - KPI_EST - CHART_CARD_CHROME - 16;
+  // Keep charts usable but leave headroom so the block cannot spill to page 2.
+  const availableChartH = Math.min(hasAnyLegend ? 175 : 210, Math.max(140, remainingH));
+  const chartRowH = availableChartH;
+  const singleChartH = availableChartH;
 
   const chartsBlock = !hasCharts ? null : isSideBySideCharts ? (
     <View style={pdfStyles.chartsRow} wrap={false}>
       {(() => {
-        const barPx = readPngPixelSize(chartBuffers[0]) || { width: 1160, height: 400 };
-        const donutPx = readPngPixelSize(chartBuffers[1]) || { width: 480, height: 480 };
+        const barPx = readPngPixelSize(chartBuffers[0]) || { width: 1100, height: 560 };
+        const donutPx = readPngPixelSize(chartBuffers[1]) || { width: 420, height: 420 };
         const barBoxW = chartInnerW * 0.74;
         const donutBoxW = chartInnerW * 0.24;
+        // Leave room under the donut for the point-wise health legend.
+        const donutImageH = Math.min(
+          chartRowH - (secondaryLegend.length ? 72 : 0),
+          130
+        );
         const barSize = fitContainedSize(barPx.width, barPx.height, barBoxW, chartRowH);
         const donutSize = fitContainedSize(
           donutPx.width,
           donutPx.height,
           donutBoxW,
-          chartRowH
+          Math.max(100, donutImageH)
         );
         return (
           <>
             <View style={[pdfStyles.chartSlotBar, pdfStyles.chartCard, { marginBottom: 0 }]}>
               {primaryTopic ? <Text style={pdfStyles.chartTopic}>{primaryTopic}</Text> : null}
+              {primaryHint ? <Text style={pdfStyles.chartHint}>{primaryHint}</Text> : null}
               <Image
                 src={charts[0]}
                 style={{
@@ -585,10 +740,14 @@ const SchedulePdfDocument = ({
                   objectFit: "contain",
                 }}
               />
+              <ChartLegendList items={primaryLegend} />
             </View>
             <View style={[pdfStyles.chartSlotDonut, pdfStyles.chartCard, { marginBottom: 0 }]}>
               {secondaryTopic ? (
                 <Text style={pdfStyles.chartTopic}>{secondaryTopic}</Text>
+              ) : null}
+              {secondaryHint ? (
+                <Text style={pdfStyles.chartHint}>{secondaryHint}</Text>
               ) : null}
               <Image
                 src={charts[1]}
@@ -598,6 +757,7 @@ const SchedulePdfDocument = ({
                   objectFit: "contain",
                 }}
               />
+              <ChartLegendList items={secondaryLegend} />
             </View>
           </>
         );
@@ -606,10 +766,11 @@ const SchedulePdfDocument = ({
   ) : (
     <View style={pdfStyles.chartCard} wrap={false}>
       {primaryTopic ? <Text style={pdfStyles.chartTopic}>{primaryTopic}</Text> : null}
+      {primaryHint ? <Text style={pdfStyles.chartHint}>{primaryHint}</Text> : null}
       {charts.map((src, index) => {
         const px = readPngPixelSize(chartBuffers[index]) || {
           width: 960,
-          height: 420,
+          height: 520,
         };
         const size = fitContainedSize(px.width, px.height, chartInnerW, singleChartH);
         return (
@@ -624,7 +785,11 @@ const SchedulePdfDocument = ({
   );
 
   // Page 1: branding + KPI cards + charts (side-by-side when bar + donut).
-  // Page 2+: table with column header always above data rows (repeats on wrap).
+  // Page 2+: one table chunk per page so the column header row is on every page.
+  const tableChunks = chunkRows(body, TABLE_ROWS_PER_PAGE);
+  const colorChunks = chunkRows(bodyCellColors, TABLE_ROWS_PER_PAGE);
+  const numericColumns = detectNumericColumns(header, body);
+
   return (
     <Document>
       <Page size="A4" orientation="landscape" style={pdfStyles.page} wrap>
@@ -635,16 +800,27 @@ const SchedulePdfDocument = ({
           {chartsBlock}
         </View>
       </Page>
-      <Page size="A4" orientation="landscape" style={pdfStyles.page} wrap>
-        <ScheduleHeader title={title} logo={logo} filterDetails={filterDetails} />
-        <ScheduleFooter title={title} exportedOn={exportedOn} footerNote={footerNote} />
-        <ScheduleTable
-          header={header}
-          body={body}
-          truncated={truncated}
-          bodyCellColors={bodyCellColors}
-        />
-      </Page>
+      {tableChunks.map((pageRows, pageIndex) => (
+        <Page
+          key={`table-page-${pageIndex}`}
+          size="A4"
+          orientation="landscape"
+          style={pdfStyles.page}
+          wrap={false}
+        >
+          <ScheduleHeader title={title} logo={logo} filterDetails={filterDetails} />
+          <ScheduleFooter title={title} exportedOn={exportedOn} footerNote={footerNote} />
+          <ScheduleTable
+            header={header}
+            body={pageRows}
+            truncated={truncated && pageIndex === tableChunks.length - 1}
+            bodyCellColors={colorChunks[pageIndex] || []}
+            totalRowCount={body.length}
+            showSectionTitle={pageIndex === 0}
+            numericColumns={numericColumns}
+          />
+        </Page>
+      ))}
     </Document>
   );
 };
@@ -679,6 +855,8 @@ export async function renderSchedulePdf(
       rows: options.rows,
       chartPngs: normalized,
       chartTitles: options.chartTitles ?? [],
+      chartHints: options.chartHints ?? [],
+      chartLegends: options.chartLegends ?? [],
       tableCellColors: options.tableCellColors ?? [],
       logo: options.logo ?? null,
       kpis: options.kpis ?? [],

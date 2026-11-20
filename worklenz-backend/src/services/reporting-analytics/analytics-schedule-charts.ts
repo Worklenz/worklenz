@@ -11,7 +11,8 @@ import type { VelocitySeriesResult } from "./velocity-series.service";
 
 const MAX_BARS = 20;
 const CHART_WIDTH = 960;
-const CHART_HEIGHT = 420;
+/** Taller default so landscape PDF page-1 charts fill available height. */
+const CHART_HEIGHT = 520;
 
 interface WithUpdatedAt {
   updated_at?: string | null;
@@ -155,6 +156,32 @@ const PROJECT_HEALTH_TONE_COLORS = {
   not_set: "#8c8c8c",
 } as const;
 
+export interface ScheduleChartLegendItem {
+  label: string;
+  color: string;
+  count: number;
+}
+
+const PROJECT_HEALTH_LEGEND: Array<{
+  key: keyof typeof PROJECT_HEALTH_TONE_COLORS;
+  label: string;
+}> = [
+  { key: "on_track", label: "On track" },
+  { key: "at_risk", label: "At risk" },
+  { key: "off_track", label: "Off track" },
+  { key: "not_set", label: "Not set" },
+];
+
+export function buildProjectHealthLegend(
+  data: ProjectHealthResult
+): ScheduleChartLegendItem[] {
+  return PROJECT_HEALTH_LEGEND.map(slice => ({
+    label: slice.label,
+    color: PROJECT_HEALTH_TONE_COLORS[slice.key],
+    count: data.kpis[slice.key] ?? 0,
+  }));
+}
+
 function projectHealthBarConfig(data: ProjectHealthResult): ChartConfig | null {
   const projects = latestUpdatedSlice(data.projects);
   if (!projects.length) return null;
@@ -190,16 +217,12 @@ function projectHealthBarConfig(data: ProjectHealthResult): ChartConfig | null {
   };
 }
 
-/** Matches the on-screen Project Health donut (center total, full legend, hint). */
+/**
+ * Project Health donut PNG: ring + center total only.
+ * Legend is drawn point-wise in the PDF (like the on-page card) so labels stay readable.
+ */
 function projectHealthDonutConfig(data: ProjectHealthResult): ChartConfig | null {
-  const allSlices = (
-    [
-      { key: "on_track", label: "On track" },
-      { key: "at_risk", label: "At risk" },
-      { key: "off_track", label: "Off track" },
-      { key: "not_set", label: "Not set" },
-    ] as const
-  ).map(slice => ({
+  const allSlices = PROJECT_HEALTH_LEGEND.map(slice => ({
     ...slice,
     count: data.kpis[slice.key] ?? 0,
     color: PROJECT_HEALTH_TONE_COLORS[slice.key],
@@ -213,12 +236,11 @@ function projectHealthDonutConfig(data: ProjectHealthResult): ChartConfig | null
   return {
     type: "doughnut",
     data: {
-      // Label + count for every status (including zeros), same as the page legend.
-      labels: allSlices.map(s => `${s.label}   ${s.count}`),
+      labels: visibleSlices.map(s => s.label),
       datasets: [
         {
-          data: allSlices.map(s => s.count),
-          backgroundColor: allSlices.map(s => s.color),
+          data: visibleSlices.map(s => s.count),
+          backgroundColor: visibleSlices.map(s => s.color),
           borderColor: "#ffffff",
           borderWidth: 2,
         },
@@ -226,37 +248,19 @@ function projectHealthDonutConfig(data: ProjectHealthResult): ChartConfig | null
     },
     options: {
       cutout: "62%",
-          plugins: {
-        // Topic title is drawn by the PDF layout (same as other charts).
-        subtitle: {
-          display: true,
-          text: "Based on health set in project settings",
-          align: "start",
-          color: "#8c8c8c",
-          font: { size: 10 },
-          padding: { top: 8 },
-        },
-        legend: {
-          display: true,
-          position: "right",
-          labels: {
-            boxWidth: 10,
-            padding: 14,
-            color: "#262626",
-            font: { size: 12 },
-          },
-        },
+      plugins: {
+        legend: { display: false },
         // QuickChart center label (mirrors page total + "projects").
         doughnutlabel: {
           labels: [
             {
               text: String(total),
-              font: { size: 22, weight: "bold" },
+              font: { size: 26, weight: "bold" },
               color: "#262626",
             },
             {
               text: "projects",
-              font: { size: 11 },
+              font: { size: 12 },
               color: "#8c8c8c",
             },
           ],
@@ -437,6 +441,34 @@ export function getScheduleChartTitles(source: ScheduleChartSource): string[] {
   }
 }
 
+/**
+ * Optional hint lines under each chart topic in scheduled PDFs.
+ * Empty string = no hint for that chart slot.
+ */
+export function getScheduleChartHints(source: ScheduleChartSource): string[] {
+  switch (source.kind) {
+    case "project-health":
+      return ["", "Based on health set in project settings"];
+    default:
+      return [];
+  }
+}
+
+/**
+ * Optional point-wise legends per chart slot (drawn in PDF, not baked into PNG).
+ * Empty array = no legend for that slot.
+ */
+export function getScheduleChartLegends(
+  source: ScheduleChartSource
+): ScheduleChartLegendItem[][] {
+  switch (source.kind) {
+    case "project-health":
+      return [[], buildProjectHealthLegend(source.data)];
+    default:
+      return [];
+  }
+}
+
 function configsForSource(source: ScheduleChartSource): ChartConfig[] {
   switch (source.kind) {
     case "velocity":
@@ -503,20 +535,20 @@ export async function renderScheduleChartPngs(
       // Project Health PDF: bar ~3/4 + donut ~1/4.
       // Bar aspect ~2.9:1 matches the PDF slot (avoids stretch/blurry axis labels).
       if (isProjectHealthPair) {
+        // Taller bar (~2:1) fills the PDF chart slot.
+        // Donut is square (legend is drawn in PDF under the image).
         return renderChartConfigPng(
           config,
           isDonut || index === 1
-            ? { width: 480, height: 480 }
-            : { width: 1160, height: 400 }
+            ? { width: 420, height: 420 }
+            : { width: 1100, height: 560 }
         );
       }
       return renderChartConfigPng(
         config,
         isDonut
-          ? { width: 520, height: 360 }
-          : index > 0
-            ? { width: CHART_WIDTH, height: CHART_HEIGHT }
-            : undefined
+          ? { width: 640, height: 420 }
+          : { width: CHART_WIDTH, height: CHART_HEIGHT }
       );
     })
   );
