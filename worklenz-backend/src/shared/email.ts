@@ -1,5 +1,7 @@
 import { SendEmailCommand, SendRawEmailCommand, SESClient } from "@aws-sdk/client-ses";
 import nodemailer from "nodemailer";
+import addressparser from "nodemailer/lib/addressparser";
+import { encodeWord } from "nodemailer/lib/mime-funcs";
 import { Validator } from "jsonschema";
 import { QueryResult } from "pg";
 import lodash from "lodash";
@@ -37,6 +39,13 @@ function getEmailConfiguration(): EmailConfiguration {
     // Backwards-compatible default for existing SES installations.
     from: process.env.EMAIL_FROM?.trim() || "Worklenz <noreply@worklenz.com>",
   };
+}
+
+/** Encodes only a non-ASCII display name for SES structured messages. */
+function getSesSource(from: string): string {
+  const [sender] = addressparser(from, { flatten: true });
+  if (!sender?.address || !/[^\x00-\x7f]/.test(sender.name)) return from;
+  return `${encodeWord(sender.name, "B", 52)} <${sender.address}>`;
 }
 
 /** Lists configuration problems without exposing credential values. */
@@ -377,7 +386,7 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
             Text: { Charset: charset, Data: plainText },
           },
         },
-        Source: from,
+        Source: getSesSource(from),
       });
       const response = await sesClient.send(command);
       messageId = response.MessageId;
