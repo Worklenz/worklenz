@@ -1,32 +1,32 @@
 {
-  "details": {
-    "task-key": "Aufgabenschlüssel",
-    "phase": "Phase",
-    "assignees": "Zugewiesene",
-    "due-date": "Fälligkeitsdatum",
-    "time-estimation": "Zeitschätzung",
-    "priority": "Priorität",
-    "labels": "Bezeichnungen",
-    "billable": "Abrechenbar",
-    "notify": "Benachrichtigen",
-    "when-done-notify": "Bei Fertigstellung benachrichtigen",
-    "start-date": "Startdatum",
-    "end-date": "Enddatum",
-    "hide-start-date": "Startdatum ausblenden",
-    "show-start-date": "Startdatum anzeigen",
-    "hours": "Stunden",
-    "minutes": "Minuten",
-    "recurring": "Wiederkehrend"
-  },
-  "description": {
-    "title": "Beschreibung",
-    "placeholder": "Fügen Sie eine detailliertere Beschreibung hinzu...",
-    "clickToAdd": "Klicken Sie hier, um eine Beschreibung hinzuzufügen...",
-    "loadingEditor": "Editor wird geladen..."
-  },
-  "subTasks": {
-    "title": "Unteraufgaben",
-    "add-sub-task": "+ Unteraufgabe hinzufügen",
-    "refresh-sub-tasks": "Unteraufgaben aktualisieren"
-  }
+    "details":  {
+                    "task-key":  "AufgabenschlÃ¼ssel",
+                    "phase":  "Phase",
+                    "assignees":  "Zugewiesene",
+                    "due-date":  "FÃ¤lligkeitsdatum",
+                    "time-estimation":  "ZeitschÃ¤tzung",
+                    "priority":  "PrioritÃ¤t",
+                    "labels":  "Bezeichnungen",
+                    "billable":  "Abrechenbar",
+                    "notify":  "Benachrichtigen",
+                    "when-done-notify":  "Bei Fertigstellung benachrichtigen",
+                    "start-date":  "Startdatum",
+                    "end-date":  "Enddatum",
+                    "hide-start-date":  "Startdatum ausblenden",
+                    "show-start-date":  "Startdatum anzeigen",
+                    "hours":  "Stunden",
+                    "minutes":  "Minuten",
+                    "recurring":  "Wiederkehrend"
+                },
+    "description":  {
+                        "title":  "Beschreibung",
+                        "placeholder":  "FÃ¼gen Sie eine detailliertere Beschreibung hinzu...",
+                        "clickToAdd":  "Klicken Sie hier, um eine Beschreibung hinzuzufÃ¼gen...",
+                        "loadingEditor":  "Editor wird geladen..."
+                    },
+    "subTasks":  {
+                     "title":  "Unteraufgaben",
+                     "add-sub-task":  "+ Unteraufgabe hinzufÃ¼gen",
+                     "refresh-sub-tasks":  "Unteraufgaben aktualisieren"
+                 }
 }
