@@ -8,6 +8,7 @@ import { Button, message } from '@/shared/antd-imports';
 import logger from '@/utils/errorLogger';
 import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
 import { createMentionEnterBinding } from './description-editor-keyboard';
+import { findMentionRanges, normalizeMentionText, removeActiveMentionQuery } from './mention-matching';
 import 'react-quill-new/dist/quill.snow.css';
 import './description-editor.css';
 
@@ -110,71 +111,6 @@ const SANITIZE_CONFIG = {
   ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'data-list'],
 };
 
-
-
-const normalizeMentionText = (value: string) => value.toLocaleLowerCase();
-
-const findMentionRanges = (text: string, members: MentionMember[]) => {
-  const normalizedText = normalizeMentionText(text);
-  const normalizedToOriginal = new Map<number, number>();
-  normalizedToOriginal.set(0, 0);
-
-  let originalOffset = 0;
-  let normalizedOffset = 0;
-
-  for (const character of text) {
-    originalOffset += character.length;
-    normalizedOffset += character.toLocaleLowerCase().length;
-    normalizedToOriginal.set(normalizedOffset, originalOffset);
-  }
-
-  const ranges: Array<{ start: number; length: number }> = [];
-  const orderedMembers = [...members].sort((a, b) => b.name.length - a.name.length);
-
-  orderedMembers.forEach(member => {
-    const mention = `@${member.name.trim()}`;
-    if (mention.length < 2) return;
-
-    const normalizedMention = normalizeMentionText(mention);
-    let searchFrom = 0;
-    let matchIndex = normalizedText.indexOf(normalizedMention, searchFrom);
-
-    while (matchIndex !== -1) {
-      const originalStart = normalizedToOriginal.get(matchIndex);
-      const originalEnd = normalizedToOriginal.get(
-        matchIndex + normalizedMention.length
-      );
-
-      if (originalStart !== undefined && originalEnd !== undefined) {
-        const previousCharacter = originalStart > 0 ? text[originalStart - 1] : '';
-        const nextCharacter = text[originalEnd] || '';
-
-        const hasValidStart =
-          !previousCharacter || /[\s([{,:;.!?]/.test(previousCharacter);
-        const hasValidEnd =
-          !nextCharacter || /[\s.,;:!?)}\]]/.test(nextCharacter);
-
-        const overlapsExisting = ranges.some(
-          range =>
-            originalStart < range.start + range.length &&
-            originalEnd > range.start
-        );
-
-        if (hasValidStart && hasValidEnd && !overlapsExisting) {
-          ranges.push({
-            start: originalStart,
-            length: originalEnd - originalStart,
-          });
-        }
-      }
-
-      searchFrom = matchIndex + normalizedMention.length;
-      matchIndex = normalizedText.indexOf(normalizedMention, searchFrom);
-    }
-  });
-
-  return ranges;
-};
 
 
 const applyMentionFormatting = (editor: QuillEditorInstance, members: MentionMember[]) => {
@@ -659,7 +595,7 @@ const DescriptionEditor = ({
 
     // Exclude the mention currently being typed from duplicate detection.
     const textWithoutCurrentQuery =
-      text.slice(0, mentionQuery.start) + text.slice(mentionQuery.end);
+      removeActiveMentionQuery(text, mentionQuery.start, mentionQuery.end);
 
     const existingMentions = new Set(
       findMentionRanges(textWithoutCurrentQuery, mentionMembers).map(({ start, length }) =>
