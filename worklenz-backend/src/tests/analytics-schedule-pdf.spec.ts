@@ -106,6 +106,7 @@ describe("branded analytics schedule PDF", () => {
       ],
       logo,
       chartPngs: [tinyPng, tinyPng],
+      chartTitles: ["Progress & budget", "Health status"],
       kpis: [
         { label: "On track", value: "12", sub: "projects", tone: "#52c41a" },
         { label: "At risk", value: "4", sub: "projects", tone: "#faad14" },

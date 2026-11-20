@@ -9,6 +9,7 @@ import {
   downloadAnalyticsBrandedPdf,
   resolveAnalyticsPdfLogoUrl,
 } from '@/lib/reporting/analytics-branded-pdf';
+import { buildAnalyticsPdfFilterDetails } from '@/lib/reporting/analytics-pdf-filter-details';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -341,7 +342,18 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
           title,
           filename: `planned-vs-actual-milestones-${stamp}.pdf`,
           logoUrl: resolveAnalyticsPdfLogoUrl(teamsList, session?.team_id),
+          filterDetails: buildAnalyticsPdfFilterDetails({
+            datePreset,
+            customRange,
+            dateFrom: dateBounds.date_from,
+            dateTo: dateBounds.date_to,
+            selectedProjectIds,
+            projectOptionsCount: projectOptions.length,
+            selectedTeamIds,
+            selectedMemberIds,
+          }),
           chartPngDataUrl: png,
+          chartTitle: baseTitle,
           tableRows: [
             ['Milestone', 'Project', 'Planned', 'Actual', 'Variance'],
             ...data.milestones.map(row => [

@@ -11,6 +11,7 @@ import {
   downloadAnalyticsBrandedPdf,
   resolveAnalyticsPdfLogoUrl,
 } from '@/lib/reporting/analytics-branded-pdf';
+import { buildAnalyticsPdfFilterDetails } from '@/lib/reporting/analytics-pdf-filter-details';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -421,13 +422,27 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       }
       if (format === 'pdf') {
         const png = chartRef.current?.toPngDataUrl();
-        const donutPng = donutRef.current?.toPngDataUrl() ?? null;
+        const donutPng = (await donutRef.current?.toPngDataUrl()) ?? null;
         await downloadAnalyticsBrandedPdf({
           title,
           filename: `project-health-${stamp}.pdf`,
           logoUrl: resolveAnalyticsPdfLogoUrl(teamsList, session?.team_id),
+          filterDetails: buildAnalyticsPdfFilterDetails({
+            datePreset,
+            customRange,
+            dateFrom: dateBounds.date_from,
+            dateTo: dateBounds.date_to,
+            selectedProjectIds,
+            projectOptionsCount: projectOptions.length,
+            selectedTeamIds,
+            selectedMemberIds,
+            selectedHealthIds,
+            forceLiveProjectScope: true,
+          }),
           chartPngDataUrl: png,
           secondaryChartPngDataUrl: donutPng,
+          chartTitle: t('phProgressBudgetTitle', { defaultValue: 'Progress & budget' }),
+          secondaryChartTitle: t('phDonutTitle', { defaultValue: 'Health status' }),
           tableRows: [
             ['Project', 'Health', 'Progress %', 'Open', 'Overdue'],
             ...data.projects.map(row => [

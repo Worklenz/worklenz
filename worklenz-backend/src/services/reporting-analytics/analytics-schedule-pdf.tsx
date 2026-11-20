@@ -33,9 +33,13 @@ export interface RenderSchedulePdfOptions {
   title: string;
   rows: string[][];
   chartPngs?: Buffer[] | Buffer | null;
+  /** Topic above each chart PNG (e.g. "Progress & budget", "Health status"). */
+  chartTitles?: string[] | null;
   /** Pre-fetched PNG/JPEG logo bytes (org logo or Worklenz default). */
   logo?: Buffer | null;
   kpis?: SchedulePdfKpiTile[];
+  /** Compact filter summary shown under the report title. */
+  filterDetails?: string | null;
   footerNote?: string;
   exportedOn?: string;
 }
@@ -59,7 +63,6 @@ const pdfStyles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: 14,
     paddingBottom: 10,
@@ -71,7 +74,6 @@ const pdfStyles = StyleSheet.create({
     alignItems: "center",
     flexGrow: 1,
     flexShrink: 1,
-    paddingRight: 12,
   },
   // Match navbar logo: height 26, maxWidth 140 (NavbarLogo.tsx).
   logo: {
@@ -85,16 +87,18 @@ const pdfStyles = StyleSheet.create({
     flexShrink: 1,
   },
   title: { fontSize: 14, fontWeight: 700, marginBottom: 2, color: "#262626" },
-  meta: { fontSize: 9, color: "#595959" },
-  headerRight: {
-    alignItems: "flex-end",
+  filterDetails: {
+    fontSize: 8,
+    color: "#595959",
+    marginTop: 2,
+    maxWidth: 520,
   },
-  brandAccent: {
-    width: 36,
-    height: 3,
-    backgroundColor: TONES.primary,
-    marginBottom: 6,
-    borderRadius: 2,
+  filterLabel: {
+    fontWeight: 700,
+    color: "#434343",
+  },
+  filterValue: {
+    fontWeight: 400,
   },
   sectionTitle: {
     fontSize: 11,
@@ -166,22 +170,37 @@ const pdfStyles = StyleSheet.create({
   summaryAndCharts: {
     marginBottom: 4,
   },
+  /** Match reporting ChartTableWrapper card: clearer border + radius + padding. */
+  chartCard: {
+    borderWidth: 1.25,
+    borderColor: "#bfbfbf",
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: "#ffffff",
+    marginBottom: 10,
+    alignItems: "center",
+    justifyContent: "flex-start",
+  },
+  chartTopic: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: "#262626",
+    marginBottom: 8,
+    alignSelf: "flex-start",
+    width: "100%",
+  },
   chartsRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "stretch",
     marginBottom: 10,
   },
-  chart: { marginBottom: 10, objectFit: "contain" },
+  chart: { objectFit: "contain" },
   chartSlotBar: {
     width: "74%",
     marginRight: "2%",
-    alignItems: "center",
-    justifyContent: "center",
   },
   chartSlotDonut: {
     width: "24%",
-    alignItems: "center",
-    justifyContent: "center",
   },
   tableBlock: { marginTop: 4 },
   tableFrame: {
@@ -252,8 +271,10 @@ interface SchedulePdfProps {
   exportedOn: string;
   rows: string[][];
   chartPngs?: Buffer[];
+  chartTitles?: string[];
   logo?: Buffer | null;
   kpis?: SchedulePdfKpiTile[];
+  filterDetails?: string | null;
   footerNote?: string;
 }
 
@@ -304,25 +325,54 @@ function fitContainedSize(
   return { width, height };
 }
 
+/** Split "Label: value · Label: value" into parts for bold labels. */
+function parseFilterDetailParts(
+  details: string
+): Array<{ label: string; value: string }> {
+  return details
+    .split(" · ")
+    .map(part => part.trim())
+    .filter(Boolean)
+    .map(part => {
+      const idx = part.indexOf(": ");
+      if (idx <= 0) return { label: "", value: part };
+      return { label: part.slice(0, idx), value: part.slice(idx + 2) };
+    });
+}
+
 const ScheduleHeader = ({
   title,
   logo,
+  filterDetails,
 }: {
   title: string;
   logo?: Buffer | null;
+  filterDetails?: string | null;
 }) => {
   const src = logoSrc(logo);
+  const filterParts = filterDetails?.trim()
+    ? parseFilterDetailParts(filterDetails.trim())
+    : [];
   return (
     <View style={pdfStyles.header}>
       <View style={pdfStyles.headerLeft}>
         {src ? <Image src={src} style={pdfStyles.logo} /> : null}
         <View style={pdfStyles.titleBlock}>
           <Text style={pdfStyles.title}>{title}</Text>
+          {filterParts.length > 0 ? (
+            <Text style={pdfStyles.filterDetails}>
+              {filterParts.map((part, index) => (
+                <Text key={`${part.label}-${index}`}>
+                  {index > 0 ? " · " : ""}
+                  {part.label ? (
+                    <Text style={pdfStyles.filterLabel}>{part.label}: </Text>
+                  ) : null}
+                  <Text style={pdfStyles.filterValue}>{part.value}</Text>
+                </Text>
+              ))}
+            </Text>
+          ) : null}
         </View>
-      </View>
-      <View style={pdfStyles.headerRight}>
-        <View style={pdfStyles.brandAccent} />
-        <Text style={pdfStyles.meta}>Worklenz Analytics</Text>
       </View>
     </View>
   );
@@ -455,8 +505,10 @@ const SchedulePdfDocument = ({
   exportedOn,
   rows,
   chartPngs = [],
+  chartTitles = [],
   logo = null,
   kpis = [],
+  filterDetails = null,
   footerNote,
 }: SchedulePdfProps) => {
   const header = rows[0] || [];
@@ -466,30 +518,47 @@ const SchedulePdfDocument = ({
   const charts = chartBuffers.map(buf => `data:image/png;base64,${buf.toString("base64")}`);
   const hasCharts = charts.length > 0;
   const isSideBySideCharts = charts.length === 2;
+  const topics = chartTitles || [];
+  const primaryTopic = topics[0] || title;
+  const secondaryTopic = topics[1] || "";
 
-  // Landscape content width ≈ A4 landscape minus horizontal padding (28×2).
+  // Landscape content width ≈ A4 landscape minus horizontal padding (28×2) and card padding.
   const pageContentW = 841.89 - 56;
-  const chartRowH = 200;
-  const singleChartH = 180;
+  const chartInnerW = pageContentW - 24;
+  const chartRowH = 180;
+  const singleChartH = 170;
 
   const chartsBlock = !hasCharts ? null : isSideBySideCharts ? (
-    <View style={pdfStyles.chartsRow}>
+    <View style={pdfStyles.chartsRow} wrap={false}>
       {(() => {
         const barPx = readPngPixelSize(chartBuffers[0]) || { width: 1160, height: 400 };
         const donutPx = readPngPixelSize(chartBuffers[1]) || { width: 480, height: 480 };
-        const barBoxW = pageContentW * 0.74;
-        const donutBoxW = pageContentW * 0.24;
+        const barBoxW = chartInnerW * 0.74;
+        const donutBoxW = chartInnerW * 0.24;
         const barSize = fitContainedSize(barPx.width, barPx.height, barBoxW, chartRowH);
-        const donutSize = fitContainedSize(donutPx.width, donutPx.height, donutBoxW, chartRowH);
+        const donutSize = fitContainedSize(
+          donutPx.width,
+          donutPx.height,
+          donutBoxW,
+          chartRowH
+        );
         return (
           <>
-            <View style={pdfStyles.chartSlotBar}>
+            <View style={[pdfStyles.chartSlotBar, pdfStyles.chartCard, { marginBottom: 0 }]}>
+              {primaryTopic ? <Text style={pdfStyles.chartTopic}>{primaryTopic}</Text> : null}
               <Image
                 src={charts[0]}
-                style={{ width: barSize.width, height: barSize.height, objectFit: "contain" }}
+                style={{
+                  width: barSize.width,
+                  height: barSize.height,
+                  objectFit: "contain",
+                }}
               />
             </View>
-            <View style={pdfStyles.chartSlotDonut}>
+            <View style={[pdfStyles.chartSlotDonut, pdfStyles.chartCard, { marginBottom: 0 }]}>
+              {secondaryTopic ? (
+                <Text style={pdfStyles.chartTopic}>{secondaryTopic}</Text>
+              ) : null}
               <Image
                 src={charts[1]}
                 style={{
@@ -504,13 +573,14 @@ const SchedulePdfDocument = ({
       })()}
     </View>
   ) : (
-    <View>
+    <View style={pdfStyles.chartCard} wrap={false}>
+      {primaryTopic ? <Text style={pdfStyles.chartTopic}>{primaryTopic}</Text> : null}
       {charts.map((src, index) => {
         const px = readPngPixelSize(chartBuffers[index]) || {
           width: 960,
           height: 420,
         };
-        const size = fitContainedSize(px.width, px.height, pageContentW, singleChartH);
+        const size = fitContainedSize(px.width, px.height, chartInnerW, singleChartH);
         return (
           <Image
             key={`chart-${index}`}
@@ -527,7 +597,7 @@ const SchedulePdfDocument = ({
   return (
     <Document>
       <Page size="A4" orientation="landscape" style={pdfStyles.page} wrap>
-        <ScheduleHeader title={title} logo={logo} />
+        <ScheduleHeader title={title} logo={logo} filterDetails={filterDetails} />
         <ScheduleFooter title={title} exportedOn={exportedOn} footerNote={footerNote} />
         <View style={pdfStyles.summaryAndCharts} wrap={false}>
           <KpiCards kpis={kpis} />
@@ -535,7 +605,7 @@ const SchedulePdfDocument = ({
         </View>
       </Page>
       <Page size="A4" orientation="landscape" style={pdfStyles.page} wrap>
-        <ScheduleHeader title={title} logo={logo} />
+        <ScheduleHeader title={title} logo={logo} filterDetails={filterDetails} />
         <ScheduleFooter title={title} exportedOn={exportedOn} footerNote={footerNote} />
         <ScheduleTable header={header} body={body} truncated={truncated} />
       </Page>
@@ -572,8 +642,10 @@ export async function renderSchedulePdf(
       exportedOn,
       rows: options.rows,
       chartPngs: normalized,
+      chartTitles: options.chartTitles ?? [],
       logo: options.logo ?? null,
       kpis: options.kpis ?? [],
+      filterDetails: options.filterDetails ?? null,
       footerNote: options.footerNote,
     }) as unknown as ReactElement<DocumentProps>
   );

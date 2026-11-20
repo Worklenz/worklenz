@@ -196,8 +196,10 @@ export async function csvToExcelBuffer(
 
 export interface SchedulePdfExportOptions {
   chartPngs?: Buffer[] | Buffer | null;
+  chartTitles?: string[] | null;
   logo?: Buffer | null;
   kpis?: SchedulePdfKpiTile[];
+  filterDetails?: string | null;
   footerNote?: string;
   exportedOn?: string;
 }
@@ -219,8 +221,10 @@ export async function csvToPdfBuffer(
     title,
     rows: parseCsvRows(csv),
     chartPngs: options.chartPngs,
+    chartTitles: options.chartTitles,
     logo: options.logo,
     kpis: options.kpis,
+    filterDetails: options.filterDetails,
     footerNote: options.footerNote,
     exportedOn: options.exportedOn,
   });

@@ -18,10 +18,16 @@ export interface AnalyticsBrandedPdfOptions {
    * When set with `chartPngDataUrl`, charts render side-by-side at ~3/4 + ~1/4.
    */
   secondaryChartPngDataUrl?: string | null;
+  /** Topic above the primary chart (e.g. "Progress & budget"). */
+  chartTitle?: string | null;
+  /** Topic above the secondary chart (e.g. "Health status"). */
+  secondaryChartTitle?: string | null;
   /** First row = headers, following rows = data (same as the on-screen table). */
   tableRows?: string[][];
   /** Organization / team logo URL when available; falls back to Worklenz mark. */
   logoUrl?: string | null;
+  /** Compact filter summary shown under the report title. */
+  filterDetails?: string | null;
   exportedOn?: string;
   footerNote?: string;
 }
@@ -96,10 +102,70 @@ function drawRoundedRect(
   doc.setLineWidth(0.5);
 }
 
+/** Split "Label: value · Label: value" into parts for bold labels. */
+function parseFilterDetailParts(
+  details: string
+): Array<{ label: string; value: string }> {
+  return details
+    .split(' · ')
+    .map(part => part.trim())
+    .filter(Boolean)
+    .map(part => {
+      const idx = part.indexOf(': ');
+      if (idx <= 0) return { label: '', value: part };
+      return { label: part.slice(0, idx), value: part.slice(idx + 2) };
+    });
+}
+
+/**
+ * Draw filter summary with bold labels (Time range, Projects, Teams, …)
+ * and normal-weight values, wrapping within maxWidth.
+ */
+function drawFilterDetailsLine(
+  doc: jsPDF,
+  details: string,
+  x: number,
+  y: number,
+  maxWidth: number
+): number {
+  const parts = parseFilterDetailParts(details);
+  const lineHeight = 10;
+  let cursorX = x;
+  let cursorY = y;
+
+  const drawSegment = (text: string, bold: boolean) => {
+    if (!text) return;
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    // Keep separator / label tokens intact; wrap value words.
+    const tokens = bold || text === ' · ' ? [text] : text.split(/(\s+)/);
+    for (const token of tokens) {
+      if (!token) continue;
+      const tokenW = doc.getTextWidth(token);
+      if (cursorX > x && cursorX + tokenW > x + maxWidth) {
+        cursorX = x;
+        cursorY += lineHeight;
+      }
+      doc.text(token, cursorX, cursorY);
+      cursorX += tokenW;
+    }
+  };
+
+  doc.setFontSize(8);
+  doc.setTextColor(89, 89, 89);
+  parts.forEach((part, index) => {
+    if (index > 0) drawSegment(' · ', false);
+    if (part.label) drawSegment(`${part.label}: `, true);
+    drawSegment(part.value, false);
+  });
+
+  return cursorY + lineHeight;
+}
+
 function drawHeader(
   doc: jsPDF,
   title: string,
-  logoDataUrl: string
+  logoDataUrl: string,
+  filterDetails?: string | null
 ): number {
   // Match navbar logo: height 26, maxWidth 140 (NavbarLogo.tsx).
   const logoW = 140;
@@ -112,21 +178,29 @@ function drawHeader(
   }
 
   const titleX = PAGE.marginX + logoW + 14;
+  const titleMaxW = PAGE.width - titleX - PAGE.marginX;
   doc.setTextColor(38, 38, 38);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
-  doc.text(title, titleX, PAGE.marginTop + 18);
-
-  doc.setFillColor(24, 144, 255);
-  doc.rect(PAGE.width - PAGE.marginX - 36, PAGE.marginTop + 4, 36, 3, 'F');
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(140, 140, 140);
-  doc.text('Worklenz Analytics', PAGE.width - PAGE.marginX, PAGE.marginTop + 22, {
-    align: 'right',
+  doc.text(title, titleX, PAGE.marginTop + (filterDetails ? 12 : 18), {
+    maxWidth: titleMaxW,
   });
 
-  const dividerY = PAGE.marginTop + logoH + 12;
+  let contentBottom = PAGE.marginTop + Math.max(logoH, filterDetails ? 12 : 18);
+  if (filterDetails?.trim()) {
+    contentBottom = Math.max(
+      contentBottom,
+      drawFilterDetailsLine(
+        doc,
+        filterDetails.trim(),
+        titleX,
+        PAGE.marginTop + 26,
+        titleMaxW
+      )
+    );
+  }
+
+  const dividerY = contentBottom + 10;
   doc.setDrawColor(240, 240, 240);
   doc.line(PAGE.marginX, dividerY, PAGE.width - PAGE.marginX, dividerY);
   return dividerY + 14;
@@ -298,6 +372,12 @@ export function resolveAnalyticsPdfLogoUrl(
   return teams.find(team => team.id === teamId)?.logo_url ?? null;
 }
 
+/** Match reporting page chart card: white fill, clearer border, rounded corners. */
+const CHART_CARD_BORDER: [number, number, number] = [191, 191, 191]; // #bfbfbf — darker than page border so the card reads clearly in PDF
+const CHART_CARD_FILL: [number, number, number] = [255, 255, 255];
+const CHART_CARD_PAD = 12;
+const CHART_CARD_RADIUS = 8;
+
 /** Place a PNG inside a box without stretching (keeps chart fonts crisp). */
 function addContainedImage(
   doc: jsPDF,
@@ -328,6 +408,44 @@ function addContainedImage(
   return { width: drawW, height: drawH };
 }
 
+const CHART_TOPIC_H = 18;
+
+/** Draw reporting-page-style chart card with optional topic title above the image. */
+function drawChartCardWithTopic(
+  doc: jsPDF,
+  dataUrl: string,
+  x: number,
+  y: number,
+  w: number,
+  contentH: number,
+  topic?: string | null
+): number {
+  const hasTopic = !!topic?.trim();
+  const cardH = contentH + CHART_CARD_PAD * 2 + (hasTopic ? CHART_TOPIC_H : 0);
+  drawRoundedRect(doc, x, y, w, cardH, CHART_CARD_RADIUS, CHART_CARD_BORDER, CHART_CARD_FILL);
+
+  let imageY = y + CHART_CARD_PAD;
+  if (hasTopic) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(38, 38, 38);
+    doc.text(topic!.trim(), x + CHART_CARD_PAD, y + CHART_CARD_PAD + 11, {
+      maxWidth: w - CHART_CARD_PAD * 2,
+    });
+    imageY += CHART_TOPIC_H;
+  }
+
+  addContainedImage(
+    doc,
+    dataUrl,
+    x + CHART_CARD_PAD,
+    imageY,
+    w - CHART_CARD_PAD * 2,
+    contentH
+  );
+  return cardH;
+}
+
 /**
  * Build a landscape branded analytics PDF
  * (logo, KPI cards, chart, data table, footer + page numbers).
@@ -339,40 +457,57 @@ export async function downloadAnalyticsBrandedPdf(
   const logoDataUrl = await resolveLogoDataUrl(options.logoUrl);
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
 
-  let cursorY = drawHeader(doc, options.title, logoDataUrl);
+  let cursorY = drawHeader(doc, options.title, logoDataUrl, options.filterDetails);
   cursorY = drawKpiCards(doc, options.kpis || [], cursorY);
 
   const primaryChart = options.chartPngDataUrl;
   const secondaryChart = options.secondaryChartPngDataUrl;
   if (primaryChart && secondaryChart) {
-    // Project Health: bar ~74% | donut ~24%, aspect preserved so fonts stay sharp.
+    // Project Health: separate bordered cards for bar (~74%) and donut (~24%).
     const available = PAGE.width - PAGE.marginX * 2;
-    const gap = available * 0.02;
-    const barBoxW = available * 0.74;
-    const donutBoxW = available * 0.24;
-    const chartH = Math.min(200, PAGE.height - cursorY - PAGE.marginBottom - 80);
+    const gap = 12;
+    const barCardW = available * 0.74;
+    const donutCardW = available - barCardW - gap;
+    const chartH = Math.min(180, PAGE.height - cursorY - PAGE.marginBottom - 80);
     try {
-      addContainedImage(doc, primaryChart, PAGE.marginX, cursorY, barBoxW, chartH);
-      addContainedImage(
+      const cardH = drawChartCardWithTopic(
+        doc,
+        primaryChart,
+        PAGE.marginX,
+        cursorY,
+        barCardW,
+        chartH,
+        options.chartTitle
+      );
+      drawChartCardWithTopic(
         doc,
         secondaryChart,
-        PAGE.marginX + barBoxW + gap,
+        PAGE.marginX + barCardW + gap,
         cursorY,
-        donutBoxW,
-        chartH
+        donutCardW,
+        chartH,
+        options.secondaryChartTitle
       );
-      cursorY += chartH + 16;
+      cursorY += cardH + 16;
     } catch {
       // Skip charts if embedding fails.
     }
   } else if (primaryChart) {
     const chartW = PAGE.width - PAGE.marginX * 2;
-    const chartH = Math.min(220, PAGE.height - cursorY - PAGE.marginBottom - 80);
+    const chartH = Math.min(200, PAGE.height - cursorY - PAGE.marginBottom - 80);
     try {
-      addContainedImage(doc, primaryChart, PAGE.marginX, cursorY, chartW, chartH);
-      cursorY += chartH + 16;
+      const cardH = drawChartCardWithTopic(
+        doc,
+        primaryChart,
+        PAGE.marginX,
+        cursorY,
+        chartW,
+        chartH,
+        options.chartTitle || options.title
+      );
+      cursorY += cardH + 16;
     } catch {
-      // Skip chart if embedding fails.
+      // Skip charts if embedding fails.
     }
   }
 
@@ -380,7 +515,7 @@ export async function downloadAnalyticsBrandedPdf(
     // Prefer a fresh page for the table so it is never hidden under the chart.
     if (cursorY > PAGE.height * 0.55) {
       doc.addPage();
-      cursorY = drawHeader(doc, options.title, logoDataUrl);
+      cursorY = drawHeader(doc, options.title, logoDataUrl, options.filterDetails);
     }
     drawTable(doc, options.tableRows, cursorY);
   }

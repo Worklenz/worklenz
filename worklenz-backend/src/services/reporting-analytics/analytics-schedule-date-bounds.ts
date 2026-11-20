@@ -320,3 +320,53 @@ export function formatScheduleTimeRangeNote(
   }
   return rangeLabel;
 }
+
+function countIds(value: unknown): number {
+  return Array.isArray(value) ? value.filter(Boolean).length : 0;
+}
+
+/**
+ * Compact filter summary for scheduled PDF headers.
+ * Example: "Time range: Last 3 months (1 Aug 2026 – 20 Nov 2026) · Projects: All · Teams: 1 selected"
+ */
+export function formatSchedulePdfFilterDetails(
+  filters: Record<string, unknown> | null | undefined,
+  timezone?: string | null,
+  now?: Date | moment.Moment
+): string | null {
+  if (!filters || typeof filters !== "object") return null;
+
+  const parts: string[] = [];
+  const timeRange = formatScheduleTimeRangeNote(filters, timezone, now);
+  if (timeRange) parts.push(`Time range: ${timeRange}`);
+
+  const projectScope =
+    typeof filters.project_scope === "string" ? filters.project_scope : null;
+  const projectCount = countIds(filters.project_ids);
+  if (projectScope === "latest") {
+    const limit = Number(filters.chart_project_limit);
+    parts.push(
+      Number.isFinite(limit) && limit > 0
+        ? `Projects: Latest ${limit}`
+        : "Projects: Latest"
+    );
+  } else if (projectCount === 0) {
+    parts.push("Projects: All");
+  } else {
+    parts.push(`Projects: ${projectCount} selected`);
+  }
+
+  const teamCount = countIds(filters.team_ids);
+  if (teamCount > 0) parts.push(`Teams: ${teamCount} selected`);
+
+  const memberCount = countIds(filters.member_ids);
+  if (memberCount > 0) parts.push(`Members: ${memberCount} selected`);
+
+  const healthCount = countIds(filters.health_ids);
+  if (healthCount > 0) parts.push(`Health: ${healthCount} selected`);
+
+  const statusCount = countIds(filters.status_ids);
+  if (statusCount > 0) parts.push(`Status: ${statusCount} selected`);
+
+  return parts.length ? parts.join(" · ") : null;
+}

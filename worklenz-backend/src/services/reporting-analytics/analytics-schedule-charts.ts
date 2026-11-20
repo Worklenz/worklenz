@@ -190,45 +190,78 @@ function projectHealthBarConfig(data: ProjectHealthResult): ChartConfig | null {
   };
 }
 
-/** Matches the on-screen Project Health donut (KPI tone counts). */
+/** Matches the on-screen Project Health donut (center total, full legend, hint). */
 function projectHealthDonutConfig(data: ProjectHealthResult): ChartConfig | null {
-  const slices = (
+  const allSlices = (
     [
       { key: "on_track", label: "On track" },
       { key: "at_risk", label: "At risk" },
       { key: "off_track", label: "Off track" },
       { key: "not_set", label: "Not set" },
     ] as const
-  )
-    .map(slice => ({
-      ...slice,
-      count: data.kpis[slice.key] ?? 0,
-      color: PROJECT_HEALTH_TONE_COLORS[slice.key],
-    }))
-    .filter(slice => slice.count > 0);
+  ).map(slice => ({
+    ...slice,
+    count: data.kpis[slice.key] ?? 0,
+    color: PROJECT_HEALTH_TONE_COLORS[slice.key],
+  }));
 
-  if (!slices.length) return null;
+  const visibleSlices = allSlices.filter(slice => slice.count > 0);
+  if (!visibleSlices.length) return null;
+
+  const total = allSlices.reduce((sum, slice) => sum + slice.count, 0);
 
   return {
     type: "doughnut",
     data: {
-      labels: slices.map(s => s.label),
+      // Label + count for every status (including zeros), same as the page legend.
+      labels: allSlices.map(s => `${s.label}   ${s.count}`),
       datasets: [
         {
-          data: slices.map(s => s.count),
-          backgroundColor: slices.map(s => s.color),
+          data: allSlices.map(s => s.count),
+          backgroundColor: allSlices.map(s => s.color),
+          borderColor: "#ffffff",
           borderWidth: 2,
         },
       ],
     },
     options: {
-      plugins: {
+      cutout: "62%",
+          plugins: {
+        // Topic title is drawn by the PDF layout (same as other charts).
+        subtitle: {
+          display: true,
+          text: "Based on health set in project settings",
+          align: "start",
+          color: "#8c8c8c",
+          font: { size: 10 },
+          padding: { top: 8 },
+        },
         legend: {
           display: true,
           position: "right",
+          labels: {
+            boxWidth: 10,
+            padding: 14,
+            color: "#262626",
+            font: { size: 12 },
+          },
+        },
+        // QuickChart center label (mirrors page total + "projects").
+        doughnutlabel: {
+          labels: [
+            {
+              text: String(total),
+              font: { size: 22, weight: "bold" },
+              color: "#262626",
+            },
+            {
+              text: "projects",
+              font: { size: 11 },
+              color: "#8c8c8c",
+            },
+          ],
         },
       },
-      cutout: "62%",
     },
   };
 }
@@ -376,6 +409,32 @@ export type ScheduleChartSource =
 /** Chart.js configs used for PDF PNGs and native Excel chart data. */
 export function getScheduleChartConfigs(source: ScheduleChartSource): ChartConfig[] {
   return configsForSource(source);
+}
+
+/** Topic titles drawn above each chart in scheduled PDFs (matches on-page chart topics). */
+export function getScheduleChartTitles(source: ScheduleChartSource): string[] {
+  switch (source.kind) {
+    case "project-health":
+      return ["Progress & budget", "Health status"];
+    case "velocity":
+      return ["Velocity"];
+    case "planned-vs-actual-tasks":
+      return ["Planned vs Actual: Tasks"];
+    case "planned-vs-actual-milestones":
+      return ["Planned vs Actual: Milestones"];
+    case "utilization":
+      return ["Utilization"];
+    case "time-report":
+      return ["Time Report"];
+    case "budget-tracking":
+      return ["Budget Tracking"];
+    case "cumulative-flow":
+      return ["Cumulative Flow"];
+    case "time-in-status":
+      return ["Time in Status"];
+    default:
+      return [];
+  }
 }
 
 function configsForSource(source: ScheduleChartSource): ChartConfig[] {

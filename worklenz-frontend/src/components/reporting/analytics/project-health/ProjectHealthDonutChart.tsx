@@ -8,11 +8,11 @@ import {
   type ChartOptions,
 } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
+import html2canvas from 'html2canvas';
 import { useTranslation } from 'react-i18next';
 import { Badge, Flex, Typography, theme } from '@/shared/antd-imports';
 import { MetricCalcHint } from '../MetricCalcHint';
 import { InChartEmptyState } from '../states/ReportStateViews';
-import { chartToPngDataUrl } from '@/lib/reporting/chart-export';
 import { PROJECT_HEALTH_TONE_COLORS } from './project-health-colors';
 import type {
   ProjectHealthKpis,
@@ -24,7 +24,8 @@ ChartJS.register(ArcElement, Legend, Tooltip);
 const { Text } = Typography;
 
 export interface ProjectHealthDonutChartHandle {
-  toPngDataUrl: () => string | null;
+  /** Captures chart body (center total, legend, hint). Topic title is drawn by the PDF. */
+  toPngDataUrl: () => Promise<string | null>;
 }
 
 interface ProjectHealthDonutChartProps {
@@ -51,9 +52,6 @@ const TONE_META: Record<
 
 const TONE_ORDER: ProjectHealthTone[] = ['on_track', 'at_risk', 'off_track', 'not_set'];
 
-/** Matches scheduled PDF donut canvas (360×360 with right legend). */
-const EXPORT_DONUT_SIZE = 360;
-
 export const ProjectHealthDonutChart = forwardRef<
   ProjectHealthDonutChartHandle,
   ProjectHealthDonutChartProps
@@ -61,67 +59,62 @@ export const ProjectHealthDonutChart = forwardRef<
   const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
   const chartRef = useRef<ChartInstance<'doughnut'>>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useImperativeHandle(ref, () => ({
-    toPngDataUrl: () => {
-      const chart = chartRef.current;
-      if (!chart) return null;
+    toPngDataUrl: async () => {
+      const card = cardRef.current;
+      if (!card) return null;
 
-      // Match scheduled PDF donut: white slice borders + dark legend on white page.
-      const legend = chart.options.plugins?.legend;
-      const prevDisplay = legend?.display;
-      const prevPosition = legend?.position;
-      const prevLabels = legend?.labels ? { ...legend.labels } : undefined;
-      const dataset = chart.data.datasets[0] as
-        | { borderColor?: string | string[]; borderWidth?: number }
-        | undefined;
-      const prevBorderColor = dataset?.borderColor;
-      const prevBorderWidth = dataset?.borderWidth;
-      const parent = chart.canvas.parentElement;
-      const prevWidth = parent?.style.width ?? '';
-      const prevHeight = parent?.style.height ?? '';
+      // Export as a light card matching PDF (page may be in dark mode).
+      const prev = {
+        border: card.style.border,
+        background: card.style.background,
+        color: card.style.color,
+      };
+      card.style.border = 'none';
+      card.style.background = '#ffffff';
+      card.style.color = 'rgba(0,0,0,0.88)';
 
-      if (legend) {
-        legend.display = true;
-        legend.position = 'right';
-        legend.labels = {
-          ...(legend.labels || {}),
-          color: 'rgba(0, 0, 0, 0.65)',
-        };
-      }
-      if (dataset) {
-        dataset.borderColor = '#ffffff';
-        dataset.borderWidth = 2;
-      }
-      if (parent) {
-        parent.style.width = `${EXPORT_DONUT_SIZE}px`;
-        parent.style.height = `${EXPORT_DONUT_SIZE}px`;
-      }
+      // PDF draws "Health status" as the chart topic — hide the on-card title for capture.
+      const hideEls = Array.from(
+        card.querySelectorAll('[data-pdf-hide]')
+      ) as HTMLElement[];
+      const hidePrev = hideEls.map(el => ({ el, display: el.style.display }));
+      hideEls.forEach(el => {
+        el.style.display = 'none';
+      });
+
+      const texts = Array.from(card.querySelectorAll('.ant-typography')) as HTMLElement[];
+      const textPrev = texts.map(el => ({
+        el,
+        color: el.style.color,
+      }));
+      texts.forEach(el => {
+        const isSecondary = el.classList.contains('ant-typography-secondary');
+        el.style.color = isSecondary ? 'rgba(0,0,0,0.45)' : 'rgba(0,0,0,0.88)';
+      });
 
       try {
-        chart.resize();
-        chart.update('none');
-        return chartToPngDataUrl(chart);
+        const canvas = await html2canvas(card, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+        });
+        return canvas.toDataURL('image/png', 1);
+      } catch {
+        return null;
       } finally {
-        if (legend) {
-          legend.display = prevDisplay;
-          legend.position = prevPosition;
-          if (prevLabels) {
-            legend.labels = prevLabels;
-          } else if (legend.labels) {
-            delete (legend as { labels?: unknown }).labels;
-          }
-        }
-        if (dataset) {
-          dataset.borderColor = prevBorderColor;
-          dataset.borderWidth = prevBorderWidth;
-        }
-        if (parent) {
-          parent.style.width = prevWidth;
-          parent.style.height = prevHeight;
-        }
-        chart.resize();
-        chart.update('none');
+        card.style.border = prev.border;
+        card.style.background = prev.background;
+        card.style.color = prev.color;
+        hidePrev.forEach(({ el, display }) => {
+          el.style.display = display;
+        });
+        textPrev.forEach(({ el, color }) => {
+          el.style.color = color;
+        });
       }
     },
   }));
@@ -198,6 +191,7 @@ export const ProjectHealthDonutChart = forwardRef<
 
   return (
     <div
+      ref={cardRef}
       style={{
         width: '100%',
         minHeight: 280,
@@ -207,7 +201,7 @@ export const ProjectHealthDonutChart = forwardRef<
         background: token.colorBgContainer,
       }}
     >
-      <Flex align="center" gap={6} style={{ marginBottom: 12 }}>
+      <Flex align="center" gap={6} style={{ marginBottom: 12 }} data-pdf-hide>
         <Text strong style={{ fontSize: 14 }}>
           {t('phDonutTitle', { defaultValue: 'Health status' })}
         </Text>

@@ -10,6 +10,7 @@ import {
   downloadAnalyticsBrandedPdf,
   resolveAnalyticsPdfLogoUrl,
 } from '@/lib/reporting/analytics-branded-pdf';
+import { buildAnalyticsPdfFilterDetails } from '@/lib/reporting/analytics-pdf-filter-details';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -396,7 +397,18 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
           title,
           filename: `budget-tracking-${stamp}.pdf`,
           logoUrl: resolveAnalyticsPdfLogoUrl(teamsList, session?.team_id),
+          filterDetails: buildAnalyticsPdfFilterDetails({
+            datePreset,
+            customRange,
+            dateFrom: dateBounds.date_from,
+            dateTo: dateBounds.date_to,
+            selectedProjectIds,
+            projectOptionsCount: projectOptions.length,
+            selectedTeamIds,
+            selectedMemberIds,
+          }),
           chartPngDataUrl: png,
+          chartTitle: baseTitle,
           tableRows: [
             ['Project', 'Budget', 'Spent', 'Remaining', 'Burn %'],
             ...data.projects.map(row => [

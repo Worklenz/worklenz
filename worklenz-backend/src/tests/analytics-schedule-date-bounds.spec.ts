@@ -1,6 +1,7 @@
 import moment from "moment-timezone";
 import {
   applyLiveScheduleDateBounds,
+  formatSchedulePdfFilterDetails,
   formatScheduleTimeRangeNote,
   resolveScheduleDateBounds,
 } from "../services/reporting-analytics/analytics-schedule-date-bounds";
@@ -123,5 +124,22 @@ describe("analytics-schedule-date-bounds", () => {
     expect(
       formatScheduleTimeRangeNote({ date_preset: "all_time" }, "UTC", new Date())
     ).toBe("All time");
+  });
+
+  it("formats PDF filter details with time range and scope counts", () => {
+    const details = formatSchedulePdfFilterDetails(
+      {
+        date_preset: "last_3_months",
+        project_ids: [],
+        project_scope: "live",
+        team_ids: ["t1"],
+        member_ids: [],
+      },
+      "UTC",
+      moment.tz("2026-11-18 08:00", "UTC")
+    );
+    expect(details).toContain("Time range: Last 3 months");
+    expect(details).toContain("Projects: All");
+    expect(details).toContain("Teams: 1 selected");
   });
 });

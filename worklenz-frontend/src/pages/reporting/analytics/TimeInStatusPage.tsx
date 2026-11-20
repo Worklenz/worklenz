@@ -9,6 +9,7 @@ import {
   downloadAnalyticsBrandedPdf,
   resolveAnalyticsPdfLogoUrl,
 } from '@/lib/reporting/analytics-branded-pdf';
+import { buildAnalyticsPdfFilterDetails } from '@/lib/reporting/analytics-pdf-filter-details';
 import { BOUNDED_ANALYTICS_DATE_PRESETS, resolveAnalyticsDateBounds } from '@/utils/date-presets';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
@@ -415,7 +416,18 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
           title,
           filename: `time-in-status-${stamp}.pdf`,
           logoUrl: resolveAnalyticsPdfLogoUrl(teamsList, session?.team_id),
+          filterDetails: buildAnalyticsPdfFilterDetails({
+            datePreset,
+            customRange,
+            dateFrom: dateBounds.date_from,
+            dateTo: dateBounds.date_to,
+            selectedProjectIds,
+            projectOptionsCount: projectOptions.length,
+            selectedTeamIds,
+            selectedMemberIds,
+          }),
           chartPngDataUrl: png,
+          chartTitle: baseTitle,
           tableRows: [
             ['Status', 'Avg days', 'Median', 'Count', '% cycle'],
             ...data.aggregate.map(row => [

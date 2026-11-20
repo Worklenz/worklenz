@@ -16,6 +16,7 @@ import {
   downloadAnalyticsBrandedPdf,
   resolveAnalyticsPdfLogoUrl,
 } from '@/lib/reporting/analytics-branded-pdf';
+import { buildAnalyticsPdfFilterDetails } from '@/lib/reporting/analytics-pdf-filter-details';
 import {
   AnalyticsFilterBar,
   AnalyticsTemplateActions,
@@ -374,7 +375,17 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
           title,
           filename: `cfd-${stamp}.pdf`,
           logoUrl: resolveAnalyticsPdfLogoUrl(teamsList, session?.team_id),
+          filterDetails: buildAnalyticsPdfFilterDetails({
+            datePreset,
+            customRange,
+            dateFrom: dateBounds.date_from,
+            dateTo: dateBounds.date_to,
+            selectedProjectIds,
+            projectOptionsCount: projectOptions.length,
+            selectedTeamIds,
+          }),
           chartPngDataUrl: png,
+          chartTitle: baseTitle,
           tableRows: [
             ['Date', ...data.statuses.map(status => status.name)],
             ...data.dates.map((date, index) => [
