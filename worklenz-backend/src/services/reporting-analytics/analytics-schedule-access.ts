@@ -11,6 +11,7 @@ import {
   ORGANIZATION_PERMISSIONS,
 } from "../../shared/organization-permissions";
 import { getVisibleProjectIds } from "../../shared/project-role-permissions";
+import { isFinanceAnalyticsReportKind } from "../../shared/reporting-analytics.constants";
 import {
   getEffectiveTeamRole,
   TEAM_ROLE_NAMES,
@@ -60,6 +61,32 @@ export async function canOwnerAccessFinanceSchedules(
   const session = await loadScheduleOwnerSession(userId, teamId);
   if (!session) return false;
   return hasOrganizationPermission(session, ORGANIZATION_PERMISSIONS.VIEW_FINANCE);
+}
+
+/**
+ * Revalidate send-time gates for the cron worker.
+ * Schedules always require View reports + advanced_reporting (same as create/update).
+ * Finance kinds additionally require View finance + finance_module.
+ */
+export async function canOwnerSendSchedule(
+  userId: string,
+  teamId: string,
+  reportKind: string
+): Promise<boolean> {
+  if (!(await teamCanUseFeature(teamId, "advanced_reporting"))) return false;
+
+  const session = await loadScheduleOwnerSession(userId, teamId);
+  if (!session) return false;
+
+  if (!(await hasOrganizationPermission(session, ORGANIZATION_PERMISSIONS.VIEW_REPORTS))) {
+    return false;
+  }
+
+  if (isFinanceAnalyticsReportKind(reportKind)) {
+    return canOwnerAccessFinanceSchedules(userId, teamId);
+  }
+
+  return true;
 }
 
 /**
