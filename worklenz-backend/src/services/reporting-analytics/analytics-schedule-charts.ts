@@ -441,13 +441,14 @@ export async function renderScheduleChartPngs(
   const buffers = await Promise.all(
     configs.map((config, index) => {
       const isDonut = config.type === "doughnut";
-      // Project Health PDF: bar ~3/4 + donut ~1/4 side-by-side.
+      // Project Health PDF: bar ~3/4 + donut ~1/4.
+      // Bar aspect ~2.9:1 matches the PDF slot (avoids stretch/blurry axis labels).
       if (isProjectHealthPair) {
         return renderChartConfigPng(
           config,
           isDonut || index === 1
-            ? { width: 360, height: 360 }
-            : { width: 900, height: 360 }
+            ? { width: 480, height: 480 }
+            : { width: 1160, height: 400 }
         );
       }
       return renderChartConfigPng(

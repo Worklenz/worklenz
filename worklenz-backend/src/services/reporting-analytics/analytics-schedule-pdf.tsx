@@ -171,19 +171,17 @@ const pdfStyles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
-  chart: { width: "100%", height: 180, marginBottom: 10, objectFit: "contain" },
-  /** Project Health: bar takes ~3/4 of the page width. */
-  chartBar: {
+  chart: { marginBottom: 10, objectFit: "contain" },
+  chartSlotBar: {
     width: "74%",
-    height: 200,
     marginRight: "2%",
-    objectFit: "contain",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  /** Project Health: donut takes ~1/4 of the page width. */
-  chartDonut: {
+  chartSlotDonut: {
     width: "24%",
-    height: 200,
-    objectFit: "contain",
+    alignItems: "center",
+    justifyContent: "center",
   },
   tableBlock: { marginTop: 4 },
   tableFrame: {
@@ -270,6 +268,40 @@ function logoSrc(logo: Buffer | null | undefined): string | null {
   const isJpeg = logo.length > 3 && logo[0] === 0xff && logo[1] === 0xd8 && logo[2] === 0xff;
   const mime = isJpeg ? "image/jpeg" : "image/png";
   return `data:${mime};base64,${logo.toString("base64")}`;
+}
+
+/** Read PNG pixel size from bytes (no decode). */
+function readPngPixelSize(buf: Buffer): { width: number; height: number } | null {
+  if (
+    buf.length < 24 ||
+    buf[0] !== 0x89 ||
+    buf[1] !== 0x50 ||
+    buf[2] !== 0x4e ||
+    buf[3] !== 0x47
+  ) {
+    return null;
+  }
+  return {
+    width: buf.readUInt32BE(16),
+    height: buf.readUInt32BE(20),
+  };
+}
+
+/** Fit image into a box without stretching (keeps chart fonts sharp). */
+function fitContainedSize(
+  pxW: number,
+  pxH: number,
+  boxW: number,
+  boxH: number
+): { width: number; height: number } {
+  const ratio = pxW / Math.max(pxH, 1);
+  let width = boxW;
+  let height = width / ratio;
+  if (height > boxH) {
+    height = boxH;
+    width = height * ratio;
+  }
+  return { width, height };
 }
 
 const ScheduleHeader = ({
@@ -433,22 +465,63 @@ const SchedulePdfDocument = ({
   const header = rows[0] || [];
   const body = rows.slice(1, 201);
   const truncated = rows.length > 201;
-  const charts = chartPngs
-    .filter(buf => buf?.length)
-    .map(buf => `data:image/png;base64,${buf.toString("base64")}`);
+  const chartBuffers = chartPngs.filter(buf => !!buf?.length);
+  const charts = chartBuffers.map(buf => `data:image/png;base64,${buf.toString("base64")}`);
   const hasCharts = charts.length > 0;
   const isSideBySideCharts = charts.length === 2;
 
+  // Landscape content width ≈ A4 landscape minus horizontal padding (28×2).
+  const pageContentW = 841.89 - 56;
+  const chartRowH = 200;
+  const singleChartH = 180;
+
   const chartsBlock = !hasCharts ? null : isSideBySideCharts ? (
     <View style={pdfStyles.chartsRow}>
-      <Image src={charts[0]} style={pdfStyles.chartBar} />
-      <Image src={charts[1]} style={pdfStyles.chartDonut} />
+      {(() => {
+        const barPx = readPngPixelSize(chartBuffers[0]) || { width: 1160, height: 400 };
+        const donutPx = readPngPixelSize(chartBuffers[1]) || { width: 480, height: 480 };
+        const barBoxW = pageContentW * 0.74;
+        const donutBoxW = pageContentW * 0.24;
+        const barSize = fitContainedSize(barPx.width, barPx.height, barBoxW, chartRowH);
+        const donutSize = fitContainedSize(donutPx.width, donutPx.height, donutBoxW, chartRowH);
+        return (
+          <>
+            <View style={pdfStyles.chartSlotBar}>
+              <Image
+                src={charts[0]}
+                style={{ width: barSize.width, height: barSize.height, objectFit: "contain" }}
+              />
+            </View>
+            <View style={pdfStyles.chartSlotDonut}>
+              <Image
+                src={charts[1]}
+                style={{
+                  width: donutSize.width,
+                  height: donutSize.height,
+                  objectFit: "contain",
+                }}
+              />
+            </View>
+          </>
+        );
+      })()}
     </View>
   ) : (
     <View>
-      {charts.map((src, index) => (
-        <Image key={`chart-${index}`} src={src} style={pdfStyles.chart} />
-      ))}
+      {charts.map((src, index) => {
+        const px = readPngPixelSize(chartBuffers[index]) || {
+          width: 960,
+          height: 420,
+        };
+        const size = fitContainedSize(px.width, px.height, pageContentW, singleChartH);
+        return (
+          <Image
+            key={`chart-${index}`}
+            src={src}
+            style={[pdfStyles.chart, { width: size.width, height: size.height }]}
+          />
+        );
+      })}
     </View>
   );
 

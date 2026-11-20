@@ -82,6 +82,8 @@ export function chartToPngDataUrl(
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
+    // Keep pixel-perfect chart text when drawing the export canvas.
+    ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(source, 0, 0);

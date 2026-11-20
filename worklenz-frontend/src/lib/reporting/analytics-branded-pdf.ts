@@ -302,6 +302,36 @@ export function resolveAnalyticsPdfLogoUrl(
   return teams.find(team => team.id === teamId)?.logo_url ?? null;
 }
 
+/** Place a PNG inside a box without stretching (keeps chart fonts crisp). */
+function addContainedImage(
+  doc: jsPDF,
+  dataUrl: string,
+  boxX: number,
+  boxY: number,
+  boxW: number,
+  boxH: number
+): { width: number; height: number } {
+  let drawW = boxW;
+  let drawH = boxH;
+  try {
+    const props = doc.getImageProperties(dataUrl);
+    const ratio = props.width / Math.max(props.height, 1);
+    drawW = boxW;
+    drawH = drawW / ratio;
+    if (drawH > boxH) {
+      drawH = boxH;
+      drawW = drawH * ratio;
+    }
+  } catch {
+    // Fall back to the box size if properties cannot be read.
+  }
+  const x = boxX + (boxW - drawW) / 2;
+  const y = boxY + (boxH - drawH) / 2;
+  const format = dataUrl.includes('image/jpeg') ? 'JPEG' : 'PNG';
+  doc.addImage(dataUrl, format, x, y, drawW, drawH);
+  return { width: drawW, height: drawH };
+}
+
 /**
  * Build a landscape branded analytics PDF
  * (logo, KPI cards, chart, data table, footer + page numbers).
@@ -319,19 +349,22 @@ export async function downloadAnalyticsBrandedPdf(
   const primaryChart = options.chartPngDataUrl;
   const secondaryChart = options.secondaryChartPngDataUrl;
   if (primaryChart && secondaryChart) {
-    // Match scheduled PDF: bar ~74%, donut ~24%, height 200, donut object-fit contain.
+    // Project Health: bar ~74% | donut ~24%, aspect preserved so fonts stay sharp.
     const available = PAGE.width - PAGE.marginX * 2;
     const gap = available * 0.02;
-    const barW = available * 0.74;
+    const barBoxW = available * 0.74;
     const donutBoxW = available * 0.24;
     const chartH = Math.min(200, PAGE.height - cursorY - PAGE.marginBottom - 80);
-    // Contain square donut (with legend) inside the right column — same as scheduled objectFit.
-    const donutSide = Math.min(donutBoxW, chartH);
-    const donutX = PAGE.marginX + barW + gap + (donutBoxW - donutSide) / 2;
-    const donutY = cursorY + (chartH - donutSide) / 2;
     try {
-      doc.addImage(primaryChart, 'PNG', PAGE.marginX, cursorY, barW, chartH);
-      doc.addImage(secondaryChart, 'PNG', donutX, donutY, donutSide, donutSide);
+      addContainedImage(doc, primaryChart, PAGE.marginX, cursorY, barBoxW, chartH);
+      addContainedImage(
+        doc,
+        secondaryChart,
+        PAGE.marginX + barBoxW + gap,
+        cursorY,
+        donutBoxW,
+        chartH
+      );
       cursorY += chartH + 16;
     } catch {
       // Skip charts if embedding fails.
@@ -340,7 +373,7 @@ export async function downloadAnalyticsBrandedPdf(
     const chartW = PAGE.width - PAGE.marginX * 2;
     const chartH = Math.min(220, PAGE.height - cursorY - PAGE.marginBottom - 80);
     try {
-      doc.addImage(primaryChart, 'PNG', PAGE.marginX, cursorY, chartW, chartH);
+      addContainedImage(doc, primaryChart, PAGE.marginX, cursorY, chartW, chartH);
       cursorY += chartH + 16;
     } catch {
       // Skip chart if embedding fails.
