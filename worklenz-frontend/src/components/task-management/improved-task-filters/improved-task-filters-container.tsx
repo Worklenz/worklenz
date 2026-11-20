@@ -915,10 +915,6 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         dispatch(persistFilters());
       }
 
-      if (!isRestoringFilters) {
-        dispatch(persistFilters());
-      }
-
       setTimeout(() => {
         if (position === 'board') {
           dispatch(fetchEnhancedKanbanGroups(projectId));
