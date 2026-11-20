@@ -14,7 +14,8 @@ import { IPassportSession } from "../interfaces/passport-session";
 import { SocketEvents } from "../socket.io/events";
 import { IO } from "../shared/io";
 import { notifyProjectDateChanges } from "../shared/project-date-notifications";
-import { getCurrentProjectsCount, getFreePlanSettings } from "../shared/paddle-utils";
+import { getCurrentProjectsCount, getFreePlanSettings, getOwnerIdByTeam } from "../shared/paddle-utils";
+import { isSelfHostedDeployment } from "../shared/deployment-mode";
 import { ActivityLoggingService } from "../services/activity-logging.service";
 import { NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE } from "../shared/guest-access-sql";
 import { canUseFeature } from "../shared/entitlements/gates";
@@ -82,7 +83,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     }
   })
   public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    if (req.user?.subscription_status === "free" && req.user?.owner_id) {
+    if (!isSelfHostedDeployment() && req.user?.subscription_status === "free" && req.user?.owner_id) {
       const limits = await getFreePlanSettings();
       const projectsCount = await getCurrentProjectsCount(req.user.owner_id);
       const projectsLimit = parseInt(limits.projects_limit);
@@ -238,6 +239,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                    OR r.admin_role = TRUE
                    OR pm.id IS NOT NULL
                  )
+                 AND COALESCE(p.archived_for_team, FALSE) = FALSE
                  AND NOT EXISTS (
                    SELECT 1
                    FROM archived_projects ap
@@ -276,8 +278,8 @@ export default class ProjectsController extends WorklenzControllerBase {
     const isFavorites = req.query.filter === "1" ? ` AND EXISTS(SELECT user_id FROM favorite_projects WHERE user_id = $${userIdParam} AND project_id = projects.id)` : "";
     
     const isArchived = req.query.filter === "2"
-      ? ` AND EXISTS(SELECT user_id FROM archived_projects WHERE user_id = $${userIdParam} AND project_id = projects.id)`
-      : ` AND NOT EXISTS(SELECT user_id FROM archived_projects WHERE user_id = $${userIdParam} AND project_id = projects.id)`;
+      ? ` AND (COALESCE(projects.archived_for_team, FALSE) = TRUE OR EXISTS(SELECT user_id FROM archived_projects WHERE user_id = $${userIdParam} AND project_id = projects.id))`
+      : ` AND COALESCE(projects.archived_for_team, FALSE) = FALSE AND NOT EXISTS(SELECT user_id FROM archived_projects WHERE user_id = $${userIdParam} AND project_id = projects.id)`;
     const q = `
       SELECT ROW_TO_JSON(rec) AS projects
       FROM (SELECT COUNT(*) AS total,
@@ -588,9 +590,9 @@ export default class ProjectsController extends WorklenzControllerBase {
     }
 
     if (req.query.filter === "2") {
-      isArchived = ` AND EXISTS(SELECT user_id FROM archived_projects WHERE user_id = $2 AND project_id = projects.id)`;
+      isArchived = ` AND (COALESCE(projects.archived_for_team, FALSE) = TRUE OR EXISTS(SELECT user_id FROM archived_projects WHERE user_id = $2 AND project_id = projects.id))`;
     } else {
-      isArchived = ` AND NOT EXISTS(SELECT user_id FROM archived_projects WHERE user_id = $2 AND project_id = projects.id)`;
+      isArchived = ` AND COALESCE(projects.archived_for_team, FALSE) = FALSE AND NOT EXISTS(SELECT user_id FROM archived_projects WHERE user_id = $2 AND project_id = projects.id)`;
     }
 
     const categoriesResult = this.getFilterByCategoryWhereClosure(req.query.categories as string, paramOffset);
@@ -1638,6 +1640,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     // Check current archive status and get project name
     const checkQ = `SELECT 
                       p.name, 
+                      COALESCE(p.archived_for_team, FALSE) AS archived_for_team,
                       EXISTS(SELECT 1 FROM archived_projects WHERE user_id = $1 AND project_id = $2) AS is_archived
                     FROM projects p 
                     WHERE p.id = $2 AND p.team_id = $3`;
@@ -1649,6 +1652,18 @@ export default class ProjectsController extends WorklenzControllerBase {
 
     const project = checkResult.rows[0];
     const wasArchived = project.is_archived;
+
+    // A project archived for the team cannot be individually unarchived or toggled;
+    // it must be restored for all members via toggleArchiveAll so quota is verified.
+    if (project.archived_for_team) {
+      return res.status(400).send(
+        new ServerResponse(
+          false,
+          null,
+          "This project is archived for the team and cannot be individually modified. Please restore it for all members."
+        )
+      );
+    }
     
     const q = `SELECT toggle_archive_project($1, $2);`;
     const result = await db.query(q, [req.user?.id, req.params.id]);
@@ -1692,10 +1707,9 @@ export default class ProjectsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async toggleArchiveAll(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    // toggle_archive_all_projects() restores when any archive row exists,
-    // so the same check taken before the call tells archive and restore apart.
     const checkResult = await db.query(
       `SELECT p.name,
+              COALESCE(p.archived_for_team, FALSE) AS archived_for_team,
               EXISTS(SELECT 1 FROM archived_projects WHERE project_id = p.id) AS is_archived
        FROM projects p
        WHERE p.id = $1`,
@@ -1703,25 +1717,84 @@ export default class ProjectsController extends WorklenzControllerBase {
     );
     const project = checkResult.rows[0];
 
+    if (!project) {
+      return res.status(404).send(new ServerResponse(false, null, "Project not found"));
+    }
+
+    const isRestoring = Boolean(project.archived_for_team);
+
+    if (isRestoring && !isSelfHostedDeployment() && req.user?.subscription_status === "free") {
+      const ownerId = req.user?.owner_id || (req.user?.team_id ? await getOwnerIdByTeam(req.user.team_id) : null);
+      if (ownerId) {
+        const client = await db.pool.connect();
+        try {
+          await client.query("BEGIN");
+          await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`project-quota:${ownerId}`]);
+
+          const limits = await getFreePlanSettings();
+          const countRes = await client.query(
+            `SELECT COUNT(*) FROM projects
+             WHERE team_id IN (SELECT id FROM teams WHERE owner_id = $1)
+               AND COALESCE(archived_for_team, FALSE) = FALSE`,
+            [ownerId]
+          );
+          const projectsCount = countRes.rows[0]?.count || 0;
+          const projectsLimit = parseInt(limits.projects_limit);
+
+          if (parseInt(projectsCount) >= projectsLimit) {
+            await client.query("ROLLBACK");
+            return res.status(200).send(
+              new ServerResponse(
+                false,
+                [],
+                `Sorry, the free plan cannot have more than ${projectsLimit} projects.`
+              )
+            );
+          }
+
+          const q = `SELECT toggle_archive_all_projects($1);`;
+          const result = await client.query(q, [req.params.id]);
+          await client.query("COMMIT");
+
+          if (req.user?.organization_id) {
+            logAuditEvent({
+              organizationId: req.user.organization_id,
+              teamId: req.user.team_id || null,
+              actor: actorFromSessionUser(req.user),
+              eventType: AUDIT_EVENT_TYPE.PROJECT_RESTORED.id,
+              description: `Restored project "${project.name}" for all members`,
+            });
+          }
+
+          return res.status(200).send(new ServerResponse(true, result.rows[0]?.toggle_archive_all_projects || []));
+        } catch (error) {
+          await client.query("ROLLBACK");
+          throw error;
+        } finally {
+          client.release();
+        }
+      }
+    }
+
     const q = `SELECT toggle_archive_all_projects($1);`;
     const result = await db.query(q, [req.params.id]);
     const [data] = result.rows;
 
-    if (project && req.user?.organization_id) {
+    if (req.user?.organization_id) {
       logAuditEvent({
         organizationId: req.user.organization_id,
         teamId: req.user.team_id || null,
         actor: actorFromSessionUser(req.user),
-        eventType: project.is_archived
+        eventType: isRestoring
           ? AUDIT_EVENT_TYPE.PROJECT_RESTORED.id
           : AUDIT_EVENT_TYPE.PROJECT_ARCHIVED.id,
-        description: project.is_archived
+        description: isRestoring
           ? `Restored project "${project.name}" for all members`
           : `Archived project "${project.name}" for all members`,
       });
     }
 
-    return res.status(200).send(new ServerResponse(true, data.toggle_archive_all_projects || []));
+    return res.status(200).send(new ServerResponse(true, data?.toggle_archive_all_projects || []));
   }
 
   public static async getProjectManager(projectId: string) {
@@ -1823,8 +1896,8 @@ export default class ProjectsController extends WorklenzControllerBase {
 
     const isFavorites = req.query.filter === "1" ? ` AND EXISTS(SELECT user_id FROM favorite_projects WHERE user_id = $${userIdParam} AND project_id = projects.id)` : "";
     const isArchived = req.query.filter === "2"
-      ? ` AND EXISTS(SELECT user_id FROM archived_projects WHERE user_id = $${userIdParam} AND project_id = projects.id)`
-      : ` AND NOT EXISTS(SELECT user_id FROM archived_projects WHERE user_id = $${userIdParam} AND project_id = projects.id)`;
+      ? ` AND (COALESCE(projects.archived_for_team, FALSE) = TRUE OR EXISTS(SELECT user_id FROM archived_projects WHERE user_id = $${userIdParam} AND project_id = projects.id))`
+      : ` AND COALESCE(projects.archived_for_team, FALSE) = FALSE AND NOT EXISTS(SELECT user_id FROM archived_projects WHERE user_id = $${userIdParam} AND project_id = projects.id)`;
 
     // Determine grouping field and join based on groupBy parameter
     let groupField = "";
