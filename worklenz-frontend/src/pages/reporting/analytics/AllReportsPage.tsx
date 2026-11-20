@@ -599,13 +599,8 @@ const AllReportsPage: React.FC = () => {
                     ? t('upgradeToBusiness', { defaultValue: 'Upgrade to Business' })
                     : isFinanceLocked
                       ? t('hubFinancePermissionHint', {
-<<<<<<< HEAD
                           defaultValue: 'Requires View finance permission',
                         })
-=======
-                        defaultValue: 'Requires View finance permission',
-                      })
->>>>>>> d1ed181b50aac9bdb46bf535535968f9eb8f36fc
                       : t('hubOpenReport', { defaultValue: 'Open report →' })}
                 </div>
               </button>
@@ -620,10 +615,7 @@ const AllReportsPage: React.FC = () => {
             'Figures reflect your workspace data for the current period. Open a report to change date range, projects, and filters.',
         })}
       </Text>
-<<<<<<< HEAD
-=======
       </div>
->>>>>>> d1ed181b50aac9bdb46bf535535968f9eb8f36fc
     </div>
   );
 };
