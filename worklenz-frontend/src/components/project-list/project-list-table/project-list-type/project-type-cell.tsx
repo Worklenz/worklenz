@@ -15,10 +15,10 @@ export const ProjectTypeCell: React.FC<ProjectTypeCellProps> = ({ record, t }) =
     : t('projectTypeGeneral', { defaultValue: 'General' });
   const tooltip = isSoftware
     ? t('projectTypeSoftwareTooltip', {
-        defaultValue: 'Software project-issues, backlog, and sprints',
+        defaultValue: 'Software project — issues, backlog, and sprints',
       })
     : t('projectTypeGeneralTooltip', {
-        defaultValue: 'General project-tasks, phases, and boards',
+        defaultValue: 'General project — tasks, phases, and boards',
       });
 
   return (
