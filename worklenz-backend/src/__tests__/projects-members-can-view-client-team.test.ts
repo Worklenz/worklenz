@@ -1,9 +1,19 @@
-jest.mock('../config/db', () => ({
-  __esModule: true,
-  default: {
+jest.mock('../config/db', () => {
+  const mockDb: any = {
     query: jest.fn(),
-  },
-}));
+    pool: {
+      connect: jest.fn(),
+    },
+  };
+  mockDb.pool.connect = jest.fn(() => Promise.resolve({
+    query: jest.fn((...args: any[]) => mockDb.query(...args)),
+    release: jest.fn(),
+  }));
+  return {
+    __esModule: true,
+    default: mockDb,
+  };
+});
 
 jest.mock('../shared/project-access', () => ({
   getProjectAccessForRequest: jest.fn(),
@@ -18,6 +28,8 @@ jest.mock('../services/activity-logging.service', () => ({
   ActivityLoggingService: {
     logProjectUpdated: jest.fn().mockResolvedValue(undefined),
     logProjectCreated: jest.fn().mockResolvedValue(undefined),
+    logProjectArchived: jest.fn().mockResolvedValue(undefined),
+    logProjectActivity: jest.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -409,6 +421,94 @@ describe('ProjectsController - members_can_view_client_team toggle persistence',
         if (previousMode === undefined) delete process.env.WORKLENZ_DEPLOYMENT_MODE;
         else process.env.WORKLENZ_DEPLOYMENT_MODE = previousMode;
       }
+    });
+
+    it('uses pg_advisory_xact_lock to ensure atomic restore quota check', async () => {
+      const previousMode = process.env.WORKLENZ_DEPLOYMENT_MODE;
+      process.env.WORKLENZ_DEPLOYMENT_MODE = 'cloud';
+      try {
+        mockedDbQuery.mockImplementation((sql: string) => {
+          if (sql.includes('archived_for_team') && sql.includes('WHERE p.id = $1')) {
+            return Promise.resolve({
+              rows: [{ name: 'Alpha Project', archived_for_team: true, is_archived: false }],
+            });
+          }
+          if (sql.includes('licensing_settings')) {
+            return Promise.resolve({ rows: [{ projects_limit: '3' }] });
+          }
+          if (sql.includes('COUNT(*)')) {
+            return Promise.resolve({ rows: [{ count: '1' }] });
+          }
+          return Promise.resolve({ rows: [{ toggle_archive_all_projects: [] }] });
+        });
+
+        const req = createMockRequest({
+          params: { id: 'project-123' },
+          user: { id: 'user-123', team_id: 'team-123', owner_id: 'owner-123', subscription_status: 'free' },
+        });
+        const res = createMockResponse();
+
+        await ProjectsController.toggleArchiveAll(req, res);
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body?.done).toBe(true);
+        expect(mockedDbQuery.mock.calls.some(([sql]: [string]) => sql.includes('pg_advisory_xact_lock'))).toBe(true);
+      } finally {
+        if (previousMode === undefined) delete process.env.WORKLENZ_DEPLOYMENT_MODE;
+        else process.env.WORKLENZ_DEPLOYMENT_MODE = previousMode;
+      }
+    });
+  });
+
+  describe('ProjectsController.toggleArchive (personal archive/unarchive)', () => {
+    it('blocks personal unarchive/modification when project is archived for team', async () => {
+      mockedDbQuery.mockImplementation((sql: string) => {
+        if (sql.includes('archived_for_team') && sql.includes('WHERE p.id = $2')) {
+          return Promise.resolve({
+            rows: [{ name: 'Alpha Project', archived_for_team: true, is_archived: true }],
+          });
+        }
+        return Promise.resolve({ rows: [] });
+      });
+
+      const req = createMockRequest({
+        params: { id: 'project-123' },
+        user: { id: 'user-123', team_id: 'team-123' },
+      });
+      const res = createMockResponse();
+
+      await ProjectsController.toggleArchive(req, res);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body?.done).toBe(false);
+      expect(res.body?.message).toContain('archived for the team and cannot be individually modified');
+      expect(mockedDbQuery.mock.calls.some(([sql]: [string]) => sql.includes('toggle_archive_project'))).toBe(false);
+    });
+
+    it('allows personal archive toggle when project is NOT archived for team', async () => {
+      mockedDbQuery.mockImplementation((sql: string) => {
+        if (sql.includes('archived_for_team') && sql.includes('WHERE p.id = $2')) {
+          return Promise.resolve({
+            rows: [{ name: 'Alpha Project', archived_for_team: false, is_archived: false }],
+          });
+        }
+        if (sql.includes('toggle_archive_project')) {
+          return Promise.resolve({ rows: [{ toggle_archive_project: true }] });
+        }
+        return Promise.resolve({ rows: [] });
+      });
+
+      const req = createMockRequest({
+        params: { id: 'project-123' },
+        user: { id: 'user-123', team_id: 'team-123' },
+      });
+      const res = createMockResponse();
+
+      await ProjectsController.toggleArchive(req, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body?.done).toBe(true);
+      expect(mockedDbQuery.mock.calls.some(([sql]: [string]) => sql.includes('toggle_archive_project'))).toBe(true);
     });
   });
 });
