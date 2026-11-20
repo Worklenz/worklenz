@@ -31,6 +31,7 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useProjectRoomSync, projectIdsFromTasks, hasParentSubtaskOverlap } from '@/hooks/useProjectRoomSync';
 import { useAuthService } from '@/hooks/useAuth';
+import { canUseFeature } from '@/utils/subscription-utils';
 import { getUserSession } from '@/utils/session-helper';
 import { WorklenzLogoLoader } from '@/components/worklenz-loader/worklenz-loader';
 import { getEnglishWeekdayName } from '@/utils/dateUtils';
@@ -150,6 +151,7 @@ const PlannerScheduleView: React.FC = () => {
 
   const { socket } = useSocket();
   const currentSession = useAuthService().getCurrentSession();
+  const canEditSchedule = canUseFeature(currentSession, 'planner_schedule_edit');
   // Chip drag-and-drop: same row (member unchanged) + different day column = due-date
   // change; same day column (date unchanged) + different member row = reassignment.
   // Dragging to a different member AND a different day does both at once.
@@ -1241,7 +1243,7 @@ const PlannerScheduleView: React.FC = () => {
   // Small grip strip anchored to the chip's bottom edge (chip needs position:relative).
   // Days ('full') and Weeks ('compact') zoom only — Months ('bar') chips are 8px slivers
   // with no room for a handle and are left untouched.
-  const renderResizeHandle = (task: any, dense: 'full' | 'compact', color: string, handleHeight: number) => (
+  const renderResizeHandle = (task: any, dense: 'full' | 'compact', color: string, handleHeight: number) => canEditSchedule && (
     <div
       onMouseDown={e => startChipResize(e, task, dense)}
       onClick={e => e.stopPropagation()}
@@ -1265,7 +1267,7 @@ const PlannerScheduleView: React.FC = () => {
   // (edge 'start') or last day cell (edge 'end'), since a multi-day task is drawn as a
   // separate chip in every day column it spans rather than one continuous bar. Days/Weeks
   // zoom only, same scoping as renderResizeHandle above.
-  const renderDateResizeHandle = (task: any, edge: 'start' | 'end', color: string) => (
+  const renderDateResizeHandle = (task: any, edge: 'start' | 'end', color: string) => canEditSchedule && (
     <div
       onMouseDown={e => startChipDateResize(e, task, edge)}
       onClick={e => e.stopPropagation()}
@@ -1495,6 +1497,7 @@ const PlannerScheduleView: React.FC = () => {
           <Button
             size="small"
             shape="circle"
+            disabled={!canEditSchedule}
             onClick={handleOpenSettings}
             title={t('settings', { defaultValue: 'Settings' })}
           >
@@ -1822,13 +1825,13 @@ const PlannerScheduleView: React.FC = () => {
                               suppressCellClickRef.current = false;
                               return;
                             }
-                            if (!isFullDayTimeOff) openCreateTask(memberId, d.date);
+                            if (canEditSchedule && !isFullDayTimeOff) openCreateTask(memberId, d.date);
                           }}
                           onDragOver={e => e.preventDefault()}
                           onDrop={e => {
                             e.preventDefault();
                             e.stopPropagation();
-                            handleChipDrop(memberId, d.date);
+                            if (canEditSchedule) handleChipDrop(memberId, d.date);
                           }}
                           style={{
                             width: colWidth,
@@ -1911,13 +1914,13 @@ const PlannerScheduleView: React.FC = () => {
                                   className="planner-chip"
                                   onClick={e => {
                                     e.stopPropagation();
-                                    openTaskDrawer(task);
+                                    if (canEditSchedule) openTaskDrawer(task);
                                   }}
-                                  draggable
+                                  draggable={canEditSchedule}
                                   onDragStart={makeChipDragStartHandler(task, memberId, d.date)}
                                   style={{
                                     position: 'relative',
-                                    cursor: 'grab',
+                                    cursor: canEditSchedule ? 'grab' : 'default',
                                     borderRadius: 4,
                                     marginLeft: isSubtask ? 8 : 0,
                                     background: isSubtask ? `${color}0c` : `${color}18`,
@@ -2066,9 +2069,9 @@ const PlannerScheduleView: React.FC = () => {
                                           className="planner-chip"
                                           onClick={e => {
                                             e.stopPropagation();
-                                            openTaskDrawer(task);
+                                            if (canEditSchedule) openTaskDrawer(task);
                                           }}
-                                          draggable
+                                          draggable={canEditSchedule}
                                           onDragStart={makeChipDragStartHandler(task, memberId, d.date)}
                                           style={{
                                             position: 'relative',
@@ -2076,7 +2079,7 @@ const PlannerScheduleView: React.FC = () => {
                                             marginLeft: task.parent_task_id ? 8 : 0,
                                             fontSize: 12,
                                             borderRadius: 4,
-                                            cursor: 'grab',
+                                            cursor: canEditSchedule ? 'grab' : 'default',
                                             opacity: task.parent_task_id ? 0.85 : 1,
                                             borderLeft: `3px solid ${task.project_color || token.colorPrimary}`,
                                             whiteSpace: 'nowrap',

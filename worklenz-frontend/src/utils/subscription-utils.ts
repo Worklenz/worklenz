@@ -93,7 +93,7 @@ const LEGACY_BUSINESS_FEATURES = new Set([
   'finance_module',
   'slack_integration',
   'restrict_task_creation',
-  'planner_schedule',
+  'planner_schedule_edit',
   'planner_timeline',
   'planner_workload',
   'task_export',
@@ -106,6 +106,7 @@ const LEGACY_BUSINESS_FEATURES = new Set([
  * Business, which the legacy "Business only" check cannot express.
  */
 const ALWAYS_ENFORCED_FEATURES = new Set([
+  'planner_schedule',
   'client_portal',
   'client_portal_requests',
   'client_portal_chats',
