@@ -29,7 +29,7 @@ ganttApiRouter.post("/export", roadmapExportRateLimiter, verifyProjectAccess('bo
 ganttApiRouter.get("/project-phases", verifyProjectAccess('query', 'project_id'), verifyGuestViewAccess('query', 'project_id', 'roadmap'), safeControllerFunction(GanttController.getProjectPhases));
 ganttApiRouter.post("/update-task-dates", requireFeature("gantt_edit"), verifyNonGuestTaskAccess('body', 'task_id'), safeControllerFunction(GanttController.updateTaskDates));
 ganttApiRouter.post("/create-task", requireFeature("gantt_edit"), verifyNonGuestProjectAccess('body', 'project_id', PROJECT_ROLE_PERMISSIONS.CREATE_TASKS), safeControllerFunction(GanttController.createTask));
-ganttApiRouter.post("/create-phase", requirePhases, safeControllerFunction(GanttController.createPhase));
+ganttApiRouter.post("/create-phase", requireFeature("gantt_edit"), requirePhases, safeControllerFunction(GanttController.createPhase));
 ganttApiRouter.put("/update-phase", requireFeature("gantt_edit"), requirePhases, safeControllerFunction(GanttController.updatePhase));
 ganttApiRouter.post("/reorder-phases", requireFeature("gantt_edit"), requirePhases, safeControllerFunction(GanttController.reorderPhases));
 
