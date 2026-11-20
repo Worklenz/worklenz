@@ -158,7 +158,7 @@
   "actionShare": "Teilen",
   "actionSchedule": "Planen",
   "scheduleReportTitle": "Bericht planen",
-  "scheduleReportDescription": "Email a snapshot of this report with the current filters.",
+  "scheduleReportDescription": "E-Mail-Snapshot dieses Berichts mit den aktuellen Filtern senden.",
   "scheduleFrequency": "Häufigkeit",
   "scheduleFrequencyRequired": "Häufigkeit auswählen",
   "scheduleDaysRequired": "Mindestens einen Tag auswählen",
@@ -547,9 +547,9 @@
   "tisCalcAvgCycle": "Summe der durchschnittlichen Tage je Status — Schätzung der Gesamtzykluszeit.",
   "tisCalcOutliers": "Aufgaben, deren Zeit in einem Status im Vergleich zu anderen ungewöhnlich hoch ist (statistische Ausreißer).",
   "scheduleName": "Name",
-  "scheduleNameRequired": "Enter a schedule name",
-  "scheduleNameTooLong": "Name must be at most {{max}} characters",
-  "scheduleNamePlaceholder": "e.g. Weekly time report",
-  "scheduleFormatsRequired": "Select at least one format",
-  "scheduleFormatsPlaceholder": "Select one or more formats"
+  "scheduleNameRequired": "Geben Sie einen Zeitplannamen ein",
+  "scheduleNameTooLong": "Name darf höchstens {{max}} Zeichen haben",
+  "scheduleNamePlaceholder": "z. B. Wöchentlicher Zeitbericht",
+  "scheduleFormatsRequired": "Mindestens ein Format auswählen",
+  "scheduleFormatsPlaceholder": "Ein oder mehrere Formate auswählen"
 }

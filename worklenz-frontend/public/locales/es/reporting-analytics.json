@@ -158,7 +158,7 @@
   "actionShare": "Compartir",
   "actionSchedule": "Programar",
   "scheduleReportTitle": "Programar informe",
-  "scheduleReportDescription": "Email a snapshot of this report with the current filters.",
+  "scheduleReportDescription": "Enviar por correo una captura de este informe con los filtros actuales.",
   "scheduleFrequency": "Frecuencia",
   "scheduleFrequencyRequired": "Seleccione una frecuencia",
   "scheduleDaysRequired": "Seleccione al menos un día",
@@ -546,10 +546,10 @@
   "tisCalcVisits": "Total de veces que las tareas entraron en un estado (una tarea puede visitar varios estados).",
   "tisCalcAvgCycle": "Suma de los días promedio en cada estado: estimación del tiempo de ciclo total.",
   "tisCalcOutliers": "Tareas cuyo tiempo en un estado es inusualmente alto frente a sus pares (valores atípicos).",
-  "scheduleName": "Name",
-  "scheduleNameRequired": "Enter a schedule name",
-  "scheduleNameTooLong": "Name must be at most {{max}} characters",
-  "scheduleNamePlaceholder": "e.g. Weekly time report",
-  "scheduleFormatsRequired": "Select at least one format",
-  "scheduleFormatsPlaceholder": "Select one or more formats"
+  "scheduleName": "Nombre",
+  "scheduleNameRequired": "Introduce un nombre de programación",
+  "scheduleNameTooLong": "El nombre debe tener como máximo {{max}} caracteres",
+  "scheduleNamePlaceholder": "p. ej. Informe semanal de tiempo",
+  "scheduleFormatsRequired": "Selecciona al menos un formato",
+  "scheduleFormatsPlaceholder": "Selecciona uno o más formatos"
 }

@@ -158,7 +158,7 @@
   "actionShare": "Udostępnij",
   "actionSchedule": "Zaplanuj",
   "scheduleReportTitle": "Zaplanuj raport",
-  "scheduleReportDescription": "Email a snapshot of this report with the current filters.",
+  "scheduleReportDescription": "Wyślij e-mailem migawkę tego raportu z bieżącymi filtrami.",
   "scheduleFrequency": "Częstotliwość",
   "scheduleFrequencyRequired": "Wybierz częstotliwość",
   "scheduleDaysRequired": "Wybierz co najmniej jeden dzień",
@@ -546,10 +546,10 @@
   "tisCalcVisits": "Łączna liczba wejść zadań w status (jedno zadanie może odwiedzić wiele statusów).",
   "tisCalcAvgCycle": "Suma średnich dni w każdym statusie — oszacowanie całkowitego czasu cyklu.",
   "tisCalcOutliers": "Zadania, których czas w statusie jest nietypowo wysoki względem pozostałych (wartości odstające).",
-  "scheduleName": "Name",
-  "scheduleNameRequired": "Enter a schedule name",
-  "scheduleNameTooLong": "Name must be at most {{max}} characters",
-  "scheduleNamePlaceholder": "e.g. Weekly time report",
-  "scheduleFormatsRequired": "Select at least one format",
-  "scheduleFormatsPlaceholder": "Select one or more formats"
+  "scheduleName": "Nazwa",
+  "scheduleNameRequired": "Wprowadź nazwę harmonogramu",
+  "scheduleNameTooLong": "Nazwa może mieć co najwyżej {{max}} znaków",
+  "scheduleNamePlaceholder": "np. Tygodniowy raport czasu",
+  "scheduleFormatsRequired": "Wybierz co najmniej jeden format",
+  "scheduleFormatsPlaceholder": "Wybierz jeden lub więcej formatów"
 }
