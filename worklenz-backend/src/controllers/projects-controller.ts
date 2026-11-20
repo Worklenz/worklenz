@@ -17,6 +17,7 @@ import { notifyProjectDateChanges } from "../shared/project-date-notifications";
 import { getCurrentProjectsCount, getFreePlanSettings } from "../shared/paddle-utils";
 import { ActivityLoggingService } from "../services/activity-logging.service";
 import { NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE } from "../shared/guest-access-sql";
+import { canUseFeature } from "../shared/entitlements/gates";
 import { getProjectAccessForRequest } from "../shared/project-access";
 import { getProjectRolePermissionFlags, getVisibleProjectIds } from "../shared/project-role-permissions";
 import { stripProjectFinanceFields } from "../shared/strip-finance-fields";
@@ -89,6 +90,10 @@ export default class ProjectsController extends WorklenzControllerBase {
       if (parseInt(projectsCount) >= projectsLimit) {
         return res.status(200).send(new ServerResponse(false, [], `Sorry, the free plan cannot have more than ${projectsLimit} projects.`));
       }
+    }
+
+    if ((req.body.phase_assignees_enabled === true || req.body.phase_assignees_enabled === "true") && !canUseFeature(req.user, "phase_assignee")) {
+      return res.status(403).send(new ServerResponse(false, null, "Phase assignees require a Pro plan"));
     }
 
     const q = `SELECT create_project($1) AS project`;
@@ -1034,6 +1039,22 @@ export default class ProjectsController extends WorklenzControllerBase {
     }
   })
   public static async update(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    if (Object.prototype.hasOwnProperty.call(req.body, "phase_assignees_enabled")) {
+      const value = req.body.phase_assignees_enabled;
+      if (value !== true && value !== false && value !== "true" && value !== "false") {
+        return res.status(400).send(new ServerResponse(false, null, "phase_assignees_enabled must be a boolean"));
+      }
+      req.body.phase_assignees_enabled = value === true || value === "true";
+    }
+    if ((req.body.phase_assignees_enabled === true || req.body.phase_assignees_enabled === "true") && !canUseFeature(req.user, "phase_assignee")) {
+      const existing = await db.query(
+        `SELECT phase_assignees_enabled FROM projects WHERE id = $1 AND team_id = $2`,
+        [req.params.id, req.user?.team_id]
+      );
+      if (!existing.rows[0]?.phase_assignees_enabled) {
+        return res.status(403).send(new ServerResponse(false, null, "Phase assignees require a Pro plan"));
+      }
+    }
     const q = `SELECT update_project($1) AS project;`;
 
     const key = req.body.key?.toString().trim().toUpperCase();

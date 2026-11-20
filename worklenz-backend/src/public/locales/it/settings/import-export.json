@@ -295,5 +295,8 @@
     "failedMessage": "Il tuo processo di importazione non è riuscito. Per favore riprova.",
     "processingTitle": "Importazione in corso",
     "processingMessage": "La tua importazione è in fase di elaborazione. Ti avviseremo quando sarà pronto."
-  }
+  },
+  "proRequired": "Piano Pro richiesto",
+  "csvProRequired": "L’importazione CSV è disponibile dal piano Pro.",
+  "upgradePlan": "Aggiorna piano"
 }

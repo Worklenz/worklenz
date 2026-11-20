@@ -107,5 +107,8 @@
   "copyLink": "Copy link",
   "removeLink": "Remove link",
   "linkCopied": "Link copied",
-  "linkCopyFailed": "Could not copy. Select the address to copy it."
+  "linkCopyFailed": "Could not copy. Select the address to copy it.",
+  "proRequired": "Pro plan required",
+  "docsProRequired": "Project Docs are available on the Pro plan and above.",
+  "upgrade": "Upgrade plan"
 }

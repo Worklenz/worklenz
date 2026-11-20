@@ -35,6 +35,19 @@ describe('ProjectsController - members_can_view_client_team toggle persistence',
   });
 
   describe('ProjectsController.update', () => {
+    it('normalizes a string false before applying project settings', async () => {
+      const req = createMockRequest({ body: { phase_assignees_enabled: 'false' } });
+      const res = createMockResponse();
+      await ProjectsController.update(req, res);
+      expect(req.body.phase_assignees_enabled).toBe(false);
+    });
+
+    it('rejects invalid phase assignee settings', async () => {
+      const req = createMockRequest({ body: { phase_assignees_enabled: 'yes' } });
+      const res = createMockResponse();
+      await ProjectsController.update(req, res);
+      expect(res.statusCode).toBe(400);
+    });
     it('passes members_can_view_client_team in update_project payload when user has settings permission', async () => {
       mockedGetProjectAccess.mockResolvedValue({
         permissions: {

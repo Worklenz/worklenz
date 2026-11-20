@@ -112,6 +112,9 @@ const ALWAYS_ENFORCED_FEATURES = new Set([
   'client_portal_chats',
   'client_portal_services',
   'client_portal_invoices',
+  'project_docs',
+  'phase_assignee',
+  'csv_import',
 ]);
 
 /**
@@ -127,6 +130,13 @@ export const canUseFeature = (
   const entitlements = session.entitlements;
   if (entitlements && (entitlements.enforced || ALWAYS_ENFORCED_FEATURES.has(feature))) {
     return entitlements.features.includes(feature);
+  }
+  if (!entitlements && ['project_docs', 'phase_assignee', 'csv_import'].includes(feature)) {
+    if (session.deployment_mode === 'self_hosted' || hasBusinessFeatureAccess(session)) return true;
+    if (session.subscription_type === 'PLAN_TRIAL') {
+      return /^(PRO|BUSINESS|ENTERPRISE)/i.test(session.active_plan_trial ?? '');
+    }
+    return ['ANNUAL_PRO', 'PADDLE', 'CUSTOM', 'CREDIT', 'LIFE_TIME_DEAL', 'ENTERPRISE_TRIAL'].includes(session.subscription_type ?? '');
   }
   // `legacy` keeps today's behavior for gates that differ from "Business only" (not in the set above).
   if (legacy) return legacy(session);

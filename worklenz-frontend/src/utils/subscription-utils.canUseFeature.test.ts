@@ -5,6 +5,14 @@ import type { ILocalSession } from '@/types/auth/local-session.types';
 const session = (overrides: Partial<ILocalSession>) => overrides as ILocalSession;
 
 describe('canUseFeature', () => {
+  it.each(['project_docs', 'phase_assignee', 'csv_import'])(
+    'handles %s when the session has no entitlement snapshot', feature => {
+      expect(canUseFeature(session({ subscription_type: 'FREE' }), feature)).toBe(false);
+      expect(canUseFeature(session({ subscription_type: 'PADDLE', plan_name: 'Pro' }), feature)).toBe(true);
+      expect(canUseFeature(session({ subscription_type: 'FREE', deployment_mode: 'self_hosted' }), feature)).toBe(true);
+      expect(canUseFeature(session({ subscription_type: 'PLAN_TRIAL', active_plan_trial: 'FREE' }), feature)).toBe(false);
+    }
+  );
   it('denies without a session', () => {
     expect(canUseFeature(null, 'client_portal')).toBe(false);
   });

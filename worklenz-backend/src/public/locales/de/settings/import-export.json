@@ -295,5 +295,8 @@
     "failedMessage": "Ihr Importauftrag ist fehlgeschlagen. Bitte versuchen Sie es erneut.",
     "processingTitle": "Import läuft",
     "processingMessage": "Ihr Import wird verarbeitet. Wir benachrichtigen Sie, wenn es fertig ist."
-  }
+  },
+  "proRequired": "Pro-Tarif erforderlich",
+  "csvProRequired": "Der CSV-Import ist ab dem Pro-Tarif verfügbar.",
+  "upgradePlan": "Tarif upgraden"
 }

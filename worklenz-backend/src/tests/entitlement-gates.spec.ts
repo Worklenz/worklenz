@@ -59,6 +59,17 @@ describe("canUseFeature: client portal (enforced even in legacy mode)", () => {
   });
 });
 
+describe("Free plan feature restrictions", () => {
+  it.each(["project_docs", "phase_assignee", "csv_import"] as const)(
+    "%s is available to Pro and Business but not Free in legacy mode",
+    feature => {
+      expect(canUseFeature(free, feature)).toBe(false);
+      expect(canUseFeature(proClassic, feature)).toBe(true);
+      expect(canUseFeature(business, feature)).toBe(true);
+    }
+  );
+});
+
 describe("canUseFeature: client portal in self-hosted deployments", () => {
   afterEach(() => {
     process.env.WORKLENZ_DEPLOYMENT_MODE = "cloud";
@@ -72,6 +83,28 @@ describe("canUseFeature: client portal in self-hosted deployments", () => {
     ] as const) {
       expect(canUseFeature(free, feature)).toBe(true);
     }
+  });
+});
+
+describe("self-hosted plan features", () => {
+  afterEach(() => { process.env.WORKLENZ_DEPLOYMENT_MODE = "cloud"; });
+
+  it.each(["project_docs", "phase_assignee", "csv_import"] as const)(
+    "grants %s even when the stored subscription is Free",
+    feature => {
+      process.env.WORKLENZ_DEPLOYMENT_MODE = "self_hosted";
+      expect(canUseFeature(free, feature)).toBe(true);
+    }
+  );
+
+  it("grants team features without looking up a subscription record", async () => {
+    process.env.WORKLENZ_DEPLOYMENT_MODE = "self_hosted";
+    const status = jest.mocked(paddleUtils.checkTeamSubscriptionStatus);
+    status.mockClear();
+    status.mockResolvedValue(undefined);
+    expect(await teamCanUseFeature("team-id", "phase_assignee")).toBe(true);
+    expect(status).not.toHaveBeenCalled();
+    expect(await teamCanUseFeature(undefined, "phase_assignee")).toBe(false);
   });
 });
 
