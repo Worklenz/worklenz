@@ -527,28 +527,81 @@ const AllReportsPage: React.FC = () => {
             const reportName = t(card.titleKey, { defaultValue: card.defaultTitle });
             return (
               <button
-                key={report.id}
+                key={card.key}
                 type="button"
                 className="all-reports-hub__card"
                 style={{ borderColor, background: cardBg, color: token.colorText }}
-                onClick={() => navigate(analyticsPath(customReportPath(report.id)))}
-                aria-label={t('hubOpenReportAria', {
-                  defaultValue: 'Open {{name}}',
-                  name: report.name,
-                })}
+                onClick={() => {
+                  if (isBusinessLocked) {
+                    dispatch(openUpgradeModal('default'));
+                    return;
+                  }
+                  if (isFinanceLocked) {
+                    return;
+                  }
+                  navigate(analyticsPath(card.path));
+                }}
+                aria-label={
+                  isBusinessLocked
+                    ? t('hubBusinessLockedAria', {
+                        defaultValue: '{{name}} — Business plan required',
+                        name: reportName,
+                      })
+                    : isFinanceLocked
+                      ? t('hubFinanceLockedAria', {
+                          defaultValue: '{{name}} — View finance permission required',
+                          name: reportName,
+                        })
+                      : t('hubOpenReportAria', {
+                          defaultValue: 'Open {{name}}',
+                          name: reportName,
+                        })
+                }
               >
                 <div className="all-reports-hub__card-top">
-                  <span className="all-reports-hub__card-title">{report.name}</span>
-                  <span className="all-reports-hub__badge all-reports-hub__badge--included">
-                    {t('typeCustom', { defaultValue: 'Custom' })}
-                  </span>
+                  <span className="all-reports-hub__card-title">{reportName}</span>
+                  {isBusinessLocked ? (
+                    <span className="all-reports-hub__badge all-reports-hub__badge--business">
+                      <CrownOutlined style={{ marginRight: 4 }} />
+                      {t('businessPlanBadge', { defaultValue: 'Business' })}
+                    </span>
+                  ) : isFinanceLocked ? (
+                    <span className="all-reports-hub__badge all-reports-hub__badge--business">
+                      {t('hubBadgeFinanceRequired', {
+                        defaultValue: 'View finance required',
+                      })}
+                    </span>
+                  ) : (
+                    <span className="all-reports-hub__badge all-reports-hub__badge--included">
+                      {t('hubBadgeIncluded', { defaultValue: 'Included' })}
+                    </span>
+                  )}
                 </div>
+
                 <Text type="secondary" className="all-reports-hub__card-desc">
-                  {report.description ||
-                    t('descCustomReport', { defaultValue: 'Saved custom report' })}
+                  {t(card.descKey, { defaultValue: card.defaultDesc })}
                 </Text>
-                <div className="all-reports-hub__card-footer is-open">
-                  {t('hubOpenReport', { defaultValue: 'Open report →' })}
+
+                <div className="all-reports-hub__card-body">
+                  <div>
+                    <div className="all-reports-hub__metric">
+                      {isLocked ? '—' : metrics.primary}
+                    </div>
+                    <div className="all-reports-hub__metric-sub" style={{ color: muted }}>
+                      {t(card.metricSubKey, { defaultValue: card.defaultMetricSub })}
+                    </div>
+                  </div>
+                  <ReportCardPreview kind={card.key} series={metrics.spark} muted={isLocked} />
+                </div>
+
+                <div className={`all-reports-hub__card-footer${isLocked ? '' : ' is-open'}`}>
+                  {isBusinessLocked
+                    ? t('upgradeToBusiness', { defaultValue: 'Upgrade to Business' })
+                    : isFinanceLocked
+                      ? t('hubFinancePermissionHint', {
+                          defaultValue: 'Requires View finance permission',
+                        })
+                      : t('hubOpenReport', { defaultValue: 'Open report →' })}
                 </div>
               </button>
             );
@@ -556,44 +609,12 @@ const AllReportsPage: React.FC = () => {
         </div>
       ) : null}
 
-                  <Text type="secondary" className="all-reports-hub__card-desc">
-                    {t(card.descKey, { defaultValue: card.defaultDesc })}
-                  </Text>
-
-                  <div className="all-reports-hub__card-body">
-                    <div>
-                      <div className="all-reports-hub__metric">
-                        {isLocked ? '—' : metrics.primary}
-                      </div>
-                      <div className="all-reports-hub__metric-sub" style={{ color: muted }}>
-                        {t(card.metricSubKey, { defaultValue: card.defaultMetricSub })}
-                      </div>
-                    </div>
-                    <ReportCardPreview kind={card.key} series={metrics.spark} muted={isLocked} />
-                  </div>
-
-                  <div className={`all-reports-hub__card-footer${isLocked ? '' : ' is-open'}`}>
-                    {isBusinessLocked
-                      ? t('upgradeToBusiness', { defaultValue: 'Upgrade to Business' })
-                      : isFinanceLocked
-                        ? t('hubFinancePermissionHint', {
-                          defaultValue: 'Requires View finance permission',
-                        })
-                        : t('hubOpenReport', { defaultValue: 'Open report →' })}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        <Text className="all-reports-hub__footnote" style={{ color: pageMuted }}>
-          {t('hubFootnote', {
-            defaultValue:
-              'Figures reflect your workspace data for the current period. Open a report to change date range, projects, and filters.',
-          })}
-        </Text>
-      </div>
+      <Text className="all-reports-hub__footnote" style={{ color: pageMuted }}>
+        {t('hubFootnote', {
+          defaultValue:
+            'Figures reflect your workspace data for the current period. Open a report to change date range, projects, and filters.',
+        })}
+      </Text>
     </div>
   );
 };
