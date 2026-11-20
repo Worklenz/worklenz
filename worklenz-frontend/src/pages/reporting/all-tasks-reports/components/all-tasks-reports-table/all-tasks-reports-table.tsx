@@ -19,7 +19,7 @@ import { colors } from '@/styles/colors';
 import dayjs from 'dayjs';
 import React from 'react';
 import { decodeHtmlEntities } from '@/utils/html-entities';
-import { toSolidTagColor } from '@/utils/colorUtils';
+import { getContrastColor, toSolidTagColor } from '@/utils/colorUtils';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import CustomTableTitle from '@/components/CustomTableTitle';
 import AssigneeSelector from '@/components/AssigneeSelector';
@@ -279,7 +279,7 @@ const AllTasksReportsTable = () => {
           return (
             <Tag
               key={`${record.id}-status-${record.status_id}-${statusColor}`}
-              style={{ color: colors.darkGray, borderRadius: 48, fontSize: 11, margin: 0 }}
+              style={{ color: statusColor ? getContrastColor(statusColor) : undefined, borderRadius: 48, fontSize: 11, margin: 0 }}
               color={statusColor}
             >
               {record.status_name || '-'}
@@ -310,7 +310,7 @@ const AllTasksReportsTable = () => {
           return (
             <Tag
               key={`${record.id}-priority-${record.priority_id}-${priorityColor}`}
-              style={{ color: colors.darkGray, borderRadius: 48, fontSize: 11, margin: 0 }}
+              style={{ color: priorityColor ? getContrastColor(priorityColor) : undefined, borderRadius: 48, fontSize: 11, margin: 0 }}
               color={priorityColor}
             >
               {record.priority_name}
