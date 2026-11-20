@@ -380,14 +380,14 @@ describe('ProjectsController - members_can_view_client_team toggle persistence',
       }
     });
 
-    it('allows archiving an active project even when at the limit', async () => {
+    it('allows archiving an active project even when at the limit, even if user personally archived it', async () => {
       const previousMode = process.env.WORKLENZ_DEPLOYMENT_MODE;
       process.env.WORKLENZ_DEPLOYMENT_MODE = 'cloud';
       try {
         mockedDbQuery.mockImplementation((sql: string) => {
           if (sql.includes('archived_for_team') && sql.includes('WHERE p.id = $1')) {
             return Promise.resolve({
-              rows: [{ name: 'Alpha Project', archived_for_team: false, is_archived: false }],
+              rows: [{ name: 'Alpha Project', archived_for_team: false, is_archived: true }],
             });
           }
           return Promise.resolve({ rows: [{ toggle_archive_all_projects: [] }] });

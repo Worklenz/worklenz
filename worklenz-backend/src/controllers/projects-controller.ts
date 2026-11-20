@@ -1686,7 +1686,7 @@ export default class ProjectsController extends WorklenzControllerBase {
       return res.status(404).send(new ServerResponse(false, null, "Project not found"));
     }
 
-    const isRestoring = project.archived_for_team || project.is_archived;
+    const isRestoring = Boolean(project.archived_for_team);
 
     if (isRestoring && !isSelfHostedDeployment() && req.user?.subscription_status === "free") {
       const ownerId = req.user?.owner_id || (req.user?.team_id ? await getOwnerIdByTeam(req.user.team_id) : null);
