@@ -97,6 +97,8 @@
   "tableViewToggleLabel": "Visualizzazione tabella",
   "tableViewFlat": "Piatto",
   "tableViewByTask": "Per compito",
+  "tableViewFlatTooltip": "Ogni voce di tempo su una riga separata, così come è stata registrata.",
+  "tableViewByTaskTooltip": "Una riga per attività, con il tempo di tutte le voci sommato.",
   "colStatus": "Stato",
   "colPriority": "Priorità",
   "colBillable": "Fatturabile",

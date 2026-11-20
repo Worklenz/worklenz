@@ -97,6 +97,8 @@
   "tableViewToggleLabel": "Table view",
   "tableViewFlat": "Flat",
   "tableViewByTask": "By task",
+  "tableViewFlatTooltip": "Every time entry on its own row, as it was logged.",
+  "tableViewByTaskTooltip": "One row per task, with the time of all its entries added up.",
   "colStatus": "Status",
   "colPriority": "Priority",
   "colBillable": "Billable",
