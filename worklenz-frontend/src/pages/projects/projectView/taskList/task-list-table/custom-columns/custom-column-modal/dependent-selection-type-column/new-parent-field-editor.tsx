@@ -1,6 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { nanoid } from 'nanoid';
 import { useTranslation } from 'react-i18next';
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  KeyboardSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Button, Flex, Input, Tooltip, Typography } from '@/shared/antd-imports';
 import type { InputRef } from '@/shared/antd-imports';
 import { CloseCircleOutlined } from '@/shared/antd-imports';
@@ -13,6 +23,7 @@ import {
 } from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 import { SelectionType } from '../selection-type-column/selection-type-column';
 import SelectionColorPicker from '../SelectionColorPicker';
+import { SortableSelectionOptionRow } from '../sortable-selection-option-row';
 
 const ADD_INPUT_FOCUS_ID = '__add_parent_option__';
 
@@ -33,6 +44,12 @@ export const NewParentFieldEditor = () => {
   const [draftOption, setDraftOption] = useState('');
   const inputRefs = useRef<Record<string, InputRef | null>>({});
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   useEffect(() => {
     if (!pendingFocusId) return;
@@ -89,6 +106,25 @@ export const NewParentFieldEditor = () => {
     }
   };
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = draft.selections.findIndex(
+      selection => selection.selection_id === active.id
+    );
+    const newIndex = draft.selections.findIndex(selection => selection.selection_id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    updateDraft({
+      selections: arrayMove(draft.selections, oldIndex, newIndex),
+    });
+  };
+
+  const dragHandleLabel = t('customColumns.fieldTypeForms.reorderSelection', {
+    defaultValue: 'Drag to reorder selection',
+  });
+
   return (
     <div style={{ marginBottom: 12 }}>
       <Flex vertical gap={8}>
@@ -121,58 +157,73 @@ export const NewParentFieldEditor = () => {
           })}
         </Typography.Text>
 
-        {draft.selections.map((selection, index) => (
-          <Flex gap={8} align="center" key={selection.selection_id}>
-            <Input
-              ref={element => {
-                inputRefs.current[selection.selection_id] = element;
-              }}
-              style={{ flex: 1, minWidth: 0 }}
-              value={selection.selection_name}
-              onChange={event =>
-                updateSelection(selection.selection_id, { selection_name: event.target.value })
-              }
-              onPressEnter={event => handleSelectionEnter(event, index)}
-              placeholder={t('customColumns.dependentSelection.optionPlaceholder', {
-                defaultValue: 'Type an option and press Enter',
-              })}
-              aria-label={t('customColumns.dependentSelection.optionNameLabel', {
-                defaultValue: 'Option name',
-              })}
-            />
-            <SelectionColorPicker
-              value={selection.selection_color}
-              onChange={color =>
-                updateSelection(selection.selection_id, { selection_color: color })
-              }
-              ariaLabel={t('customColumns.dependentSelection.optionColorLabel', {
-                defaultValue: 'Option color',
-              })}
-            />
-            <Tooltip
-              title={t('customColumns.dependentSelection.removeOption', {
-                defaultValue: 'Remove option',
-              })}
-            >
-              <Button
-                type="text"
-                size="small"
-                htmlType="button"
-                icon={<CloseCircleOutlined />}
-                onClick={() =>
-                  updateDraft({
-                    selections: draft.selections.filter(
-                      item => item.selection_id !== selection.selection_id
-                    ),
-                  })
-                }
-                aria-label={t('customColumns.dependentSelection.removeOption', {
-                  defaultValue: 'Remove option',
-                })}
-              />
-            </Tooltip>
-          </Flex>
-        ))}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext
+            items={draft.selections.map(selection => selection.selection_id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <Flex vertical gap={8}>
+              {draft.selections.map((selection, index) => (
+                <SortableSelectionOptionRow
+                  key={selection.selection_id}
+                  id={selection.selection_id}
+                  dragHandleLabel={dragHandleLabel}
+                >
+                  <Input
+                    ref={element => {
+                      inputRefs.current[selection.selection_id] = element;
+                    }}
+                    style={{ flex: 1, minWidth: 0 }}
+                    value={selection.selection_name}
+                    onChange={event =>
+                      updateSelection(selection.selection_id, {
+                        selection_name: event.target.value,
+                      })
+                    }
+                    onPressEnter={event => handleSelectionEnter(event, index)}
+                    placeholder={t('customColumns.dependentSelection.optionPlaceholder', {
+                      defaultValue: 'Type an option and press Enter',
+                    })}
+                    aria-label={t('customColumns.dependentSelection.optionNameLabel', {
+                      defaultValue: 'Option name',
+                    })}
+                  />
+                  <SelectionColorPicker
+                    value={selection.selection_color}
+                    onChange={color =>
+                      updateSelection(selection.selection_id, { selection_color: color })
+                    }
+                    ariaLabel={t('customColumns.dependentSelection.optionColorLabel', {
+                      defaultValue: 'Option color',
+                    })}
+                  />
+                  <Tooltip
+                    title={t('customColumns.dependentSelection.removeOption', {
+                      defaultValue: 'Remove option',
+                    })}
+                  >
+                    <Button
+                      type="text"
+                      size="small"
+                      htmlType="button"
+                      icon={<CloseCircleOutlined />}
+                      onClick={() =>
+                        updateDraft({
+                          selections: draft.selections.filter(
+                            item => item.selection_id !== selection.selection_id
+                          ),
+                        })
+                      }
+                      aria-label={t('customColumns.dependentSelection.removeOption', {
+                        defaultValue: 'Remove option',
+                      })}
+                    />
+                  </Tooltip>
+                </SortableSelectionOptionRow>
+              ))}
+            </Flex>
+          </SortableContext>
+        </DndContext>
 
         <Flex gap={6}>
           <Input
