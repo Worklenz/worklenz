@@ -7,7 +7,6 @@ import {log_error} from "../shared/utils";
 import {NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE} from "../shared/guest-access-sql";
 import { checkProjectRolePermission } from "../shared/project-role-permissions";
 import { PROJECT_ROLE_PERMISSIONS, ProjectRolePermission } from "../shared/organization-permissions";
-import { isAutoTeamSwitchSuppressed } from "../shared/manual-team-switch-guard";
 
 /**
  * Middleware to verify user has access to a project
@@ -108,38 +107,28 @@ export default function verifyProjectAccess(
           const hasProjectAccessInTeam = await checkProjectAccessInTeam(projectId, userId, projectTeamId, isOwnerOfProjectTeam, isAdminOfProjectTeam);
 
           if (hasProjectAccessInTeam) {
-            // A manual team switch just happened — do not undo it for an
-            // in-flight prefetch / stale project request.
-            if (await isAutoTeamSwitchSuppressed(userId)) {
-              logUnauthorizedAccess(userId, teamId, "project", projectId, req.path, "SUPPRESSED_AUTO_TEAM_SWITCH");
-              return res.status(403).send(
-                new ServerResponse(false, null, "You do not have permission to access this project")
-              );
-            }
 
             try {
-              // Recheck immediately before the write — suppression can land
-              // during the access checks above.
-              if (await isAutoTeamSwitchSuppressed(userId)) {
-                logUnauthorizedAccess(userId, teamId, "project", projectId, req.path, "SUPPRESSED_AUTO_TEAM_SWITCH");
-                return res.status(403).send(
-                  new ServerResponse(false, null, "You do not have permission to access this project")
-                );
-              }
 
-              // Conditional update: only overwrite if the DB still shows the
-              // team this request observed. A concurrent manual switch moves
-              // active_team away from `teamId`, so this write becomes a no-op.
+              // The deadline and active team are checked while acquiring the user row lock.
+              // Accept an already-active target for simultaneous requests.
               const activateResult = await db.query(
-                `UPDATE users
+                `WITH switched AS (
+                 UPDATE users
                  SET active_team = $1
                  WHERE id = $2
-                   AND active_team IS NOT DISTINCT FROM $3
+                   AND (active_team IS NOT DISTINCT FROM $3 OR active_team = $1)
+                   AND (manual_team_switch_until IS NULL OR manual_team_switch_until <= clock_timestamp())
                    AND EXISTS (
                      SELECT 1 FROM team_members
                      WHERE team_id = $1 AND user_id = $2 AND active = TRUE
                    )
-                 RETURNING id`,
+                 RETURNING id
+                 ), removed_invitations AS (
+                   DELETE FROM email_invitations WHERE team_id = $1 AND team_member_id IN (
+                     SELECT id FROM team_members WHERE team_id = $1 AND user_id = $2
+                   ) AND EXISTS (SELECT 1 FROM switched)
+                 ) SELECT id FROM switched`,
                 [projectTeamId, userId, teamId]
               );
 

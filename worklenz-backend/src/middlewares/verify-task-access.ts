@@ -15,7 +15,6 @@ import {
 import {userHasProjectAccessInTeam} from "./verify-project-access";
 import { checkProjectRolePermission, checkTaskRolePermission } from "../shared/project-role-permissions";
 import { PROJECT_ROLE_PERMISSIONS, ProjectRolePermission } from "../shared/organization-permissions";
-import { isAutoTeamSwitchSuppressed } from "../shared/manual-team-switch-guard";
 
 export interface VerifyTaskAccessOptions {
   /**
@@ -140,7 +139,7 @@ const sessionForTaskProjectTeam = (
 /**
  * Activates the task's project team only when:
  * - manual-switch suppression is not active, and
- * - users.active_team still matches `fromTeamId` (the team this request saw).
+ * - users.active_team still matches `fromTeamId` or the requested team.
  * Returns false when the write is skipped so callers can 403 without mutating session.
  */
 const activateTaskProjectTeam = async (
@@ -149,22 +148,25 @@ const activateTaskProjectTeam = async (
   context: TaskProjectTeamContext,
   fromTeamId: string
 ): Promise<boolean> => {
-  if (await isAutoTeamSwitchSuppressed(userId)) {
-    return false;
-  }
 
-  // Conditional update — a concurrent manual switch moves active_team away
-  // from `fromTeamId`, so this becomes a no-op instead of overwriting it.
+  // Check the deadline and active team atomically while acquiring the row lock.
   const activateResult = await db.query(
-    `UPDATE users
+    `WITH switched AS (
+     UPDATE users
      SET active_team = $1
      WHERE id = $2
-       AND active_team IS NOT DISTINCT FROM $3
+       AND (active_team IS NOT DISTINCT FROM $3 OR active_team = $1)
+       AND (manual_team_switch_until IS NULL OR manual_team_switch_until <= clock_timestamp())
        AND EXISTS (
          SELECT 1 FROM team_members
          WHERE team_id = $1 AND user_id = $2 AND active = TRUE
        )
-     RETURNING id`,
+     RETURNING id
+     ), removed_invitations AS (
+       DELETE FROM email_invitations WHERE team_id = $1 AND team_member_id IN (
+         SELECT id FROM team_members WHERE team_id = $1 AND user_id = $2
+       ) AND EXISTS (SELECT 1 FROM switched)
+     ) SELECT id FROM switched`,
     [context.projectTeamId, userId, fromTeamId]
   );
 
@@ -258,13 +260,6 @@ export default function verifyTaskAccess(
       let pendingTeam: TaskProjectTeamContext | null = null;
 
       if (projectTeamId !== teamId) {
-        // A manual team switch just happened — do not undo it for an
-        // in-flight task/project request from the previous workspace.
-        if (await isAutoTeamSwitchSuppressed(userId)) {
-          return res.status(403).send(
-            new ServerResponse(false, null, "You do not have permission to access this task")
-          );
-        }
 
         try {
           pendingTeam = await resolveTaskProjectTeamContext(
@@ -312,13 +307,6 @@ export default function verifyTaskAccess(
       }
 
       if (pendingTeam) {
-        // Recheck immediately before the write — suppression can land during
-        // the access checks above.
-        if (await isAutoTeamSwitchSuppressed(userId)) {
-          return res.status(403).send(
-            new ServerResponse(false, null, "You do not have permission to access this task")
-          );
-        }
 
         try {
           const switched = await activateTaskProjectTeam(req, userId, pendingTeam, teamId);
