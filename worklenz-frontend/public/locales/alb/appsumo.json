@@ -10,9 +10,9 @@
         "title": "Raportim i avancuar: Velocity dhe Cumulative Flow",
         "description": "Zbulo pengesat herët dhe planifiko sprintet me të dhëna reale"
       },
-      "clientPortal": {
-        "title": "Portali i klientit",
-        "description": "Mbaji klientët të përditësuar në një vend"
+      "brandedClientPortal": {
+        "title": "Portali i klientit me branding",
+        "description": "Shto logon dhe ngjyrat e markës sate"
       },
       "finance": {
         "title": "Qasje në Finance",

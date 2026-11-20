@@ -10,9 +10,9 @@
         "title": "Informes avanzados: Velocity y Cumulative Flow",
         "description": "Detecta cuellos de botella a tiempo y planifica sprints con datos reales"
       },
-      "clientPortal": {
-        "title": "Portal de clientes",
-        "description": "Mantén a los clientes actualizados en un solo lugar"
+      "brandedClientPortal": {
+        "title": "Portal de clientes con marca",
+        "description": "Añade tu logo y colores de marca"
       },
       "finance": {
         "title": "Acceso a Finanzas",
