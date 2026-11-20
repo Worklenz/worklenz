@@ -19,6 +19,10 @@ interface PillToggleProps<T extends string> {
   /** Accessible name for the radiogroup (e.g. "View mode"). Optional — omit
    * when a visible label already precedes the control. */
   ariaLabel?: string;
+  /** Use tab semantics instead of radio-group semantics. */
+  selectionRole?: 'radio' | 'tab';
+  /** ID of the associated tab panel. Required when selectionRole is tab. */
+  tabPanelId?: string;
 }
 
 // Mirrors HomeContinueCard's tab bar styling exactly so every toggle on the
@@ -34,6 +38,8 @@ function PillToggle<T extends string>({
   style,
   equalWidth,
   ariaLabel,
+  selectionRole = 'radio',
+  tabPanelId,
 }: PillToggleProps<T>) {
   const { token } = theme.useToken();
 
@@ -68,7 +74,7 @@ function PillToggle<T extends string>({
 
   return (
     <div
-      role="radiogroup"
+      role={selectionRole === 'tab' ? 'tablist' : 'radiogroup'}
       aria-label={ariaLabel}
       style={{
         display: 'inline-flex',
@@ -84,8 +90,11 @@ function PillToggle<T extends string>({
         const segment = (
           <button
             type="button"
-            role="radio"
-            aria-checked={selected}
+            id={selectionRole === 'tab' ? `${tabPanelId}-tab-${opt.value}` : undefined}
+            role={selectionRole}
+            aria-checked={selectionRole === 'radio' ? selected : undefined}
+            aria-selected={selectionRole === 'tab' ? selected : undefined}
+            aria-controls={selectionRole === 'tab' ? tabPanelId : undefined}
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(opt.value)}
             onKeyDown={event => handleKeyDown(event, idx)}

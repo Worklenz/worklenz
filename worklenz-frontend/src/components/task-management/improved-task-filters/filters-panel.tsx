@@ -28,6 +28,8 @@ interface FilterOptionsProps {
   onManageStatus?: () => void;
   onManagePhase?: () => void;
   className?: string;
+  showArchived?: boolean;
+  onToggleArchived?: () => void;
 }
 
 /**
@@ -50,6 +52,8 @@ export const Filters: React.FC<FilterOptionsProps> = ({
   onClearAttributeFilters,
   onManageStatus,
   onManagePhase,
+  showArchived,
+  onToggleArchived,
   className = '',
 }) => {
   const { t } = useTranslation('task-list-filters');
@@ -316,6 +320,26 @@ export const Filters: React.FC<FilterOptionsProps> = ({
           })
         )}
       </div>
+      {onToggleArchived && showArchived !== undefined && (
+        <div className={`py-2 mb-1 border-b ${themeClasses.dividerBorder}`}>
+          <label
+            className={`flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded text-xs ${themeClasses.optionText}`}
+          >
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={onToggleArchived}
+              className={`w-3.5 h-3.5 rounded focus:ring-2 focus:ring-blue-500 ${isDarkMode
+                ? 'border-[#303030] bg-[#141414] focus:ring-offset-gray-800'
+                : 'border-gray-300 bg-white focus:ring-offset-white'
+                }`}
+            />
+            <span>
+              {t('showArchivedText', { defaultValue: 'Show Archived' })}
+            </span>
+          </label>
+        </div>
+      )}
     </div>
   );
 

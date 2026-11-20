@@ -28,8 +28,8 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ mode = 'default', toolbarAction
             extraActions={
               mode === 'default' ? (
                 <>
-                  <SavedViewControls />
                   {toolbarActions}
+                  <SavedViewControls />
                 </>
               ) : (
                 toolbarActions
