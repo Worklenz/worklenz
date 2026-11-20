@@ -112,6 +112,16 @@ describe("roadmap export", () => {
     expect(timelineTicks(window).length).toBeGreaterThan(0);
   });
 
+  it("covers long timelines without exceeding the column limit", () => {
+    const window = timelineWindow([{ startDate: "2000-01-01", endDate: "2040-12-31" }]);
+    expect(window).not.toBeNull();
+    if (!window) return;
+    const periods = timelinePeriods(window);
+    expect(periods.length).toBeLessThanOrEqual(52);
+    expect(periods[0].startMs).toBeLessThanOrEqual(window.startMs);
+    expect(periods[periods.length - 1].endMs).toBeGreaterThanOrEqual(window.endMs);
+  });
+
   it("builds timeline periods and dependency links for the chart sheets", () => {
     const window = timelineWindow([{ startDate: "2026-03-01", endDate: "2026-03-20" }]);
     expect(window).not.toBeNull();

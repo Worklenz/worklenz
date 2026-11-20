@@ -395,7 +395,14 @@ export const timelinePeriods = (window: TimelineWindow): TimelinePeriod[] => {
     else break;
     periods = build(mode);
   }
-  return periods.slice(0, MAX_TIMELINE_COLUMNS);
+  if (periods.length <= MAX_TIMELINE_COLUMNS) return periods;
+
+  // Aggregate long timelines instead of dropping dates beyond the column limit.
+  const groupSize = Math.ceil(periods.length / MAX_TIMELINE_COLUMNS);
+  return periods.filter((_, index) => index % groupSize === 0).map((period, index) => {
+    const last = periods[Math.min((index + 1) * groupSize - 1, periods.length - 1)];
+    return { label: period.label, startMs: period.startMs, endMs: last.endMs };
+  });
 };
 
 const splitDependencyParts = (value: string, maxParts = MAX_DEPENDENCY_LINKS_PER_ROW): string[] => {
