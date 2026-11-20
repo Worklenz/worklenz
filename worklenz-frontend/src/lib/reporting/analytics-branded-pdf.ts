@@ -287,10 +287,11 @@ function drawFooter(
   }
 }
 
-/** True for numeric table values (counts, %, currency) — body cells only. */
+/** True for numeric table values (counts, %, currency, "+3 days") — body cells only. */
 function isNumericCellValue(value: string): boolean {
   const trimmed = value.trim();
   if (!trimmed) return false;
+  if (/^[+-]?\d+(\.\d+)?\s+days$/i.test(trimmed)) return true;
   const normalized = trimmed.replace(/[,\s]/g, '');
   return /^-?\$?\(?\d+(\.\d+)?\)?%?$/.test(normalized);
 }

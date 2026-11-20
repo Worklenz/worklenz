@@ -6,6 +6,7 @@ import {
   withLastUpdated,
 } from "../../redis/analytics-cache";
 import { sanitizeCsvFormulaValue } from "../../shared/csv-utils";
+import { formatVarianceDaysLabel } from "./analytics-table-cell-colors";
 
 export interface PlannedVsActualTasksFilters {
   projectIds: string[];
@@ -290,7 +291,7 @@ export async function getPlannedVsActualTasksSeries(
 }
 
 export function buildPlannedVsActualTasksCsv(result: PlannedVsActualTasksResult): string {
-  const header = ["Project", "Planned tasks", "Completed", "Overdue", "Variance (days)"];
+  const header = ["Project", "Planned tasks", "Completed", "Overdue", "Variance"];
   const lines = [header.join(",")];
   for (const row of result.projects) {
     const cells = [
@@ -298,7 +299,7 @@ export function buildPlannedVsActualTasksCsv(result: PlannedVsActualTasksResult)
       String(row.planned),
       String(row.completed),
       String(row.overdue),
-      String(row.variance_days),
+      csvEscape(formatVarianceDaysLabel(row.variance_days)),
     ];
     lines.push(cells.join(","));
   }

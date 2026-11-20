@@ -12,6 +12,7 @@ import {
 } from '@/lib/reporting/analytics-branded-pdf';
 import { buildAnalyticsPdfFilterDetails } from '@/lib/reporting/analytics-pdf-filter-details';
 import {
+  formatVarianceDaysLabel,
   overdueCountColor,
   varianceDaysColor,
 } from '@/lib/reporting/analytics-table-value-colors';
@@ -409,7 +410,7 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
               String(row.planned),
               String(row.completed),
               String(row.overdue),
-              String(row.variance_days),
+              formatVarianceDaysLabel(row.variance_days),
             ]),
           ],
           tableCellColors: [

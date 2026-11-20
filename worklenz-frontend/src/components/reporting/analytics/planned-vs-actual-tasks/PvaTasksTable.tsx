@@ -4,6 +4,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
 import {
+  formatVarianceDaysLabel,
   overdueCountColor,
   varianceDaysColor,
 } from '@/lib/reporting/analytics-table-value-colors';
@@ -15,11 +16,6 @@ interface PvaTasksTableProps {
   projects: PlannedVsActualTasksRow[];
   loading?: boolean;
 }
-
-const formatVariance = (days: number): string => {
-  if (days > 0) return `+${days}`;
-  return String(days);
-};
 
 export const PvaTasksTable: React.FC<PvaTasksTableProps> = ({ projects, loading }) => {
   const { t } = useTranslation('reporting-analytics');
@@ -71,7 +67,7 @@ export const PvaTasksTable: React.FC<PvaTasksTableProps> = ({ projects, loading 
         sorter: (a, b) => a.variance_days - b.variance_days,
         render: (value: number) => (
           <Text style={{ color: varianceDaysColor(value) }}>
-            {formatVariance(value)} {t('pvaTasksDaysUnit', { defaultValue: 'days' })}
+            {formatVarianceDaysLabel(value)}
           </Text>
         ),
       },

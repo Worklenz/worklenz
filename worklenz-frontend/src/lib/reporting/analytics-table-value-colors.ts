@@ -13,6 +13,12 @@ export function varianceDaysColor(days: number): string {
   return ANALYTICS_VALUE_COLORS.secondary;
 }
 
+/** Page-style variance label, e.g. "+3 days", "-1.5 days", "0 days". */
+export function formatVarianceDaysLabel(days: number): string {
+  const signed = days > 0 ? `+${days}` : String(days);
+  return `${signed} days`;
+}
+
 /** Overdue count: red when any overdue, muted zero. */
 export function overdueCountColor(count: number): string {
   return count > 0
