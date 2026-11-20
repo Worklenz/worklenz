@@ -13,10 +13,13 @@ export const findMentionRanges = (text: string, members: MentionMember[]) => {
   let originalOffset = 0;
   let normalizedOffset = 0;
 
-  for (const character of text) {
-    originalOffset += character.length;
-    // Prefix lowercasing retains the context needed by locale-specific mappings.
-    normalizedOffset = normalizeMentionText(text.slice(0, originalOffset)).length;
+  // Locale-specific length changes involve a base character and its combining
+  // marks. Keep those together when mapping offsets; whole-text lowercasing above
+  // still supplies contextual characters such as Greek final sigma.
+  for (const cluster of text.matchAll(/\P{M}\p{M}*|\p{M}+/gu)) {
+    const value = cluster[0];
+    originalOffset += value.length;
+    normalizedOffset += normalizeMentionText(value).length;
     normalizedToOriginal.set(normalizedOffset, originalOffset);
   }
 
@@ -42,9 +45,9 @@ export const findMentionRanges = (text: string, members: MentionMember[]) => {
         const nextCharacter = text[originalEnd] || '';
 
         const hasValidStart =
-          !previousCharacter || /[\s([{,:;.!?]/.test(previousCharacter);
+          !previousCharacter || /[\s([{,:;.!?"“]/.test(previousCharacter);
         const hasValidEnd =
-          !nextCharacter || /[\s.,;:!?)}\]]/.test(nextCharacter);
+          !nextCharacter || /[\s.,;:!?)}\]"”]/.test(nextCharacter);
 
         const overlapsExisting = ranges.some(
           range =>
