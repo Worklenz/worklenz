@@ -274,4 +274,141 @@ describe('ProjectsController - members_can_view_client_team toggle persistence',
       expect(createProjectCalls.length).toBe(0);
     });
   });
+
+  describe('ProjectsController.toggleArchiveAll', () => {
+    it('blocks restoring an archived project when Free plan project limit is reached in cloud', async () => {
+      const previousMode = process.env.WORKLENZ_DEPLOYMENT_MODE;
+      process.env.WORKLENZ_DEPLOYMENT_MODE = 'cloud';
+      try {
+        mockedDbQuery.mockImplementation((sql: string) => {
+          if (sql.includes('archived_for_team') && sql.includes('WHERE p.id = $1')) {
+            return Promise.resolve({
+              rows: [{ name: 'Alpha Project', archived_for_team: true, is_archived: true }],
+            });
+          }
+          if (sql.includes('licensing_settings')) {
+            return Promise.resolve({ rows: [{ projects_limit: '3' }] });
+          }
+          if (sql.includes('COUNT(*)')) {
+            return Promise.resolve({ rows: [{ count: '3' }] });
+          }
+          return Promise.resolve({ rows: [{ toggle_archive_all_projects: [] }] });
+        });
+
+        const req = createMockRequest({
+          params: { id: 'project-123' },
+          user: { id: 'user-123', team_id: 'team-123', owner_id: 'owner-123', subscription_status: 'free' },
+        });
+        const res = createMockResponse();
+
+        await ProjectsController.toggleArchiveAll(req, res);
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body?.done).toBe(false);
+        expect(res.body?.message).toContain('free plan cannot have more than 3 projects');
+        expect(mockedDbQuery.mock.calls.some(([sql]: [string]) => sql.includes('toggle_archive_all_projects'))).toBe(false);
+      } finally {
+        if (previousMode === undefined) delete process.env.WORKLENZ_DEPLOYMENT_MODE;
+        else process.env.WORKLENZ_DEPLOYMENT_MODE = previousMode;
+      }
+    });
+
+    it('allows restoring an archived project when under the Free project limit', async () => {
+      const previousMode = process.env.WORKLENZ_DEPLOYMENT_MODE;
+      process.env.WORKLENZ_DEPLOYMENT_MODE = 'cloud';
+      try {
+        mockedDbQuery.mockImplementation((sql: string) => {
+          if (sql.includes('archived_for_team') && sql.includes('WHERE p.id = $1')) {
+            return Promise.resolve({
+              rows: [{ name: 'Alpha Project', archived_for_team: true, is_archived: true }],
+            });
+          }
+          if (sql.includes('licensing_settings')) {
+            return Promise.resolve({ rows: [{ projects_limit: '3' }] });
+          }
+          if (sql.includes('COUNT(*)')) {
+            return Promise.resolve({ rows: [{ count: '2' }] });
+          }
+          return Promise.resolve({ rows: [{ toggle_archive_all_projects: [] }] });
+        });
+
+        const req = createMockRequest({
+          params: { id: 'project-123' },
+          user: { id: 'user-123', team_id: 'team-123', owner_id: 'owner-123', subscription_status: 'free' },
+        });
+        const res = createMockResponse();
+
+        await ProjectsController.toggleArchiveAll(req, res);
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body?.done).toBe(true);
+        expect(mockedDbQuery.mock.calls.some(([sql]: [string]) => sql.includes('toggle_archive_all_projects'))).toBe(true);
+      } finally {
+        if (previousMode === undefined) delete process.env.WORKLENZ_DEPLOYMENT_MODE;
+        else process.env.WORKLENZ_DEPLOYMENT_MODE = previousMode;
+      }
+    });
+
+    it('allows restoring on self-hosted installations regardless of active count', async () => {
+      const previousMode = process.env.WORKLENZ_DEPLOYMENT_MODE;
+      process.env.WORKLENZ_DEPLOYMENT_MODE = 'self_hosted';
+      try {
+        mockedDbQuery.mockImplementation((sql: string) => {
+          if (sql.includes('archived_for_team') && sql.includes('WHERE p.id = $1')) {
+            return Promise.resolve({
+              rows: [{ name: 'Alpha Project', archived_for_team: true, is_archived: true }],
+            });
+          }
+          return Promise.resolve({ rows: [{ toggle_archive_all_projects: [] }] });
+        });
+
+        const req = createMockRequest({
+          params: { id: 'project-123' },
+          user: { id: 'user-123', team_id: 'team-123', owner_id: 'owner-123', subscription_status: 'free' },
+        });
+        const res = createMockResponse();
+
+        await ProjectsController.toggleArchiveAll(req, res);
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body?.done).toBe(true);
+        expect(mockedDbQuery.mock.calls.some(([sql]: [string]) => sql.includes('toggle_archive_all_projects'))).toBe(true);
+        expect(mockedDbQuery.mock.calls.some(([sql]: [string]) => sql.includes('FROM licensing_settings'))).toBe(false);
+      } finally {
+        if (previousMode === undefined) delete process.env.WORKLENZ_DEPLOYMENT_MODE;
+        else process.env.WORKLENZ_DEPLOYMENT_MODE = previousMode;
+      }
+    });
+
+    it('allows archiving an active project even when at the limit', async () => {
+      const previousMode = process.env.WORKLENZ_DEPLOYMENT_MODE;
+      process.env.WORKLENZ_DEPLOYMENT_MODE = 'cloud';
+      try {
+        mockedDbQuery.mockImplementation((sql: string) => {
+          if (sql.includes('archived_for_team') && sql.includes('WHERE p.id = $1')) {
+            return Promise.resolve({
+              rows: [{ name: 'Alpha Project', archived_for_team: false, is_archived: false }],
+            });
+          }
+          return Promise.resolve({ rows: [{ toggle_archive_all_projects: [] }] });
+        });
+
+        const req = createMockRequest({
+          params: { id: 'project-123' },
+          user: { id: 'user-123', team_id: 'team-123', owner_id: 'owner-123', subscription_status: 'free' },
+        });
+        const res = createMockResponse();
+
+        await ProjectsController.toggleArchiveAll(req, res);
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body?.done).toBe(true);
+        expect(mockedDbQuery.mock.calls.some(([sql]: [string]) => sql.includes('toggle_archive_all_projects'))).toBe(true);
+        expect(mockedDbQuery.mock.calls.some(([sql]: [string]) => sql.includes('FROM licensing_settings'))).toBe(false);
+      } finally {
+        if (previousMode === undefined) delete process.env.WORKLENZ_DEPLOYMENT_MODE;
+        else process.env.WORKLENZ_DEPLOYMENT_MODE = previousMode;
+      }
+    });
+  });
 });

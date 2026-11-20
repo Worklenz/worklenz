@@ -14,7 +14,7 @@ import { IPassportSession } from "../interfaces/passport-session";
 import { SocketEvents } from "../socket.io/events";
 import { IO } from "../shared/io";
 import { notifyProjectDateChanges } from "../shared/project-date-notifications";
-import { getCurrentProjectsCount, getFreePlanSettings } from "../shared/paddle-utils";
+import { getCurrentProjectsCount, getFreePlanSettings, getOwnerIdByTeam } from "../shared/paddle-utils";
 import { isSelfHostedDeployment } from "../shared/deployment-mode";
 import { ActivityLoggingService } from "../services/activity-logging.service";
 import { NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE } from "../shared/guest-access-sql";
@@ -1672,10 +1672,9 @@ export default class ProjectsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async toggleArchiveAll(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    // toggle_archive_all_projects() restores when any archive row exists,
-    // so the same check taken before the call tells archive and restore apart.
     const checkResult = await db.query(
       `SELECT p.name,
+              COALESCE(p.archived_for_team, FALSE) AS archived_for_team,
               EXISTS(SELECT 1 FROM archived_projects WHERE project_id = p.id) AS is_archived
        FROM projects p
        WHERE p.id = $1`,
@@ -1683,25 +1682,50 @@ export default class ProjectsController extends WorklenzControllerBase {
     );
     const project = checkResult.rows[0];
 
+    if (!project) {
+      return res.status(404).send(new ServerResponse(false, null, "Project not found"));
+    }
+
+    const isRestoring = project.archived_for_team || project.is_archived;
+
+    if (isRestoring && !isSelfHostedDeployment() && req.user?.subscription_status === "free") {
+      const ownerId = req.user?.owner_id || (req.user?.team_id ? await getOwnerIdByTeam(req.user.team_id) : null);
+      if (ownerId) {
+        const limits = await getFreePlanSettings();
+        const projectsCount = await getCurrentProjectsCount(ownerId);
+        const projectsLimit = parseInt(limits.projects_limit);
+
+        if (parseInt(projectsCount) >= projectsLimit) {
+          return res.status(200).send(
+            new ServerResponse(
+              false,
+              [],
+              `Sorry, the free plan cannot have more than ${projectsLimit} projects.`
+            )
+          );
+        }
+      }
+    }
+
     const q = `SELECT toggle_archive_all_projects($1);`;
     const result = await db.query(q, [req.params.id]);
     const [data] = result.rows;
 
-    if (project && req.user?.organization_id) {
+    if (req.user?.organization_id) {
       logAuditEvent({
         organizationId: req.user.organization_id,
         teamId: req.user.team_id || null,
         actor: actorFromSessionUser(req.user),
-        eventType: project.is_archived
+        eventType: isRestoring
           ? AUDIT_EVENT_TYPE.PROJECT_RESTORED.id
           : AUDIT_EVENT_TYPE.PROJECT_ARCHIVED.id,
-        description: project.is_archived
+        description: isRestoring
           ? `Restored project "${project.name}" for all members`
           : `Archived project "${project.name}" for all members`,
       });
     }
 
-    return res.status(200).send(new ServerResponse(true, data.toggle_archive_all_projects || []));
+    return res.status(200).send(new ServerResponse(true, data?.toggle_archive_all_projects || []));
   }
 
   public static async getProjectManager(projectId: string) {
