@@ -5,11 +5,12 @@ import {
   DndContext,
   DragEndEvent,
   PointerSensor,
+  KeyboardSensor,
   closestCenter,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Button, Flex, Input, Tooltip, Typography } from '@/shared/antd-imports';
 import type { InputRef } from '@/shared/antd-imports';
 import { CloseCircleOutlined } from '@/shared/antd-imports';
@@ -46,7 +47,8 @@ export const NewParentFieldEditor = () => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 6 },
-    })
+    }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   useEffect(() => {
