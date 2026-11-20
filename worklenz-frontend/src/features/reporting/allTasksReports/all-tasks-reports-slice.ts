@@ -4,6 +4,7 @@ import { IRPTTeam } from '@/types/reporting/reporting.types';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { allTasksReportsApiService } from '@/api/reporting/all-tasks-reports.api.service';
 import { toArray } from '@/utils/to-array';
+import { toSolidTagColor } from '@/utils/colorUtils';
 
 // Types
 export type AllTasksGroupBy =
@@ -312,8 +313,14 @@ const allTasksReportsSlice = createSlice({
           task.status = status_id;
         }
         if (status_name !== undefined) task.status_name = status_name;
-        if (color_code !== undefined) task.status_color = color_code;
-        if (color_code_dark !== undefined) task.status_color_dark = color_code_dark;
+        // Socket payloads append a 2-char alpha (e.g. #70a6f369). Strip it so
+        // live colors match the solid codes returned by the report API.
+        if (color_code !== undefined) {
+          task.status_color = toSolidTagColor(color_code) ?? color_code;
+        }
+        if (color_code_dark !== undefined) {
+          task.status_color_dark = toSolidTagColor(color_code_dark) ?? color_code_dark;
+        }
         if (typeof complete_ratio === 'number') {
           task.complete_ratio = complete_ratio;
           task.progress = complete_ratio;
@@ -355,8 +362,14 @@ const allTasksReportsSlice = createSlice({
           task.priority = priority_id;
         }
         if (priority_name !== undefined) task.priority_name = priority_name;
-        if (color_code !== undefined) task.priority_color = color_code;
-        if (color_code_dark !== undefined) task.priority_color_dark = color_code_dark;
+        // Same alpha-strip as status — Critical (#8B1A1A69) otherwise looks pale
+        // until a full refetch returns the solid API color.
+        if (color_code !== undefined) {
+          task.priority_color = toSolidTagColor(color_code) ?? color_code;
+        }
+        if (color_code_dark !== undefined) {
+          task.priority_color_dark = toSolidTagColor(color_code_dark) ?? color_code_dark;
+        }
         if (priority_value !== undefined) task.priority_value = priority_value;
         task.updated_at = new Date().toISOString();
       };

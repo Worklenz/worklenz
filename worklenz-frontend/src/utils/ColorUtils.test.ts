@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { getContrastColor } from './colorUtils';
+import { getContrastColor, toSolidTagColor } from './colorUtils';
+
+describe('toSolidTagColor', () => {
+  it('strips the socket alpha channel so Tag colors match API-loaded solids', () => {
+    expect(toSolidTagColor('#8B1A1A69')).toBe('#8B1A1A');
+    expect(toSolidTagColor('#70a6f369')).toBe('#70a6f3');
+  });
+
+  it('leaves solid hex and empty values unchanged', () => {
+    expect(toSolidTagColor('#8B1A1A')).toBe('#8B1A1A');
+    expect(toSolidTagColor(undefined)).toBeUndefined();
+    expect(toSolidTagColor('')).toBeUndefined();
+  });
+});
 
 describe('getContrastColor', () => {
   it.each([
