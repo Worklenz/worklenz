@@ -232,7 +232,8 @@ export async function getOwnerIdByTeam(teamId: string) {
 export async function getCurrentProjectsCount(owner_id: string) {
   const projects_counts_q = `SELECT COUNT(*)
     FROM projects
-    WHERE team_id IN (SELECT id FROM teams WHERE owner_id = $1);`;
+    WHERE team_id IN (SELECT id FROM teams WHERE owner_id = $1)
+      AND COALESCE(archived_for_team, FALSE) = FALSE;`;
   const result = await db.query(projects_counts_q, [owner_id]);
   const [data] = result.rows;
 

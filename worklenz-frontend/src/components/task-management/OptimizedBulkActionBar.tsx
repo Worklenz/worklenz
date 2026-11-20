@@ -1041,13 +1041,15 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
             placement="top"
             disabled={!canCreateTask}
           >
-            <ActionButton
+            <Button
               icon={<DeleteOutlined />}
-              tooltip={t('DELETE')}
+              style={makeButtonStyle('#ef4444')}
+              size="small"
+              type="text"
               loading={loadingStates.delete}
               danger
               disabled={!canCreateTask}
-              isDarkMode={isDarkMode}
+              title={t('DELETE')}
             />
           </Popconfirm>
 

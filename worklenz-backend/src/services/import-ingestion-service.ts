@@ -6,6 +6,7 @@ import ClickUpProvider from "./import-providers/clickup-provider";
 import TrelloProvider from "./import-providers/trello-provider";
 import JiraProvider from "./import-providers/jira-provider";
 import CsvProvider from "./import-providers/csv-provider";
+import createHttpError from "http-errors";
 import {
   ImportProvider,
   ProviderResult,
@@ -23,7 +24,10 @@ const providers: Record<string, ImportProvider> = {
 class ImportIngestionService {
   async ingest(job: ImportJob, payload?: Record<string, unknown>) {
     const providerKey = (job.provider || "").toLowerCase();
-    const provider = providers[providerKey] || providers.csv;
+    const provider = Object.prototype.hasOwnProperty.call(providers, providerKey)
+      ? providers[providerKey]
+      : job.flow_type === "csv" ? providers.csv : undefined;
+    if (!provider) throw createHttpError(400, "Unsupported import provider");
     const result = await provider.ingest(job, payload);
     if (result.hierarchy?.length)
       await ImportsService.upsertHierarchy(job.id, result.hierarchy);

@@ -31,6 +31,7 @@ import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/
 import { isSoftwareProjectType } from '@/lib/project/software-project';
 import { UNASSIGNED_GROUP_ID } from '@/utils/assign-task-to-member';
 import { useAuthService } from '@/hooks/useAuth';
+import { canUseFeature } from '@/utils/subscription-utils';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 import { useTaskListMode } from '@/features/task-management/task-list-mode-context';
 import { SprintSectionHeader } from './SprintSectionHeader';
@@ -78,7 +79,8 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
   const themeMode = useAppSelector(state => (state as any).themeReducer?.mode || 'light');
   const isDarkMode = themeMode === 'dark';
   const { trackMixpanelEvent } = useMixpanelTracking();
-  const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
+  const authService = useAuthService();
+  const isOwnerOrAdmin = authService.isOwnerOrAdmin();
   const isProjectManager = useIsProjectManager();
   const listMode = useTaskListMode();
 
@@ -95,7 +97,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
   const { phaseList } = useAppSelector(state => state.phaseReducer);
   const { project } = useAppSelector(state => state.projectReducer);
   const isSoftwareProject = isSoftwareProjectType(project?.project_type);
-  const phaseAssigneesEnabled = project?.phase_assignees_enabled || false;
+  const phaseAssigneesEnabled = Boolean(project?.phase_assignees_enabled) && canUseFeature(authService.getCurrentSession(), 'phase_assignee');
   const isGuest = project?.is_guest === true;
 
   const currentPhaseData = useMemo(() => {

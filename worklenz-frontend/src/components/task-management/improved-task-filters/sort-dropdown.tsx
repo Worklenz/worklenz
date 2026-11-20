@@ -14,15 +14,11 @@ import { ThemeClasses } from './types';
 interface SortDropdownProps {
   themeClasses: ThemeClasses;
   isDarkMode: boolean;
-  showArchived: boolean;
-  onToggleArchived: () => void;
 }
 
 export const SortDropdown: React.FC<SortDropdownProps> = ({
   themeClasses,
   isDarkMode,
-  showArchived,
-  onToggleArchived,
 }) => {
   const { t } = useTranslation('task-list-filters');
   const dispatch = useAppDispatch();
@@ -210,23 +206,6 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
                 );
               })}
             </div>
-          </div>
-
-          <div className={`border-t ${themeClasses.dividerBorder} p-2`}>
-            <label className="flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded transition-colors duration-150">
-              <input
-                type="checkbox"
-                checked={showArchived}
-                onChange={onToggleArchived}
-                className={`w-3.5 h-3.5 text-gray-600 rounded focus:ring-gray-500 transition-colors duration-150 ${isDarkMode
-                  ? 'border-[#303030] bg-[#141414] focus:ring-offset-gray-800'
-                  : 'border-gray-300 bg-white focus:ring-offset-white'
-                  }`}
-              />
-              <span className={`text-xs ${themeClasses.optionText}`}>
-                {t('showArchivedText', { defaultValue: 'Show Archived' })}
-              </span>
-            </label>
           </div>
         </div>
       )}

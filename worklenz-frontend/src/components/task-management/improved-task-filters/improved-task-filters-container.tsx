@@ -486,8 +486,8 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
       attributeFilterSections.reduce(
         (total, section) => total + section.selectedValues.length,
         0
-      ),
-    [attributeFilterSections]
+      ) + (position === 'list' && showArchived ? 1 : 0),
+    [attributeFilterSections, position, showArchived]
   );
 
   useEffect(() => {
@@ -841,7 +841,6 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         dispatch(setKanbanPriorities([]));
       }
 
-      // Persist cleared filters only after restoration completes.
       if (!isRestoringFilters) {
         dispatch(persistFilters());
       }
@@ -907,6 +906,10 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         dispatch(setStatuses([]));
         dispatch(setPhases([]));
       }
+      // Clear Show Archived when using Clear all in List view.
+      if (position === 'list' && showArchived) {
+        dispatch(toggleTaskManagementArchived());
+      }
 
       if (!isRestoringFilters) {
         dispatch(persistFilters());
@@ -928,6 +931,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
     projectId,
     clearingFilters,
     position,
+    showArchived,
     kanbanState.labels,
     kanbanState.taskAssignees,
     currentTaskLabels,
@@ -1009,8 +1013,6 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
             <SortDropdown
               themeClasses={themeClasses}
               isDarkMode={isDarkMode}
-              showArchived={showArchived}
-              onToggleArchived={toggleArchived}
             />
           )}
 
@@ -1023,8 +1025,8 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
                 checked={showArchived}
                 onChange={toggleArchived}
                 className={`w-3.5 h-3.5 rounded focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${isDarkMode
-                    ? 'border-[#303030] bg-[#141414] focus:ring-offset-gray-800'
-                    : 'border-gray-300 bg-white focus:ring-offset-white'
+                  ? 'border-[#303030] bg-[#141414] focus:ring-offset-gray-800'
+                  : 'border-gray-300 bg-white focus:ring-offset-white'
                   }`}
               />
               <span>{t('showArchivedText', { defaultValue: 'Show Archived' })}</span>
@@ -1046,6 +1048,8 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
                   onClearAttributeFilters={clearAttributeFilters}
                   onManageStatus={() => setShowManageStatusModal(true)}
                   onManagePhase={() => setShowManagePhaseModal(true)}
+                  showArchived={position === 'list' ? showArchived : undefined}
+                  onToggleArchived={position === 'list' ? toggleArchived : undefined}
                 />
               )}
 
@@ -1102,6 +1106,8 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         <div className="flex flex-wrap items-center gap-2 ml-auto min-w-0 shrink-0">
           <AssigneeScopeIndicator />
 
+          {extraActions}
+
           {!isCompactToolbar && (
             <FilteredTaskExportButton
               position={position}
@@ -1109,8 +1115,6 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
               isDarkMode={isDarkMode}
             />
           )}
-
-          {extraActions}
 
           {position === 'list' && !isCompactToolbar && (
             <FieldsDropdown

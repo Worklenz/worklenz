@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: chamikajaycey/worklenz-frontend:3.3.1
+    image: chamikajaycey/worklenz-frontend:3.4.1
     container_name: worklenz_frontend
     ports:
       - "5000:5000"
@@ -13,7 +13,7 @@ services:
       - worklenz
 
   backend:
-    image: chamikajaycey/worklenz-backend:3.3.1
+    image: chamikajaycey/worklenz-backend:3.4.1
     container_name: worklenz_backend
     ports:
       - "3000:3000"
@@ -42,7 +42,7 @@ services:
       - worklenz
 
   client-portal:
-    image: chamikajaycey/worklenz-client-portal:3.3.1
+    image: chamikajaycey/worklenz-client-portal:3.4.1
     container_name: worklenz_client_portal
     ports:
       - "5174:5174"
@@ -178,9 +178,13 @@ services:
     command: >
            bash -c 'while true; do
               sleep 86400;
-              PGPASSWORD=$$POSTGRES_PASSWORD pg_dump -h worklenz_db -U $$POSTGRES_USER -d $$POSTGRES_DB \
-              > /pg_backups/worklenz_db_$$(date +%Y-%m-%d_%H-%M-%S).sql;
-              find /pg_backups -type f -name "*.sql" -mtime +30 -delete;
+              backup_file=/pg_backups/worklenz_db_$$(date +%Y-%m-%d_%H-%M-%S).sql;
+              if PGPASSWORD="$$POSTGRES_PASSWORD" pg_dump -h worklenz_db -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" > "$$backup_file.tmp" && mv "$$backup_file.tmp" "$$backup_file"; then
+                find /pg_backups -type f -name "*.sql" -mtime +30 -delete;
+              else
+                rm -f "$$backup_file.tmp";
+                echo "Database backup failed; retaining existing backups" >&2;
+              fi;
             done'
     restart: unless-stopped
     networks:

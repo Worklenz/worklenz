@@ -8,6 +8,9 @@ import { Request } from "express";
 
 async function handleGoogleLogin(req: Request, _accessToken: string, _refreshToken: string, profile: GoogleStrategy.Profile, done: GoogleStrategy.VerifyCallback) {
   try {
+    if (!profile._json.email_verified) {
+      return done(null, false, { message: "Google email is not verified." });
+    }
     const body: any = profile;
     if (Array.isArray(profile.emails) && profile.emails.length) body.email = profile.emails[0].value;
     if (Array.isArray(profile.photos) && profile.photos.length) body.picture = profile.photos[0].value;

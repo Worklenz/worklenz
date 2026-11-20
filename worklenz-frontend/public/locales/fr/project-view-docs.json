@@ -107,5 +107,8 @@
   "copyLink": "Copier le lien",
   "removeLink": "Supprimer le lien",
   "linkCopied": "Lien copié",
-  "linkCopyFailed": "Impossible de copier. Sélectionnez l’adresse pour la copier."
+  "linkCopyFailed": "Impossible de copier. Sélectionnez l’adresse pour la copier.",
+  "proRequired": "Offre Pro requise",
+  "docsProRequired": "Les documents de projet sont disponibles à partir de l’offre Pro.",
+  "upgrade": "Changer d’offre"
 }

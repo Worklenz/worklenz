@@ -37,5 +37,7 @@
     "special": "Um caractere especial"
   },
   "strongPasswordPlaceholder": "Digite uma senha forte",
-  "passwordValidationAltText": "Requisitos de senha"
+  "passwordValidationAltText": "Requisitos de senha",
+  "invitationCodeLabel": "Código de convite",
+  "invitationCodeRequired": "Insira o código de convite recebido por e-mail."
 }

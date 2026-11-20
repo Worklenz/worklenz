@@ -37,5 +37,7 @@
     "special": "Një simbol"
   },
   "strongPasswordPlaceholder": "Futni një fjalëkalim të fortë",
-  "passwordValidationAltText": "Kërkesat e fjalëkalimit"
+  "passwordValidationAltText": "Kërkesat e fjalëkalimit",
+  "invitationCodeLabel": "Kodi i ftesës",
+  "invitationCodeRequired": "Shkruani kodin e ftesës nga emaili juaj."
 }

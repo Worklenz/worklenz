@@ -184,12 +184,7 @@ const App: React.FC = memo(() => {
       <ThemeWrapper>
         <UpdateNotificationProvider>
           <ModuleErrorBoundary>
-            <RouterProvider
-              router={router}
-              future={{
-                v7_startTransition: true,
-              }}
-            />
+            <RouterProvider router={router} />
             <CookieConsentBanner />
           </ModuleErrorBoundary>
         </UpdateNotificationProvider>

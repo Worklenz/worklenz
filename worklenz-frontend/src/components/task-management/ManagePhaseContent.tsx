@@ -13,6 +13,8 @@ import AvatarGroup from '@/components/AvatarGroup';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAuthService } from '@/hooks/useAuth';
+import { canUseFeature } from '@/utils/subscription-utils';
 import {
   addPhaseOption,
   addPhaseWithDates,
@@ -584,7 +586,7 @@ const SortablePhaseItem: React.FC<PhaseItemProps & { id: string }> = ({
       </div>
 
       {/* Phase Assignee Dropdown Portal */}
-      {!disabled && (
+      {!disabled && phaseAssigneesEnabled && (
         <PhaseAssigneeDropdown
           phase={phase}
           members={members}
@@ -651,10 +653,10 @@ const ManagePhaseContent: React.FC<ManagePhaseContentProps> = ({
   const showSprintFields = enableDates || isSoftware;
 
   // Prefer live form override (Project Settings); fall back to saved project flag
-  const phaseAssigneesEnabled =
-    phaseAssigneesEnabledProp !== undefined
+  const phaseAssigneesEnabled = canUseFeature(useAuthService().getCurrentSession(), 'phase_assignee') &&
+    (phaseAssigneesEnabledProp !== undefined
       ? Boolean(phaseAssigneesEnabledProp)
-      : Boolean(project?.phase_assignees_enabled);
+      : Boolean(project?.phase_assignees_enabled));
 
   // DnD sensors
   const sensors = useSensors(

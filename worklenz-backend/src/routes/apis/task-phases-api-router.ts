@@ -6,6 +6,7 @@ import taskPhaseCreateSchema from "../../json_schemas/task-phase-create-schema";
 import taskPhaseNameValidator from "../../middlewares/validators/task-phase-name-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import { requireProjectPermission } from "../../middlewares/validators/require-project-permission";
+import { requireFeature } from "../../shared/entitlements/gates";
 
 const taskPhasesApiRouter = express.Router();
 
@@ -30,7 +31,7 @@ taskPhasesApiRouter.put(
 taskPhasesApiRouter.post("/:id/start", requirePhases, safeControllerFunction(TaskPhasesController.startSprint));
 taskPhasesApiRouter.post("/:id/complete", requirePhases, safeControllerFunction(TaskPhasesController.completeSprint));
 taskPhasesApiRouter.put("/change-color/:id", requirePhases, safeControllerFunction(TaskPhasesController.updateColor));
-taskPhasesApiRouter.patch("/:id/default-assignee", requirePhases, safeControllerFunction(TaskPhasesController.updateDefaultAssignee));
+taskPhasesApiRouter.patch("/:id/default-assignee", requireFeature("phase_assignee"), requirePhases, safeControllerFunction(TaskPhasesController.updateDefaultAssignee));
 taskPhasesApiRouter.put("/:id", requirePhases, taskPhaseNameValidator, schemaValidator(taskPhaseCreateSchema), safeControllerFunction(TaskPhasesController.update));
 taskPhasesApiRouter.delete("/:id", requirePhases, safeControllerFunction(TaskPhasesController.deleteById));
 

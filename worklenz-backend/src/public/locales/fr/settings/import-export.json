@@ -295,5 +295,8 @@
     "failedMessage": "Votre tâche d'importation a échoué. Veuillez réessayer.",
     "processingTitle": "Importation en cours",
     "processingMessage": "Votre importation est en cours de traitement. Nous vous informerons lorsqu'il sera prêt."
-  }
+  },
+  "proRequired": "Offre Pro requise",
+  "csvProRequired": "L’import CSV est disponible à partir de l’offre Pro.",
+  "upgradePlan": "Changer d’offre"
 }
