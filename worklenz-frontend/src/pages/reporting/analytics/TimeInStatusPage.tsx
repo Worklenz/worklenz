@@ -428,16 +428,15 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
           }),
           chartPngDataUrl: png,
           chartTitle: baseTitle,
-          tableRows: [
-            ['Status', 'Avg days', 'Median', 'Count', '% cycle'],
-            ...data.aggregate.map(row => [
-              row.status_name,
-              String(row.avg_days),
-              String(row.median_days),
-              String(row.count),
-              String(row.pct_cycle_time),
-            ]),
-          ],
+          tableRows: reportView === 'per_issue'
+            ? [
+                [t('tisColTaskKey', { defaultValue: 'Key' }), t('tisColTaskName', { defaultValue: 'Task' }), t('tisColType', { defaultValue: 'Type' }), t('tisColAssignee', { defaultValue: 'Assignee' }), t('tisColTotalDays', { defaultValue: 'Total days' }), t('tisColBreakdown', { defaultValue: 'Breakdown' }), t('tisColOutlier', { defaultValue: 'Outlier' })],
+                ...data.issues.map(row => [row.task_key, row.task_name, row.issue_type, row.assignee_name || '—', String(row.total_days), row.segments.map(segment => `${segment.status_name}: ${segment.days}`).join('; '), row.is_outlier ? t('tisOutlierYes', { defaultValue: 'Yes' }) : '—']),
+              ]
+            : [
+                ['Status', 'Avg days', 'Median', 'Count', '% cycle'],
+                ...data.aggregate.map(row => [row.status_name, String(row.avg_days), String(row.median_days), String(row.count), String(row.pct_cycle_time)]),
+              ],
           kpis: [
             {
               label: t('tisKpiIssues', { defaultValue: 'Issues' }),

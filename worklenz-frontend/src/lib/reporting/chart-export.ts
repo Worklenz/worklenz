@@ -15,47 +15,45 @@ const escapeXml = (value: string): string =>
     .replace(/'/g, '&apos;');
 
 interface ColorRestore {
-  target: Record<string, unknown>;
-  key: string;
+  path: string[];
   value: unknown;
 }
 
-function setTempColor(
-  restores: ColorRestore[],
-  target: Record<string, unknown> | undefined,
-  key: string,
-  next: string
-): void {
-  if (!target) return;
-  restores.push({ target, key, value: target[key] });
-  target[key] = next;
-}
+const findOption = (options: Record<string, unknown>, path: string[]): Record<string, unknown> | undefined => {
+  let current: unknown = options;
+  for (const part of path) {
+    if (!current || typeof current !== 'object') return undefined;
+    current = (current as Record<string, unknown>)[part];
+  }
+  return current && typeof current === 'object' ? current as Record<string, unknown> : undefined;
+};
 
-/**
- * Temporarily force dark axis/legend colours for a white export background,
- * then restore the live on-screen theme.
- */
+/** Temporarily apply export colors, restoring the current options after Chart.js updates. */
 function withLightExportTheme<T>(chart: Chart, run: () => T): T {
   const restores: ColorRestore[] = [];
-  const options = chart.options as {
-    scales?: Record<string, { ticks?: Record<string, unknown>; grid?: Record<string, unknown>; title?: Record<string, unknown> }>;
-    plugins?: { legend?: { labels?: Record<string, unknown> } };
+  const options = chart.options as unknown as Record<string, unknown>;
+  const setColor = (path: string[], color: string) => {
+    const target = findOption(options, path);
+    if (!target) return;
+    restores.push({ path, value: target.color });
+    target.color = color;
   };
-
-  Object.values(options.scales || {}).forEach(scale => {
-    if (!scale) return;
-    setTempColor(restores, scale.ticks, 'color', LIGHT_EXPORT_TEXT);
-    setTempColor(restores, scale.grid, 'color', LIGHT_EXPORT_GRID);
-    setTempColor(restores, scale.title, 'color', LIGHT_EXPORT_TEXT);
+  const scales = options.scales as Record<string, unknown> | undefined;
+  Object.keys(scales || {}).forEach(id => {
+    setColor(['scales', id, 'ticks'], LIGHT_EXPORT_TEXT);
+    setColor(['scales', id, 'grid'], LIGHT_EXPORT_GRID);
+    setColor(['scales', id, 'title'], LIGHT_EXPORT_TEXT);
   });
-  setTempColor(restores, options.plugins?.legend?.labels, 'color', LIGHT_EXPORT_TEXT);
+  setColor(['plugins', 'legend', 'labels'], LIGHT_EXPORT_TEXT);
 
-  chart.update('none');
   try {
+    chart.update('none');
     return run();
   } finally {
-    restores.forEach(({ target, key, value }) => {
-      target[key] = value;
+    const currentOptions = chart.options as unknown as Record<string, unknown>;
+    restores.forEach(({ path, value }) => {
+      const target = findOption(currentOptions, path);
+      if (target) target.color = value;
     });
     chart.update('none');
   }

@@ -36,7 +36,6 @@ import { analyticsTemplatesApiService } from '@/api/reporting/analytics-template
 import './all-reports-gallery.css';
 import PillToggle from '@/pages/home/PillToggle';
 
-
 const { Title, Text } = Typography;
 
 type HubTab = 'reports' | 'scheduled' | 'custom';
@@ -473,6 +472,7 @@ const AllReportsPage: React.FC = () => {
         />
       </div>
 
+      <div id="all-reports-hub-panel" role="tabpanel" aria-labelledby={`all-reports-hub-panel-tab-${tab}`} tabIndex={0}>
       {scheduledVisited ? (
         <div
           style={{ display: tab === 'scheduled' ? undefined : 'none' }}
@@ -599,8 +599,13 @@ const AllReportsPage: React.FC = () => {
                     ? t('upgradeToBusiness', { defaultValue: 'Upgrade to Business' })
                     : isFinanceLocked
                       ? t('hubFinancePermissionHint', {
+<<<<<<< HEAD
                           defaultValue: 'Requires View finance permission',
                         })
+=======
+                        defaultValue: 'Requires View finance permission',
+                      })
+>>>>>>> d1ed181b50aac9bdb46bf535535968f9eb8f36fc
                       : t('hubOpenReport', { defaultValue: 'Open report →' })}
                 </div>
               </button>
@@ -615,6 +620,10 @@ const AllReportsPage: React.FC = () => {
             'Figures reflect your workspace data for the current period. Open a report to change date range, projects, and filters.',
         })}
       </Text>
+<<<<<<< HEAD
+=======
+      </div>
+>>>>>>> d1ed181b50aac9bdb46bf535535968f9eb8f36fc
     </div>
   );
 };
