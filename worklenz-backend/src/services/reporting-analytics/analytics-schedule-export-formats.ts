@@ -5,6 +5,10 @@ import { decodeHtmlEntities } from "../../shared/html-entity-utils";
 import type { ScheduleChartSource } from "./analytics-schedule-charts";
 import { buildExcelNativeChartPlan } from "./analytics-schedule-excel-charts";
 import {
+  buildScheduleTableCellColors,
+  hexToExcelArgb,
+} from "./analytics-table-cell-colors";
+import {
   renderSchedulePdf,
   type SchedulePdfKpiTile,
 } from "./analytics-schedule-pdf";
@@ -180,6 +184,28 @@ export async function csvToExcelBuffer(
     col.width = 18;
   });
 
+  const cellColors = buildScheduleTableCellColors(chartSource);
+  if (cellColors?.length) {
+    for (let r = 0; r < cellColors.length; r++) {
+      const excelRow = sheet.getRow(headerRowIndex + r);
+      const rowColors = cellColors[r] || [];
+      for (let c = 0; c < rowColors.length; c++) {
+        const hex = rowColors[c];
+        if (!hex) continue;
+        const cell = excelRow.getCell(c + 1);
+        const prev =
+          cell.font && typeof cell.font === "object"
+            ? { ...cell.font }
+            : {};
+        cell.font = {
+          ...prev,
+          color: { argb: hexToExcelArgb(hex) },
+          ...(r === 0 ? { bold: true } : {}),
+        };
+      }
+    }
+  }
+
   let arrayBuffer = await workbook.xlsx.writeBuffer();
   let buffer = Buffer.from(arrayBuffer);
 
@@ -197,6 +223,7 @@ export async function csvToExcelBuffer(
 export interface SchedulePdfExportOptions {
   chartPngs?: Buffer[] | Buffer | null;
   chartTitles?: string[] | null;
+  tableCellColors?: Array<Array<string | null>> | null;
   logo?: Buffer | null;
   kpis?: SchedulePdfKpiTile[];
   filterDetails?: string | null;
@@ -222,6 +249,7 @@ export async function csvToPdfBuffer(
     rows: parseCsvRows(csv),
     chartPngs: options.chartPngs,
     chartTitles: options.chartTitles,
+    tableCellColors: options.tableCellColors,
     logo: options.logo,
     kpis: options.kpis,
     filterDetails: options.filterDetails,

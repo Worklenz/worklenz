@@ -10,6 +10,10 @@ import {
   resolveAnalyticsPdfLogoUrl,
 } from '@/lib/reporting/analytics-branded-pdf';
 import { buildAnalyticsPdfFilterDetails } from '@/lib/reporting/analytics-pdf-filter-details';
+import {
+  utilizationPctColor,
+  utilizationStatusColor,
+} from '@/lib/reporting/analytics-table-value-colors';
 import { BOUNDED_ANALYTICS_DATE_PRESETS, resolveAnalyticsDateBounds } from '@/utils/date-presets';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
@@ -358,6 +362,16 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
               String(row.logged_hours),
               String(row.utilization_pct),
               row.status,
+            ]),
+          ],
+          tableCellColors: [
+            [null, null, null, null, null],
+            ...data.members.map(row => [
+              null,
+              null,
+              null,
+              utilizationPctColor(row.utilization_pct),
+              utilizationStatusColor(row.status),
             ]),
           ],
           kpis: [

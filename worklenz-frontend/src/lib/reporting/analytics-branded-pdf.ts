@@ -24,6 +24,11 @@ export interface AnalyticsBrandedPdfOptions {
   secondaryChartTitle?: string | null;
   /** First row = headers, following rows = data (same as the on-screen table). */
   tableRows?: string[][];
+  /**
+   * Optional hex text colors matching `tableRows` (null = default).
+   * Used for tinted numeric/status cells (e.g. variance, utilization, burn).
+   */
+  tableCellColors?: Array<Array<string | null>> | null;
   /** Organization / team logo URL when available; falls back to Worklenz mark. */
   logoUrl?: string | null;
   /** Compact filter summary shown under the report title. */
@@ -282,7 +287,30 @@ function drawFooter(
   }
 }
 
-function drawTable(doc: jsPDF, rows: string[][], startY: number): void {
+/** True for numeric table values (counts, %, currency) — body cells only. */
+function isNumericCellValue(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  const normalized = trimmed.replace(/[,\s]/g, '');
+  return /^-?\$?\(?\d+(\.\d+)?\)?%?$/.test(normalized);
+}
+
+function parseHexRgb(hex: string): [number, number, number] | null {
+  const cleaned = hex.replace('#', '').trim();
+  if (cleaned.length !== 6) return null;
+  const r = Number.parseInt(cleaned.slice(0, 2), 16);
+  const g = Number.parseInt(cleaned.slice(2, 4), 16);
+  const b = Number.parseInt(cleaned.slice(4, 6), 16);
+  if ([r, g, b].some(n => Number.isNaN(n))) return null;
+  return [r, g, b];
+}
+
+function drawTable(
+  doc: jsPDF,
+  rows: string[][],
+  startY: number,
+  cellColors?: Array<Array<string | null>> | null
+): void {
   if (!rows.length) return;
 
   const header = rows[0] || [];
@@ -342,7 +370,7 @@ function drawTable(doc: jsPDF, rows: string[][], startY: number): void {
   y = ensureSpace(y, headerRowH + 4).y;
   y = drawHeaderRow(y);
 
-  body.forEach(row => {
+  body.forEach((row, rowIndex) => {
     const space = ensureSpace(y, rowH);
     y = space.y;
     if (space.newPage) {
@@ -353,11 +381,21 @@ function drawTable(doc: jsPDF, rows: string[][], startY: number): void {
     strokeCellGrid(y, colCount, rowH);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    doc.setTextColor(38, 38, 38);
+    const rowColors = cellColors?.[rowIndex + 1] || [];
     header.forEach((_, i) => {
-      doc.text(String(row[i] ?? ''), PAGE.marginX + i * colW + 4, y + 12, {
-        maxWidth: colW - 8,
-      });
+      const text = String(row[i] ?? '');
+      const rgb = parseHexRgb(rowColors[i] || '') || ([38, 38, 38] as [number, number, number]);
+      doc.setTextColor(rgb[0], rgb[1], rgb[2]);
+      if (isNumericCellValue(text)) {
+        doc.text(text, PAGE.marginX + (i + 1) * colW - 4, y + 12, {
+          align: 'right',
+          maxWidth: colW - 8,
+        });
+      } else {
+        doc.text(text, PAGE.marginX + i * colW + 4, y + 12, {
+          maxWidth: colW - 8,
+        });
+      }
     });
     y += rowH;
   });
@@ -517,7 +555,7 @@ export async function downloadAnalyticsBrandedPdf(
       doc.addPage();
       cursorY = drawHeader(doc, options.title, logoDataUrl, options.filterDetails);
     }
-    drawTable(doc, options.tableRows, cursorY);
+    drawTable(doc, options.tableRows, cursorY, options.tableCellColors);
   }
 
   drawFooter(doc, options.title, exportedOn, options.footerNote);

@@ -22,6 +22,14 @@ function decodeCell(value: string): string {
   return text;
 }
 
+/** True for numeric table values (counts, %, currency) — body cells only. */
+function isNumericCellValue(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  const normalized = trimmed.replace(/[,\s]/g, "");
+  return /^-?\$?\(?\d+(\.\d+)?\)?%?$/.test(normalized);
+}
+
 export interface SchedulePdfKpiTile {
   label: string;
   value: string;
@@ -35,6 +43,11 @@ export interface RenderSchedulePdfOptions {
   chartPngs?: Buffer[] | Buffer | null;
   /** Topic above each chart PNG (e.g. "Progress & budget", "Health status"). */
   chartTitles?: string[] | null;
+  /**
+   * Optional hex text colors matching `rows` (null = default).
+   * Used for tinted numeric/status cells (variance, utilization, burn, etc.).
+   */
+  tableCellColors?: Array<Array<string | null>> | null;
   /** Pre-fetched PNG/JPEG logo bytes (org logo or Worklenz default). */
   logo?: Buffer | null;
   kpis?: SchedulePdfKpiTile[];
@@ -238,6 +251,9 @@ const pdfStyles = StyleSheet.create({
   cellLast: {
     borderRightWidth: 0,
   },
+  cellNumeric: {
+    textAlign: "right",
+  },
   empty: { marginTop: 12, color: "#8c8c8c" },
   truncated: { marginTop: 8, fontSize: 8, color: "#595959" },
   tableContinues: { fontSize: 8, color: "#8c8c8c", marginBottom: 6 },
@@ -272,6 +288,7 @@ interface SchedulePdfProps {
   rows: string[][];
   chartPngs?: Buffer[];
   chartTitles?: string[];
+  tableCellColors?: Array<Array<string | null>>;
   logo?: Buffer | null;
   kpis?: SchedulePdfKpiTile[];
   filterDetails?: string | null;
@@ -282,6 +299,8 @@ interface ScheduleTableProps {
   header: string[];
   body: string[][];
   truncated: boolean;
+  /** Body-aligned colors (index 0 = first data row). */
+  bodyCellColors?: Array<Array<string | null>>;
 }
 
 function logoSrc(logo: Buffer | null | undefined): string | null {
@@ -455,7 +474,12 @@ const TableHeaderRow = ({ header }: { header: string[] }) => (
  * (A fixed `pageNumber > 1` repeat header doubled on the table page because
  * KPIs/charts already occupy document page 1.)
  */
-const ScheduleTable = ({ header, body, truncated }: ScheduleTableProps) => {
+const ScheduleTable = ({
+  header,
+  body,
+  truncated,
+  bodyCellColors = [],
+}: ScheduleTableProps) => {
   if (header.length === 0 && body.length === 0) {
     return <Text style={pdfStyles.empty}>No rows for the saved filters.</Text>;
   }
@@ -478,18 +502,21 @@ const ScheduleTable = ({ header, body, truncated }: ScheduleTableProps) => {
             }
             wrap={false}
           >
-            {header.map((_, ci) => (
-              <Text
-                key={`c-${ri}-${ci}`}
-                style={
-                  ci === header.length - 1
-                    ? [pdfStyles.cell, pdfStyles.cellLast]
-                    : pdfStyles.cell
-                }
-              >
-                {decodeCell(r[ci] ?? "")}
-              </Text>
-            ))}
+            {header.map((_, ci) => {
+              const text = decodeCell(r[ci] ?? "");
+              const color = bodyCellColors[ri]?.[ci] || undefined;
+              const styles = [
+                pdfStyles.cell,
+                ...(ci === header.length - 1 ? [pdfStyles.cellLast] : []),
+                ...(isNumericCellValue(text) ? [pdfStyles.cellNumeric] : []),
+                ...(color ? [{ color }] : []),
+              ];
+              return (
+                <Text key={`c-${ri}-${ci}`} style={styles}>
+                  {text}
+                </Text>
+              );
+            })}
           </View>
         ))}
       </View>
@@ -506,6 +533,7 @@ const SchedulePdfDocument = ({
   rows,
   chartPngs = [],
   chartTitles = [],
+  tableCellColors = [],
   logo = null,
   kpis = [],
   filterDetails = null,
@@ -514,6 +542,8 @@ const SchedulePdfDocument = ({
   const header = rows[0] || [];
   const body = rows.slice(1, 201);
   const truncated = rows.length > 201;
+  // Skip header color row; align with truncated body.
+  const bodyCellColors = (tableCellColors || []).slice(1, 201);
   const chartBuffers = chartPngs.filter(buf => !!buf?.length);
   const charts = chartBuffers.map(buf => `data:image/png;base64,${buf.toString("base64")}`);
   const hasCharts = charts.length > 0;
@@ -607,7 +637,12 @@ const SchedulePdfDocument = ({
       <Page size="A4" orientation="landscape" style={pdfStyles.page} wrap>
         <ScheduleHeader title={title} logo={logo} filterDetails={filterDetails} />
         <ScheduleFooter title={title} exportedOn={exportedOn} footerNote={footerNote} />
-        <ScheduleTable header={header} body={body} truncated={truncated} />
+        <ScheduleTable
+          header={header}
+          body={body}
+          truncated={truncated}
+          bodyCellColors={bodyCellColors}
+        />
       </Page>
     </Document>
   );
@@ -643,6 +678,7 @@ export async function renderSchedulePdf(
       rows: options.rows,
       chartPngs: normalized,
       chartTitles: options.chartTitles ?? [],
+      tableCellColors: options.tableCellColors ?? [],
       logo: options.logo ?? null,
       kpis: options.kpis ?? [],
       filterDetails: options.filterDetails ?? null,

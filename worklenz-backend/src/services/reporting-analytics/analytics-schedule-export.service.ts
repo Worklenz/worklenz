@@ -7,6 +7,7 @@ import {
   ScheduleChartSource,
   getScheduleChartTitles,
 } from "./analytics-schedule-charts";
+import { buildScheduleTableCellColors } from "./analytics-table-cell-colors";
 import {
   csvToExcelBuffer,
   csvToPdfBuffer,
@@ -295,6 +296,7 @@ async function buildExportFilesFromPayload(input: {
         chartTitles: input.chartSource
           ? getScheduleChartTitles(input.chartSource)
           : [input.reportName],
+        tableCellColors: buildScheduleTableCellColors(input.chartSource),
         logo,
         kpis,
         filterDetails,

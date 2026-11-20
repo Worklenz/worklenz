@@ -11,6 +11,10 @@ import {
   resolveAnalyticsPdfLogoUrl,
 } from '@/lib/reporting/analytics-branded-pdf';
 import { buildAnalyticsPdfFilterDetails } from '@/lib/reporting/analytics-pdf-filter-details';
+import {
+  overdueCountColor,
+  varianceDaysColor,
+} from '@/lib/reporting/analytics-table-value-colors';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -406,6 +410,16 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
               String(row.completed),
               String(row.overdue),
               String(row.variance_days),
+            ]),
+          ],
+          tableCellColors: [
+            [null, null, null, null, null],
+            ...data.projects.map(row => [
+              null,
+              null,
+              null,
+              overdueCountColor(row.overdue),
+              varianceDaysColor(row.variance_days),
             ]),
           ],
           kpis: [

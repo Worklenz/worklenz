@@ -10,6 +10,7 @@ import {
   resolveAnalyticsPdfLogoUrl,
 } from '@/lib/reporting/analytics-branded-pdf';
 import { buildAnalyticsPdfFilterDetails } from '@/lib/reporting/analytics-pdf-filter-details';
+import { varianceDaysColor } from '@/lib/reporting/analytics-table-value-colors';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -362,6 +363,16 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
               row.planned_date,
               row.actual_date ?? '',
               String(row.variance_days),
+            ]),
+          ],
+          tableCellColors: [
+            [null, null, null, null, null],
+            ...data.milestones.map(row => [
+              null,
+              null,
+              null,
+              null,
+              varianceDaysColor(row.variance_days),
             ]),
           ],
           kpis: [

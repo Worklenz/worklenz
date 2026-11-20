@@ -11,6 +11,11 @@ import {
   resolveAnalyticsPdfLogoUrl,
 } from '@/lib/reporting/analytics-branded-pdf';
 import { buildAnalyticsPdfFilterDetails } from '@/lib/reporting/analytics-pdf-filter-details';
+import {
+  budgetBurnPctColor,
+  budgetRemainingColor,
+  budgetSpentColor,
+} from '@/lib/reporting/analytics-table-value-colors';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -418,6 +423,20 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
               String(row.remaining),
               String(row.burn_pct),
             ]),
+          ],
+          tableCellColors: [
+            [null, null, null, null, null],
+            ...data.projects.map(row =>
+              row.has_budget
+                ? [
+                    null,
+                    null,
+                    budgetSpentColor(row.burn_pct),
+                    budgetRemainingColor(row.remaining),
+                    budgetBurnPctColor(row.burn_pct),
+                  ]
+                : [null, null, null, null, null]
+            ),
           ],
           kpis: [
             {
