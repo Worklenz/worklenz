@@ -23,12 +23,19 @@ function decodeCell(value: string): string {
 }
 
 /** True for numeric table values (counts, %, currency, "+3 days") — body cells only. */
-function isNumericCellValue(value: string): boolean {
+export function isNumericCellValue(value: string): boolean {
   const trimmed = value.trim();
   if (!trimmed) return false;
   if (/^[+-]?\d+(\.\d+)?\s+days$/i.test(trimmed)) return true;
   const normalized = trimmed.replace(/[,\s]/g, "");
   return /^-?\$?\(?\d+(\.\d+)?\)?%?$/.test(normalized);
+}
+
+/** Columns whose body values are numeric (right-aligned like the on-demand export PDF). */
+export function detectNumericColumns(header: string[], body: string[][]): boolean[] {
+  return header.map((_, ci) =>
+    body.some(row => isNumericCellValue(decodeCell(row[ci] ?? "")))
+  );
 }
 
 export interface SchedulePdfKpiTile {
@@ -243,16 +250,24 @@ const pdfStyles = StyleSheet.create({
     fontSize: 8,
     borderRightWidth: 1.25,
     borderRightColor: "#8c8c8c",
+    justifyContent: "center",
   },
   headerCell: {
-    fontSize: 10,
-    fontWeight: 700,
     paddingVertical: 10,
   },
   cellLast: {
     borderRightWidth: 0,
   },
-  cellNumeric: {
+  cellText: {
+    width: "100%",
+    fontSize: 8,
+  },
+  headerCellText: {
+    width: "100%",
+    fontSize: 10,
+    fontWeight: 700,
+  },
+  cellTextRight: {
     textAlign: "right",
   },
   empty: { marginTop: 12, color: "#8c8c8c" },
@@ -302,6 +317,28 @@ interface ScheduleTableProps {
   truncated: boolean;
   /** Body-aligned colors (index 0 = first data row). */
   bodyCellColors?: Array<Array<string | null>>;
+  /** Total data rows across all table pages (for the caption). */
+  totalRowCount?: number;
+  /** Show the "Table" section title (first table page only). */
+  showSectionTitle?: boolean;
+  /** Precomputed numeric column flags (from the full table body). */
+  numericColumns?: boolean[];
+}
+
+/**
+ * Landscape A4 usable height is tight once branding + column header are included.
+ * Keep this conservative so each Page fits without react-pdf splitting mid-table
+ * (which would drop the column header on the overflow page).
+ */
+export const TABLE_ROWS_PER_PAGE = 12;
+
+export function chunkRows<T>(rows: T[], size: number): T[][] {
+  if (rows.length === 0) return [[]];
+  const pages: T[][] = [];
+  for (let i = 0; i < rows.length; i += size) {
+    pages.push(rows.slice(i, i + size));
+  }
+  return pages;
 }
 
 function logoSrc(logo: Buffer | null | undefined): string | null {
@@ -453,46 +490,63 @@ const KpiCards = ({ kpis }: { kpis: SchedulePdfKpiTile[] }) => {
   );
 };
 
-const TableHeaderRow = ({ header }: { header: string[] }) => (
+const TableHeaderRow = ({
+  header,
+  numericColumns = [],
+}: {
+  header: string[];
+  numericColumns?: boolean[];
+}) => (
   <View style={[pdfStyles.row, pdfStyles.headerRow]} wrap={false}>
-    {header.map((cell, i) => (
-      <Text
-        key={`h-${i}`}
-        style={
-          i === header.length - 1
-            ? [pdfStyles.cell, pdfStyles.headerCell, pdfStyles.cellLast]
-            : [pdfStyles.cell, pdfStyles.headerCell]
-        }
-      >
-        {decodeCell(cell)}
-      </Text>
-    ))}
+    {header.map((cell, i) => {
+      const isNumeric = !!numericColumns[i];
+      const cellStyles = [
+        pdfStyles.cell,
+        pdfStyles.headerCell,
+        ...(i === header.length - 1 ? [pdfStyles.cellLast] : []),
+      ];
+      const textStyles = [
+        pdfStyles.headerCellText,
+        ...(isNumeric ? [pdfStyles.cellTextRight] : []),
+      ];
+      return (
+        <View key={`h-${i}`} style={cellStyles}>
+          <Text style={textStyles}>{decodeCell(cell)}</Text>
+        </View>
+      );
+    })}
   </View>
 );
 
 /**
- * Data table: single in-flow column header above data rows.
- * (A fixed `pageNumber > 1` repeat header doubled on the table page because
- * KPIs/charts already occupy document page 1.)
+ * Data table for one PDF page. Column headers are in-flow on every table page
+ * (pages are chunked so react-pdf does not wrap mid-table without a header).
  */
 const ScheduleTable = ({
   header,
   body,
   truncated,
   bodyCellColors = [],
+  totalRowCount,
+  showSectionTitle = true,
+  numericColumns: numericColumnsProp,
 }: ScheduleTableProps) => {
   if (header.length === 0 && body.length === 0) {
     return <Text style={pdfStyles.empty}>No rows for the saved filters.</Text>;
   }
 
+  const rowCount = totalRowCount ?? body.length;
+  const numericColumns =
+    numericColumnsProp ?? detectNumericColumns(header, body);
+
   return (
     <View style={pdfStyles.tableBlock}>
-      <Text style={pdfStyles.sectionTitle}>Table</Text>
+      {showSectionTitle ? <Text style={pdfStyles.sectionTitle}>Table</Text> : null}
       <Text style={pdfStyles.tableContinues}>
-        Report data ({body.length} row{body.length === 1 ? "" : "s"})
+        Report data ({rowCount} row{rowCount === 1 ? "" : "s"})
       </Text>
       <View style={pdfStyles.tableFrame}>
-        <TableHeaderRow header={header} />
+        <TableHeaderRow header={header} numericColumns={numericColumns} />
         {body.map((r, ri) => (
           <View
             key={`r-${ri}`}
@@ -506,16 +560,20 @@ const ScheduleTable = ({
             {header.map((_, ci) => {
               const text = decodeCell(r[ci] ?? "");
               const color = bodyCellColors[ri]?.[ci] || undefined;
-              const styles = [
+              const isNumeric = numericColumns[ci] || isNumericCellValue(text);
+              const cellStyles = [
                 pdfStyles.cell,
                 ...(ci === header.length - 1 ? [pdfStyles.cellLast] : []),
-                ...(isNumericCellValue(text) ? [pdfStyles.cellNumeric] : []),
+              ];
+              const textStyles = [
+                pdfStyles.cellText,
+                ...(isNumeric ? [pdfStyles.cellTextRight] : []),
                 ...(color ? [{ color }] : []),
               ];
               return (
-                <Text key={`c-${ri}-${ci}`} style={styles}>
-                  {text}
-                </Text>
+                <View key={`c-${ri}-${ci}`} style={cellStyles}>
+                  <Text style={textStyles}>{text}</Text>
+                </View>
               );
             })}
           </View>
@@ -624,7 +682,11 @@ const SchedulePdfDocument = ({
   );
 
   // Page 1: branding + KPI cards + charts (side-by-side when bar + donut).
-  // Page 2+: table with column header always above data rows (repeats on wrap).
+  // Page 2+: one table chunk per page so the column header row is on every page.
+  const tableChunks = chunkRows(body, TABLE_ROWS_PER_PAGE);
+  const colorChunks = chunkRows(bodyCellColors, TABLE_ROWS_PER_PAGE);
+  const numericColumns = detectNumericColumns(header, body);
+
   return (
     <Document>
       <Page size="A4" orientation="landscape" style={pdfStyles.page} wrap>
@@ -635,16 +697,27 @@ const SchedulePdfDocument = ({
           {chartsBlock}
         </View>
       </Page>
-      <Page size="A4" orientation="landscape" style={pdfStyles.page} wrap>
-        <ScheduleHeader title={title} logo={logo} filterDetails={filterDetails} />
-        <ScheduleFooter title={title} exportedOn={exportedOn} footerNote={footerNote} />
-        <ScheduleTable
-          header={header}
-          body={body}
-          truncated={truncated}
-          bodyCellColors={bodyCellColors}
-        />
-      </Page>
+      {tableChunks.map((pageRows, pageIndex) => (
+        <Page
+          key={`table-page-${pageIndex}`}
+          size="A4"
+          orientation="landscape"
+          style={pdfStyles.page}
+          wrap={false}
+        >
+          <ScheduleHeader title={title} logo={logo} filterDetails={filterDetails} />
+          <ScheduleFooter title={title} exportedOn={exportedOn} footerNote={footerNote} />
+          <ScheduleTable
+            header={header}
+            body={pageRows}
+            truncated={truncated && pageIndex === tableChunks.length - 1}
+            bodyCellColors={colorChunks[pageIndex] || []}
+            totalRowCount={body.length}
+            showSectionTitle={pageIndex === 0}
+            numericColumns={numericColumns}
+          />
+        </Page>
+      ))}
     </Document>
   );
 };

@@ -1,6 +1,5 @@
 import { CronJob } from "cron";
 import type { PoolClient } from "pg";
-import sanitizeHtmlLib from "sanitize-html";
 import db from "../config/db";
 import { sendEmail } from "../shared/email";
 import { log_error } from "../shared/utils";
@@ -24,11 +23,88 @@ const log = (value: string) => console.log("analytics-report-schedule-job:", val
 
 let isRunning = false;
 
+/** Escape text for safe insertion into HTML email bodies. */
 function escapeHtml(value: string): string {
-  return sanitizeHtmlLib(value, { allowedTags: [], allowedAttributes: {} });
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
-function buildEmailHtml(schedule: AnalyticsScheduleRow, sentAt: Date = new Date()): string {
+/** Best-effort display name from an email local-part when no user match exists. */
+export function displayNameFromEmail(email: string): string {
+  const local = email.split("@")[0]?.trim() || "";
+  if (!local) return "there";
+  const spaced = local.replace(/[._+-]+/g, " ").replace(/\s+/g, " ").trim();
+  if (!spaced) return "there";
+  return spaced
+    .split(" ")
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+/**
+ * Resolves recipient emails to display names (users table first, else email local-part).
+ */
+export async function resolveRecipientNames(
+  emails: string[]
+): Promise<Map<string, string>> {
+  const names = new Map<string, string>();
+  const normalized = emails
+    .map(email => email.trim().toLowerCase())
+    .filter(Boolean);
+
+  for (const email of normalized) {
+    names.set(email, displayNameFromEmail(email));
+  }
+
+  if (!normalized.length) return names;
+
+  try {
+    const result = await db.query(
+      `SELECT LOWER(TRIM(email)) AS email, NULLIF(TRIM(name), '') AS name
+       FROM users
+       WHERE is_deleted IS FALSE
+         AND LOWER(TRIM(email)) = ANY($1::TEXT[])`,
+      [normalized]
+    );
+    for (const row of result.rows as Array<{ email: string; name: string | null }>) {
+      if (row.email && row.name) {
+        names.set(row.email, row.name);
+      }
+    }
+  } catch (error) {
+    log_error(error);
+  }
+
+  return names;
+}
+
+/**
+ * Builds schedule email HTML.
+ * - Always greets with "Hi {recipientName},"
+ * - Uses the optional custom message when present
+ * - Otherwise uses the auto-generated report summary
+ */
+export function buildEmailHtml(
+  schedule: AnalyticsScheduleRow,
+  recipientName: string,
+  sentAt: Date = new Date()
+): string {
+  const greeting = `<p style="margin:0 0 12px">Hi ${escapeHtml(recipientName)},</p>`;
+  const customMessage = schedule.message?.trim() || "";
+
+  if (customMessage) {
+    return `
+    <div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#262626;line-height:1.5">
+      ${greeting}
+      <p style="white-space:pre-wrap;margin:0">${escapeHtml(customMessage)}</p>
+    </div>
+  `.trim();
+  }
+
   const safeName = escapeHtml(schedule.report_name);
   const timeRange = formatScheduleTimeRangeNote(
     schedule.filters_json,
@@ -40,22 +116,16 @@ function buildEmailHtml(schedule: AnalyticsScheduleRow, sentAt: Date = new Date(
         timeRange
       )}</p>`
     : "";
-  const custom =
-    schedule.message && schedule.message.trim()
-      ? `<p style="white-space:pre-wrap;margin:16px 0 0">${escapeHtml(
-          schedule.message.trim()
-        )}</p>`
-      : "";
 
   return `
     <div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#262626;line-height:1.5">
-      <p style="margin:0 0 8px">Your scheduled Worklenz report is attached.</p>
+      ${greeting}
+      <p style="margin:0 0 8px">This is your scheduled Worklenz report. The file is attached.</p>
       <p style="margin:0"><strong>${safeName}</strong></p>
       ${timeRangeHtml}
       <p style="margin:8px 0 0;color:#595959">
         This file was generated with your saved filters against live data at send time.
       </p>
-      ${custom}
     </div>
   `.trim();
 }
@@ -71,22 +141,41 @@ async function processSchedule(schedule: AnalyticsScheduleRow): Promise<boolean>
     timezone: schedule.timezone,
   });
 
-  const result = await sendEmail({
-    to: schedule.recipients,
-    subject: `Scheduled report: ${schedule.report_name}`,
-    html: buildEmailHtml(schedule),
-    attachments: exportFiles.map(exportFile => ({
-      filename: exportFile.filename,
-      content: exportFile.content,
-      contentType: exportFile.contentType,
-    })),
-  });
+  const attachments = exportFiles.map(exportFile => ({
+    filename: exportFile.filename,
+    content: exportFile.content,
+    contentType: exportFile.contentType,
+  }));
 
-  if (!result) {
-    throw new Error("Email send returned no message id");
+  const recipients = (schedule.recipients || [])
+    .map(email => email.trim())
+    .filter(Boolean);
+
+  if (!recipients.length) {
+    throw new Error("Schedule has no recipients");
   }
 
-  const updated = await markScheduleSent(schedule, new Date());
+  const recipientNames = await resolveRecipientNames(recipients);
+  const sentAt = new Date();
+  const subject = `Scheduled report: ${schedule.report_name}`;
+
+  // Send per recipient so each email can greet them by name.
+  for (const email of recipients) {
+    const name =
+      recipientNames.get(email.toLowerCase()) || displayNameFromEmail(email);
+    const result = await sendEmail({
+      to: [email],
+      subject,
+      html: buildEmailHtml(schedule, name, sentAt),
+      attachments,
+    });
+
+    if (!result) {
+      throw new Error(`Email send returned no message id for ${email}`);
+    }
+  }
+
+  const updated = await markScheduleSent(schedule, sentAt);
   return !!updated;
 }
 
