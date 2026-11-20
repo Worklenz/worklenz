@@ -37,5 +37,7 @@
     "special": "Un personnage spécial"
   },
   "strongPasswordPlaceholder": "Entrez un mot de passe fort",
-  "passwordValidationAltText": "Exigences de mot de passe"
+  "passwordValidationAltText": "Exigences de mot de passe",
+  "invitationCodeLabel": "Code d’invitation",
+  "invitationCodeRequired": "Saisissez le code d’invitation reçu par e-mail."
 }

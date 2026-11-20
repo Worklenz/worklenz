@@ -1,3 +1,4 @@
+import { createRegistrationInvitationToken } from "./registration-invitation-token";
 import {IEmailTemplateType} from "../interfaces/email-template-type";
 import {IPassportSession} from "../interfaces/passport-session";
 import {sendEmail} from "./email";
@@ -106,6 +107,15 @@ export async function sendRegisterAndJoinTeamInvitation(myName: string, userName
   let content = FileConstants.getEmailTemplate(IEmailTemplateType.UnregisteredTeamMemberInvitation) as string;
   if (!content) return;
 
+  const invitation = await db.query(
+    `SELECT id FROM email_invitations
+     WHERE team_id = $1 AND team_member_id = $2 AND LOWER(TRIM(email)) = LOWER(TRIM($3))
+     ORDER BY created_at DESC, id DESC LIMIT 1`,
+    [teamId, userId, toEmail],
+  );
+  if (!invitation.rowCount) throw new Error("Invitation not found");
+  const invitationId: string = invitation.rows[0].id;
+
   const logoUrl = await getOrganizationLogoUrl(teamId);
 
   // logoUrl is already validated as a safe http/https URL by safeLogoUrl()
@@ -113,6 +123,7 @@ export async function sendRegisterAndJoinTeamInvitation(myName: string, userName
   // Email addresses are validated elsewhere, no need to sanitize in HTML context
   content = content.replaceAll("[VAR_LOGO_URL]", logoUrl);
   content = content.replaceAll("[VAR_EMAIL]", toEmail);
+  content = content.replaceAll("[VAR_INVITATION_TOKEN]", createRegistrationInvitationToken(teamId, userId, toEmail, invitationId));
   content = content.replaceAll("[VAR_USER_ID]", userId);
   content = content.replaceAll("[VAR_USER_NAME]", sanitizePlainText(userName));
   content = content.replaceAll("[VAR_TEAM_NAME]", sanitizePlainText(teamName));

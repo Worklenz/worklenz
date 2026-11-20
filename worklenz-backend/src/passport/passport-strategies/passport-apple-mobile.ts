@@ -15,7 +15,7 @@ import { getBlockedSignupEmailMessage, isSignupEmailDomainBlocked } from "../../
 interface AppleTokenPayload {
   sub: string;              // Apple user ID (unique identifier)
   email?: string;           // Email (only provided on first sign-in)
-  email_verified?: boolean; // Email verification status
+  email_verified?: boolean | string; // Email verification status
   aud: string;              // Audience (client ID / bundle ID)
   iss: string;              // Issuer (https://appleid.apple.com)
   exp: number;              // Expiration timestamp
@@ -115,8 +115,8 @@ async function handleAppleMobileAuth(req: Request, done: any) {
 
     // Extract user data
     const appleId = payload.sub;
-    const email = payload.email?.toLowerCase().trim();
-    const emailVerified = payload.email_verified ?? true;
+    const emailVerified = payload.email_verified === true || payload.email_verified === "true";
+    const email = emailVerified ? payload.email?.toLowerCase().trim() : undefined;
 
     // Validate Apple ID
     if (!appleId) {
@@ -126,8 +126,8 @@ async function handleAppleMobileAuth(req: Request, done: any) {
     // Check for existing local account (password-based)
     if (email) {
       const localAccountResult = await db.query(
-        "SELECT 1 FROM users WHERE LOWER(email) = $1 AND password IS NOT NULL AND is_deleted IS FALSE;",
-        [email]
+        "SELECT 1 FROM users WHERE LOWER(email) = $1 AND password IS NOT NULL AND is_deleted IS FALSE AND NOT EXISTS (SELECT 1 FROM users WHERE apple_id = $2 AND is_deleted IS FALSE);",
+        [email, appleId]
       );
 
       if (localAccountResult.rowCount) {
@@ -153,7 +153,7 @@ async function handleAppleMobileAuth(req: Request, done: any) {
 
     // Existing user - login flow
     if (userResult.rowCount) {
-      const user = userResult.rows[0];
+      const user = userResult.rows.find((row: { apple_id: string | null }) => row.apple_id === appleId) || userResult.rows[0];
 
       // If this is a sign-up request but user already exists
       if (isSignUp) {
@@ -163,6 +163,10 @@ async function handleAppleMobileAuth(req: Request, done: any) {
             : "An account with this Apple ID already exists. Please sign in instead.",
           [ERROR_KEY]: "USER_ALREADY_EXISTS"
         });
+      }
+
+      if (user.apple_id && user.apple_id !== appleId) {
+        return done(null, false, { message: "This account is linked to another Apple ID." });
       }
 
       // Check for Google account conflict
@@ -183,11 +187,13 @@ async function handleAppleMobileAuth(req: Request, done: any) {
 
       // Update email if provided and different (first sign-in scenario)
       if (email && user.email !== email && emailVerified) {
-        await db.query(
-          "UPDATE users SET email = $1 WHERE id = $2;",
+        const updateResult = await db.query(
+          `UPDATE users SET email = $1 WHERE id = $2
+           AND NOT EXISTS (SELECT 1 FROM users WHERE LOWER(email) = $1 AND id <> $2 AND is_deleted IS FALSE)
+           RETURNING id;`,
           [email, user.id]
         );
-        user.email = email;
+        if (updateResult.rowCount) user.email = email;
       }
 
       // Update last active timestamp

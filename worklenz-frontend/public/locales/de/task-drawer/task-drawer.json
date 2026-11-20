@@ -238,7 +238,8 @@
       "projectNotStartedWarningDesc": "Dieses Projekt soll am {{date}} beginnen. Zeit kann nicht vor dem Startdatum des Projekts erfasst werden.",
       "projectStartDateHint": "Projekt-Startdatum: {{date}}"
     },
-    "rollupLoggedTooltip": "Summe der angemeldeten Zeit für Unteraufgaben"
+    "rollupLoggedTooltip": "Summe der angemeldeten Zeit für Unteraufgaben",
+    "moveToProject": "In Projekt verschieben"
   },
   "taskActivityLogTab": {
     "title": "Aktivitätsprotokoll",
@@ -290,5 +291,6 @@
     "description": "Ihnen ist eine Unteraufgabe dieser Aufgabe zugewiesen. Sie können die übergeordnete Aufgabe zur Orientierung ansehen, aber nicht bearbeiten."
   },
   "today": "Heute",
-  "yesterday": "Gestern"
+  "yesterday": "Gestern",
+  "more": "Weitere Optionen"
 }

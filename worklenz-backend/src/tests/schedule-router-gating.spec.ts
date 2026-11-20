@@ -12,7 +12,8 @@ type Layer = { route?: { path: string; methods: Record<string, boolean> }; name:
 /** Route paths registered before the first non-route middleware that follows the guest check. */
 function routesBeforePlannerGate(router: express.Router): string[] {
   const stack = (router as unknown as { stack: Layer[] }).stack;
-  const gateIndex = stack.findIndex((layer, index) => !layer.route && index > 0);
+  const guestIndex = stack.findIndex(layer => layer.name === "verifyNonGuestPlannerAccess");
+  const gateIndex = stack.findIndex((layer, index) => !layer.route && index > guestIndex);
   return stack
     .slice(0, gateIndex === -1 ? stack.length : gateIndex)
     .filter((layer) => layer.route)

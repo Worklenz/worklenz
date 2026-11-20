@@ -238,7 +238,8 @@
       "projectNotStartedWarningDesc": "Ten projekt ma się rozpocząć {{date}}. Nie można rejestrować czasu przed datą rozpoczęcia projektu.",
       "projectStartDateHint": "Data rozpoczęcia projektu: {{date}}"
     },
-    "rollupLoggedTooltip": "Suma czasu zalogowanego w podzadaniach"
+    "rollupLoggedTooltip": "Suma czasu zalogowanego w podzadaniach",
+    "moveToProject": "Przenieś do projektu"
   },
   "taskActivityLogTab": {
     "title": "Dziennik aktywności",
@@ -290,5 +291,6 @@
     "description": "Zostałeś przydzielony do podzadania tego zadania. Możesz wyświetlić rodzica dla kontekstu, ale nie możesz go edytować."
   },
   "today": "Dzisiaj",
-  "yesterday": "Wczoraj"
+  "yesterday": "Wczoraj",
+  "more": "Więcej opcji"
 }

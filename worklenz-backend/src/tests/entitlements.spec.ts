@@ -51,7 +51,7 @@ describe("feature registry", () => {
   it("gates the Business-only matrix rows at business", () => {
     for (const key of [
       "finance_module", "billable_reporting", "client_portal_branding", "slack_integration",
-      "advanced_reporting", "priority_support", "gantt_edit", "planner_schedule", "planner_timeline", "planner_workload",
+      "advanced_reporting", "priority_support", "gantt_edit", "planner_schedule_edit", "planner_timeline", "planner_workload",
     ] as const) {
       expect(FEATURE_REGISTRY[key].minTier).toBe("business");
     }
@@ -73,13 +73,14 @@ describe("resolveEntitlements", () => {
     expect(resolveEntitlements(null, NOW).tier).toBe("free");
   });
 
-  it("classic Pro: pro features, client portal, unlimited guests, no Planner, no Branding or other Business features", () => {
+  it("classic Pro: read-only Schedule and other Pro features", () => {
     const e = resolveEntitlements(paddle("Pro", { quantity: 8 }), NOW);
     expect(e.tier).toBe("pro");
     expect(e.primarySource).toBe("paddle_classic");
     expect(hasFeature(e, "project_health")).toBe(true);
     expect(hasFeature(e, "reports_export")).toBe(true);
-    expect(hasFeature(e, "planner_schedule")).toBe(false);
+    expect(hasFeature(e, "planner_schedule")).toBe(true);
+    expect(hasFeature(e, "planner_schedule_edit")).toBe(false);
     expect(hasFeature(e, "finance_module")).toBe(false);
     expect(hasFeature(e, "client_portal")).toBe(true);
     expect(hasFeature(e, "client_portal_invoices")).toBe(true);
@@ -88,11 +89,12 @@ describe("resolveEntitlements", () => {
     expect(e.seatLimit).toBe(8);
   });
 
-  it("new Paddle Billing Pro: no Planner", () => {
+  it("new Paddle Billing Pro: read-only Schedule", () => {
     const e = resolveEntitlements(paddle("Pro", { billing_provider: "paddle_billing" }), NOW);
     expect(e.primarySource).toBe("paddle_billing");
     expect(hasFeature(e, "project_health")).toBe(true);
-    expect(hasFeature(e, "planner_schedule")).toBe(false);
+    expect(hasFeature(e, "planner_schedule")).toBe(true);
+    expect(hasFeature(e, "planner_schedule_edit")).toBe(false);
     expect(hasFeature(e, "planner_workload")).toBe(false);
     expect(e.seatLimit).toBe(-1);
   });

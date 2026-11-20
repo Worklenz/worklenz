@@ -19,6 +19,11 @@ import AsanaProvider from "../services/import-providers/asana-provider";
 import JiraProvider from "../services/import-providers/jira-provider";
 import TrelloProvider from "../services/import-providers/trello-provider";
 import MondayProvider from "../services/import-providers/monday-provider";
+import { canUseFeature } from "../shared/entitlements/gates";
+
+const isCsvImport = (provider: unknown, flowType: unknown): boolean =>
+  (typeof provider === "string" && provider.toLowerCase() === "csv") ||
+  (typeof flowType === "string" && flowType.toLowerCase() === "csv");
 
 const autoHierarchyTemplate = [
   { source_level: "Section", target_level: "Status", position: 1 },
@@ -210,6 +215,8 @@ export default class ImportsController {
       const createdBy = this.getUserId(req);
       if (!provider || !flowType)
         throw createHttpError(400, "provider and flowType are required");
+      if (isCsvImport(provider, flowType) && !canUseFeature(req.user, "csv_import"))
+        throw createHttpError(403, "CSV import requires a Pro plan");
       const job = await ImportsService.createJob({
         provider,
         flowType,
@@ -580,6 +587,8 @@ export default class ImportsController {
     async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
       const userId = this.getUserId(req);
       const job = await this.assertJob(req.params.jobId, userId);
+      if (!canUseFeature(req.user, "csv_import"))
+        throw createHttpError(403, "Staging imported tasks requires a Pro plan");
       const rows = (req.body?.tasks as StageTaskRow[]) || [];
       if (!Array.isArray(rows))
         throw createHttpError(400, "tasks must be array");
@@ -610,6 +619,8 @@ export default class ImportsController {
     async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
       const userId = this.getUserId(req);
       const job = await this.assertJob(req.params.jobId, userId);
+      if (isCsvImport(job.provider, job.flow_type) && !canUseFeature(req.user, "csv_import"))
+        throw createHttpError(403, "CSV import requires a Pro plan");
       const body = req.body || {};
 
       // CSV flow: persist the raw CSV text and any pre-configured mappings in
@@ -663,6 +674,8 @@ export default class ImportsController {
     async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
       const userId = this.getUserId(req);
       const job = await this.assertJob(req.params.jobId, userId);
+      if (isCsvImport(job.provider, job.flow_type) && !canUseFeature(req.user, "csv_import"))
+        throw createHttpError(403, "CSV import requires a Pro plan");
 
       // Run the commit pipeline asynchronously to avoid request timeouts for large imports.
       // Progress can be tracked via GET /api/v1/imports/:jobId/progress.

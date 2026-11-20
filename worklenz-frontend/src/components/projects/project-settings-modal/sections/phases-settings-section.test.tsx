@@ -4,7 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import PhasesSettingsSection from './phases-settings-section';
 
 vi.mock('@/shared/antd-imports', async () => import('antd'));
-const state = vi.hoisted(() => ({ project: null as { id: string; phase_assignees_enabled: boolean } | null }));
+const state = vi.hoisted(() => ({ project: null as { id: string; phase_assignees_enabled: boolean } | null, canAccess: true }));
+vi.mock('@/hooks/useAuth', () => ({ useAuthService: () => ({ getCurrentSession: () => ({}) }) }));
+vi.mock('@/utils/subscription-utils', () => ({ canUseFeature: () => state.canAccess }));
 vi.mock('@/hooks/useAppSelector', () => ({
   useAppSelector: (selector: (state: object) => unknown) =>
     selector({ projectDrawerReducer: { project: state.project }, phaseReducer: { phaseList: [] } }),
@@ -19,7 +21,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 afterEach(cleanup);
-beforeEach(() => { state.project = null; });
+beforeEach(() => { state.project = null; state.canAccess = true; });
 
 describe.each([['light', theme.defaultAlgorithm], ['dark', theme.darkAlgorithm]])(
   'phase settings during project creation in %s theme', (_mode, algorithm) => {
@@ -45,6 +47,11 @@ describe.each([['light', theme.defaultAlgorithm], ['dark', theme.darkAlgorithm]]
 );
 
 describe('saved phase assignee settings', () => {
+  it('disables the phase assignee switch for Free plans', () => {
+    state.canAccess = false;
+    render(<Form><PhasesSettingsSection /></Form>);
+    expect(screen.getByRole('switch', { name: 'Enable Phase Assignees' })).toBeDisabled();
+  });
   it.each([
     ['the selected project', 'project-b', 'enabled'],
     ['a previously selected project', 'project-a', 'disabled'],

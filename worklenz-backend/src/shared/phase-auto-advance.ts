@@ -7,6 +7,7 @@ import { getAssignees } from "../socket.io/commands/on-quick-assign-or-remove";
 import { NotificationsService } from "../services/notifications/notifications.service";
 import WorklenzControllerBase from "../controllers/worklenz-controller-base";
 import { getLoggedInUserIdFromSocket } from "../socket.io/util";
+import { teamCanUseFeature } from "./entitlements/gates";
 
 /**
  * Phase Auto-Advance (Task 5 - ST-1, ST-2, ST-3, ST-4, & ST-5 Refactor)
@@ -96,7 +97,7 @@ async function resolveNextPhase(taskId: string): Promise<NextPhaseInfo | null> {
   }
 
   // ── Guard checks ──────────────────────────────────────────────────────────
-  if (!d.phase_assignees_enabled) {
+  if (!d.phase_assignees_enabled || !(await teamCanUseFeature(d.team_id, "phase_assignee"))) {
     return null;
   }
   if (!d.current_phase_id) {

@@ -149,15 +149,12 @@ export const SavedViewControls: React.FC = () => {
       })}
     >
       <Button
-        size="small"
+        type="primary"
+        size="middle"
         icon={<PlusOutlined />}
         loading={isSaving}
         onClick={saveAsNewTab}
-        className={
-          ' !h-[30px] !min-h-[30px] !px-2.5 !py-1.5 !text-xs !font-semibold !rounded-md !border ' +
-          ' ' +
-          ' '
-        }
+        className="!h-8 !min-h-8 !px-3 !text-xs !font-semibold"
       >
         {t('NewTab', { defaultValue: ' New tab' })}
       </Button>
