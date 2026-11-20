@@ -1,5 +1,7 @@
-import { Card, Badge, Button } from 'antd';
+import { Card, Button, Spin } from 'antd';
+import { Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getAddonSlotItems } from '@/addons/addon-slots';
 import { SlackIntegration } from '@/components/settings/integrations/SlackIntegration';
 import { GithubIntegrationCard } from '@/components/github/GithubIntegrationCard';
 import {
@@ -118,6 +120,13 @@ function IntegrationsSettings() {
           available={false}
         />
       </div>
+      {getAddonSlotItems('integrationSettings').map(({ key, component: Component }) =>
+        Component ? (
+          <Suspense key={key} fallback={<Spin tip={t('loading', { defaultValue: 'Loading' })} />}>
+            <Component />
+          </Suspense>
+        ) : null
+      )}
     </div>
   );
 }

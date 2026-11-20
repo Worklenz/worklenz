@@ -62,6 +62,8 @@ if (!sdkGeneratedFile) {
         'commonjs',
         '--skipLibCheck',
         '--esModuleInterop',
+        '--experimentalDecorators',
+        '--emitDecoratorMetadata',
       ],
       { cwd: path.join(__dirname, '..'), stdio: 'inherit' }
     );
@@ -123,6 +125,11 @@ for (const [addonId, addonDir] of addonDirs) {
         stdio: 'inherit',
       }
     );
+
+    const assetsScript = path.join(addonDir, 'backend', 'build-assets.js');
+    if (fs.existsSync(assetsScript)) {
+      execFileSync(process.execPath, [assetsScript], { cwd: path.join(repoRoot, 'worklenz-backend'), stdio: 'inherit' });
+    }
 
     // Normalize any relative addon-sdk imports in emitted dist files to @worklenz/addon-sdk
     const distDir = path.join(addonDir, 'backend', 'dist');

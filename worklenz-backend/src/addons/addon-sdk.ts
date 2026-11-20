@@ -2,11 +2,12 @@ import db from "../config/db";
 import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "../controllers/worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
-import { sanitizeCommentContent, sanitizePlainText, log_error } from "../shared/utils";
+import { sanitizeCommentContent, sanitizePlainText, sanitizeRichTextDescription, log_error } from "../shared/utils";
 import { NotificationsService } from "../services/notifications/notifications.service";
 import { sendProjectComment } from "../shared/email-notifications";
 import { HTML_TAG_REGEXP, LOG_DESCRIPTIONS, WorklenzColorCodes } from "../shared/constants";
 import { getBaseUrl } from "../cron_jobs/helpers";
+import { I18nHelper } from "../shared/i18n-helper";
 import safeControllerFunction from "../shared/safe-controller-function";
 import type { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import type { IWorkLenzResponse } from "../interfaces/worklenz-response";
@@ -27,6 +28,7 @@ export {
   HandleExceptions,
   sanitizeCommentContent,
   sanitizePlainText,
+  sanitizeRichTextDescription,
   log_error,
   NotificationsService,
   sendProjectComment,
@@ -34,6 +36,7 @@ export {
   LOG_DESCRIPTIONS,
   WorklenzColorCodes,
   getBaseUrl,
+  I18nHelper,
   safeControllerFunction,
   idParamValidator,
   teamOwnerOrAdminValidator,

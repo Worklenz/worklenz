@@ -7,6 +7,7 @@ import {Server, Socket} from "socket.io";
 import http, {IncomingHttpHeaders} from "http";
 
 import app, { startBackgroundWorkers } from "../app";
+import { stopAddonWorkers } from "../addons/load-addons";
 import {register} from "../socket.io";
 import {on_login} from "../socket.io/commands/on-connect";
 import {IO} from "../shared/io";
@@ -158,6 +159,7 @@ function onListening() {
 }
 
 function onClose() {
+  void stopAddonWorkers().catch(error => console.error("[Addon] Worker shutdown failed:", error));
   DbTaskStatusChangeListener.disconnect();
 }
 

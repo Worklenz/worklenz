@@ -34,6 +34,7 @@ export interface AddonSlots {
   projectSettingsTabs?: AddonSlotItem[];
   projectListColumns?: AddonSlotItem[];
   navigationItems?: AddonSlotItem[];
+  integrationSettings?: AddonSlotItem[];
   [customSlotName: string]: AddonSlotItem[] | undefined;
 }
 
