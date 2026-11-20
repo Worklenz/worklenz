@@ -44,8 +44,21 @@ const AllTasksAssigneeFilter = () => {
     m.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const visibleMemberIds = filteredMembers
+    .map((m: ITeamMemberViewModel) => m.id)
+    .filter((id): id is string => Boolean(id));
+
+  const allVisibleMembersSelected =
+    visibleMemberIds.length > 0 && visibleMemberIds.every(id => selectedAssignees.includes(id));
+
   const handleToggle = (memberId: string) => {
     dispatch(toggleAssignee(memberId));
+    dispatch(fetchAllTasks());
+  };
+
+  const handleSelectAllVisible = () => {
+    const next = [...new Set([...selectedAssignees, ...visibleMemberIds])];
+    dispatch(setSelectedAssignees(next));
     dispatch(fetchAllTasks());
   };
 
@@ -65,14 +78,23 @@ const AllTasksAssigneeFilter = () => {
           allowClear
         />
         <Flex justify="space-between" align="center">
-          <Checkbox
-            checked={selectedAssignees.includes('unassigned')}
-            onChange={() => handleToggle('unassigned')}
+          <Button
+            type="link"
+            size="small"
+            onClick={handleSelectAllVisible}
+            disabled={visibleMemberIds.length === 0 || allVisibleMembersSelected}
+            style={{ paddingInline: 0, height: 'auto', fontSize: 12 }}
           >
-            {t('unassigned', { defaultValue: 'Unassigned' })}
-          </Checkbox>
-          <Button type="link" size="small" onClick={handleClearAll}>
-            {t('clearAll', { defaultValue: 'Clear All' })}
+            {t('selectAll', { defaultValue: 'Select all' })}
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            onClick={handleClearAll}
+            disabled={selectedAssignees.length === 0}
+            style={{ paddingInline: 0, height: 'auto', fontSize: 12 }}
+          >
+            {t('clearAll', { defaultValue: 'Clear all' })}
           </Button>
         </Flex>
         {loading ? (
@@ -81,6 +103,12 @@ const AllTasksAssigneeFilter = () => {
           </Flex>
         ) : (
           <Flex vertical gap={4} style={{ maxHeight: 200, overflowY: 'auto' }}>
+            <Checkbox
+              checked={selectedAssignees.includes('unassigned')}
+              onChange={() => handleToggle('unassigned')}
+            >
+              {t('unassigned', { defaultValue: 'Unassigned' })}
+            </Checkbox>
             {filteredMembers.map((member: ITeamMemberViewModel) => (
               <Checkbox
                 key={member.id}
