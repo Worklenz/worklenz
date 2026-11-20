@@ -132,9 +132,11 @@ api.use("/shared/projects", sharedProjectsApiRouter);
 api.use("/task-templates", taskTemplatesApiRouter);
 api.use("/project-insights", projectInsightsApiRouter);
 api.use("/admin-center", adminCenterApiRouter);
+// Mount analytics before generic /reporting so /reporting/analytics/* is never
+// shadowed by the classic reporting routers.
+api.use("/reporting/analytics", reportingAnalyticsApiRouter);
 api.use("/reporting", reportingApiRouter);
 api.use("/reporting", teamLeadReportingApiRouter);
-api.use("/reporting/analytics", reportingAnalyticsApiRouter);
 api.use("/activity-logs", activityLogsApiRouter);
 api.use("/projects-folders", projectFoldersApiRouter);
 api.use("/task-phases", taskPhasesApiRouter);

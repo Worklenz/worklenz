@@ -11,6 +11,8 @@ export interface PlannedVsActualMilestonesFilters {
   projectIds: string[];
   memberIds: string[];
   teamIds: string[];
+  dateFrom: string;
+  dateTo: string;
   sessionTeamId: string;
 }
 
@@ -58,6 +60,23 @@ function parseCsvIds(value: unknown): string[] {
   return [];
 }
 
+function toDateOnly(value: string | null | undefined, fallback: string): string {
+  if (!value) return fallback;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return fallback;
+  return d.toISOString().slice(0, 10);
+}
+
+function defaultDateRange(): { from: string; to: string } {
+  const to = new Date();
+  const from = new Date();
+  from.setUTCDate(from.getUTCDate() - 30);
+  return {
+    from: from.toISOString().slice(0, 10),
+    to: to.toISOString().slice(0, 10),
+  };
+}
+
 export function parsePlannedVsActualMilestonesFilters(
   query: Record<string, unknown>,
   accessibleProjectIds: string[],
@@ -75,10 +94,27 @@ export function parsePlannedVsActualMilestonesFilters(
     projectIds = projectIds.slice(0, MAX_PROJECTS);
   }
 
+  const defaults = defaultDateRange();
+  let dateFrom = toDateOnly(
+    typeof query.date_from === "string" ? query.date_from : null,
+    defaults.from
+  );
+  let dateTo = toDateOnly(
+    typeof query.date_to === "string" ? query.date_to : null,
+    defaults.to
+  );
+  if (dateFrom > dateTo) {
+    const swap = dateFrom;
+    dateFrom = dateTo;
+    dateTo = swap;
+  }
+
   return {
     projectIds,
     memberIds: parseCsvIds(query.member_ids),
     teamIds: parseCsvIds(query.team_ids),
+    dateFrom,
+    dateTo,
     sessionTeamId,
   };
 }
@@ -88,9 +124,11 @@ function cacheParts(filters: PlannedVsActualMilestonesFilters): Array<string | n
     p: [...filters.projectIds].sort(),
     m: [...filters.memberIds].sort(),
     t: [...filters.teamIds].sort(),
+    df: filters.dateFrom,
+    dt: filters.dateTo,
     st: filters.sessionTeamId,
   });
-  return ["planned-vs-actual-milestones", createHash("sha1").update(payload).digest("hex")];
+  return ["planned-vs-actual-milestones-v2", createHash("sha1").update(payload).digest("hex")];
 }
 
 function round1(n: number): number {
@@ -142,6 +180,17 @@ export async function getPlannedVsActualMilestonesSeries(
     param += 1;
   }
 
+  // Keep milestones whose planned date falls in the selected range.
+  const dateFromParam = param;
+  params.push(filters.dateFrom);
+  param += 1;
+  const dateToParam = param;
+  params.push(filters.dateTo);
+  param += 1;
+  const dateClause = `
+      AND m.target_date::DATE >= $${dateFromParam}::DATE
+      AND m.target_date::DATE <= $${dateToParam}::DATE`;
+
   const q = `
     SELECT
       m.id AS milestone_id,
@@ -165,6 +214,7 @@ export async function getPlannedVsActualMilestonesSeries(
     WHERE m.project_id = ANY($1::UUID[])
       ${memberClause}
       ${teamClause}
+      ${dateClause}
     ORDER BY m.target_date ASC, LOWER(m.name) ASC
     LIMIT ${MAX_MILESTONES}
   `;

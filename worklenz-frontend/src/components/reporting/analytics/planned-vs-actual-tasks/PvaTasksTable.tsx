@@ -3,6 +3,11 @@ import { Table, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
+import {
+  formatVarianceDaysLabel,
+  overdueCountColor,
+  varianceDaysColor,
+} from '@/lib/reporting/analytics-table-value-colors';
 import type { PlannedVsActualTasksRow } from '@/types/reporting/analytics-planned-vs-actual-tasks.types';
 
 const { Text } = Typography;
@@ -11,11 +16,6 @@ interface PvaTasksTableProps {
   projects: PlannedVsActualTasksRow[];
   loading?: boolean;
 }
-
-const formatVariance = (days: number): string => {
-  if (days > 0) return `+${days}`;
-  return String(days);
-};
 
 export const PvaTasksTable: React.FC<PvaTasksTableProps> = ({ projects, loading }) => {
   const { t } = useTranslation('reporting-analytics');
@@ -54,8 +54,9 @@ export const PvaTasksTable: React.FC<PvaTasksTableProps> = ({ projects, loading 
         width: 110,
         align: 'right',
         sorter: (a, b) => a.overdue - b.overdue,
-        render: (value: number) =>
-          value > 0 ? <Text type="danger">{value}</Text> : <Text type="secondary">0</Text>,
+        render: (value: number) => (
+          <Text style={{ color: overdueCountColor(value) }}>{value}</Text>
+        ),
       },
       {
         title: t('pvaTasksColVariance', { defaultValue: 'Variance' }),
@@ -64,29 +65,11 @@ export const PvaTasksTable: React.FC<PvaTasksTableProps> = ({ projects, loading 
         width: 120,
         align: 'right',
         sorter: (a, b) => a.variance_days - b.variance_days,
-        render: (value: number) => {
-          if (value > 0) {
-            return (
-              <Text type="danger">
-                {formatVariance(value)}{' '}
-                {t('pvaTasksDaysUnit', { defaultValue: 'days' })}
-              </Text>
-            );
-          }
-          if (value < 0) {
-            return (
-              <Text type="success">
-                {formatVariance(value)}{' '}
-                {t('pvaTasksDaysUnit', { defaultValue: 'days' })}
-              </Text>
-            );
-          }
-          return (
-            <Text type="secondary">
-              0 {t('pvaTasksDaysUnit', { defaultValue: 'days' })}
-            </Text>
-          );
-        },
+        render: (value: number) => (
+          <Text style={{ color: varianceDaysColor(value) }}>
+            {formatVarianceDaysLabel(value)}
+          </Text>
+        ),
       },
     ],
     [t]

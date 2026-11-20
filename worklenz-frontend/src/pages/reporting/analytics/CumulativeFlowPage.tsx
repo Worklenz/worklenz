@@ -5,13 +5,18 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Flex, message } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { jsPDF } from 'jspdf';
 import { BOUNDED_ANALYTICS_DATE_PRESETS, resolveAnalyticsDateBounds } from '@/utils/date-presets';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { analyticsCfdApiService } from '@/api/reporting/analytics-cfd.api.service';
 import { useAuthService } from '@/hooks/useAuth';
+import {
+  downloadAnalyticsBrandedPdf,
+  resolveAnalyticsPdfLogoUrl,
+} from '@/lib/reporting/analytics-branded-pdf';
+import { buildAnalyticsPdfFilterDetails } from '@/lib/reporting/analytics-pdf-filter-details';
 import {
   AnalyticsFilterBar,
   AnalyticsTemplateActions,
@@ -36,6 +41,7 @@ import {
   getAnalyticsDashboardPermissions,
   resolveAnalyticsActorRole,
 } from '@/lib/reporting/analytics-permissions';
+import { buildAnalyticsScheduleFilters } from '@/lib/reporting/analytics-schedule-filters';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
 import type {
   CfdSeriesFilters,
@@ -61,6 +67,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
 
   const authService = useAuthService();
   const session = authService.getCurrentSession();
+  const teamsList = useAppSelector(state => state.teamReducer.teamsList);
   const permissions = getAnalyticsDashboardPermissions({
     role: resolveAnalyticsActorRole(session),
     userId: session?.id,
@@ -119,12 +126,16 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
     wasRestored: hasRestoredFilters,
-    getFilters: () => ({
-      project_ids: selectedProjectIds,
-      team_ids: selectedTeamIds,
-      date_preset: datePreset,
-      custom_range: customRange,
-    }),
+    getFilters: () =>
+      buildAnalyticsScheduleFilters({
+        selectedProjectIds,
+        projectOptionsCount: projectOptions.length,
+        selectedTeamIds,
+        datePreset,
+        dateFrom: dateBounds.date_from,
+        dateTo: dateBounds.date_to,
+        extra: { custom_range: customRange },
+      }),
   });
 
   const title = (isCustomTemplateView && customTemplateName?.trim()) || baseTitle;
@@ -360,20 +371,60 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
       }
       if (format === 'pdf') {
         const png = chartRef.current?.toPngDataUrl();
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-        doc.setFontSize(16);
-        doc.text(title, 40, 40);
-        doc.setFontSize(11);
-        doc.text(
-          `${t('cfdKpiWip', { defaultValue: 'Current WIP' })}: ${data.indicators.current_wip}  |  ` +
-            `${t('cfdKpiThroughput', { defaultValue: 'Throughput' })}: ${data.indicators.avg_throughput_per_day}`,
-          40,
-          60
-        );
-        if (png) {
-          doc.addImage(png, 'PNG', 40, 80, 720, 360);
-        }
-        doc.save(`cfd-${stamp}.pdf`);
+        await downloadAnalyticsBrandedPdf({
+          title,
+          filename: `cfd-${stamp}.pdf`,
+          logoUrl: resolveAnalyticsPdfLogoUrl(teamsList, session?.team_id),
+          filterDetails: buildAnalyticsPdfFilterDetails({
+            datePreset,
+            customRange,
+            dateFrom: dateBounds.date_from,
+            dateTo: dateBounds.date_to,
+            selectedProjectIds,
+            projectOptionsCount: projectOptions.length,
+            selectedTeamIds,
+          }),
+          chartPngDataUrl: png,
+          chartTitle: baseTitle,
+          tableRows: [
+            ['Date', ...data.statuses.map(status => status.name)],
+            ...data.dates.map((date, index) => [
+              date,
+              ...data.statuses.map(status => {
+                const series = data.series.find(row => row.status_id === status.id);
+                return String(series?.values[index] ?? 0);
+              }),
+            ]),
+          ],
+          kpis: [
+            {
+              label: t('cfdKpiWip', { defaultValue: 'Current WIP' }),
+              value: String(data.indicators.current_wip),
+              tone: '#1890ff',
+            },
+            {
+              label: t('cfdKpiThroughput', { defaultValue: 'Throughput' }),
+              value: String(data.indicators.avg_throughput_per_day),
+              tone: '#52c41a',
+            },
+            {
+              label: t('cfdKpiCycle', { defaultValue: 'Avg cycle time' }),
+              value:
+                data.indicators.avg_cycle_days == null
+                  ? '—'
+                  : String(data.indicators.avg_cycle_days),
+              tone: '#faad14',
+            },
+            {
+              label: t('cfdKpiLead', { defaultValue: 'Avg lead time' }),
+              value:
+                data.indicators.avg_lead_days == null
+                  ? '—'
+                  : String(data.indicators.avg_lead_days),
+              tone: '#722ed1',
+            },
+          ],
+        });
       }
     } catch {
       message.error(t('exportFailed', { defaultValue: 'Export failed' }));
@@ -403,6 +454,21 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
       exportDisabled={!data}
       exportFormats={['csv', 'pdf', 'png', 'svg']}
       exportLoading={exporting}
+      schedule={{
+        reportKind: 'cumulative-flow',
+        reportName: title,
+        templateId: customTemplateId,
+        getFilters: () =>
+      buildAnalyticsScheduleFilters({
+        selectedProjectIds,
+        projectOptionsCount: projectOptions.length,
+        selectedTeamIds,
+        datePreset,
+        dateFrom: dateBounds.date_from,
+        dateTo: dateBounds.date_to,
+        extra: { custom_range: customRange },
+      }),
+      }}
       actions={
         !isCustomTemplateView ? (
           <AnalyticsTemplateActions

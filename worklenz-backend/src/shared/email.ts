@@ -1,5 +1,8 @@
 import { SendEmailCommand, SESClient } from "@aws-sdk/client-ses";
-import { SESv2Client, SendEmailCommand as SendEmailV2Command } from "@aws-sdk/client-sesv2";
+import {
+  SendEmailCommand as SendEmailCommandV2,
+  SESv2Client,
+} from "@aws-sdk/client-sesv2";
 import nodemailer from "nodemailer";
 import addressparser from "nodemailer/lib/addressparser";
 import { encodeWord } from "nodemailer/lib/mime-funcs";
@@ -12,7 +15,12 @@ import emailRequestSchema from "../json_schemas/email-request-schema";
 import db from "../config/db";
 
 const sesClient = new SESClient({ region: process.env.AWS_REGION });
+/** SESv2 is used for attachment sends (Simple content + Attachments maps to ses:SendEmail). */
 const sesV2Client = new SESv2Client({ region: process.env.AWS_REGION });
+
+/** SES raw message limit is 10MB; keep headroom for MIME wrappers. */
+export const MAX_EMAIL_ATTACHMENT_BYTES = 9 * 1024 * 1024;
+export const MAX_EMAIL_ATTACHMENTS = 10;
 
 type EmailProvider = "ses" | "smtp";
 
@@ -110,12 +118,23 @@ function createSmtpTransport() {
   });
 }
 
+export interface IEmailAttachment {
+  /** Display / download filename for the recipient. */
+  filename: string;
+  /** File bytes (Buffer) or utf-8 string content. */
+  content: Buffer | string;
+  /** MIME type, e.g. application/pdf */
+  contentType?: string;
+  /** Optional Content-ID for inline images. */
+  cid?: string;
+}
+
 export interface IEmail {
   to?: string[];
   cc?: string[];
   subject: string;
   html: string;
-  attachments?: { filename: string; content: string | Buffer; contentType: string }[];
+  attachments?: IEmailAttachment[];
 }
 
 export interface IEmailResult {
@@ -132,17 +151,117 @@ export class EmailRequest implements IEmail {
   public readonly html: string;
   public readonly subject: string;
   public readonly to: string[];
+  public readonly attachments?: IEmailAttachment[];
 
-  constructor(toEmails: string[], subject: string, content: string) {
+  constructor(
+    toEmails: string[],
+    subject: string,
+    content: string,
+    attachments?: IEmailAttachment[]
+  ) {
     this.to = toEmails;
     this.subject = subject;
     this.html = content;
+    this.attachments = attachments;
   }
 }
 
 function isValidMailBody(body: IEmail) {
   const validator = new Validator();
-  return validator.validate(body, emailRequestSchema).valid;
+  // Strip binary attachment payloads before JSON-schema validation.
+  const { attachments: _ignored, ...core } = body;
+  const payload =
+    Array.isArray(body.attachments) && body.attachments.length
+      ? { ...core, attachments: body.attachments.map(() => ({})) }
+      : core;
+  return validator.validate(payload, emailRequestSchema).valid;
+}
+
+/** Normalize and validate attachments; returns an error message or null when OK. */
+export function normalizeEmailAttachments(
+  attachments: IEmailAttachment[] | undefined
+): { attachments: IEmailAttachment[]; error?: string } {
+  if (!attachments?.length) return { attachments: [] };
+  if (attachments.length > MAX_EMAIL_ATTACHMENTS) {
+    return {
+      attachments: [],
+      error: `At most ${MAX_EMAIL_ATTACHMENTS} attachments are allowed`,
+    };
+  }
+
+  const normalized: IEmailAttachment[] = [];
+  let totalBytes = 0;
+
+  for (const item of attachments) {
+    if (!item || typeof item.filename !== "string" || !item.filename.trim()) {
+      return { attachments: [], error: "Each attachment requires a filename" };
+    }
+    if (item.content == null) {
+      return {
+        attachments: [],
+        error: `Attachment "${item.filename}" has no content`,
+      };
+    }
+
+    const content =
+      typeof item.content === "string"
+        ? Buffer.from(item.content, "utf8")
+        : Buffer.isBuffer(item.content)
+          ? item.content
+          : null;
+
+    if (!content) {
+      return {
+        attachments: [],
+        error: `Attachment "${item.filename}" content must be a Buffer or string`,
+      };
+    }
+
+    totalBytes += content.byteLength;
+    if (totalBytes > MAX_EMAIL_ATTACHMENT_BYTES) {
+      return {
+        attachments: [],
+        error: `Attachments exceed the ${MAX_EMAIL_ATTACHMENT_BYTES} byte limit`,
+      };
+    }
+
+    normalized.push({
+      filename: item.filename.trim(),
+      content,
+      contentType:
+        typeof item.contentType === "string" && item.contentType.trim()
+          ? item.contentType.trim()
+          : undefined,
+      cid: typeof item.cid === "string" && item.cid.trim() ? item.cid.trim() : undefined,
+    });
+  }
+
+  return { attachments: normalized };
+}
+
+function toNodemailerAttachments(attachments: IEmailAttachment[]) {
+  return attachments.map(a => ({
+    filename: a.filename,
+    content: a.content,
+    contentType: a.contentType,
+    cid: a.cid,
+  }));
+}
+
+/** Maps app attachments to SESv2 Simple.Attachments (IAM action: ses:SendEmail). */
+function toSesV2Attachments(attachments: IEmailAttachment[]) {
+  return attachments.map(a => {
+    const rawContent =
+      typeof a.content === "string" ? Buffer.from(a.content, "utf8") : a.content;
+    return {
+      FileName: a.filename,
+      ...(a.contentType ? { ContentType: a.contentType } : {}),
+      ContentDisposition: a.cid ? ("INLINE" as const) : ("ATTACHMENT" as const),
+      ...(a.cid ? { ContentId: a.cid } : {}),
+      ContentTransferEncoding: "BASE64" as const,
+      RawContent: rawContent,
+    };
+  });
 }
 
 async function removeMails(query: string, emails: string[]) {
@@ -198,6 +317,19 @@ function categorizeError(error: any): {
   message: string;
   details?: any;
 } {
+  if (
+    error.name === "AccessDenied" ||
+    error.Code === "AccessDenied" ||
+    error.$metadata?.httpStatusCode === 403
+  ) {
+    return {
+      code: "SES_ACCESS_DENIED",
+      message:
+        "Amazon SES denied the send. Ensure the IAM identity allows ses:SendEmail (and ses:SendRawEmail if using raw/SMTP).",
+      details: error.message || error.Error?.Message,
+    };
+  }
+
   if (error.name === "MessageRejected") {
     return {
       code: "MESSAGE_REJECTED",
@@ -319,6 +451,19 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
       };
     }
 
+    const attachmentResult = normalizeEmailAttachments(options.attachments);
+    if (attachmentResult.error) {
+      return {
+        success: false,
+        error: {
+          code: "INVALID_ATTACHMENTS",
+          message: attachmentResult.error,
+        },
+      };
+    }
+    const attachments = attachmentResult.attachments;
+    options.attachments = attachments;
+
     const configurationErrors = getEmailConfigurationErrors();
     if (configurationErrors.length) {
       return {
@@ -348,6 +493,12 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
     console.log(`\n📧 Sending email via ${provider.toUpperCase()}...`);
     console.log("To:", options.to.join(", "));
     console.log("Subject:", options.subject);
+    if (attachments.length) {
+      console.log(
+        "Attachments:",
+        attachments.map(a => a.filename).join(", ")
+      );
+    }
 
     const charset = "UTF-8";
     
@@ -368,30 +519,28 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
         subject: options.subject,
         html: options.html,
         text: plainText,
-        attachments: options.attachments,
+        attachments: toNodemailerAttachments(attachments),
       });
       messageId = response.messageId;
-    } else if (options.attachments?.length) {
-      const response = await sesV2Client.send(new SendEmailV2Command({
-        FromEmailAddress: from,
-        Destination: { ToAddresses: options.to, CcAddresses: options.cc },
-        Content: {
-          Simple: {
-            Subject: { Charset: charset, Data: options.subject },
-            Body: {
-              Html: { Charset: charset, Data: options.html },
-              Text: { Charset: charset, Data: plainText },
+    } else if (attachments.length) {
+      // Prefer SESv2 Simple + Attachments so IAM only needs ses:SendEmail
+      // (v1 SendRawEmail is often missing from least-privilege SES policies).
+      const response = await sesV2Client.send(
+        new SendEmailCommandV2({
+          FromEmailAddress: from,
+          Destination: { ToAddresses: options.to },
+          Content: {
+            Simple: {
+              Subject: { Charset: charset, Data: options.subject },
+              Body: {
+                Html: { Charset: charset, Data: options.html },
+                Text: { Charset: charset, Data: plainText },
+              },
+              Attachments: toSesV2Attachments(attachments),
             },
-            Attachments: options.attachments.map(attachment => ({
-              FileName: attachment.filename,
-              ContentType: attachment.contentType,
-              ContentDisposition: "ATTACHMENT",
-              ContentTransferEncoding: "BASE64",
-              RawContent: Buffer.isBuffer(attachment.content) ? attachment.content : Buffer.from(attachment.content, "utf8"),
-            })),
           },
-        },
-      }));
+        })
+      );
       messageId = response.MessageId;
     } else {
       const command = new SendEmailCommand({

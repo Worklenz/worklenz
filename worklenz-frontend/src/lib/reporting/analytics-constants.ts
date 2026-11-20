@@ -7,6 +7,12 @@ export const STATUS_HISTORY_RETENTION_MONTHS = 24;
 export const TEMPLATE_NAME_MAX_LENGTH = 60;
 export const ANALYTICS_NEW_BADGE_DAYS = 30;
 
+/** Keep in sync with backend reporting-analytics.constants schedule caps. */
+export const MAX_ANALYTICS_SCHEDULES_PER_KIND = MAX_VELOCITY_TEMPLATES_PER_USER;
+export const ANALYTICS_REPORT_KIND_COUNT = 10;
+export const MAX_ANALYTICS_SCHEDULES_PER_USER =
+  MAX_ANALYTICS_SCHEDULES_PER_KIND * ANALYTICS_REPORT_KIND_COUNT;
+
 /**
  * Feature launch date for NEW badges (UTC midnight).
  * Bump when shipping analytics to users so the 30-day window restarts.

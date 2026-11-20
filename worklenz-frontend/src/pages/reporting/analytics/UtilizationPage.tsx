@@ -5,7 +5,15 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { jsPDF } from 'jspdf';
+import {
+  downloadAnalyticsBrandedPdf,
+  resolveAnalyticsPdfLogoUrl,
+} from '@/lib/reporting/analytics-branded-pdf';
+import { buildAnalyticsPdfFilterDetails } from '@/lib/reporting/analytics-pdf-filter-details';
+import {
+  utilizationPctColor,
+  utilizationStatusColor,
+} from '@/lib/reporting/analytics-table-value-colors';
 import { BOUNDED_ANALYTICS_DATE_PRESETS, resolveAnalyticsDateBounds } from '@/utils/date-presets';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
@@ -42,6 +50,7 @@ import {
   getAnalyticsDashboardPermissions,
   resolveAnalyticsActorRole,
 } from '@/lib/reporting/analytics-permissions';
+import { buildAnalyticsScheduleFilters } from '@/lib/reporting/analytics-schedule-filters';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
 import type {
   UtilizationFilters,
@@ -73,6 +82,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
     userId: session?.id,
   });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
+  const teamsList = useAppSelector(state => state.teamReducer.teamsList);
 
   const {
     datePreset,
@@ -126,13 +136,17 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
     wasRestored: hasRestoredFilters,
-    getFilters: () => ({
-      project_ids: selectedProjectIds,
-      member_ids: selectedMemberIds,
-      team_ids: selectedTeamIds,
-      date_preset: datePreset,
-      custom_range: customRange,
-    }),
+    getFilters: () =>
+      buildAnalyticsScheduleFilters({
+        selectedProjectIds,
+        projectOptionsCount: projectOptions.length,
+        selectedMemberIds,
+        selectedTeamIds,
+        datePreset,
+        dateFrom: dateBounds.date_from,
+        dateTo: dateBounds.date_to,
+        extra: { custom_range: customRange },
+      }),
   });
 
   const title = (isCustomTemplateView && customTemplateName?.trim()) || baseTitle;
@@ -324,22 +338,65 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
       }
       if (format === 'pdf') {
         const png = chartRef.current?.toPngDataUrl();
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-        doc.setFontSize(16);
-        doc.text(title, 40, 40);
-        doc.setFontSize(11);
-        doc.text(
-          `${t('utilStatAvg', { defaultValue: 'Avg. Utilization' })}: ${data.kpis.avg_utilization_pct}%  |  ` +
-            `${t('utilStatTeamSize', { defaultValue: 'Team Size' })}: ${data.kpis.team_size}  |  ` +
-            `${t('utilStatOverutilized', { defaultValue: 'Overutilized' })}: ${data.kpis.overutilized_count}  |  ` +
-            `${t('utilStatUnderutilized', { defaultValue: 'Underutilized' })}: ${data.kpis.underutilized_count}`,
-          40,
-          60
-        );
-        if (png) {
-          doc.addImage(png, 'PNG', 40, 80, 720, 360);
-        }
-        doc.save(`utilization-${stamp}.pdf`);
+        await downloadAnalyticsBrandedPdf({
+          title,
+          filename: `utilization-${stamp}.pdf`,
+          logoUrl: resolveAnalyticsPdfLogoUrl(teamsList, session?.team_id),
+          filterDetails: buildAnalyticsPdfFilterDetails({
+            datePreset,
+            customRange,
+            dateFrom: dateBounds.date_from,
+            dateTo: dateBounds.date_to,
+            selectedProjectIds,
+            projectOptionsCount: projectOptions.length,
+            selectedTeamIds,
+            selectedMemberIds,
+          }),
+          chartPngDataUrl: png,
+          chartTitle: baseTitle,
+          tableRows: [
+            ['Member', 'Capacity', 'Logged', 'Utilization %', 'Status'],
+            ...data.members.map(row => [
+              row.member_name,
+              String(row.capacity_hours),
+              String(row.logged_hours),
+              String(row.utilization_pct),
+              row.status,
+            ]),
+          ],
+          tableCellColors: [
+            [null, null, null, null, null],
+            ...data.members.map(row => [
+              null,
+              null,
+              null,
+              utilizationPctColor(row.utilization_pct),
+              utilizationStatusColor(row.status),
+            ]),
+          ],
+          kpis: [
+            {
+              label: t('utilStatAvg', { defaultValue: 'Avg. Utilization' }),
+              value: `${data.kpis.avg_utilization_pct}%`,
+              tone: '#1890ff',
+            },
+            {
+              label: t('utilStatTeamSize', { defaultValue: 'Team Size' }),
+              value: String(data.kpis.team_size),
+              tone: '#722ed1',
+            },
+            {
+              label: t('utilStatOverutilized', { defaultValue: 'Overutilized' }),
+              value: String(data.kpis.overutilized_count),
+              tone: '#ff4d4f',
+            },
+            {
+              label: t('utilStatUnderutilized', { defaultValue: 'Underutilized' }),
+              value: String(data.kpis.underutilized_count),
+              tone: '#faad14',
+            },
+          ],
+        });
       }
     } catch {
       message.error(t('exportFailed', { defaultValue: 'Export failed' }));
@@ -412,6 +469,22 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
       onExport={handleExport}
       exportLoading={exporting}
       exportDisabled={!data || data.members.length === 0}
+      schedule={{
+        reportKind: 'utilization',
+        reportName: title,
+        templateId: customTemplateId,
+        getFilters: () =>
+      buildAnalyticsScheduleFilters({
+        selectedProjectIds,
+        projectOptionsCount: projectOptions.length,
+        selectedMemberIds,
+        selectedTeamIds,
+        datePreset,
+        dateFrom: dateBounds.date_from,
+        dateTo: dateBounds.date_to,
+        extra: { custom_range: customRange },
+      }),
+      }}
       actions={
         !isCustomTemplateView ? (
           <AnalyticsTemplateActions

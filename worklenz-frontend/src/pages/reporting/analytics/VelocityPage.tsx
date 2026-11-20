@@ -12,7 +12,11 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { jsPDF } from 'jspdf';
+import {
+  downloadAnalyticsBrandedPdf,
+  resolveAnalyticsPdfLogoUrl,
+} from '@/lib/reporting/analytics-branded-pdf';
+import { buildAnalyticsPdfFilterDetails } from '@/lib/reporting/analytics-pdf-filter-details';
 import { resolveAnalyticsDateBounds } from '@/utils/date-presets';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -49,6 +53,7 @@ import {
   getAnalyticsDashboardPermissions,
   resolveAnalyticsActorRole,
 } from '@/lib/reporting/analytics-permissions';
+import { buildAnalyticsScheduleFilters } from '@/lib/reporting/analytics-schedule-filters';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
 import type {
   AnalyticsReportTemplate,
@@ -88,6 +93,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
     userId: session?.id,
   });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
+  const teamsList = useAppSelector(state => state.teamReducer.teamsList);
 
   const {
     datePreset,
@@ -405,22 +411,60 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       }
       if (format === 'pdf') {
         const png = chartRef.current?.toPngDataUrl();
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-        doc.setFontSize(16);
-        doc.text(title, 40, 40);
-        doc.setFontSize(11);
-        doc.text(
-          t('kpiAvgVelocity', { defaultValue: 'Avg velocity' }) +
-            `: ${data.kpis.avg_velocity}  |  ` +
-            t('kpiCommitment', { defaultValue: 'Commitment accuracy' }) +
-            `: ${data.kpis.commitment_accuracy_pct ?? '\u2014'}%`,
-          40,
-          60
-        );
-        if (png) {
-          doc.addImage(png, 'PNG', 40, 80, 720, 360);
-        }
-        doc.save(`velocity-${stamp}.pdf`);
+        await downloadAnalyticsBrandedPdf({
+          title,
+          filename: `velocity-${stamp}.pdf`,
+          logoUrl: resolveAnalyticsPdfLogoUrl(teamsList, session?.team_id),
+          filterDetails: buildAnalyticsPdfFilterDetails({
+            datePreset,
+            customRange,
+            dateFrom: dateBounds.date_from,
+            dateTo: dateBounds.date_to,
+            selectedProjectIds,
+            projectOptionsCount: projectOptions.length,
+            selectedTeamIds,
+            selectedMemberIds,
+          }),
+          chartPngDataUrl: png,
+          chartTitle: t('velocity', { defaultValue: 'Velocity' }),
+          tableRows: [
+            ['Sprint', 'Committed', 'Completed', 'Commitment %'],
+            ...data.series.map(point => [
+              point.sprint_name,
+              String(point.committed),
+              String(point.completed),
+              point.commitment_accuracy == null ? '' : String(point.commitment_accuracy),
+            ]),
+          ],
+          kpis: [
+            {
+              label: t('kpiAvgVelocity', { defaultValue: 'Avg velocity' }),
+              value: String(data.kpis.avg_velocity),
+              tone: '#1890ff',
+            },
+            {
+              label: t('kpiCommitment', { defaultValue: 'Commitment accuracy' }),
+              value:
+                data.kpis.commitment_accuracy_pct == null
+                  ? '—'
+                  : `${data.kpis.commitment_accuracy_pct}%`,
+              tone: '#faad14',
+            },
+            {
+              label: t('kpiLastSprint', { defaultValue: 'Last sprint' }),
+              value:
+                data.kpis.last_sprint_velocity == null
+                  ? '—'
+                  : String(data.kpis.last_sprint_velocity),
+              tone: '#52c41a',
+            },
+            {
+              label: t('kpiSprints', { defaultValue: 'Sprints' }),
+              value: String(data.kpis.completed_sprint_count),
+              tone: '#722ed1',
+            },
+          ],
+        });
         return;
       }
       if (format === 'csv') {
@@ -496,6 +540,22 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       exportDisabled={!data || !hasProjectSelection}
       exportFormats={['excel', 'pdf', 'png', 'svg', 'csv']}
       exportLoading={exporting}
+      schedule={{
+        reportKind: 'velocity',
+        reportName: title,
+        templateId: customTemplateId,
+        getFilters: () =>
+          buildAnalyticsScheduleFilters({
+            selectedProjectIds,
+            projectOptionsCount: projectOptions.length,
+            selectedMemberIds,
+            selectedTeamIds,
+            datePreset,
+            dateFrom: dateBounds.date_from,
+            dateTo: dateBounds.date_to,
+            extra: { custom_range: customRange },
+          }),
+      }}
       actions={
         isCustomTemplateView ? undefined : (
           <AnalyticsTemplateActions

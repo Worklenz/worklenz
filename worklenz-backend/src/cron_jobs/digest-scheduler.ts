@@ -1,4 +1,5 @@
 import { CronJob } from "cron";
+import type { PoolClient } from "pg";
 import moment from "moment-timezone";
 import db from "../config/db";
 import { log_error } from "../shared/utils";
@@ -301,11 +302,14 @@ export async function onDigestSchedulerTick(): Promise<void> {
     return;
   }
 
+  // Keep acquire + release on the same pooled client (session advisory lock).
   let hasLock = false;
+  let lockClient: PoolClient | null = null;
   isRunning = true;
 
   try {
-    const lockResult = await db.query(
+    lockClient = await db.connect();
+    const lockResult = await lockClient.query(
       "SELECT pg_try_advisory_lock(hashtext($1)) AS locked;",
       [LOCK_KEY]
     );
@@ -375,13 +379,14 @@ export async function onDigestSchedulerTick(): Promise<void> {
   } catch (error) {
     log_error(error);
   } finally {
-    if (hasLock) {
+    if (hasLock && lockClient) {
       try {
-        await db.query("SELECT pg_advisory_unlock(hashtext($1));", [LOCK_KEY]);
+        await lockClient.query("SELECT pg_advisory_unlock(hashtext($1));", [LOCK_KEY]);
       } catch (err) {
         log_error(err);
       }
     }
+    lockClient?.release();
     isRunning = false;
   }
 }

@@ -15,6 +15,7 @@ import UtilizationController from "../../controllers/reporting-analytics/utiliza
 import TimeReportController from "../../controllers/reporting-analytics/time-report-controller";
 import BudgetTrackingController from "../../controllers/reporting-analytics/budget-tracking-controller";
 import AnalyticsTemplatesController from "../../controllers/reporting-analytics/analytics-templates-controller";
+import AnalyticsSchedulesController from "../../controllers/reporting-analytics/analytics-schedules-controller";
 import { requireFeature } from "../../shared/entitlements/gates";
 
 import {
@@ -321,6 +322,49 @@ router.post(
   requireAnalyticsAccess,
   requireFeature("advanced_reporting"),
   safeControllerFunction(AnalyticsTemplatesController.setShare)
+);
+
+// —— Report schedules (email cadence; live export at send time) ——
+router.get(
+  "/schedules",
+  requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
+  safeControllerFunction(AnalyticsSchedulesController.list)
+);
+
+router.get(
+  "/schedules/by-report",
+  requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
+  safeControllerFunction(AnalyticsSchedulesController.getByReport)
+);
+
+router.post(
+  "/schedules",
+  requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
+  safeControllerFunction(AnalyticsSchedulesController.upsert)
+);
+
+router.patch(
+  "/schedules/:id",
+  requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
+  safeControllerFunction(AnalyticsSchedulesController.update)
+);
+
+router.post(
+  "/schedules/:id/pause",
+  requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
+  safeControllerFunction(AnalyticsSchedulesController.setPaused)
+);
+
+router.delete(
+  "/schedules/:id",
+  requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
+  safeControllerFunction(AnalyticsSchedulesController.remove)
 );
 
 export default router;

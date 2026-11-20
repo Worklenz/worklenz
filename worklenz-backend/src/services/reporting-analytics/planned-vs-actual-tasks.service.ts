@@ -6,11 +6,14 @@ import {
   withLastUpdated,
 } from "../../redis/analytics-cache";
 import { sanitizeCsvFormulaValue } from "../../shared/csv-utils";
+import { formatVarianceDaysLabel } from "./analytics-table-cell-colors";
 
 export interface PlannedVsActualTasksFilters {
   projectIds: string[];
   memberIds: string[];
   teamIds: string[];
+  dateFrom: string;
+  dateTo: string;
   sessionTeamId: string;
 }
 
@@ -57,6 +60,23 @@ function parseCsvIds(value: unknown): string[] {
   return [];
 }
 
+function toDateOnly(value: string | null | undefined, fallback: string): string {
+  if (!value) return fallback;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return fallback;
+  return d.toISOString().slice(0, 10);
+}
+
+function defaultDateRange(): { from: string; to: string } {
+  const to = new Date();
+  const from = new Date();
+  from.setUTCDate(from.getUTCDate() - 30);
+  return {
+    from: from.toISOString().slice(0, 10),
+    to: to.toISOString().slice(0, 10),
+  };
+}
+
 export function parsePlannedVsActualTasksFilters(
   query: Record<string, unknown>,
   accessibleProjectIds: string[],
@@ -74,10 +94,27 @@ export function parsePlannedVsActualTasksFilters(
     projectIds = projectIds.slice(0, MAX_PROJECTS);
   }
 
+  const defaults = defaultDateRange();
+  let dateFrom = toDateOnly(
+    typeof query.date_from === "string" ? query.date_from : null,
+    defaults.from
+  );
+  let dateTo = toDateOnly(
+    typeof query.date_to === "string" ? query.date_to : null,
+    defaults.to
+  );
+  if (dateFrom > dateTo) {
+    const swap = dateFrom;
+    dateFrom = dateTo;
+    dateTo = swap;
+  }
+
   return {
     projectIds,
     memberIds: parseCsvIds(query.member_ids),
     teamIds: parseCsvIds(query.team_ids),
+    dateFrom,
+    dateTo,
     sessionTeamId,
   };
 }
@@ -87,9 +124,11 @@ function cacheParts(filters: PlannedVsActualTasksFilters): Array<string | number
     p: [...filters.projectIds].sort(),
     m: [...filters.memberIds].sort(),
     t: [...filters.teamIds].sort(),
+    df: filters.dateFrom,
+    dt: filters.dateTo,
     st: filters.sessionTeamId,
   });
-  return ["planned-vs-actual-tasks", createHash("sha1").update(payload).digest("hex")];
+  return ["planned-vs-actual-tasks-v2", createHash("sha1").update(payload).digest("hex")];
 }
 
 function round1(n: number): number {
@@ -147,6 +186,18 @@ export async function getPlannedVsActualTasksSeries(
     param += 1;
   }
 
+  // Keep projects whose effective span overlaps the selected range.
+  // Effective start = start_date ?? created_at; effective end = end_date ?? updated_at.
+  const dateFromParam = param;
+  params.push(filters.dateFrom);
+  param += 1;
+  const dateToParam = param;
+  params.push(filters.dateTo);
+  param += 1;
+  const dateClause = `
+      AND COALESCE(p.start_date::DATE, p.created_at::DATE) <= $${dateToParam}::DATE
+      AND COALESCE(p.end_date::DATE, p.updated_at::DATE) >= $${dateFromParam}::DATE`;
+
   const q = `
     SELECT
       p.id AS project_id,
@@ -196,6 +247,7 @@ export async function getPlannedVsActualTasksSeries(
     WHERE p.id = ANY($1::UUID[])
       ${memberClause}
       ${teamClause}
+      ${dateClause}
     ORDER BY LOWER(p.name) ASC
   `;
 
@@ -239,7 +291,7 @@ export async function getPlannedVsActualTasksSeries(
 }
 
 export function buildPlannedVsActualTasksCsv(result: PlannedVsActualTasksResult): string {
-  const header = ["Project", "Planned tasks", "Completed", "Overdue", "Variance (days)"];
+  const header = ["Project", "Planned tasks", "Completed", "Overdue", "Variance"];
   const lines = [header.join(",")];
   for (const row of result.projects) {
     const cells = [
@@ -247,7 +299,7 @@ export function buildPlannedVsActualTasksCsv(result: PlannedVsActualTasksResult)
       String(row.planned),
       String(row.completed),
       String(row.overdue),
-      String(row.variance_days),
+      csvEscape(formatVarianceDaysLabel(row.variance_days)),
     ];
     lines.push(cells.join(","));
   }

@@ -3,6 +3,7 @@ import { Avatar, Flex, Table, Tag, Typography, theme } from '@/shared/antd-impor
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
+import { utilizationPctColor } from '@/lib/reporting/analytics-table-value-colors';
 import type {
   UtilizationMemberRow,
   UtilizationStatus,
@@ -15,16 +16,10 @@ interface UtilizationTableProps {
   loading?: boolean;
 }
 
-const statusColor = (status: UtilizationStatus): string => {
+const statusTagColor = (status: UtilizationStatus): string => {
   if (status === 'over') return 'error';
   if (status === 'optimal') return 'success';
   return 'warning';
-};
-
-const utilizationStroke = (pct: number): string => {
-  if (pct > 100) return '#ff4d4f';
-  if (pct > 80) return '#52c41a';
-  return '#faad14';
 };
 
 const fmtHours = (value: number): string => `${Number(value.toFixed(1))}h`;
@@ -92,7 +87,7 @@ export const UtilizationTable: React.FC<UtilizationTableProps> = ({ members, loa
         align: 'right',
         sorter: (a, b) => a.utilization_pct - b.utilization_pct,
         render: (pct: number) => (
-          <Text style={{ color: utilizationStroke(pct) }}>{pct}%</Text>
+          <Text style={{ color: utilizationPctColor(pct) }}>{pct}%</Text>
         ),
       },
       {
@@ -101,10 +96,14 @@ export const UtilizationTable: React.FC<UtilizationTableProps> = ({ members, loa
         key: 'status',
         width: 120,
         render: (status: UtilizationStatus) => (
-          <Tag color={statusColor(status)}>
+          <Tag color={statusTagColor(status)}>
             {t(`utilStatus.${status}`, {
               defaultValue:
-                status === 'over' ? 'Overutilized' : status === 'optimal' ? 'Optimal' : 'Underutilized',
+                status === 'over'
+                  ? 'Overutilized'
+                  : status === 'optimal'
+                    ? 'Optimal'
+                    : 'Underutilized',
             })}
           </Tag>
         ),

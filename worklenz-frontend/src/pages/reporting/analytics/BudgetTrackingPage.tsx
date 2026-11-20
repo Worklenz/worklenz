@@ -6,7 +6,16 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { jsPDF } from 'jspdf';
+import {
+  downloadAnalyticsBrandedPdf,
+  resolveAnalyticsPdfLogoUrl,
+} from '@/lib/reporting/analytics-branded-pdf';
+import { buildAnalyticsPdfFilterDetails } from '@/lib/reporting/analytics-pdf-filter-details';
+import {
+  budgetBurnPctColor,
+  budgetRemainingColor,
+  budgetSpentColor,
+} from '@/lib/reporting/analytics-table-value-colors';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -37,7 +46,6 @@ import {
   usePersistedAnalyticsFilters,
 } from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
-import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import {
   getAnalyticsDashboardPermissions,
   resolveAnalyticsActorRole,
@@ -48,7 +56,9 @@ import {
   latestUpdatedProjectIds,
   projectsForAnalyticsChart,
 } from '@/lib/reporting/analytics-chart-projects';
+import { buildAnalyticsScheduleFilters } from '@/lib/reporting/analytics-schedule-filters';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
+import { BOUNDED_ANALYTICS_DATE_PRESETS, resolveAnalyticsDateBounds } from '@/utils/date-presets';
 import type {
   BudgetTrackingFilters,
   BudgetTrackingSeriesResponse,
@@ -85,8 +95,12 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
     userId: session?.id,
   });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
+  const teamsList = useAppSelector(state => state.teamReducer.teamsList);
 
   const {
+    datePreset,
+    customRange,
+    setDateFilter,
     selectedProjectIds,
     setSelectedProjectIds,
     setAutomaticProjectIds,
@@ -119,8 +133,14 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
       setSelectedProjectIds,
       setSelectedMemberIds,
       setSelectedTeamIds,
+      setDateFilter,
     });
-  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds]);
+  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds, setDateFilter]);
+
+  const dateBounds = useMemo(
+    () => resolveAnalyticsDateBounds(datePreset, customRange),
+    [datePreset, customRange]
+  );
 
   const {
     templates,
@@ -137,11 +157,17 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
     wasRestored: hasRestoredFilters,
-    getFilters: () => ({
-      project_ids: selectedProjectIds,
-      member_ids: selectedMemberIds,
-      team_ids: selectedTeamIds,
-    }),
+    getFilters: () =>
+      buildAnalyticsScheduleFilters({
+        selectedProjectIds,
+        projectOptionsCount: projectOptions.length,
+        selectedMemberIds,
+        selectedTeamIds,
+        datePreset,
+        dateFrom: dateBounds.date_from,
+        dateTo: dateBounds.date_to,
+        extra: { custom_range: customRange },
+      }),
   });
 
   const title = (isCustomTemplateView && customTemplateName?.trim()) || baseTitle;
@@ -162,13 +188,17 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
     return id ? [id] : [];
   }, [session?.team_id, teamOptions]);
 
+  // Date range keeps projects whose effective span overlaps the selected range
+  // (start_date ?? created_at → end_date ?? updated_at).
   const filters: BudgetTrackingFilters = useMemo(
     () => ({
       project_ids: selectedProjectIds,
       team_ids: selectedTeamIds,
       member_ids: selectedMemberIds,
+      date_from: dateBounds.date_from,
+      date_to: dateBounds.date_to,
     }),
-    [selectedProjectIds, selectedTeamIds, selectedMemberIds]
+    [selectedProjectIds, selectedTeamIds, selectedMemberIds, dateBounds]
   );
 
   const seriesRequestKey = JSON.stringify([projectOptionsScope, filters]);
@@ -368,22 +398,81 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
       }
       if (format === 'pdf') {
         const png = chartRef.current?.toPngDataUrl();
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-        doc.setFontSize(16);
-        doc.text(title, 40, 40);
-        doc.setFontSize(11);
-        doc.text(
-          `${t('btStatTotalBudget', { defaultValue: 'Total budget' })}: ${fmtMoney(data.kpis.total_budget, displayCurrency)}  |  ` +
-            `${t('btStatSpent', { defaultValue: 'Spent' })}: ${fmtMoney(data.kpis.spent, displayCurrency)}  |  ` +
-            `${t('btStatRemaining', { defaultValue: 'Remaining' })}: ${fmtMoney(data.kpis.remaining, displayCurrency)}  |  ` +
-            `${t('btStatOverBudget', { defaultValue: 'Over budget' })}: ${data.kpis.over_budget_count}`,
-          40,
-          60
-        );
-        if (png) {
-          doc.addImage(png, 'PNG', 40, 80, 720, 360);
-        }
-        doc.save(`budget-tracking-${stamp}.pdf`);
+        await downloadAnalyticsBrandedPdf({
+          title,
+          filename: `budget-tracking-${stamp}.pdf`,
+          logoUrl: resolveAnalyticsPdfLogoUrl(teamsList, session?.team_id),
+          filterDetails: buildAnalyticsPdfFilterDetails({
+            datePreset,
+            customRange,
+            dateFrom: dateBounds.date_from,
+            dateTo: dateBounds.date_to,
+            selectedProjectIds,
+            projectOptionsCount: projectOptions.length,
+            selectedTeamIds,
+            selectedMemberIds,
+          }),
+          chartPngDataUrl: png,
+          chartTitle: baseTitle,
+          tableRows: [
+            ['Project', 'Budget', 'Spent', 'Remaining', 'Burn %'],
+            ...data.projects.map(row => [
+              row.project_name,
+              String(row.budget),
+              String(row.spent),
+              String(row.remaining),
+              String(row.burn_pct),
+            ]),
+          ],
+          tableCellColors: [
+            [null, null, null, null, null],
+            ...data.projects.map(row =>
+              row.has_budget
+                ? [
+                    null,
+                    null,
+                    budgetSpentColor(row.burn_pct),
+                    budgetRemainingColor(row.remaining),
+                    budgetBurnPctColor(row.burn_pct),
+                  ]
+                : [null, null, null, null, null]
+            ),
+          ],
+          kpis: [
+            {
+              label: t('btStatTotalBudget', { defaultValue: 'Total budget' }),
+              value: fmtMoney(data.kpis.total_budget, displayCurrency),
+              sub: t('btStatTotalBudgetSub', {
+                defaultValue: 'across projects with a budget',
+              }),
+              tone: '#1890ff',
+            },
+            {
+              label: t('btStatSpent', { defaultValue: 'Spent' }),
+              value: fmtMoney(data.kpis.spent, displayCurrency),
+              sub: t('btStatSpentSub', {
+                defaultValue: '{{pct}}% of budget used',
+                pct: data.kpis.utilization_pct,
+              }),
+              tone: '#faad14',
+            },
+            {
+              label: t('btStatRemaining', { defaultValue: 'Remaining' }),
+              value: fmtMoney(data.kpis.remaining, displayCurrency),
+              sub: t('statProjects', { defaultValue: 'projects' }),
+              tone: data.kpis.remaining < 0 ? '#ff4d4f' : '#52c41a',
+            },
+            {
+              label: t('btStatOverBudget', { defaultValue: 'Over budget' }),
+              value: String(data.kpis.over_budget_count),
+              sub:
+                data.kpis.over_budget_count > 0
+                  ? t('btStatOverBudgetSub', { defaultValue: 'projects over budget' })
+                  : t('statProjects', { defaultValue: 'projects' }),
+              tone: data.kpis.over_budget_count > 0 ? '#ff4d4f' : '#52c41a',
+            },
+          ],
+        });
       }
     } catch {
       message.error(t('exportFailed', { defaultValue: 'Export failed' }));
@@ -420,6 +509,10 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
         selectedTeamIds={selectedTeamIds}
         onTeamsChange={setSelectedTeamIds}
         defaultTeamIds={defaultTeamIds}
+        datePreset={datePreset}
+        customRange={customRange}
+        onDateChange={setDateFilter}
+        availableDatePresets={BOUNDED_ANALYTICS_DATE_PRESETS}
         loading={filtersLoading}
       />
     </Flex>
@@ -484,6 +577,22 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
       onExport={handleExport}
       exportLoading={exporting}
       exportDisabled={!data || data.projects.length === 0}
+      schedule={{
+        reportKind: 'budget-tracking',
+        reportName: title,
+        templateId: customTemplateId,
+        getFilters: () =>
+          buildAnalyticsScheduleFilters({
+            selectedProjectIds,
+            projectOptionsCount: projectOptions.length,
+            selectedMemberIds,
+            selectedTeamIds,
+            datePreset,
+            dateFrom: dateBounds.date_from,
+            dateTo: dateBounds.date_to,
+            extra: { custom_range: customRange },
+          }),
+      }}
       actions={
         !isCustomTemplateView ? (
           <AnalyticsTemplateActions
