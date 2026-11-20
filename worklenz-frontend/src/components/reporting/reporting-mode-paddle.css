@@ -57,7 +57,7 @@
 
 .reporting-mode-paddle-segmented .ant-segmented-item-selected {
   color: #ffffff;
-  background: #176dbe;
+  background: var(--reporting-mode-primary, #1890ff);
   font-weight: 500;
   border-radius: 5px;
   box-shadow: none;

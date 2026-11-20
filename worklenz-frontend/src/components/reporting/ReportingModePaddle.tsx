@@ -167,7 +167,10 @@ export const ReportingModePaddle: React.FC<ReportingModePaddleProps> = ({
       <Segmented
         className="reporting-mode-paddle-segmented"
         block
-        style={FILTER_PILL_CONTROL_STYLE}
+        style={{
+          ...FILTER_PILL_CONTROL_STYLE,
+          '--reporting-mode-primary': token.colorPrimary,
+        } as React.CSSProperties}
         value={mode}
         options={options}
         onChange={value => goToMode(value as ReportingMode)}
