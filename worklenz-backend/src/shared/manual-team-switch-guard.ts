@@ -58,7 +58,6 @@ export async function isAutoTeamSwitchSuppressed(userId: string): Promise<boolea
         if (Number.isFinite(until) && Date.now() < until) {
           return true;
         }
-        return false;
       }
     }
   } catch {

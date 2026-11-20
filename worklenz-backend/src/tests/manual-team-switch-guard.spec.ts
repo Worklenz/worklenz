@@ -7,6 +7,7 @@ jest.mock("../redis/client", () => ({
   },
 }));
 
+import { redisClient } from "../redis/client";
 import {
   clearAutoTeamSwitchSuppressions,
   isAutoTeamSwitchSuppressed,
@@ -20,6 +21,16 @@ describe("manual-team-switch-guard", () => {
 
   afterEach(async () => {
     await clearAutoTeamSwitchSuppressions();
+  });
+
+  it("uses the renewed local deadline when Redis still holds an expired one", async () => {
+    await suppressAutoTeamSwitch("user-1", 60_000);
+    const redis = redisClient as unknown as { isOpen: boolean; get: jest.Mock; del: jest.Mock };
+    redis.isOpen = true;
+    redis.get.mockResolvedValue(String(Date.now() - 1));
+    redis.del.mockResolvedValue(1);
+    expect(await isAutoTeamSwitchSuppressed("user-1")).toBe(true);
+    redis.isOpen = false;
   });
 
   it("suppresses auto team switch until cleared", async () => {
