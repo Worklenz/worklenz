@@ -25,8 +25,11 @@ function sendScheduleError(res: IWorkLenzResponse, error: unknown): IWorkLenzRes
   return null;
 }
 
-function parseFormats(body: Record<string, unknown>): AnalyticsScheduleFormat[] {
-  if (Array.isArray(body.formats)) {
+export function parseFormats(body: Record<string, unknown>): AnalyticsScheduleFormat[] {
+  if (Object.prototype.hasOwnProperty.call(body, "formats")) {
+    if (!Array.isArray(body.formats)) {
+      throw new ScheduleServiceError("Formats must be an array", 400);
+    }
     return body.formats.map(v => String(v)) as AnalyticsScheduleFormat[];
   }
   // Backward compatible: single `format` field.

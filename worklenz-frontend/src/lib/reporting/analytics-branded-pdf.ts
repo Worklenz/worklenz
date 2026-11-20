@@ -315,7 +315,7 @@ function drawTable(
   if (!rows.length) return;
 
   const header = rows[0] || [];
-  const body = rows.slice(1, 101);
+  const body = rows.slice(1);
   const colCount = Math.max(header.length, 1);
   const tableWidth = PAGE.width - PAGE.marginX * 2;
   const colW = tableWidth / colCount;
