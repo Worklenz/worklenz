@@ -21,6 +21,10 @@ import TrelloProvider from "../services/import-providers/trello-provider";
 import MondayProvider from "../services/import-providers/monday-provider";
 import { canUseFeature } from "../shared/entitlements/gates";
 
+const isCsvImport = (provider: unknown, flowType: unknown): boolean =>
+  (typeof provider === "string" && provider.toLowerCase() === "csv") ||
+  (typeof flowType === "string" && flowType.toLowerCase() === "csv");
+
 const autoHierarchyTemplate = [
   { source_level: "Section", target_level: "Status", position: 1 },
   { source_level: "Task", target_level: "Task", position: 2 },
@@ -211,7 +215,7 @@ export default class ImportsController {
       const createdBy = this.getUserId(req);
       if (!provider || !flowType)
         throw createHttpError(400, "provider and flowType are required");
-      if ((provider === "csv" || flowType === "csv") && !canUseFeature(req.user, "csv_import"))
+      if (isCsvImport(provider, flowType) && !canUseFeature(req.user, "csv_import"))
         throw createHttpError(403, "CSV import requires a Pro plan");
       const job = await ImportsService.createJob({
         provider,
@@ -615,7 +619,7 @@ export default class ImportsController {
     async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
       const userId = this.getUserId(req);
       const job = await this.assertJob(req.params.jobId, userId);
-      if ((job.provider === "csv" || job.flow_type === "csv") && !canUseFeature(req.user, "csv_import"))
+      if (isCsvImport(job.provider, job.flow_type) && !canUseFeature(req.user, "csv_import"))
         throw createHttpError(403, "CSV import requires a Pro plan");
       const body = req.body || {};
 
@@ -670,7 +674,7 @@ export default class ImportsController {
     async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
       const userId = this.getUserId(req);
       const job = await this.assertJob(req.params.jobId, userId);
-      if ((job.provider === "csv" || job.flow_type === "csv") && !canUseFeature(req.user, "csv_import"))
+      if (isCsvImport(job.provider, job.flow_type) && !canUseFeature(req.user, "csv_import"))
         throw createHttpError(403, "CSV import requires a Pro plan");
 
       // Run the commit pipeline asynchronously to avoid request timeouts for large imports.
