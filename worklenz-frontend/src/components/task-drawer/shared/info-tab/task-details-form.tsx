@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import {
   ConfigProvider,
   Flex,
@@ -91,6 +91,11 @@ const ConditionalProgressInput = ({ task, form }: ConditionalProgressInputProps)
 
 const TaskDetailsForm = ({ taskFormViewModel = null, canCreateTask = true, isGuest = false }: TaskDetailsFormProps) => {
   const { t } = useTranslation('task-drawer/task-drawer');
+  const notifyTooltipId = useId();
+  const notifyTooltipText = t('taskInfoTab.details.notify-tooltip', {
+    defaultValue:
+      'Selected members will receive an email notification when this task is marked as Done.',
+  });
   const [form] = Form.useForm();
   const { project } = useAppSelector(state => state.projectReducer);
   const isSoftwareProject = isSoftwareProjectType(project?.project_type);
@@ -270,16 +275,39 @@ const TaskDetailsForm = ({ taskFormViewModel = null, canCreateTask = true, isGue
           label={
             <Flex align="center" gap={6}>
               <span>{t('taskInfoTab.details.notify', { defaultValue: 'Notify' })}</span>
+
               <Tooltip
-                title={t('taskInfoTab.details.notify-tooltip', {
-                  defaultValue:
-                    'Selected members will receive an email notification when this task is marked as Done.',
-                })}
+                trigger={['hover', 'focus']}
+                title={notifyTooltipText}
               >
-                <Typography.Text type="secondary">
+                <Typography.Text
+                  type="secondary"
+                  tabIndex={0}
+                  aria-label={t('taskInfoTab.details.notify', {
+                    defaultValue: 'Notify',
+                  })}
+                  aria-describedby={notifyTooltipId}
+                >
                   <InfoCircleOutlined />
                 </Typography.Text>
               </Tooltip>
+
+              <span
+                id={notifyTooltipId}
+                style={{
+                  position: 'absolute',
+                  width: 1,
+                  height: 1,
+                  padding: 0,
+                  margin: -1,
+                  overflow: 'hidden',
+                  clip: 'rect(0, 0, 0, 0)',
+                  whiteSpace: 'nowrap',
+                  border: 0,
+                }}
+              >
+                {notifyTooltipText}
+              </span>
             </Flex>
           }
         >
