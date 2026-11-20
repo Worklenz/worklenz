@@ -239,7 +239,7 @@
       "projectStartDateHint": "项目开始日期：{{date}}"
     },
     "rollupLoggedTooltip": "子任务的登录时间总和",
-    "moveToProject": "?????"
+    "moveToProject": "移至项目"
   },
   "taskActivityLogTab": {
     "title": "活动日志",
@@ -292,5 +292,5 @@
   },
   "today": "今天",
   "yesterday": "昨天",
-  "more": "????"
+  "more": "更多选项"
 }

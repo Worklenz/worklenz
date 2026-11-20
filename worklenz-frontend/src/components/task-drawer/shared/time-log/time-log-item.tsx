@@ -4,7 +4,7 @@ import {
   Button,
   Divider,
   Flex,
-  Popconfirm,
+  Modal,
   Typography,
   Dropdown,
   MoreOutlined,
@@ -29,6 +29,7 @@ type TimeLogItemProps = {
 
 const TimeLogItem = ({ log, onDelete, isGuest = false }: TimeLogItemProps) => {
   const { t } = useTranslation('task-drawer/task-drawer');
+  const [modal, contextHolder] = Modal.useModal();
   const {
     user_name,
     avatar_url,
@@ -124,26 +125,8 @@ const TimeLogItem = ({ log, onDelete, isGuest = false }: TimeLogItemProps) => {
             },
             {
               key: 'delete',
-              label: (
-                <Popconfirm
-                  title={t('taskTimeLogTab.confirmDelete', {
-                    defaultValue: 'Are you sure you want to delete this time log?',
-                  })}
-                  onConfirm={handleDeleteTimeLog}
-                  okText={t('taskTimeLogTab.confirmDeleteYes', {
-                    defaultValue: 'Yes',
-                  })}
-                  cancelText={t('taskTimeLogTab.confirmDeleteNo', {
-                    defaultValue: 'No',
-                  })}
-                >
-                  <span>
-                    {t('taskTimeLogTab.delete', {
-                      defaultValue: 'Delete',
-                    })}
-                  </span>
-                </Popconfirm>
-              ),
+              danger: true,
+              label: t('taskTimeLogTab.delete', { defaultValue: 'Delete' }),
             },
           ],
           onClick: ({ key }) => {
@@ -153,6 +136,16 @@ const TimeLogItem = ({ log, onDelete, isGuest = false }: TimeLogItemProps) => {
 
             if (key === 'moveToProject') {
               handleMoveToProject();
+            }
+
+            if (key === 'delete') {
+              modal.confirm({
+                title: t('taskTimeLogTab.confirmDelete', { defaultValue: 'Are you sure you want to delete this time log?' }),
+                okText: t('taskTimeLogTab.confirmDeleteYes', { defaultValue: 'Yes' }),
+                cancelText: t('taskTimeLogTab.confirmDeleteNo', { defaultValue: 'No' }),
+                okButtonProps: { danger: true },
+                onOk: handleDeleteTimeLog,
+              });
             }
           },
         }}
@@ -169,6 +162,7 @@ const TimeLogItem = ({ log, onDelete, isGuest = false }: TimeLogItemProps) => {
 
   return (
     <div className="time-log-item">
+      {contextHolder}
       <Flex vertical gap={8}>
         <Flex align="start" gap={12}>
           <SingleAvatar avatarUrl={avatar_url} name={user_name} />

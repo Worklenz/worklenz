@@ -115,11 +115,11 @@ describe('TimeLogItem', () => {
 
     render(<TimeLogItem log={splitLog} onDelete={onDelete} />);
 
-    // Click delete button
-    const deleteButton = screen.getByRole('button', { name: 'Delete' });
-    fireEvent.click(deleteButton);
+    fireEvent.click(screen.getByRole('button', { name: 'More Options' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete' }));
+    expect(mocks.deleteLog).not.toHaveBeenCalled();
 
-    // Popconfirm shows 'Yes' button
+    // The confirmation remains available after the dropdown closes.
     const confirmButton = screen.getByRole('button', { name: 'Yes' });
     fireEvent.click(confirmButton);
 

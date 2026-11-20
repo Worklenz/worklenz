@@ -239,7 +239,7 @@
       "projectStartDateHint": "Data e fillimit të projektit: {{date}}"
     },
     "rollupLoggedTooltip": "Shuma e kohës së regjistruar në nën-detyrat",
-    "moveToProject": "L?viz n? projekt"
+    "moveToProject": "Lëviz në projekt"
   },
   "taskActivityLogTab": {
     "title": "Regjistri i aktivitetit",
@@ -292,5 +292,5 @@
   },
   "today": "Sot",
   "yesterday": "Dje",
-  "more": "M? shum? opsione"
+  "more": "Më shumë opsione"
 }

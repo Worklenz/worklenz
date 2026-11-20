@@ -239,7 +239,7 @@
       "projectStartDateHint": "Date de début du projet : {{date}}"
     },
     "rollupLoggedTooltip": "Somme du temps passé sur les sous-tâches",
-    "moveToProject": "D?placer vers le projet"
+    "moveToProject": "Déplacer vers le projet"
   },
   "taskActivityLogTab": {
     "title": "Journal d'activité",
@@ -292,5 +292,5 @@
   },
   "today": "Aujourd'hui",
   "yesterday": "Hier",
-  "more": "Plus d?options"
+  "more": "Plus d’options"
 }

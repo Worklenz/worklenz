@@ -239,7 +239,7 @@
       "projectStartDateHint": "Data rozpoczęcia projektu: {{date}}"
     },
     "rollupLoggedTooltip": "Suma czasu zalogowanego w podzadaniach",
-    "moveToProject": "Przenie? do projektu"
+    "moveToProject": "Przenieś do projektu"
   },
   "taskActivityLogTab": {
     "title": "Dziennik aktywności",
@@ -292,5 +292,5 @@
   },
   "today": "Dzisiaj",
   "yesterday": "Wczoraj",
-  "more": "Wi?cej opcji"
+  "more": "Więcej opcji"
 }
