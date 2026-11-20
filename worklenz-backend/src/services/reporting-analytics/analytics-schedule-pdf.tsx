@@ -306,11 +306,9 @@ function fitContainedSize(
 
 const ScheduleHeader = ({
   title,
-  exportedOn,
   logo,
 }: {
   title: string;
-  exportedOn: string;
   logo?: Buffer | null;
 }) => {
   const src = logoSrc(logo);
@@ -320,7 +318,6 @@ const ScheduleHeader = ({
         {src ? <Image src={src} style={pdfStyles.logo} /> : null}
         <View style={pdfStyles.titleBlock}>
           <Text style={pdfStyles.title}>{title}</Text>
-          <Text style={pdfStyles.meta}>Live export · {exportedOn}</Text>
         </View>
       </View>
       <View style={pdfStyles.headerRight}>
@@ -530,7 +527,7 @@ const SchedulePdfDocument = ({
   return (
     <Document>
       <Page size="A4" orientation="landscape" style={pdfStyles.page} wrap>
-        <ScheduleHeader title={title} exportedOn={exportedOn} logo={logo} />
+        <ScheduleHeader title={title} logo={logo} />
         <ScheduleFooter title={title} exportedOn={exportedOn} footerNote={footerNote} />
         <View style={pdfStyles.summaryAndCharts} wrap={false}>
           <KpiCards kpis={kpis} />
@@ -538,7 +535,7 @@ const SchedulePdfDocument = ({
         </View>
       </Page>
       <Page size="A4" orientation="landscape" style={pdfStyles.page} wrap>
-        <ScheduleHeader title={title} exportedOn={exportedOn} logo={logo} />
+        <ScheduleHeader title={title} logo={logo} />
         <ScheduleFooter title={title} exportedOn={exportedOn} footerNote={footerNote} />
         <ScheduleTable header={header} body={body} truncated={truncated} />
       </Page>

@@ -99,7 +99,6 @@ function drawRoundedRect(
 function drawHeader(
   doc: jsPDF,
   title: string,
-  exportedOn: string,
   logoDataUrl: string
 ): number {
   // Match navbar logo: height 26, maxWidth 140 (NavbarLogo.tsx).
@@ -116,16 +115,13 @@ function drawHeader(
   doc.setTextColor(38, 38, 38);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
-  doc.text(title, titleX, PAGE.marginTop + 12);
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(140, 140, 140);
-  doc.text(`Live export · ${exportedOn}`, titleX, PAGE.marginTop + 26);
+  doc.text(title, titleX, PAGE.marginTop + 18);
 
   doc.setFillColor(24, 144, 255);
   doc.rect(PAGE.width - PAGE.marginX - 36, PAGE.marginTop + 4, 36, 3, 'F');
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
+  doc.setTextColor(140, 140, 140);
   doc.text('Worklenz Analytics', PAGE.width - PAGE.marginX, PAGE.marginTop + 22, {
     align: 'right',
   });
@@ -343,7 +339,7 @@ export async function downloadAnalyticsBrandedPdf(
   const logoDataUrl = await resolveLogoDataUrl(options.logoUrl);
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
 
-  let cursorY = drawHeader(doc, options.title, exportedOn, logoDataUrl);
+  let cursorY = drawHeader(doc, options.title, logoDataUrl);
   cursorY = drawKpiCards(doc, options.kpis || [], cursorY);
 
   const primaryChart = options.chartPngDataUrl;
@@ -384,7 +380,7 @@ export async function downloadAnalyticsBrandedPdf(
     // Prefer a fresh page for the table so it is never hidden under the chart.
     if (cursorY > PAGE.height * 0.55) {
       doc.addPage();
-      cursorY = drawHeader(doc, options.title, exportedOn, logoDataUrl);
+      cursorY = drawHeader(doc, options.title, logoDataUrl);
     }
     drawTable(doc, options.tableRows, cursorY);
   }
