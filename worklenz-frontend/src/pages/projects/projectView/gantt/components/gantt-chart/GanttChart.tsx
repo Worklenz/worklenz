@@ -1648,6 +1648,8 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
     const { canCreateTask: hasTaskPermission } = useTaskCreationPermission();
     const authService = useAuthService();
     const canEditRoadmap = canUseFeature(authService.getCurrentSession(), 'gantt_edit');
+    const project = useAppSelector(state => state.projectReducer.project);
+    const canEditDependencies = canEditRoadmap && !project?.is_guest && project?.task_role_permissions?.edit_tasks !== false;
     const canCreateTask = hasTaskPermission && canEditRoadmap;
     // Get timeline calculator, grouping mode, highlighted date range, and shouldScroll from context
     const contextValue = useGanttContext();
@@ -3198,7 +3200,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
                   });
                 })()}
               </svg>
-              {canEditRoadmap && hoveredDependencyControl && (
+              {canEditDependencies && hoveredDependencyControl && (
                 <div
                   className="gantt-dependency-remove-control"
                   style={{
