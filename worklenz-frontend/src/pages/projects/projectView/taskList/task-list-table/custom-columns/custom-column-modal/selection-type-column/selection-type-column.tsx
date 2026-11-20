@@ -5,11 +5,12 @@ import {
   DndContext,
   DragEndEvent,
   PointerSensor,
+  KeyboardSensor,
   closestCenter,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { PhaseColorCodes } from '../../../../../../../../shared/constants';
 import { Button, Flex, Input, Typography } from '@/shared/antd-imports';
 import type { InputRef } from '@/shared/antd-imports';
@@ -39,7 +40,8 @@ const SelectionTypeColumn = ({ canAddSelections = true }: SelectionTypeColumnPro
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 6 },
-    })
+    }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   // Get the custom column modal type and column ID from the store
