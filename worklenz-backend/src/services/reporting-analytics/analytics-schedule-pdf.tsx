@@ -51,6 +51,12 @@ export interface RenderSchedulePdfOptions {
   chartPngs?: Buffer[] | Buffer | null;
   /** Topic above each chart PNG (e.g. "Progress & budget", "Health status"). */
   chartTitles?: string[] | null;
+  /** Optional hint under each chart topic (PDF text — not baked into the PNG). */
+  chartHints?: string[] | null;
+  /** Optional point-wise legends per chart (e.g. health statuses under the donut). */
+  chartLegends?: Array<
+    Array<{ label: string; color: string; count: number }>
+  > | null;
   /**
    * Optional hex text colors matching `rows` (null = default).
    * Used for tinted numeric/status cells (variance, utilization, burn, etc.).
@@ -206,9 +212,46 @@ const pdfStyles = StyleSheet.create({
     fontSize: 11,
     fontWeight: 700,
     color: "#262626",
-    marginBottom: 8,
+    marginBottom: 4,
     alignSelf: "flex-start",
     width: "100%",
+  },
+  chartHint: {
+    fontSize: 9,
+    color: "#595959",
+    marginBottom: 6,
+    alignSelf: "flex-start",
+    width: "100%",
+    lineHeight: 1.35,
+  },
+  chartLegend: {
+    marginTop: 8,
+    width: "100%",
+    alignSelf: "stretch",
+  },
+  chartLegendRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 5,
+  },
+  chartLegendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 2,
+    marginRight: 6,
+    flexShrink: 0,
+  },
+  chartLegendLabel: {
+    flexGrow: 1,
+    flexShrink: 1,
+    fontSize: 9,
+    color: "#262626",
+  },
+  chartLegendCount: {
+    fontSize: 9,
+    color: "#8c8c8c",
+    flexShrink: 0,
+    marginLeft: 4,
   },
   chartsRow: {
     flexDirection: "row",
@@ -298,18 +341,43 @@ const pdfStyles = StyleSheet.create({
   },
 });
 
+interface ScheduleChartLegendItem {
+  label: string;
+  color: string;
+  count: number;
+}
+
 interface SchedulePdfProps {
   title: string;
   exportedOn: string;
   rows: string[][];
   chartPngs?: Buffer[];
   chartTitles?: string[];
+  chartHints?: string[];
+  chartLegends?: ScheduleChartLegendItem[][];
   tableCellColors?: Array<Array<string | null>>;
   logo?: Buffer | null;
   kpis?: SchedulePdfKpiTile[];
   filterDetails?: string | null;
   footerNote?: string;
 }
+
+const ChartLegendList = ({ items }: { items: ScheduleChartLegendItem[] }) => {
+  if (!items.length) return null;
+  return (
+    <View style={pdfStyles.chartLegend}>
+      {items.map(item => (
+        <View key={item.label} style={pdfStyles.chartLegendRow} wrap={false}>
+          <View
+            style={[pdfStyles.chartLegendDot, { backgroundColor: item.color }]}
+          />
+          <Text style={pdfStyles.chartLegendLabel}>{item.label}</Text>
+          <Text style={pdfStyles.chartLegendCount}>{item.count}</Text>
+        </View>
+      ))}
+    </View>
+  );
+};
 
 interface ScheduleTableProps {
   header: string[];
@@ -366,7 +434,7 @@ function readPngPixelSize(buf: Buffer): { width: number; height: number } | null
 }
 
 /** Fit image into a box without stretching (keeps chart fonts sharp). */
-function fitContainedSize(
+export function fitContainedSize(
   pxW: number,
   pxH: number,
   boxW: number,
@@ -592,6 +660,8 @@ const SchedulePdfDocument = ({
   rows,
   chartPngs = [],
   chartTitles = [],
+  chartHints = [],
+  chartLegends = [],
   tableCellColors = [],
   logo = null,
   kpis = [],
@@ -608,33 +678,60 @@ const SchedulePdfDocument = ({
   const hasCharts = charts.length > 0;
   const isSideBySideCharts = charts.length === 2;
   const topics = chartTitles || [];
+  const hints = chartHints || [];
+  const legends = chartLegends || [];
   const primaryTopic = topics[0] || title;
   const secondaryTopic = topics[1] || "";
+  const primaryHint = (hints[0] || "").trim();
+  const secondaryHint = (hints[1] || "").trim();
+  const primaryLegend = legends[0] || [];
+  const secondaryLegend = legends[1] || [];
 
-  // Landscape content width ≈ A4 landscape minus horizontal padding (28×2) and card padding.
+  // Landscape A4 page 1: size charts to fit with header + KPIs (do not overflow
+  // onto page 2). Cap height so side-by-side Project Health stays on page 1.
+  const PAGE_H = 595.28;
+  const PAGE_PAD_TOP = 28;
+  const PAGE_PAD_BOTTOM = 48;
+  const HEADER_EST = 68;
+  const KPI_EST = kpis.length ? 124 : 0;
+  const hasAnyHint = !!(primaryHint || secondaryHint);
+  const hasAnyLegend = primaryLegend.length > 0 || secondaryLegend.length > 0;
+  // topic (+ hint) + optional 4-row legend under donut + card padding
+  const CHART_CARD_CHROME =
+    (hasAnyHint ? 48 : 32) + (hasAnyLegend ? 78 : 0);
   const pageContentW = 841.89 - 56;
   const chartInnerW = pageContentW - 24;
-  const chartRowH = 180;
-  const singleChartH = 170;
+  const remainingH =
+    PAGE_H - PAGE_PAD_TOP - PAGE_PAD_BOTTOM - HEADER_EST - KPI_EST - CHART_CARD_CHROME - 16;
+  // Keep charts usable but leave headroom so the block cannot spill to page 2.
+  const availableChartH = Math.min(hasAnyLegend ? 175 : 210, Math.max(140, remainingH));
+  const chartRowH = availableChartH;
+  const singleChartH = availableChartH;
 
   const chartsBlock = !hasCharts ? null : isSideBySideCharts ? (
     <View style={pdfStyles.chartsRow} wrap={false}>
       {(() => {
-        const barPx = readPngPixelSize(chartBuffers[0]) || { width: 1160, height: 400 };
-        const donutPx = readPngPixelSize(chartBuffers[1]) || { width: 480, height: 480 };
+        const barPx = readPngPixelSize(chartBuffers[0]) || { width: 1100, height: 560 };
+        const donutPx = readPngPixelSize(chartBuffers[1]) || { width: 420, height: 420 };
         const barBoxW = chartInnerW * 0.74;
         const donutBoxW = chartInnerW * 0.24;
+        // Leave room under the donut for the point-wise health legend.
+        const donutImageH = Math.min(
+          chartRowH - (secondaryLegend.length ? 72 : 0),
+          130
+        );
         const barSize = fitContainedSize(barPx.width, barPx.height, barBoxW, chartRowH);
         const donutSize = fitContainedSize(
           donutPx.width,
           donutPx.height,
           donutBoxW,
-          chartRowH
+          Math.max(100, donutImageH)
         );
         return (
           <>
             <View style={[pdfStyles.chartSlotBar, pdfStyles.chartCard, { marginBottom: 0 }]}>
               {primaryTopic ? <Text style={pdfStyles.chartTopic}>{primaryTopic}</Text> : null}
+              {primaryHint ? <Text style={pdfStyles.chartHint}>{primaryHint}</Text> : null}
               <Image
                 src={charts[0]}
                 style={{
@@ -643,10 +740,14 @@ const SchedulePdfDocument = ({
                   objectFit: "contain",
                 }}
               />
+              <ChartLegendList items={primaryLegend} />
             </View>
             <View style={[pdfStyles.chartSlotDonut, pdfStyles.chartCard, { marginBottom: 0 }]}>
               {secondaryTopic ? (
                 <Text style={pdfStyles.chartTopic}>{secondaryTopic}</Text>
+              ) : null}
+              {secondaryHint ? (
+                <Text style={pdfStyles.chartHint}>{secondaryHint}</Text>
               ) : null}
               <Image
                 src={charts[1]}
@@ -656,6 +757,7 @@ const SchedulePdfDocument = ({
                   objectFit: "contain",
                 }}
               />
+              <ChartLegendList items={secondaryLegend} />
             </View>
           </>
         );
@@ -664,10 +766,11 @@ const SchedulePdfDocument = ({
   ) : (
     <View style={pdfStyles.chartCard} wrap={false}>
       {primaryTopic ? <Text style={pdfStyles.chartTopic}>{primaryTopic}</Text> : null}
+      {primaryHint ? <Text style={pdfStyles.chartHint}>{primaryHint}</Text> : null}
       {charts.map((src, index) => {
         const px = readPngPixelSize(chartBuffers[index]) || {
           width: 960,
-          height: 420,
+          height: 520,
         };
         const size = fitContainedSize(px.width, px.height, chartInnerW, singleChartH);
         return (
@@ -752,6 +855,8 @@ export async function renderSchedulePdf(
       rows: options.rows,
       chartPngs: normalized,
       chartTitles: options.chartTitles ?? [],
+      chartHints: options.chartHints ?? [],
+      chartLegends: options.chartLegends ?? [],
       tableCellColors: options.tableCellColors ?? [],
       logo: options.logo ?? null,
       kpis: options.kpis ?? [],

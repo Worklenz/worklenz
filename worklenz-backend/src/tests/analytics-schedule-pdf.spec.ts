@@ -3,6 +3,7 @@ import path from "path";
 import {
   chunkRows,
   detectNumericColumns,
+  fitContainedSize,
   isNumericCellValue,
   renderSchedulePdf,
   TABLE_ROWS_PER_PAGE,
@@ -120,6 +121,16 @@ describe("branded analytics schedule PDF", () => {
       logo,
       chartPngs: [tinyPng, tinyPng],
       chartTitles: ["Progress & budget", "Health status"],
+      chartHints: ["", "Based on health set in project settings"],
+      chartLegends: [
+        [],
+        [
+          { label: "On track", color: "#52c41a", count: 4 },
+          { label: "At risk", color: "#faad14", count: 3 },
+          { label: "Off track", color: "#ff4d4f", count: 2 },
+          { label: "Not set", color: "#8c8c8c", count: 1 },
+        ],
+      ],
       kpis: [
         { label: "On track", value: "12", sub: "projects", tone: "#52c41a" },
         { label: "At risk", value: "4", sub: "projects", tone: "#faad14" },
@@ -143,6 +154,14 @@ describe("branded analytics schedule PDF", () => {
     expect(chunkRows(Array.from({ length: 25 }, (_, i) => i), TABLE_ROWS_PER_PAGE)).toHaveLength(
       3
     );
+  });
+
+  it("sizes charts to fill page width within the page-1 height cap", () => {
+    // Typical single chart PNG in a ~762×210 landscape slot (page 1 after KPIs).
+    const size = fitContainedSize(960, 520, 762, 210);
+    expect(size.width).toBeGreaterThan(380);
+    expect(size.height).toBeLessThanOrEqual(210);
+    expect(size.height).toBeGreaterThan(150);
   });
 
   it("detects PVA numeric columns including variance days labels", () => {

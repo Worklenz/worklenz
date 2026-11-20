@@ -5,6 +5,8 @@ import { applyLiveScheduleDateBounds } from "./analytics-schedule-date-bounds";
 import {
   renderScheduleChartPngs,
   ScheduleChartSource,
+  getScheduleChartHints,
+  getScheduleChartLegends,
   getScheduleChartTitles,
 } from "./analytics-schedule-charts";
 import { buildScheduleTableCellColors } from "./analytics-table-cell-colors";
@@ -296,6 +298,12 @@ async function buildExportFilesFromPayload(input: {
         chartTitles: input.chartSource
           ? getScheduleChartTitles(input.chartSource)
           : [input.reportName],
+        chartHints: input.chartSource
+          ? getScheduleChartHints(input.chartSource)
+          : [],
+        chartLegends: input.chartSource
+          ? getScheduleChartLegends(input.chartSource)
+          : [],
         tableCellColors: buildScheduleTableCellColors(input.chartSource),
         logo,
         kpis,
