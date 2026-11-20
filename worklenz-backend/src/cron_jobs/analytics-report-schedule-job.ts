@@ -4,6 +4,7 @@ import db from "../config/db";
 import { sendEmail } from "../shared/email";
 import { log_error } from "../shared/utils";
 import { formatScheduleTimeRangeNote } from "../services/reporting-analytics/analytics-schedule-date-bounds";
+import { canOwnerAccessFinanceSchedules } from "../services/reporting-analytics/analytics-schedule-access";
 import { buildLiveScheduleExports } from "../services/reporting-analytics/analytics-schedule-export.service";
 import {
   AnalyticsScheduleRow,
@@ -11,6 +12,7 @@ import {
   listDueSchedules,
   markScheduleSent,
 } from "../services/reporting-analytics/analytics-schedules.service";
+import { isFinanceAnalyticsReportKind } from "../shared/reporting-analytics.constants";
 
 const SCHEDULE = process.env.ANALYTICS_REPORT_SCHEDULE_CRON || "* * * * *";
 const LOCK_KEY = "worklenz-analytics-report-schedules";
@@ -131,6 +133,19 @@ export function buildEmailHtml(
 }
 
 async function processSchedule(schedule: AnalyticsScheduleRow): Promise<boolean> {
+  // Do not email finance exports if the owner lost View finance / finance_module.
+  if (isFinanceAnalyticsReportKind(schedule.report_kind)) {
+    const allowed = await canOwnerAccessFinanceSchedules(
+      schedule.owner_id,
+      schedule.team_id
+    );
+    if (!allowed) {
+      throw new Error(
+        `Finance authorization missing for schedule ${schedule.id} (${schedule.report_kind})`
+      );
+    }
+  }
+
   const exportFiles = await buildLiveScheduleExports({
     reportKind: schedule.report_kind,
     reportName: schedule.report_name,

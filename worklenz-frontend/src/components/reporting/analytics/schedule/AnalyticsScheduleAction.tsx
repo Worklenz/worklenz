@@ -4,7 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { analyticsSchedulesApiService } from '@/api/reporting/analytics-schedules.api.service';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useOrganizationPermission } from '@/hooks/useOrganizationPermission';
 import { openUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { isFinanceAnalyticsReport } from '@/lib/reporting/analytics-nav';
+import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 import { canUseFeature } from '@/utils/subscription-utils';
 import logger from '@/utils/errorLogger';
 import type { AnalyticsScheduleUpsertPayload } from '@/types/reporting/analytics-schedules.types';
@@ -32,6 +35,10 @@ export const AnalyticsScheduleAction: React.FC<AnalyticsScheduleActionProps> = (
   const authService = useAuthService();
   const session = authService.getCurrentSession();
   const canSchedule = canUseFeature(session, 'advanced_reporting');
+  const isFinanceReport = isFinanceAnalyticsReport(reportKind);
+  const { hasPermission: canViewFinance, isLoading: isFinancePermissionLoading } =
+    useOrganizationPermission(ORGANIZATION_PERMISSIONS.VIEW_FINANCE);
+  const lacksFinancePermission = isFinanceReport && !canViewFinance;
 
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -69,22 +76,42 @@ export const AnalyticsScheduleAction: React.FC<AnalyticsScheduleActionProps> = (
       dispatch(openUpgradeModal('default'));
       return;
     }
+    if (lacksFinancePermission) {
+      message.warning(
+        t('hubFinancePermissionHint', {
+          defaultValue: 'Requires View finance permission',
+        })
+      );
+      return;
+    }
     setOpen(true);
   };
+
+  // Keep Free/Pro clickable so the upgrade modal can open; only lock when schedule is allowed.
+  const isButtonDisabled = canSchedule
+    ? !!disabled ||
+      (isFinanceReport && isFinancePermissionLoading) ||
+      lacksFinancePermission
+    : false;
 
   return (
     <>
       <Button
         className="analytics-blue-action"
         icon={<CalendarOutlined />}
-        disabled={canSchedule ? disabled : false}
+        disabled={isButtonDisabled}
         onClick={handleClick}
         aria-label={
-          canSchedule
-            ? t('actionSchedule', { defaultValue: 'Schedule' })
-            : t('scheduleUpgradeAria', {
-                defaultValue: 'Schedule — Business plan required',
+          lacksFinancePermission
+            ? t('hubFinanceLockedAria', {
+                defaultValue: '{{name}} — View finance permission required',
+                name: t('actionSchedule', { defaultValue: 'Schedule' }),
               })
+            : canSchedule
+              ? t('actionSchedule', { defaultValue: 'Schedule' })
+              : t('scheduleUpgradeAria', {
+                  defaultValue: 'Schedule — Business plan required',
+                })
         }
       >
         <Space size={6}>
@@ -97,7 +124,7 @@ export const AnalyticsScheduleAction: React.FC<AnalyticsScheduleActionProps> = (
           )}
         </Space>
       </Button>
-      {canSchedule && (
+      {canSchedule && !lacksFinancePermission && (
         <ScheduleReportModal
           open={open}
           reportKind={reportKind}

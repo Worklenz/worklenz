@@ -4,14 +4,19 @@ import {
   expandAccessibleProjects,
   parseAccessibleTeamIdsFromInput,
 } from "../../shared/analytics-expand-projects";
-import { canViewAllProjects } from "../../shared/organization-permissions";
+import { teamCanUseFeature } from "../../shared/entitlements/gates";
+import {
+  canViewAllProjects,
+  hasOrganizationPermission,
+  ORGANIZATION_PERMISSIONS,
+} from "../../shared/organization-permissions";
 import { getVisibleProjectIds } from "../../shared/project-role-permissions";
 import {
   getEffectiveTeamRole,
   TEAM_ROLE_NAMES,
 } from "../../shared/team-permissions";
 
-async function loadScheduleOwnerSession(
+export async function loadScheduleOwnerSession(
   userId: string,
   teamId: string
 ): Promise<IPassportSession | null> {
@@ -41,6 +46,20 @@ async function loadScheduleOwnerSession(
     owner: !!row.is_owner,
     is_admin: !!row.is_admin_role && String(row.role_name).toLowerCase() === "admin",
   };
+}
+
+/**
+ * True when the schedule owner may create/send finance report schedules
+ * (View finance + finance_module), matching live Project Health / Budget Tracking gates.
+ */
+export async function canOwnerAccessFinanceSchedules(
+  userId: string,
+  teamId: string
+): Promise<boolean> {
+  if (!(await teamCanUseFeature(teamId, "finance_module"))) return false;
+  const session = await loadScheduleOwnerSession(userId, teamId);
+  if (!session) return false;
+  return hasOrganizationPermission(session, ORGANIZATION_PERMISSIONS.VIEW_FINANCE);
 }
 
 /**
