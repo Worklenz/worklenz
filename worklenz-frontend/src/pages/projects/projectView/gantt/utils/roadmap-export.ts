@@ -1,4 +1,4 @@
-import { GanttGroupingMode, GanttTask } from '../types/gantt-types';
+import { DependencyType, GanttGroupingMode, GanttTask } from '../types/gantt-types';
 import { formatDateLocal } from './date-utils';
 
 export type RoadmapExportFormat = 'pdf' | 'xlsx';
@@ -14,9 +14,18 @@ export interface RoadmapExportRowPayload {
   priority: string;
   assignees: string;
   dependencies: string;
+  dependencyLinks?: Array<{ name: string; relation: string }>;
   parent: string;
   color: string | null;
 }
+
+const DEPENDENCY_TYPE_LABEL: Record<DependencyType, string> = {
+  blocked_by: 'blocked by',
+  finish_to_start: 'finish to start',
+  start_to_start: 'start to start',
+  finish_to_finish: 'finish to finish',
+  start_to_finish: 'start to finish',
+};
 
 export interface RoadmapExportPayload {
   project_id: string;
@@ -72,16 +81,24 @@ export const buildRoadmapExportRows = (tasks: GanttTask[]): RoadmapExportRowPayl
     (task.children || []).forEach(child => names.set(child.id, child.name));
   });
 
-  const dependencyLabel = (task: GanttTask): string =>
-    (task.dependencies || [])
-      .map(id => names.get(id))
-      .filter((name): name is string => Boolean(name))
-      .join(', ');
+  const dependencyLinks = (task: GanttTask): Array<{ name: string; relation: string }> => {
+    if (task.dependencyRecords?.length) {
+      return task.dependencyRecords.flatMap(dep => {
+        const name = names.get(dep.related_task_id);
+        return name ? [{ name, relation: DEPENDENCY_TYPE_LABEL[dep.dependency_type] || dep.dependency_type || 'depends on' }] : [];
+      });
+    }
+    return (task.dependencies || []).flatMap(id => {
+      const name = names.get(id);
+      return name ? [{ name, relation: 'depends on' }] : [];
+    });
+  };
 
   const rows: RoadmapExportRowPayload[] = [];
   let currentGroup = '';
 
   const pushTask = (task: GanttTask, kind: 'task' | 'subtask', parent: string) => {
+    const links = dependencyLinks(task);
     rows.push({
       kind,
       name: task.name || '',
@@ -92,7 +109,8 @@ export const buildRoadmapExportRows = (tasks: GanttTask[]): RoadmapExportRowPayl
       status: task.status || '',
       priority: task.priority || '',
       assignees: assigneeLabel(task),
-      dependencies: kind === 'task' ? dependencyLabel(task) : '',
+      dependencies: links.map(link => link.relation === 'depends on' ? link.name : `${link.name} [${link.relation}]`).join('; '),
+      dependencyLinks: links,
       parent,
       color: null,
     });
