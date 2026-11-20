@@ -14,6 +14,7 @@ export interface RoadmapExportRowPayload {
   priority: string;
   assignees: string;
   dependencies: string;
+  dependencyLinks?: Array<{ name: string; relation: string }>;
   parent: string;
   color: string | null;
 }
@@ -80,29 +81,24 @@ export const buildRoadmapExportRows = (tasks: GanttTask[]): RoadmapExportRowPayl
     (task.children || []).forEach(child => names.set(child.id, child.name));
   });
 
-  const dependencyLabel = (task: GanttTask): string => {
+  const dependencyLinks = (task: GanttTask): Array<{ name: string; relation: string }> => {
     if (task.dependencyRecords?.length) {
-      return task.dependencyRecords
-        .map(dep => {
-          const name = names.get(dep.related_task_id);
-          if (!name) return null;
-          const relation = DEPENDENCY_TYPE_LABEL[dep.dependency_type] || dep.dependency_type;
-          return relation ? `${name} [${relation}]` : name;
-        })
-        .filter((label): label is string => Boolean(label))
-        .join('; ');
+      return task.dependencyRecords.flatMap(dep => {
+        const name = names.get(dep.related_task_id);
+        return name ? [{ name, relation: DEPENDENCY_TYPE_LABEL[dep.dependency_type] || dep.dependency_type || 'depends on' }] : [];
+      });
     }
-
-    return (task.dependencies || [])
-      .map(id => names.get(id))
-      .filter((name): name is string => Boolean(name))
-      .join('; ');
+    return (task.dependencies || []).flatMap(id => {
+      const name = names.get(id);
+      return name ? [{ name, relation: 'depends on' }] : [];
+    });
   };
 
   const rows: RoadmapExportRowPayload[] = [];
   let currentGroup = '';
 
   const pushTask = (task: GanttTask, kind: 'task' | 'subtask', parent: string) => {
+    const links = dependencyLinks(task);
     rows.push({
       kind,
       name: task.name || '',
@@ -113,7 +109,8 @@ export const buildRoadmapExportRows = (tasks: GanttTask[]): RoadmapExportRowPayl
       status: task.status || '',
       priority: task.priority || '',
       assignees: assigneeLabel(task),
-      dependencies: dependencyLabel(task),
+      dependencies: links.map(link => link.relation === 'depends on' ? link.name : `${link.name} [${link.relation}]`).join('; '),
+      dependencyLinks: links,
       parent,
       color: null,
     });

@@ -17,6 +17,13 @@ const task = (overrides: Partial<GanttTask>): GanttTask => ({
 });
 
 describe('buildRoadmapExportRows', () => {
+  it('preserves separators in structured dependency names', () => {
+    const rows = buildRoadmapExportRows([
+      task({ id: 'task-1', dependencies: ['task-2'] }),
+      task({ id: 'task-2', name: 'Build; verify, test', dependencies: [] }),
+    ]);
+    expect(rows[0].dependencyLinks).toEqual([{ name: 'Build; verify, test', relation: 'depends on' }]);
+  });
   it('writes each section, then its tasks and subtasks, in the order on screen', () => {
     const rows = buildRoadmapExportRows([
       {

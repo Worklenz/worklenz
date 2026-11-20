@@ -51,6 +51,17 @@ describe("roadmap export", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+  it("preserves structured dependencies containing separators beyond the display limit", () => {
+    const names = [`Build; verify, test`, "a".repeat(300), "b".repeat(300)];
+    const prepared = prepareRoadmapExport({ format: "xlsx", group_by: "phase", rows: [row({
+      dependencies: names.join("; "),
+      dependencyLinks: names.map(name => ({ name, relation: "blocked by" })),
+    })] });
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(parseDependencyLinks(prepared.value.rows).map(link => [link.to, link.relation]))
+      .toEqual(names.map(name => [name, "blocked by"]));
+  });
   it("validates and preserves shared timeline bounds", () => {
     const result = prepareRoadmapExport({ format: "pdf", group_by: "phase", rows: [row()], timeline_start: "2026-01-01", timeline_end: "2026-12-31" });
     expect(result.ok).toBe(true);

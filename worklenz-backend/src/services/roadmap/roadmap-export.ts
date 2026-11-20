@@ -21,6 +21,7 @@ export interface RoadmapExportRow {
   priority: string;
   assignees: string;
   dependencies: string;
+  dependencyLinks?: Array<{ name: string; relation: string }>;
   parent: string;
   color: string | null;
 }
@@ -219,6 +220,12 @@ export const prepareRoadmapExport = (
       priority: cleanText(raw.priority),
       assignees: cleanText(raw.assignees),
       dependencies: cleanText(raw.dependencies),
+      dependencyLinks: Array.isArray(raw.dependencyLinks)
+        ? raw.dependencyLinks.slice(0, MAX_DEPENDENCY_LINKS_PER_ROW).filter(isRecord).map(link => ({
+            name: cleanText(link.name),
+            relation: cleanText(link.relation, 80) || "depends on",
+          })).filter(link => link.name.length > 0)
+        : undefined,
       parent: cleanText(raw.parent),
       color: cleanColor(raw.color),
     });
@@ -423,7 +430,14 @@ export const parseDependencyLinks = (rows: RoadmapExportRow[]): RoadmapDependenc
   const links: RoadmapDependencyLink[] = [];
   for (const row of rows) {
     if (links.length >= MAX_DEPENDENCY_LINKS) break;
-    if (row.kind === "group" || !row.dependencies.trim()) continue;
+    if (row.kind === "group") continue;
+    if (row.dependencyLinks) {
+      for (const link of row.dependencyLinks.slice(0, Math.min(MAX_DEPENDENCY_LINKS_PER_ROW, MAX_DEPENDENCY_LINKS - links.length))) {
+        links.push({ from: row.name, to: link.name, group: row.group, kind: row.kind, relation: link.relation });
+      }
+      continue;
+    }
+    if (!row.dependencies.trim()) continue;
 
     const remaining = MAX_DEPENDENCY_LINKS - links.length;
     const perRowCap = Math.min(MAX_DEPENDENCY_LINKS_PER_ROW, remaining);
