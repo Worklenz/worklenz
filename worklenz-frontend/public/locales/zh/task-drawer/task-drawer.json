@@ -59,6 +59,7 @@
       "labels": "标签",
       "billable": "可计费",
       "notify": "通知",
+      "notify-tooltip": "选定的成员会在此任务被标记为已完成时收到电子邮件通知。",
       "when-done-notify": "完成时通知",
       "start-date": "开始日期",
       "end-date": "结束日期",

@@ -1,5 +1,12 @@
 import { useEffect, useRef } from 'react';
-import { ConfigProvider, Flex, Form, Typography } from '@/shared/antd-imports';
+import {
+  ConfigProvider,
+  Flex,
+  Form,
+  Typography,
+  Tooltip,
+  InfoCircleOutlined,
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { ITaskFormViewModel, ITaskViewModel } from '@/types/tasks/task.types';
 
@@ -258,7 +265,24 @@ const TaskDetailsForm = ({ taskFormViewModel = null, canCreateTask = true, isGue
           {task && <TaskDrawerRecurringConfig task={task} disabled={isReadOnly} />}
         </Form.Item>
 
-        <Form.Item name="notify" label={t('taskInfoTab.details.notify', { defaultValue: 'Notify' })}>
+        <Form.Item
+          name="notify"
+          label={
+            <Flex align="center" gap={6}>
+              <span>{t('taskInfoTab.details.notify', { defaultValue: 'Notify' })}</span>
+              <Tooltip
+                title={t('taskInfoTab.details.notify-tooltip', {
+                  defaultValue:
+                    'Selected members will receive an email notification when this task is marked as Done.',
+                })}
+              >
+                <Typography.Text type="secondary">
+                  <InfoCircleOutlined />
+                </Typography.Text>
+              </Tooltip>
+            </Flex>
+          }
+        >
           {task && <NotifyMemberSelector task={task} t={t} disabled={isReadOnly} />}
         </Form.Item>
       </Form>

@@ -1,32 +1,32 @@
 {
-  "details": {
-    "task-key": "任务ID",
-    "phase": "阶段",
-    "assignees": "受托人",
-    "due-date": "截止日期",
-    "time-estimation": "估计时间",
-    "priority": "优先级",
-    "labels": "标签",
-    "billable": "可计费",
-    "notify": "通知",
-    "when-done-notify": "完成时通知",
-    "start-date": "开始日期",
-    "end-date": "结束日期",
-    "hide-start-date": "隐藏开始日期",
-    "show-start-date": "显示开始日期",
-    "hours": "小时",
-    "minutes": "分钟",
-    "recurring": "重复"
-  },
-  "description": {
-    "title": "描述",
-    "placeholder": "添加更详细的描述...",
-    "clickToAdd": "点击添加描述...",
-    "loadingEditor": "加载编辑器..."
-  },
-  "subTasks": {
-    "title": "子任务",
-    "add-sub-task": "+ 添加子任务",
-    "refresh-sub-tasks": "刷新子任务"
-  }
+    "details":  {
+                    "task-key":  "ä»»åŠ¡ID",
+                    "phase":  "é˜¶æ®µ",
+                    "assignees":  "å—æ‰˜äºº",
+                    "due-date":  "æˆªæ­¢æ—¥æœŸ",
+                    "time-estimation":  "ä¼°è®¡æ—¶é—´",
+                    "priority":  "ä¼˜å…ˆçº§",
+                    "labels":  "æ ‡ç­¾",
+                    "billable":  "å¯è®¡è´¹",
+                    "notify":  "é€šçŸ¥",
+                    "when-done-notify":  "å®Œæˆæ—¶é€šçŸ¥",
+                    "start-date":  "å¼€å§‹æ—¥æœŸ",
+                    "end-date":  "ç»“æŸæ—¥æœŸ",
+                    "hide-start-date":  "éšè—å¼€å§‹æ—¥æœŸ",
+                    "show-start-date":  "æ˜¾ç¤ºå¼€å§‹æ—¥æœŸ",
+                    "hours":  "å°æ—¶",
+                    "minutes":  "åˆ†é’Ÿ",
+                    "recurring":  "é‡å¤"
+                },
+    "description":  {
+                        "title":  "æè¿°",
+                        "placeholder":  "æ·»åŠ æ›´è¯¦ç»†çš„æè¿°...",
+                        "clickToAdd":  "ç‚¹å‡»æ·»åŠ æè¿°...",
+                        "loadingEditor":  "åŠ è½½ç¼–è¾‘å™¨..."
+                    },
+    "subTasks":  {
+                     "title":  "å­ä»»åŠ¡",
+                     "add-sub-task":  "+ æ·»åŠ å­ä»»åŠ¡",
+                     "refresh-sub-tasks":  "åˆ·æ–°å­ä»»åŠ¡"
+                 }
 }
