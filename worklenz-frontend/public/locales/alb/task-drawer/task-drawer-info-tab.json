@@ -1,32 +1,32 @@
 {
-    "details":  {
-                    "task-key":  "Ã‡elÃ«si i DetyrÃ«s",
-                    "phase":  "Faza",
-                    "assignees":  "PÃ«rgjegjÃ«sit",
-                    "due-date":  "Data e PÃ«rfundimit",
-                    "time-estimation":  "VlerÃ«simi i KohÃ«s",
-                    "priority":  "Prioriteti",
-                    "labels":  "Etiketa",
-                    "billable":  "Fakturueshme",
-                    "notify":  "Njofto",
-                    "when-done-notify":  "Kur tÃ« pÃ«rfundojÃ«, njofto",
-                    "start-date":  "Data e Fillimit",
-                    "end-date":  "Data e PÃ«rfundimit",
-                    "hide-start-date":  "Fshih DatÃ«n e Fillimit",
-                    "show-start-date":  "Shfaq DatÃ«n e Fillimit",
-                    "hours":  "OrÃ«",
-                    "minutes":  "Minuta",
-                    "recurring":  "E pÃ«rsÃ«ritur"
-                },
-    "description":  {
-                        "title":  "PÃ«rshkrimi",
-                        "placeholder":  "Shtoni njÃ« pÃ«rshkrim mÃ« tÃ« detajuar...",
-                        "clickToAdd":  "Kliko pÃ«r tÃ« shtuar pÃ«rshkrim...",
-                        "loadingEditor":  "Duke ngarkuar editorin..."
-                    },
-    "subTasks":  {
-                     "title":  "NÃ«n-Detyrat",
-                     "add-sub-task":  "+ Shto NÃ«n-DetyrÃ«",
-                     "refresh-sub-tasks":  "Rifresko NÃ«n-Detyrat"
-                 }
+  "details": {
+    "task-key": "Çelësi i Detyrës",
+    "phase": "Faza",
+    "assignees": "Përgjegjësit",
+    "due-date": "Data e Përfundimit",
+    "time-estimation": "Vlerësimi i Kohës",
+    "priority": "Prioriteti",
+    "labels": "Etiketa",
+    "billable": "Fakturueshme",
+    "notify": "Njofto",
+    "when-done-notify": "Kur të përfundojë, njofto",
+    "start-date": "Data e Fillimit",
+    "end-date": "Data e Përfundimit",
+    "hide-start-date": "Fshih Datën e Fillimit",
+    "show-start-date": "Shfaq Datën e Fillimit",
+    "hours": "Orë",
+    "minutes": "Minuta",
+    "recurring": "E përsëritur"
+  },
+  "description": {
+    "title": "Përshkrimi",
+    "placeholder": "Shtoni një përshkrim më të detajuar...",
+    "clickToAdd": "Kliko për të shtuar përshkrim...",
+    "loadingEditor": "Duke ngarkuar editorin..."
+  },
+  "subTasks": {
+    "title": "Nën-Detyrat",
+    "add-sub-task": "+ Shto Nën-Detyrë",
+    "refresh-sub-tasks": "Rifresko Nën-Detyrat"
+  }
 }

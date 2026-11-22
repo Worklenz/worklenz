@@ -1,32 +1,32 @@
 {
-    "details":  {
-                    "task-key":  "Chave da tarefa",
-                    "phase":  "Fase",
-                    "assignees":  "ResponsÃ¡veis",
-                    "due-date":  "Data de vencimento",
-                    "time-estimation":  "Estimativa de tempo",
-                    "priority":  "Prioridade",
-                    "labels":  "Etiquetas",
-                    "billable":  "FaturÃ¡vel",
-                    "notify":  "Notificar",
-                    "when-done-notify":  "Quando concluÃ­da, notificar",
-                    "start-date":  "Data de inÃ­cio",
-                    "end-date":  "Data de tÃ©rmino",
-                    "hide-start-date":  "Ocultar data de inÃ­cio",
-                    "show-start-date":  "Mostrar data de inÃ­cio",
-                    "hours":  "Horas",
-                    "minutes":  "Minutos",
-                    "recurring":  "Recorrente"
-                },
-    "description":  {
-                        "title":  "DescriÃ§Ã£o",
-                        "placeholder":  "Adicionar uma descriÃ§Ã£o mais detalhada...",
-                        "clickToAdd":  "Clique para adicionar descriÃ§Ã£o...",
-                        "loadingEditor":  "Carregando editor..."
-                    },
-    "subTasks":  {
-                     "title":  "Subtarefas",
-                     "add-sub-task":  "+ Adicionar subtarefa",
-                     "refresh-sub-tasks":  "Atualizar subtarefas"
-                 }
+  "details": {
+    "task-key": "Chave da tarefa",
+    "phase": "Fase",
+    "assignees": "Responsáveis",
+    "due-date": "Data de vencimento",
+    "time-estimation": "Estimativa de tempo",
+    "priority": "Prioridade",
+    "labels": "Etiquetas",
+    "billable": "Faturável",
+    "notify": "Notificar",
+    "when-done-notify": "Quando concluída, notificar",
+    "start-date": "Data de início",
+    "end-date": "Data de término",
+    "hide-start-date": "Ocultar data de início",
+    "show-start-date": "Mostrar data de início",
+    "hours": "Horas",
+    "minutes": "Minutos",
+    "recurring": "Recorrente"
+  },
+  "description": {
+    "title": "Descrição",
+    "placeholder": "Adicionar uma descrição mais detalhada...",
+    "clickToAdd": "Clique para adicionar descrição...",
+    "loadingEditor": "Carregando editor..."
+  },
+  "subTasks": {
+    "title": "Subtarefas",
+    "add-sub-task": "+ Adicionar subtarefa",
+    "refresh-sub-tasks": "Atualizar subtarefas"
+  }
 }

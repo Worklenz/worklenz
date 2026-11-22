@@ -1,32 +1,32 @@
 {
-    "details":  {
-                    "task-key":  "ClÃ© de tÃ¢che",
-                    "phase":  "Phase",
-                    "assignees":  "Destinataires",
-                    "due-date":  "Date d\u0027Ã©chÃ©ance",
-                    "time-estimation":  "Estimation du temps",
-                    "priority":  "PrioritÃ©",
-                    "labels":  "Ã‰tiquettes",
-                    "billable":  "Facturable",
-                    "notify":  "Notifier",
-                    "when-done-notify":  "Une fois terminÃ©, prÃ©venez",
-                    "start-date":  "Date de dÃ©but",
-                    "end-date":  "Date de fin",
-                    "hide-start-date":  "Masquer la date de dÃ©but",
-                    "show-start-date":  "Afficher la date de dÃ©but",
-                    "hours":  "Horaires",
-                    "minutes":  "ProcÃ¨s-verbal",
-                    "recurring":  "RÃ©current"
-                },
-    "description":  {
-                        "title":  "Descriptif",
-                        "placeholder":  "Ajoutez une description plus dÃ©taillÃ©e...",
-                        "clickToAdd":  "Cliquez pour ajouter une description...",
-                        "loadingEditor":  "Chargement de l\u0027Ã©diteur..."
-                    },
-    "subTasks":  {
-                     "title":  "Sous-tÃ¢ches",
-                     "add-sub-task":  "Ajouter une sous-tÃ¢che",
-                     "refresh-sub-tasks":  "Actualiser les sous-tÃ¢ches"
-                 }
+  "details": {
+    "task-key": "Clé de tâche",
+    "phase": "Phase",
+    "assignees": "Destinataires",
+    "due-date": "Date d'échéance",
+    "time-estimation": "Estimation du temps",
+    "priority": "Priorité",
+    "labels": "Étiquettes",
+    "billable": "Facturable",
+    "notify": "Notifier",
+    "when-done-notify": "Une fois terminé, prévenez",
+    "start-date": "Date de début",
+    "end-date": "Date de fin",
+    "hide-start-date": "Masquer la date de début",
+    "show-start-date": "Afficher la date de début",
+    "hours": "Horaires",
+    "minutes": "Procès-verbal",
+    "recurring": "Récurrent"
+  },
+  "description": {
+    "title": "Descriptif",
+    "placeholder": "Ajoutez une description plus détaillée...",
+    "clickToAdd": "Cliquez pour ajouter une description...",
+    "loadingEditor": "Chargement de l'éditeur..."
+  },
+  "subTasks": {
+    "title": "Sous-tâches",
+    "add-sub-task": "Ajouter une sous-tâche",
+    "refresh-sub-tasks": "Actualiser les sous-tâches"
+  }
 }
