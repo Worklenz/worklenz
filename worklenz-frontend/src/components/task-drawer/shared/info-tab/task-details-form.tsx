@@ -272,7 +272,13 @@ const TaskDetailsForm = ({ taskFormViewModel = null, canCreateTask = true, isGue
               defaultValue:
                 'Selected members will receive an email notification when this task is marked as Done.',
             }),
-            icon: <InfoCircleOutlined />,
+            icon: (
+              <InfoCircleOutlined
+                tabIndex={0}
+                role="button"
+                aria-label={t('taskInfoTab.details.notify', { defaultValue: 'Notify' })}
+              />
+            ),
           }}
         >
           {task && <NotifyMemberSelector task={task} t={t} disabled={isReadOnly} />}
