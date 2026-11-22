@@ -59,6 +59,7 @@
       "labels": "Etichette",
       "billable": "Fatturabile",
       "notify": "Avvisare",
+      "notify-tooltip": "I membri selezionati riceveranno una notifica via email quando questa attività verrà contrassegnata come completata.",
       "when-done-notify": "Al termine, avvisa",
       "start-date": "Data di inizio",
       "end-date": "Data di fine",
