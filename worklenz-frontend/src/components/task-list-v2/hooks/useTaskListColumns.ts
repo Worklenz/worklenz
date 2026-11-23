@@ -140,10 +140,19 @@ export const useTaskListColumns = ({
         return true;
       }
 
+      // Backlog: keep the software column set, but honor Fields toggles (incl. Labels)
       if (isBacklogMode) {
-        return BACKLOG_COLUMN_IDS.includes(column.id);
+        if (!BACKLOG_COLUMN_IDS.includes(column.id)) {
+          return false;
+        }
+        const backlogField = fields.find(f => f.key === column.key);
+        if (backlogField) {
+          return backlogField.visible;
+        }
+        // Epic / Points stay visible until added to Fields state
+        return true;
       }
-      // For other columns (including taskKey), respect the visibility settings
+
       // Primary: Check local fields configuration
       const field = fields.find(f => f.key === column.key);
       if (field) {

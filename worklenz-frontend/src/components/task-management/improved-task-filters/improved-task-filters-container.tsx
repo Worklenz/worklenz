@@ -1116,7 +1116,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
             />
           )}
 
-          {position === 'list' && !isCompactToolbar && (
+          {position === 'list' && (
             <FieldsDropdown
               themeClasses={themeClasses}
               isDarkMode={isDarkMode}
