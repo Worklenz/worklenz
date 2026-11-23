@@ -200,9 +200,39 @@ export default class TaskStatusesController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async updateStatusOrder(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `SELECT update_status_order($1);`;
-    const result = await db.query(q, [JSON.stringify(req.body.status_order)]);
-    TaskStatusesController.notifyProjectStatusUpdate(req.query.current_project_id as string);
+    const projectId = req.query.current_project_id;
+    const statusOrder: unknown = req.body.status_order;
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (typeof projectId !== "string" || !Array.isArray(statusOrder) || statusOrder.length === 0 ||
+      statusOrder.some(id => typeof id !== "string" || !uuidPattern.test(id))) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid status order"));
+    }
+    const ids: string[] = statusOrder.map(id => id.toLowerCase());
+    if (new Set(ids).size !== ids.length) {
+      return res.status(400).send(new ServerResponse(false, null, "Duplicate status IDs"));
+    }
+    // Validate the complete batch and update only statuses in the authorized project.
+    const q = `
+      WITH requested AS (
+        SELECT id, ordinality - 1 AS sort_order FROM unnest($1::uuid[]) WITH ORDINALITY AS r(id, ordinality)
+      ), allowed AS (
+        SELECT r.id, r.sort_order FROM requested r
+        JOIN task_statuses s ON s.id = r.id AND s.project_id = $2::uuid
+      ), remaining AS (
+        SELECT s.id, (SELECT COUNT(*) FROM requested) + ROW_NUMBER() OVER (ORDER BY s.sort_order, s.id) - 1 AS sort_order
+        FROM task_statuses s WHERE s.project_id = $2::uuid AND NOT EXISTS (SELECT 1 FROM requested r WHERE r.id = s.id)
+      ), updated AS (
+        UPDATE task_statuses s SET sort_order = ordering.sort_order
+        FROM (SELECT * FROM allowed UNION ALL SELECT * FROM remaining) ordering
+        WHERE s.id = ordering.id AND s.project_id = $2::uuid
+          AND (SELECT COUNT(*) FROM allowed) = (SELECT COUNT(*) FROM requested)
+        RETURNING s.id
+      ) SELECT COUNT(*)::int AS updated_count FROM updated;`;
+    const result = await db.query(q, [ids, projectId]);
+    if (!result.rows[0]?.updated_count) {
+      return res.status(403).send(new ServerResponse(false, null, "Invalid status order for project"));
+    }
+    TaskStatusesController.notifyProjectStatusUpdate(projectId);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 

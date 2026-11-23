@@ -10,13 +10,12 @@ import verifyProjectAccess from "../../middlewares/verify-project-access";
 
 const taskPhasesApiRouter = express.Router();
 
-const requirePhases = requireProjectPermission("phases", {
-  sources: ["query.current_project_id", "body.project_id", "query.id", "query.project_id"],
-});
+const requireQueryProjectPhases = requireProjectPermission("phases", { sources: ["query.id"] });
+const requireBodyProjectPhases = requireProjectPermission("phases", { sources: ["body.project_id"] });
 
-taskPhasesApiRouter.post("/", requirePhases, safeControllerFunction(TaskPhasesController.create));
+taskPhasesApiRouter.post("/", requireQueryProjectPhases, safeControllerFunction(TaskPhasesController.create));
 taskPhasesApiRouter.get("/", verifyProjectAccess("query", "id"), safeControllerFunction(TaskPhasesController.get));
-taskPhasesApiRouter.put("/update-sort-order", requirePhases, safeControllerFunction(TaskPhasesController.updateSortOrder));
+taskPhasesApiRouter.put("/update-sort-order", requireBodyProjectPhases, safeControllerFunction(TaskPhasesController.updateSortOrder));
 taskPhasesApiRouter.put(
   "/label/:id",
   requireProjectPermission("phases", { sources: ["params.id"] }),
@@ -28,11 +27,11 @@ taskPhasesApiRouter.put(
   requireProjectPermission("phases", { sources: ["params.id"] }),
   safeControllerFunction(TaskPhasesController.updateSprintSettings)
 );
-taskPhasesApiRouter.post("/:id/start", requirePhases, safeControllerFunction(TaskPhasesController.startSprint));
-taskPhasesApiRouter.post("/:id/complete", requirePhases, safeControllerFunction(TaskPhasesController.completeSprint));
-taskPhasesApiRouter.put("/change-color/:id", requirePhases, safeControllerFunction(TaskPhasesController.updateColor));
-taskPhasesApiRouter.patch("/:id/default-assignee", requirePhases, safeControllerFunction(TaskPhasesController.updateDefaultAssignee));
-taskPhasesApiRouter.put("/:id", requirePhases, taskPhaseNameValidator, schemaValidator(taskPhaseCreateSchema), safeControllerFunction(TaskPhasesController.update));
-taskPhasesApiRouter.delete("/:id", requirePhases, safeControllerFunction(TaskPhasesController.deleteById));
+taskPhasesApiRouter.post("/:id/start", requireQueryProjectPhases, safeControllerFunction(TaskPhasesController.startSprint));
+taskPhasesApiRouter.post("/:id/complete", requireQueryProjectPhases, safeControllerFunction(TaskPhasesController.completeSprint));
+taskPhasesApiRouter.put("/change-color/:id", requireQueryProjectPhases, safeControllerFunction(TaskPhasesController.updateColor));
+taskPhasesApiRouter.patch("/:id/default-assignee", requireQueryProjectPhases, safeControllerFunction(TaskPhasesController.updateDefaultAssignee));
+taskPhasesApiRouter.put("/:id", requireQueryProjectPhases, taskPhaseNameValidator, schemaValidator(taskPhaseCreateSchema), safeControllerFunction(TaskPhasesController.update));
+taskPhasesApiRouter.delete("/:id", requireQueryProjectPhases, safeControllerFunction(TaskPhasesController.deleteById));
 
 export default taskPhasesApiRouter;

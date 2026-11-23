@@ -223,8 +223,9 @@ WHERE id = $4
   // Update all roles for a project (delete then insert)
   @HandleExceptions()
   public static async updateByProjectId(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { project_id, roles } = req.body;
-    if (!Array.isArray(roles) || !project_id) {
+    const { project_id } = req.params;
+    const { roles } = req.body;
+    if (!Array.isArray(roles) || !project_id || (req.body.project_id && req.body.project_id !== project_id)) {
       return res.status(400).send(new ServerResponse(false, null, "Invalid input"));
     }
     if (roles.length === 0) {

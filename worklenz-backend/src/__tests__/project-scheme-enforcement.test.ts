@@ -63,6 +63,12 @@ describe('project scheme enforcement', () => {
     expect(next).toHaveBeenCalledTimes(allowed ? 1 : 0);
     if (!allowed) expect(res.statusCode).toBe(403);
   });
+  it('denies a bulk mutation if the user is a guest', async () => {
+    const res = createMockResponse(); const next = jest.fn();
+    await verifyBulkTaskAccessMiddleware()(createMockRequest({ user: { is_guest: true, team_id: 'team-123' }, body: { tasks: ['task'] } }), res, next);
+    expect(res.statusCode).toBe(403);
+    expect(next).not.toHaveBeenCalled();
+  });
   it('denies a bulk mutation if any project denies its grant', async () => {
     query.mockResolvedValueOnce({ rows: [{ id: 'task' }], rowCount: 1 })
       .mockResolvedValueOnce({ rows: [{ project_id: 'project' }] });
