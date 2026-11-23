@@ -24,7 +24,7 @@ import {
   APPSUMO_PLAN_LIMIT,
   LOG_I18N_KEYS,
 } from "../shared/constants";
-import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
+import { checkTeamSubscriptionStatus, getFreePlanSettings } from "../shared/paddle-utils";
 import { updateUsers } from "../shared/paddle-requests";
 import { getTeamMemberSeatLimit } from "../shared/subscription-limits";
 import { withTeamSeatLock } from "../shared/team-seat-lock";
@@ -646,6 +646,37 @@ export default class TeamMembersController extends WorklenzControllerBase {
                 false,
                 obj,
                 // `Your AppSumo plan includes ${ltdLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for ${BUSINESS_PLAN_LIMIT} members.`,
+              ),
+            );
+        }
+      }
+
+      /**
+       * Checks the free plan team member limit from licensing_settings.
+       * Free orgs are not "active", so they skip the seat check above and
+       * previously could invite unlimited members.
+       */
+      if (subscriptionData.subscription_type === "FREE" && incrementBy > 0) {
+        const freePlanSettings = await getFreePlanSettings();
+        const freePlanLimit = parseInt(freePlanSettings?.team_member_limit) || 0;
+        const currentFreeMembers = parseInt(subscriptionData.current_count) || 0;
+
+        if (freePlanLimit > 0 && currentFreeMembers + incrementBy > freePlanLimit) {
+          const obj = {
+            error_code: 'SEAT_LIMIT_EXCEEDED',
+            seats_enough: false,
+            current_members: currentFreeMembers,
+            plan_seat_limit: freePlanLimit,
+            is_appsumo_user: false,
+            subscription_type: subscriptionData.subscription_type,
+            current_seat_amount: freePlanLimit,
+          };
+          return res
+            .status(200)
+            .send(
+              new ServerResponse(
+                false,
+                obj,
               ),
             );
         }
