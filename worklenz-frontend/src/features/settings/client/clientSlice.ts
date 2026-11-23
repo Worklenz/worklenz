@@ -86,8 +86,14 @@ export const deleteClient = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       await clientsApiService.deleteClient(id);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Delete Client', error);
+      const axiosMessage = (
+        error as { response?: { data?: { message?: string } } }
+      )?.response?.data?.message;
+      if (axiosMessage) {
+        return rejectWithValue(axiosMessage);
+      }
       if (error instanceof Error) {
         return rejectWithValue(error.message);
       }
@@ -118,6 +124,15 @@ const clientSlice = createSlice({
       })
       .addCase(fetchClients.rejected, state => {
         state.loading = false;
+      })
+      .addCase(deleteClient.fulfilled, (state, action) => {
+        const deletedId = action.meta.arg;
+        if (state.clients.data) {
+          state.clients.data = state.clients.data.filter(client => client.id !== deletedId);
+        }
+        if (typeof state.clients.total === 'number' && state.clients.total > 0) {
+          state.clients.total -= 1;
+        }
       });
   },
 });
