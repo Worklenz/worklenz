@@ -2,6 +2,7 @@ import db from "../config/db";
 import TasktemplatesController from "../controllers/task-templates-controller";
 import { verifyNonGuestProjectAccess } from "../middlewares/verify-project-access";
 import { PROJECT_ROLE_PERMISSIONS } from "../shared/organization-permissions";
+import { checkProjectRolePermission } from "../shared/project-role-permissions";
 import { createMockRequest, createMockResponse } from "../tests/utils/express-mock";
 import { createQueryResult } from "../tests/utils/db-mock";
 
@@ -11,16 +12,20 @@ jest.mock("../decorators/handle-exceptions", () => ({
   default: () => (_target: unknown, _key: string, descriptor: PropertyDescriptor) => descriptor
 }));
 jest.mock("../shared/project-role-permissions", () => ({
-  checkProjectRolePermission: jest.fn().mockResolvedValue({ allowed: true, role: "Admin" })
+  checkProjectRolePermission: jest.fn().mockResolvedValue({ allowed: true, roleName: "Admin" })
 }));
 
 const query = db.query as jest.MockedFunction<typeof db.query>;
+const mockCheckProjectRolePermission = checkProjectRolePermission as jest.MockedFunction<
+  typeof checkProjectRolePermission
+>;
 const user = { id: "user-123", team_id: "team-123", is_guest: false };
 const targetProjectId = "p1234567-89ab-cdef-0123-456789abcdef";
 const templateId = "t1234567-89ab-cdef-0123-456789abcdef";
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockCheckProjectRolePermission.mockResolvedValue({ allowed: true, roleName: "Admin" });
 });
 
 describe("verifyNonGuestProjectAccess for task template import", () => {
@@ -51,12 +56,46 @@ describe("verifyNonGuestProjectAccess for task template import", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("allows non-guest members with create task permission", async () => {
+  it("denies when VIEW_PROJECT permission check fails with 403", async () => {
+    query.mockResolvedValueOnce(createQueryResult([{ id: targetProjectId }]));
+    mockCheckProjectRolePermission.mockResolvedValueOnce({ allowed: false, roleName: null });
+    const res = createMockResponse();
+    const next = jest.fn();
+    await middleware(createMockRequest({ user, params: { id: targetProjectId } }), res, next);
+    expect(res.statusCode).toBe(403);
+    expect(res.body.message).toContain("permission to access this project");
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("denies when CREATE_TASKS permission check fails with 403", async () => {
+    query.mockResolvedValueOnce(createQueryResult([{ id: targetProjectId }]));
+    mockCheckProjectRolePermission
+      .mockResolvedValueOnce({ allowed: true, roleName: "Member" }) // VIEW_PROJECT allowed
+      .mockResolvedValueOnce({ allowed: false, roleName: null }); // CREATE_TASKS denied
+    const res = createMockResponse();
+    const next = jest.fn();
+    await middleware(createMockRequest({ user, params: { id: targetProjectId } }), res, next);
+    expect(res.statusCode).toBe(403);
+    expect(res.body.message).toContain("permission to perform this action");
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("allows non-guest members with create task permission and asserts received parameters", async () => {
     query.mockResolvedValueOnce(createQueryResult([{ id: targetProjectId }])); // project access passes
     const res = createMockResponse();
     const next = jest.fn();
     await middleware(createMockRequest({ user, params: { id: targetProjectId } }), res, next);
     expect(next).toHaveBeenCalledTimes(1);
+    expect(mockCheckProjectRolePermission).toHaveBeenCalledWith(
+      user.id,
+      targetProjectId,
+      PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT
+    );
+    expect(mockCheckProjectRolePermission).toHaveBeenCalledWith(
+      user.id,
+      targetProjectId,
+      PROJECT_ROLE_PERMISSIONS.CREATE_TASKS
+    );
   });
 });
 
