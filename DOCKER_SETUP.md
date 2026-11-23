@@ -7,7 +7,7 @@ upgrading, and back up your data first.
 
 ## Known fresh-install limitation
 
-The Compose file currently pins backend image `3.4.2`. A clean-install test
+The Compose file currently pins backend image `3.4.3`. A clean-install test
 showed that database initialization loads the base schema but does not run the
 Node.js migrations. Running `npm run migrate:up` in that image failed because
 `database/pg-migrations-support/team-lead-prerequisites` was missing from the
