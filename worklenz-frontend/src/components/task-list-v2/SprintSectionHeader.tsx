@@ -425,6 +425,7 @@ export const SprintSectionHeader = ({
               icon={<PlusOutlined />}
               loading={isCreatingSprint}
               onClick={handleCreateSprint}
+              style={{ height: 30 }}
             >
               {t('createSprint', { defaultValue: 'Create sprint' })}
             </Button>

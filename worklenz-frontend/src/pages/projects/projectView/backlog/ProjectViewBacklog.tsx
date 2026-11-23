@@ -207,6 +207,7 @@ export const ProjectViewBacklog = () => {
             size="small"
             icon={<OrderedListOutlined />}
             onClick={() => setIsPointScaleOpen(true)}
+            style={{ height: 30 }}
           >
             {t('pointScaleButton', { defaultValue: 'Point scale' })}
           </Button>
@@ -215,6 +216,7 @@ export const ProjectViewBacklog = () => {
           size="small"
           icon={<ThunderboltOutlined />}
           onClick={() => setIsEpicsDrawerOpen(true)}
+          style={{ height: 30 }}
         >
           {t('epicsTitle', { defaultValue: 'Epics' })}
         </Button>
@@ -225,6 +227,7 @@ export const ProjectViewBacklog = () => {
             icon={<PlusOutlined />}
             loading={isCreatingSprint}
             onClick={handleCreateSprint}
+            style={{ height: 30 }}
           >
             {t('createSprint', { defaultValue: 'Create sprint' })}
           </Button>
