@@ -30,7 +30,12 @@ import { LICENSING_SETTINGS } from '@/shared/licensing_settings';
 import { isUserGuest } from '@/lib/project/project-view-guest';
 
 // Add Custom Column Button Component
-export const AddCustomColumnButton: React.FC = memo(() => {
+interface AddCustomColumnButtonProps {
+  /** Smaller control for dense headers (software backlog is 32px tall). */
+  compact?: boolean;
+}
+
+export const AddCustomColumnButton: React.FC<AddCustomColumnButtonProps> = memo(({ compact = false }) => {
   const dispatch = useAppDispatch();
   const isDarkMode = useAppSelector(state => state.themeReducer.mode === 'dark');
   const { t } = useTranslation('task-list-table');
@@ -233,8 +238,9 @@ export const AddCustomColumnButton: React.FC = memo(() => {
           ref={buttonRef}
           onClick={handleCreateColumn}
           disabled={isFree || isGuest || isCreating}
+          aria-label={t('customColumns.addCustomColumn', { defaultValue: 'Add a custom column' })}
           className={`
-            group relative w-9 h-9 rounded-lg border-2 border-dashed transition-all duration-200
+            group relative ${compact ? 'w-7 h-7 rounded-md' : 'w-9 h-9 rounded-lg'} border-2 border-dashed transition-all duration-200
             flex items-center justify-center
             ${
               isFree || isGuest || isCreating

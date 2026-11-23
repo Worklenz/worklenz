@@ -184,11 +184,9 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
 
   const visibleCount = useMemo(() => {
     const standardVisible = sortedFields.filter(field => field.visible).length;
-    const customVisible = isSoftwareBacklog
-      ? 0
-      : customFields.filter(field => field.visible).length;
+    const customVisible = customFields.filter(field => field.visible).length;
     return standardVisible + customVisible;
-  }, [customFields, isSoftwareBacklog, sortedFields]);
+  }, [customFields, sortedFields]);
 
   const handleFieldToggle = useCallback(
     (fieldKey: string, currentVisible: boolean, isCustomField = false) => {
@@ -330,7 +328,7 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
                   );
                 })}
 
-                {!isSoftwareBacklog && customFields.length > 0 && (
+                {customFields.length > 0 && (
                   <>
                     <div className={`my-1 border-t ${themeClasses.dropdownBorder}`} />
                     <div

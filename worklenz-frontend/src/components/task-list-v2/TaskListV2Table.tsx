@@ -568,7 +568,12 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                     className="sticky top-0 z-30 bg-[var(--tl-header-bg)]"
                     style={{ minWidth: 'max-content', height: BACKLOG_COLUMN_HEADER_HEIGHT }}
                   >
-                    <BacklogSectionColumnHeader visibleColumns={visibleColumns} pinned />
+                    <BacklogSectionColumnHeader
+                      visibleColumns={visibleColumns}
+                      pinned
+                      isGuest={isGuest}
+                      handleCustomColumnSettings={handleCustomColumnSettings}
+                    />
                   </div>
                 ) : (
                   <div
