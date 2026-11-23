@@ -117,7 +117,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
       {
         title: (
           <ColumnTitleWithHint
-            label={t('deliveryConfidence', { defaultValue: 'Delivery Confidence' })}
+            label={t('phColDeliveryConfidence', { defaultValue: 'Delivery Confidence' })}
             hint={t('phCalcColDeliveryConfidence', {
               defaultValue: 'The project’s current delivery confidence: On track, At risk, Off track, or Not set.',
             })}
@@ -158,7 +158,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
       {
         title: (
           <ColumnTitleWithHint
-            label={t('deliveryConfidence', { defaultValue: 'Delivery Confidence' })}
+            label={t('phColProgress', { defaultValue: 'Progress' })}
             hint={t('phCalcColDeliveryConfidence', {
               defaultValue: 'The project’s current delivery confidence: On track, At risk, Off track, or Not set.',
             })}
@@ -227,10 +227,9 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
       {
         title: (
           <ColumnTitleWithHint
-            label={t('phColBudgetUsed', { defaultValue: 'Budget used' })}
-            hint={t('phCalcColBudgetUsed', {
-              defaultValue:
-                '(Task fixed costs + logged time cost) ÷ project budget × 100. Shown as — when budget is 0.',
+            label={t('phColOverdue', { defaultValue: 'Overdue' })}
+            hint={t('phCalcColOverdue', {
+              defaultValue: 'Incomplete, non-archived tasks whose due date is before today.',
             })}
             hintColor={token.colorTextSecondary}
           />
