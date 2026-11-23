@@ -1,8 +1,17 @@
+import type { PoolClient } from "pg";
 import i18next from "../../config/i18n";
 import db from "../../config/db";
 import { IPassportSession } from "../../interfaces/passport-session";
+import { teamCanUseFeature } from "../../shared/entitlements/gates";
+import {
+  hasOrganizationPermission,
+  ORGANIZATION_PERMISSIONS,
+} from "../../shared/organization-permissions";
 import {
   ANALYTICS_REPORT_KINDS,
+  isFinanceAnalyticsReportKind,
+  MAX_ANALYTICS_SCHEDULES_PER_KIND,
+  MAX_ANALYTICS_SCHEDULES_PER_USER,
   TEMPLATE_FILTERS_MAX_BYTES,
   TEMPLATE_NAME_MAX_LENGTH,
 } from "../../shared/reporting-analytics.constants";
@@ -593,6 +602,86 @@ function normalizeScheduleFields(input: UpsertScheduleInput): NormalizedSchedule
   };
 }
 
+/** Reject finance report kinds unless the actor has View finance + finance_module. */
+async function assertFinanceScheduleAccess(
+  user: IPassportSession,
+  reportKind: string
+): Promise<void> {
+  if (!isFinanceAnalyticsReportKind(reportKind)) return;
+
+  if (!(await teamCanUseFeature(user.team_id, "finance_module"))) {
+    throw new ScheduleServiceError(
+      i18next.t("analyticsSchedules.financeModuleRequired", {
+        defaultValue: "Finance module required",
+      }),
+      403
+    );
+  }
+
+  if (!(await hasOrganizationPermission(user, ORGANIZATION_PERMISSIONS.VIEW_FINANCE))) {
+    throw new ScheduleServiceError(
+      i18next.t("analyticsSchedules.viewFinanceRequired", {
+        defaultValue: "View finance permission required",
+      }),
+      403
+    );
+  }
+}
+
+async function assertUserScheduleCap(
+  teamId: string,
+  userId: string,
+  reportKind: string,
+  client: PoolClient
+): Promise<void> {
+  const result = await client.query(
+    `SELECT COUNT(*)::INT AS total_count,
+            COUNT(*) FILTER (WHERE report_kind = $3)::INT AS count
+     FROM analytics_report_schedules
+     WHERE team_id = $1::UUID AND owner_id = $2::UUID`,
+    [teamId, userId, reportKind]
+  );
+  if (Number(result.rows[0]?.total_count ?? 0) >= MAX_ANALYTICS_SCHEDULES_PER_USER) {
+    throw new ScheduleServiceError(
+      i18next.t("analyticsSchedules.userLimit", {
+        defaultValue: "You can create at most {{limit}} schedules across all reports",
+        limit: MAX_ANALYTICS_SCHEDULES_PER_USER,
+      })
+    );
+  }
+  if (Number(result.rows[0]?.count ?? 0) >= MAX_ANALYTICS_SCHEDULES_PER_KIND) {
+    throw new ScheduleServiceError(
+      i18next.t("analyticsSchedules.kindLimit", {
+        defaultValue: "You can create at most {{limit}} schedules for this report",
+        limit: MAX_ANALYTICS_SCHEDULES_PER_KIND,
+      })
+    );
+  }
+}
+
+/** Serialize quota-changing creates per team so concurrent requests cannot exceed caps. */
+async function withScheduleQuotaLock<T>(
+  teamId: string,
+  action: (client: PoolClient) => Promise<T>
+): Promise<T> {
+  const client = await db.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(
+      "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
+      [`analytics-schedule-quota:${teamId}`]
+    );
+    const result = await action(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 /** Always creates a new schedule (multiple per report kind / project filters allowed). */
 export async function upsertSchedule(
   user: IPassportSession,
@@ -603,6 +692,7 @@ export async function upsertSchedule(
   if (!teamId || !userId) throw new ScheduleServiceError("Unauthorized", 401);
 
   const fields = normalizeScheduleFields(input);
+  await assertFinanceScheduleAccess(user, fields.reportKind);
 
   if (fields.templateId) {
     if (!isValidUuid(fields.templateId)) {
@@ -611,46 +701,50 @@ export async function upsertSchedule(
     await assertTemplateBelongsToTeam(teamId, userId, fields.templateId, fields.reportKind);
   }
 
-  const inserted = await db.query(
-    `INSERT INTO analytics_report_schedules (
-       team_id, owner_id, report_kind, report_name, template_id,
-       schedule_type, days_of_week, day_of_month, date_of_month, week_of_month,
-       interval_days, interval_weeks, interval_months,
-       send_time, timezone, recipients, formats, message, filters_json,
-       paused, next_send_at
-     ) VALUES (
-       $1::UUID, $2::UUID, $3, $4, $5::UUID,
-       $6::SCHEDULE_TYPE, $7::INT[], $8, $9, $10,
-       $11, $12, $13,
-       $14::TIME, $15, $16::TEXT[], $17::TEXT[], $18, $19::jsonb,
-       $20, $21
-     )
-     RETURNING ${SELECT_COLS}`,
-    [
-      teamId,
-      userId,
-      fields.reportKind,
-      fields.reportName,
-      fields.templateId,
-      fields.cadence.scheduleType,
-      fields.cadence.daysOfWeek,
-      fields.cadence.dayOfMonth,
-      fields.cadence.dateOfMonth,
-      fields.cadence.weekOfMonth,
-      fields.cadence.intervalDays,
-      fields.cadence.intervalWeeks,
-      fields.cadence.intervalMonths,
-      fields.cadence.sendTime,
-      fields.cadence.timezone,
-      fields.recipients,
-      fields.formats,
-      fields.message,
-      JSON.stringify(fields.filters),
-      fields.paused,
-      fields.nextSendAt,
-    ]
-  );
-  return mapRow(inserted.rows[0]);
+  return withScheduleQuotaLock(teamId, async client => {
+    await assertUserScheduleCap(teamId, userId, fields.reportKind, client);
+
+    const inserted = await client.query(
+      `INSERT INTO analytics_report_schedules (
+         team_id, owner_id, report_kind, report_name, template_id,
+         schedule_type, days_of_week, day_of_month, date_of_month, week_of_month,
+         interval_days, interval_weeks, interval_months,
+         send_time, timezone, recipients, formats, message, filters_json,
+         paused, next_send_at
+       ) VALUES (
+         $1::UUID, $2::UUID, $3, $4, $5::UUID,
+         $6::SCHEDULE_TYPE, $7::INT[], $8, $9, $10,
+         $11, $12, $13,
+         $14::TIME, $15, $16::TEXT[], $17::TEXT[], $18, $19::jsonb,
+         $20, $21
+       )
+       RETURNING ${SELECT_COLS}`,
+      [
+        teamId,
+        userId,
+        fields.reportKind,
+        fields.reportName,
+        fields.templateId,
+        fields.cadence.scheduleType,
+        fields.cadence.daysOfWeek,
+        fields.cadence.dayOfMonth,
+        fields.cadence.dateOfMonth,
+        fields.cadence.weekOfMonth,
+        fields.cadence.intervalDays,
+        fields.cadence.intervalWeeks,
+        fields.cadence.intervalMonths,
+        fields.cadence.sendTime,
+        fields.cadence.timezone,
+        fields.recipients,
+        fields.formats,
+        fields.message,
+        JSON.stringify(fields.filters),
+        fields.paused,
+        fields.nextSendAt,
+      ]
+    );
+    return mapRow(inserted.rows[0]);
+  });
 }
 
 export async function updateSchedule(
@@ -697,6 +791,7 @@ export async function updateSchedule(
   };
 
   const fields = normalizeScheduleFields(merged);
+  await assertFinanceScheduleAccess(user, fields.reportKind);
 
   const updated = await db.query(
     `UPDATE analytics_report_schedules SET

@@ -4,14 +4,20 @@ import {
   expandAccessibleProjects,
   parseAccessibleTeamIdsFromInput,
 } from "../../shared/analytics-expand-projects";
-import { canViewAllProjects } from "../../shared/organization-permissions";
+import { teamCanUseFeature } from "../../shared/entitlements/gates";
+import {
+  canViewAllProjects,
+  hasOrganizationPermission,
+  ORGANIZATION_PERMISSIONS,
+} from "../../shared/organization-permissions";
 import { getVisibleProjectIds } from "../../shared/project-role-permissions";
+import { isFinanceAnalyticsReportKind } from "../../shared/reporting-analytics.constants";
 import {
   getEffectiveTeamRole,
   TEAM_ROLE_NAMES,
 } from "../../shared/team-permissions";
 
-async function loadScheduleOwnerSession(
+export async function loadScheduleOwnerSession(
   userId: string,
   teamId: string
 ): Promise<IPassportSession | null> {
@@ -41,6 +47,46 @@ async function loadScheduleOwnerSession(
     owner: !!row.is_owner,
     is_admin: !!row.is_admin_role && String(row.role_name).toLowerCase() === "admin",
   };
+}
+
+/**
+ * True when the schedule owner may create/send finance report schedules
+ * (View finance + finance_module), matching live Project Health / Budget Tracking gates.
+ */
+export async function canOwnerAccessFinanceSchedules(
+  userId: string,
+  teamId: string
+): Promise<boolean> {
+  if (!(await teamCanUseFeature(teamId, "finance_module"))) return false;
+  const session = await loadScheduleOwnerSession(userId, teamId);
+  if (!session) return false;
+  return hasOrganizationPermission(session, ORGANIZATION_PERMISSIONS.VIEW_FINANCE);
+}
+
+/**
+ * Revalidate send-time gates for the cron worker.
+ * Schedules always require View reports + advanced_reporting (same as create/update).
+ * Finance kinds additionally require View finance + finance_module.
+ */
+export async function canOwnerSendSchedule(
+  userId: string,
+  teamId: string,
+  reportKind: string
+): Promise<boolean> {
+  if (!(await teamCanUseFeature(teamId, "advanced_reporting"))) return false;
+
+  const session = await loadScheduleOwnerSession(userId, teamId);
+  if (!session) return false;
+
+  if (!(await hasOrganizationPermission(session, ORGANIZATION_PERMISSIONS.VIEW_REPORTS))) {
+    return false;
+  }
+
+  if (isFinanceAnalyticsReportKind(reportKind)) {
+    return canOwnerAccessFinanceSchedules(userId, teamId);
+  }
+
+  return true;
 }
 
 /**

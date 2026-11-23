@@ -51,9 +51,25 @@ export const ANALYTICS_REPORT_KINDS = [
   "sla",
 ] as const;
 
+/** Reports that expose financial figures; require View finance + finance_module. */
+export const FINANCE_ANALYTICS_REPORT_KINDS = [
+  "project-health",
+  "budget-tracking",
+] as const;
+
+export type FinanceAnalyticsReportKind = (typeof FINANCE_ANALYTICS_REPORT_KINDS)[number];
+
+export const isFinanceAnalyticsReportKind = (kind: string): kind is FinanceAnalyticsReportKind =>
+  (FINANCE_ANALYTICS_REPORT_KINDS as readonly string[]).includes(kind);
+
 // Preserve each report's allowance while bounding totals, including legacy report kinds.
 export const MAX_ANALYTICS_TEMPLATES_PER_USER =
   MAX_VELOCITY_TEMPLATES_PER_USER * ANALYTICS_REPORT_KINDS.length;
 export const MAX_WORKSPACE_ANALYTICS_TEMPLATES =
   MAX_WORKSPACE_VELOCITY_TEMPLATES * ANALYTICS_REPORT_KINDS.length;
 export const TEMPLATE_FILTERS_MAX_BYTES = 16 * 1024;
+
+/** Per-kind and aggregate caps for email schedules (mirrors template quotas). */
+export const MAX_ANALYTICS_SCHEDULES_PER_KIND = MAX_VELOCITY_TEMPLATES_PER_USER;
+export const MAX_ANALYTICS_SCHEDULES_PER_USER =
+  MAX_ANALYTICS_SCHEDULES_PER_KIND * ANALYTICS_REPORT_KINDS.length;

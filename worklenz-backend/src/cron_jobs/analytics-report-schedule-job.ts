@@ -4,6 +4,7 @@ import db from "../config/db";
 import { sendEmail } from "../shared/email";
 import { log_error } from "../shared/utils";
 import { formatScheduleTimeRangeNote } from "../services/reporting-analytics/analytics-schedule-date-bounds";
+import { canOwnerSendSchedule } from "../services/reporting-analytics/analytics-schedule-access";
 import { buildLiveScheduleExports } from "../services/reporting-analytics/analytics-schedule-export.service";
 import {
   AnalyticsScheduleRow,
@@ -131,6 +132,19 @@ export function buildEmailHtml(
 }
 
 async function processSchedule(schedule: AnalyticsScheduleRow): Promise<boolean> {
+  // Revalidate create-time gates: View reports + advanced_reporting, and finance
+  // gates for Project Health / Budget Tracking, so revoked access cannot keep sending.
+  const allowed = await canOwnerSendSchedule(
+    schedule.owner_id,
+    schedule.team_id,
+    schedule.report_kind
+  );
+  if (!allowed) {
+    throw new Error(
+      `Authorization missing for schedule ${schedule.id} (${schedule.report_kind})`
+    );
+  }
+
   const exportFiles = await buildLiveScheduleExports({
     reportKind: schedule.report_kind,
     reportName: schedule.report_name,
