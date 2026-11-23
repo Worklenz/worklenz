@@ -25,6 +25,7 @@ import { STORAGE_PROVIDER } from "./shared/constants";
 import sessionMiddleware from "./middlewares/session-middleware";
 import safeControllerFunction from "./shared/safe-controller-function";
 import AwsSesController from "./controllers/aws-ses-controller";
+import { verifySnsNotification } from "./shared/sns-validator";
 import BillingController from "./controllers/billing-controller";
 import { CSP_POLICIES } from "./shared/csp";
 import importWorker from "./services/import-worker";
@@ -497,21 +498,32 @@ app.get("/csrf-token", (req: Request, res: Response) => {
   }
 });
 
-// Webhook endpoints (no CSRF required)
+// Webhook endpoints (no CSRF required; SNS signature verified)
+// Support AWS SNS text/plain content type alongside application/json
+const snsBodyParser = express.text({ type: ["text/plain", "application/json"], limit: "10mb" });
+
 app.post(
   "/webhook/emails/bounce",
+  snsBodyParser,
+  safeControllerFunction(verifySnsNotification),
   safeControllerFunction(AwsSesController.handleBounceResponse),
 );
 app.post(
   "/webhook/emails/complaints",
+  snsBodyParser,
+  safeControllerFunction(verifySnsNotification),
   safeControllerFunction(AwsSesController.handleComplaintResponse),
 );
 app.post(
   "/webhook/emails/delivery",
+  snsBodyParser,
+  safeControllerFunction(verifySnsNotification),
   safeControllerFunction(AwsSesController.handleDeliveryEvents),
 );
 app.post(
   "/webhook/emails/reply",
+  snsBodyParser,
+  safeControllerFunction(verifySnsNotification),
   safeControllerFunction(AwsSesController.handleReplies),
 );
 

@@ -28,7 +28,7 @@ export default abstract class WorklenzControllerBase {
     return data;
   }
 
-  protected static toPaginationOptions(queryParams: any, searchField: string | string[], isMemberFilter = false, paramOffset = 1) {
+  protected static toPaginationOptions(queryParams: any, searchField: string | string[], isMemberFilter = false, paramOffset = 1, allowedSortFields?: readonly string[]) {
     // Pagination
     const size = +(queryParams.size || DEFAULT_PAGE_SIZE);
     const index = +(queryParams.index || 1);
@@ -70,9 +70,16 @@ export default abstract class WorklenzControllerBase {
     }
 
     // Sort
-    const sortField = /null|undefined/.test(queryParams.field as string) ? searchField : queryParams.field;
+    // Sort expressions are assembled into SQL by callers; accept identifiers only.
+    // Individual endpoints may further restrict these to their supported columns.
+    const requestedField = queryParams.field;
+    const defaultField = Array.isArray(searchField) ? searchField[0] : searchField;
+    const sortField = typeof requestedField === "string" &&
+      (!allowedSortFields || allowedSortFields.includes(requestedField)) &&
+      /^(?!null$|undefined$)[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)?$/.test(requestedField)
+      ? requestedField : defaultField;
     // Handle both uppercase (ASC/DESC) and lowercase (asc/desc/ascend/descend) order values
-    const orderValue = (queryParams.order as string || "").toLowerCase();
+    const orderValue = typeof queryParams.order === "string" ? queryParams.order.toLowerCase() : "";
     const sortOrder = (orderValue === "desc" || orderValue === "descend") ? "desc" : "asc";
 
     return {searchQuery, searchParams, sortField, sortOrder, size, offset, paging};

@@ -467,6 +467,16 @@ export function verifyBulkTaskAccessMiddleware(
       );
     }
 
+    if (req.user?.is_guest) {
+      return res.status(403).send(
+        new ServerResponse(
+          false,
+          null,
+          "Guests are not permitted to perform bulk task operations"
+        )
+      );
+    }
+
     // Get tasks array from the specified location
     const tasks = req[location]?.[fieldName];
 

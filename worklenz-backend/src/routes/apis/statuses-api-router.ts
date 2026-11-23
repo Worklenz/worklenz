@@ -12,13 +12,12 @@ import requireStatusPermission from "../../middlewares/validators/require-status
 
 const statusesApiRouter = express.Router();
 
-const requireStatuses = requireProjectPermission("statuses", {
-  sources: ["query.current_project_id", "body.project_id", "query.project_id"],
-});
+const requireStatusCreation = requireProjectPermission("statuses", { sources: ["body.project_id"] });
+const requireStatusOrdering = requireProjectPermission("statuses", { sources: ["query.current_project_id"] });
 
-statusesApiRouter.post("/", requireStatuses, taskStatusBodyValidator, safeControllerFunction(TaskStatusesController.getCreated));
+statusesApiRouter.post("/", requireStatusCreation, taskStatusBodyValidator, safeControllerFunction(TaskStatusesController.getCreated));
 statusesApiRouter.get("/", safeControllerFunction(TaskStatusesController.get));
-statusesApiRouter.put("/order", requireStatuses, statusOrderValidator, safeControllerFunction(TaskStatusesController.updateStatusOrder));
+statusesApiRouter.put("/order", requireStatusOrdering, statusOrderValidator, safeControllerFunction(TaskStatusesController.updateStatusOrder));
 statusesApiRouter.put("/color/:id", idParamValidator, requireStatusPermission, safeControllerFunction(TaskStatusesController.updateColor));
 statusesApiRouter.get("/categories", safeControllerFunction(TaskStatusesController.getCategories));
 statusesApiRouter.get("/:id", idParamValidator, safeControllerFunction(TaskStatusesController.getById));
