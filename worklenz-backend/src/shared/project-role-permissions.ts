@@ -81,7 +81,7 @@ interface IRoleContextRow {
 /** Maps a role-context query row to the permission check context. */
 const toRoleContext = (row: IRoleContextRow): IProjectRoleContext => {
   const teamRole = row.owner ? TEAM_ROLE_NAMES.OWNER : normalizeTeamRoleName(row.role_name);
-  const isGuest = teamRole === TEAM_ROLE_NAMES.MEMBER && (row.is_team_guest || row.is_project_guest);
+  const isGuest = (teamRole as string) === GUEST_ROLE_NAME || (teamRole === TEAM_ROLE_NAMES.MEMBER && (row.is_team_guest || row.is_project_guest));
   return {
     teamId: row.team_id,
     projectId: row.project_id,

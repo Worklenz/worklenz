@@ -5178,6 +5178,27 @@ BEGIN
 
     SELECT team_id INTO _team_id FROM projects WHERE id = _project_id;
 
+    IF _team_id IS NULL THEN
+        RAISE EXCEPTION 'Project not found';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM team_members tm
+        WHERE tm.team_id = _team_id
+          AND tm.user_id = _user_id
+          AND tm.active IS TRUE
+          AND (
+              tm.is_guest IS FALSE
+              OR EXISTS (
+                  SELECT 1 FROM project_members pm
+                  WHERE pm.project_id = _project_id
+                    AND pm.user_id = _user_id
+              )
+          )
+    ) THEN
+        RAISE EXCEPTION 'Access denied: user does not have permission to import tasks into this project';
+    END IF;
+
     SELECT id INTO _default_status_id
     FROM task_statuses
     WHERE project_id = _project_id
