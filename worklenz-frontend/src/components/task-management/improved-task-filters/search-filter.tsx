@@ -190,7 +190,7 @@ const CollapsibleSearchFilter = ({
               placeholder={
                 placeholder || t('searchTasks', { defaultValue: 'Search tasks by name or key...' })
               }
-              className={`w-full pr-4 pl-8 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-150 ${isDarkMode
+              className={`w-full pr-4 pl-8 py-1 rounded border-0 focus:outline-none focus:ring-0 transition-colors duration-150 ${isDarkMode
                 ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
                 : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
                 }`}
