@@ -67,7 +67,6 @@ export const ProjectViewBacklog = () => {
   const canManageSprints = (isOwnerOrAdmin || isProjectManager) && !isGuest;
   const { createSprint } = useSprintActions(projectId);
   const [isCreatingSprint, setIsCreatingSprint] = useState(false);
-  const hasNoSprints = phaseList.length === 0;
   const [isEpicsDrawerOpen, setIsEpicsDrawerOpen] = useState(false);
   const [isPointScaleOpen, setIsPointScaleOpen] = useState(false);
   const epics = useAppSelector(state => state.epicsReducer.epics);
@@ -223,7 +222,7 @@ export const ProjectViewBacklog = () => {
         {canManageSprints && (
           <Button
             size="small"
-            type={hasNoSprints ? 'primary' : 'default'}
+            type="primary"
             icon={<PlusOutlined />}
             loading={isCreatingSprint}
             onClick={handleCreateSprint}

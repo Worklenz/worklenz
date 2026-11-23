@@ -68,7 +68,6 @@ export const SprintSectionHeader = ({
   const [isCreatingSprint, setIsCreatingSprint] = useState(false);
   const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
   const hasActiveSprint = phaseList.some(phase => phase.sprint_status === 'active');
-  const hasNoSprints = phaseList.length === 0;
 
   const dispatch = useAppDispatch();
   const [isEditingName, setIsEditingName] = useState(false);
@@ -421,7 +420,7 @@ export const SprintSectionHeader = ({
           {isBacklogSection && canManage && (
             <Button
               size="small"
-              type={hasNoSprints ? 'primary' : 'default'}
+              type="primary"
               icon={<PlusOutlined />}
               loading={isCreatingSprint}
               onClick={handleCreateSprint}
