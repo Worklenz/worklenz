@@ -31,9 +31,11 @@ import {
   WorkItemStatus,
   WorkItemSummary,
 } from '@/components/projects/releases/release-work-item-parts';
+import { CustomColordLabel } from '@/components';
 import { formatStoryPoints } from '@/lib/project/story-points';
 import { getSoftwareProjectLabels } from '@/lib/project/software-project';
 import { ISoftwareWorkItem } from '@/types/project/softwareIssue.types';
+import type { ITaskLabel } from '@/types/tasks/taskLabel.types';
 
 interface EpicFilter {
   id: string;
@@ -145,6 +147,15 @@ const ProjectViewSoftwareList = () => {
         render: (_, item) => <WorkItemAssignee item={item} />,
       },
       {
+        key: 'labels',
+        title: t('listColumnLabels', { defaultValue: 'Labels' }),
+        width: 180,
+        ellipsis: true,
+        render: (_, item) => (
+          <WorkItemLabels item={item} onOpen={() => handleOpenItem(item)} />
+        ),
+      },
+      {
         key: 'priority',
         title: t('listColumnPriority', { defaultValue: 'Priority' }),
         width: 110,
@@ -229,7 +240,7 @@ const ProjectViewSoftwareList = () => {
           columns={columns}
           dataSource={filteredItems}
           loading={isLoading}
-          scroll={{ x: 900 }}
+          scroll={{ x: 1080 }}
           pagination={{ pageSize: 50, hideOnSinglePage: true, showSizeChanger: false }}
           locale={{
             emptyText: (
@@ -248,6 +259,51 @@ const ProjectViewSoftwareList = () => {
         />
       </div>
     </Flex>
+  );
+};
+
+const MAX_VISIBLE_LIST_LABELS = 2;
+
+const WorkItemLabels = ({
+  item,
+  onOpen,
+}: {
+  item: ISoftwareWorkItem;
+  onOpen: () => void;
+}) => {
+  const { t } = useTranslation('project-view');
+  const isDarkMode = useAppSelector(state => state.themeReducer.mode === 'dark');
+  const labels = (item.labels ?? []).filter((label): label is ITaskLabel => !!label?.name);
+
+  if (labels.length === 0) {
+    return <Typography.Text type="secondary">–</Typography.Text>;
+  }
+
+  const visibleLabels = labels.slice(0, MAX_VISIBLE_LIST_LABELS);
+  const overflowCount = labels.length - visibleLabels.length;
+
+  return (
+    <button
+      type="button"
+      className="flex max-w-full min-w-0 items-center gap-1 overflow-hidden border-0 bg-transparent p-0 cursor-pointer text-left focus-visible:outline focus-visible:outline-2"
+      onClick={onOpen}
+      aria-label={t('listOpenLabels', {
+        defaultValue: 'Open issue to edit labels',
+      })}
+    >
+      {visibleLabels.map((label, index) => (
+        <CustomColordLabel
+          key={`${label.id ?? label.name}-${index}`}
+          label={label}
+          isDarkMode={isDarkMode}
+        />
+      ))}
+      {overflowCount > 0 && (
+        <Typography.Text type="secondary" className="text-xs shrink-0">
+          +{overflowCount}
+        </Typography.Text>
+      )}
+    </button>
   );
 };
 

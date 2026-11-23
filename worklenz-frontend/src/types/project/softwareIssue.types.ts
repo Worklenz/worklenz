@@ -1,4 +1,5 @@
 import type { IReleaseWorkItem } from './projectRelease.types';
+import type { ITaskLabel } from '@/types/tasks/taskLabel.types';
 
 /** Issue type stored on a task. Subtasks are derived from `parent_task_id`. */
 export type IssueType = 'task' | 'story' | 'bug';
@@ -27,6 +28,8 @@ export interface ISoftwareWorkItem extends IReleaseWorkItem {
   priority_color_dark: string | null;
   /** Assigned to the requesting user. */
   is_mine: boolean;
+  /** Team labels assigned to this work item. */
+  labels?: ITaskLabel[];
 }
 
 export interface ICreateSoftwareIssueResponse {

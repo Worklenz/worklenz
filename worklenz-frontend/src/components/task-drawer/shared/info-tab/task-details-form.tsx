@@ -220,6 +220,7 @@ const TaskDetailsForm = ({ taskFormViewModel = null, canCreateTask = true, isGue
           {task && <TaskDrawerEpicSelector task={task} disabled={isReadOnly} />}
           {task && <TaskDrawerReleaseSelector task={task} disabled={isReadOnly} />}
           {priorityField}
+          {task && <TaskDrawerLabels task={task} t={t} isGuest={isGuest} />}
           {task && <TaskDrawerStoryPoints task={task} disabled={isReadOnly} />}
           {task && <TaskDrawerBlocked task={task} disabled={isReadOnly} />}
         </Form>

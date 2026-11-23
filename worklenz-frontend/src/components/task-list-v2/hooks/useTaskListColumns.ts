@@ -24,7 +24,14 @@ const SOFTWARE_COLUMN_LABELS: Record<string, string> = {
   assignees: 'assigneeColumn',
 };
 
-const BACKLOG_COLUMN_IDS: readonly string[] = ['status', 'epic', 'assignees', 'priority', 'points'];
+const BACKLOG_COLUMN_IDS: readonly string[] = [
+  'status',
+  'epic',
+  'assignees',
+  'labels',
+  'priority',
+  'points',
+];
 /** Card borders (3px active-sprint accent + 1px right) and row padding around backlog columns. */
 const BACKLOG_ROW_CHROME_WIDTH = 18;
 
