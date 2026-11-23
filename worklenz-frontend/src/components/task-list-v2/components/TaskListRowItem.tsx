@@ -86,6 +86,7 @@ export const TaskListRowItem: React.FC<TaskListRowItemProps> = React.memo(
     const showBefore = isOverThisTask && dropPosition === 'before';
     const showAfter = isOverThisTask && dropPosition === 'after';
     const showIntoParent = isOverThisTask && dropPosition === 'into';
+    const isAddTaskRowItem = 'isAddTaskRow' in item && item.isAddTaskRow;
     const isLastItemOfGroup =
       indexInGroup === (group?.tasks?.length ?? 0) - 1 &&
       group.tasks.some(task => !('isAddTaskRow' in task));
@@ -101,7 +102,8 @@ export const TaskListRowItem: React.FC<TaskListRowItemProps> = React.memo(
             borderBottom: `1px solid ${themeToken.colorBorderSecondary}`,
             borderBottomLeftRadius: 10,
             borderBottomRightRadius: 10,
-            overflow: 'hidden',
+            // overflow:hidden breaks position:sticky on the create-work-item row
+            ...(!isAddTaskRowItem && { overflow: 'hidden' }),
           }),
         }
       : {};

@@ -64,6 +64,8 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
     const [issueType, setIssueType] = useState<IssueType>('task');
     const [creatingTask, setCreatingTask] = useState(false);
     const inputRef = useRef<any>(null);
+    const rowRef = useRef<HTMLDivElement>(null);
+    const visibleWidth = useVisibleScrollWidth(rowRef);
     const { socket, connected } = useSocket();
     const { t } = useTranslation('task-list-table');
     const { t: tProjectView } = useTranslation('project-view');
@@ -441,6 +443,50 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
       ]
     );
 
+    // Software backlog: keep create-work-item pinned to the viewport while the
+    // table scrolls horizontally (same idea as sprint section bars).
+    if (isBacklogWorkItemRow) {
+      const dragHandle = visibleColumns.find(column => column.id === 'dragHandle');
+      const titleColumn = visibleColumns.find(column => column.id === 'title');
+      const dragHandleWidth = dragHandle?.width || '20px';
+      const titleIndex = titleColumn
+        ? visibleColumns.findIndex(column => column.id === 'title')
+        : 0;
+
+      return (
+        // Full-width spacer so this row stays as wide as the scrolled content;
+        // sticky only works while its containing block remains in view.
+        <div style={{ minWidth: 'max-content', width: '100%', position: 'relative' }}>
+          <div
+            aria-hidden
+            className="flex"
+            style={{ height: 0, overflow: 'hidden', visibility: 'hidden' }}
+          >
+            {visibleColumns.map(column => (
+              <div
+                key={column.id}
+                style={{ width: `var(--col-width-${column.id}, ${column.width})`, flexShrink: 0 }}
+              />
+            ))}
+            <div style={{ width: 40, flexShrink: 0 }} />
+          </div>
+          <div
+            ref={rowRef}
+            className="sticky left-0 z-[15] flex items-center px-1 py-0.5 hover:bg-gray-50 dark:hover:bg-gray-800 min-h-[36px]"
+            style={{
+              width: visibleWidth ?? '100%',
+              backgroundColor: 'inherit',
+            }}
+          >
+            {dragHandle && renderColumn('dragHandle', dragHandleWidth, 0, true)}
+            {titleColumn
+              ? renderColumn('title', '100%', titleIndex, false)
+              : renderColumn('title', '100%', 0, false)}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="flex items-center min-w-max px-1 py-0.5 hover:bg-gray-50 dark:hover:bg-gray-800 min-h-[36px]">
         {visibleColumns.map((column, index) => (
@@ -454,6 +500,33 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
 );
 
 const ISSUE_TYPES: IssueType[] = ['task', 'story', 'bug'];
+
+/** Width of the nearest horizontally scrolling ancestor (visible viewport). */
+const useVisibleScrollWidth = (ref: React.RefObject<HTMLElement | null>) => {
+  const [width, setWidth] = useState<number | null>(null);
+
+  useEffect(() => {
+    const scrollParent = findHorizontalScrollParent(ref.current);
+    if (!scrollParent) return;
+    const updateWidth = () => setWidth(scrollParent.clientWidth);
+    updateWidth();
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(scrollParent);
+    return () => observer.disconnect();
+  }, [ref]);
+
+  return width;
+};
+
+const findHorizontalScrollParent = (element: HTMLElement | null): HTMLElement | null => {
+  let node = element?.parentElement ?? null;
+  while (node) {
+    const { overflowX } = window.getComputedStyle(node);
+    if (overflowX === 'auto' || overflowX === 'scroll') return node;
+    node = node.parentElement;
+  }
+  return null;
+};
 
 AddTaskRow.displayName = 'AddTaskRow';
 
