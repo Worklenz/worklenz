@@ -60,7 +60,7 @@ export default class ClientsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const {searchQuery, searchParams = [], sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name", false, 2);
+    const {searchQuery, searchParams = [], sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name", false, 2, ["id", "name", "projects_count"]);
     const limitParam = searchParams.length + 2;
     const offsetParam = searchParams.length + 3;
 

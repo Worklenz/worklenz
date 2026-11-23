@@ -25,7 +25,7 @@ export default class DepartmentsController extends WorklenzControllerBase {
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
     const { searchQuery, searchParams, sortField, sortOrder, size, offset } =
-      this.toPaginationOptions(req.query, "name", false, 4);
+      this.toPaginationOptions(req.query, "name", false, 4, ["id", "name"]);
 
     const q = `
       SELECT ROW_TO_JSON(rec) AS departments
