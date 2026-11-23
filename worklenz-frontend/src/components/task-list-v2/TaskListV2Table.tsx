@@ -474,10 +474,6 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
             background-color: var(--tl-backlog-group-header-bg) !important;
           }
 
-          .tasklist-backlog .border-r {
-            border-right-color: transparent !important;
-          }
-
           .tasklist-backlog .ant-select-borderless .ant-select-selector {
             background-color: transparent !important;
             border: 1px solid transparent !important;

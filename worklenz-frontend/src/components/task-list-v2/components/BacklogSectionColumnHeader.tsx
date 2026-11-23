@@ -70,6 +70,7 @@ export const BacklogSectionColumnHeader: React.FC<BacklogSectionColumnHeaderProp
                 display: 'flex',
                 alignItems: 'center',
                 position: 'relative',
+                borderRight: `1px solid ${token.colorBorderSecondary}`,
                 ...(typeof column.minWidth === 'string' && { minWidth: column.minWidth }),
                 ...(typeof column.maxWidth === 'string' && { maxWidth: column.maxWidth }),
                 ...(column.isSticky && {
@@ -95,7 +96,11 @@ export const BacklogSectionColumnHeader: React.FC<BacklogSectionColumnHeaderProp
         {showAddCustomColumn && (
           <div
             className="flex items-center justify-center shrink-0"
-            style={{ width: 40, height: '100%' }}
+            style={{
+              width: 40,
+              height: '100%',
+              borderRight: `1px solid ${token.colorBorderSecondary}`,
+            }}
           >
             <AddCustomColumnButton compact />
           </div>
