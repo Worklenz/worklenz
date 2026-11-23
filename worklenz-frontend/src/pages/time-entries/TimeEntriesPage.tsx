@@ -29,6 +29,10 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAuthService } from '@/hooks/useAuth';
+import { isFreeUser } from '@/utils/subscription-utils';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import './time-entries.css';
 
 const { Title } = Typography;
@@ -487,6 +491,8 @@ const TimeEntriesPage: React.FC = () => {
   }, [socket]);
 
   // Real-time task name updates: Sync with Redux state for immediate updates while editing in drawer
+  const dispatch = useAppDispatch();
+  const authService = useAuthService();
   const selectedTaskId = useAppSelector(state => state.taskDrawerReducer.selectedTaskId);
   const showTaskDrawer = useAppSelector(state => state.taskDrawerReducer.showTaskDrawer);
   const taskFormViewModel = useAppSelector(state => state.taskDrawerReducer.taskFormViewModel);
@@ -586,7 +592,13 @@ const TimeEntriesPage: React.FC = () => {
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => setLogTimeOpen(true)}
+          onClick={() => {
+            if (isFreeUser(authService.getCurrentSession())) {
+              dispatch(toggleUpgradeModal());
+              return;
+            }
+            setLogTimeOpen(true);
+          }}
           style={{ height: 30, fontSize: 12, borderRadius: 7, paddingInline: 12 }}
         >
           {t('quickLogButton', { defaultValue: 'Log time' })}

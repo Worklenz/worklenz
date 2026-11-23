@@ -13,6 +13,10 @@ import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_timer_started } from '@/shared/worklenz-analytics-events';
 import { TimerEventProps } from '@/types/mixpanel-events.types';
 import { useTranslation } from 'react-i18next';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAuthService } from '@/hooks/useAuth';
+import { isFreeUser } from '@/utils/subscription-utils';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 
 interface TaskTimerProps {
   started: boolean;
@@ -38,6 +42,9 @@ const TaskTimer = ({
   const [loading, setLoading] = useState(false);
   const [hasOpenedLogs, setHasOpenedLogs] = useState(false);
   const [isLogOpen, setIsLogOpen] = useState(false);
+  const dispatch = useAppDispatch();
+  const authService = useAuthService();
+  const isFreeUserOnPlan = isFreeUser(authService.getCurrentSession());
   const { t } = useTranslation('task-list-table');
   const { trackMixpanelEvent } = useMixpanelTracking();
 
@@ -127,6 +134,10 @@ const TaskTimer = ({
 
   const handleOpenChange = (visible: boolean) => {
     if (disabled) return;
+    if (visible && isFreeUserOnPlan) {
+      dispatch(toggleUpgradeModal());
+      return;
+    }
     setIsLogOpen(visible);
     if (visible) {
       setHasOpenedLogs(true);
@@ -175,6 +186,10 @@ const TaskTimer = ({
           icon={<PlayCircleFilled style={{ color: colors.skyBlue, fontSize: 16 }} />}
           onClick={() => {
             if (disabled || !handleStartTimer) return;
+            if (isFreeUserOnPlan) {
+              dispatch(toggleUpgradeModal());
+              return;
+            }
             const props: TimerEventProps = { task_id: taskId, project_id: '' };
             trackMixpanelEvent(evt_timer_started, props);
             handleStartTimer();

@@ -30,6 +30,9 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setTargetDrawerTab, setSelectedTaskId, setShowTaskDrawer, fetchTask } from '@/features/task-drawer/task-drawer.slice';
 import { setProjectId } from '@/features/project/project.slice';
 import { decodeHtmlEntities } from '@/utils/html-entities';
+import { isFreeUser } from '@/utils/subscription-utils';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { useAuthService } from '@/hooks/useAuth';
 import '../navbar-icon-hover.css';
 
 const { Text } = Typography;
@@ -217,6 +220,8 @@ const TimerButton = () => {
   const { tooltipProps } = useTooltipTheme();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
   const currentProjectId = useAppSelector(state => state.projectReducer.projectId);
 
   // Store original task names to restore if drawer closes without saving
@@ -733,6 +738,10 @@ const TimerButton = () => {
               style={{ fontSize: 12, padding: 0 }}
               onClick={() => {
                 setDropdownOpen(false);
+                if (isFreeUser(currentSession)) {
+                  dispatch(toggleUpgradeModal());
+                  return;
+                }
                 setLogTimeOpen(true);
               }}
             >
