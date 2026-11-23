@@ -18,12 +18,11 @@ const ColumnTitleWithHint: React.FC<{
   label: string;
   hint: string;
   hintColor: string;
-  alignEnd?: boolean;
-}> = ({ label, hint, hintColor, alignEnd = false }) => (
+}> = ({ label, hint, hintColor }) => (
   <Flex
     align="center"
     gap={4}
-    justify={alignEnd ? 'flex-end' : 'flex-start'}
+    justify="flex-start"
     style={{ width: '100%' }}
   >
     <span>{label}</span>
@@ -118,12 +117,9 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
       {
         title: (
           <ColumnTitleWithHint
-            label={t('phColDeliveryConfidence', {
-              defaultValue: 'Delivery confidence',
-            })}
-            hint={t('phCalcColDeliveryConfidence', {
-              defaultValue:
-                'Delivery confidence set on the project (or Progress Tracking): On track, At risk, Off track, or Not set.',
+            label={t('phColProgress', { defaultValue: 'Progress' })}
+            hint={t('phCalcColProgress', {
+              defaultValue: 'Completed tasks ÷ total non-archived tasks × 100.',
             })}
             hintColor={token.colorTextSecondary}
           />
@@ -167,7 +163,6 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
               defaultValue: 'Completed tasks ÷ total non-archived tasks × 100.',
             })}
             hintColor={token.colorTextSecondary}
-            alignEnd
           />
         ),
         dataIndex: 'progress_pct',
@@ -197,7 +192,6 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
               defaultValue: 'Incomplete, non-archived tasks in the project.',
             })}
             hintColor={token.colorTextSecondary}
-            alignEnd
           />
         ),
         dataIndex: 'open_tasks',
@@ -215,7 +209,6 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
                 'Incomplete, non-archived tasks whose due date is before today.',
             })}
             hintColor={token.colorTextSecondary}
-            alignEnd
           />
         ),
         dataIndex: 'overdue_tasks',
@@ -241,7 +234,6 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
                 '(Task fixed costs + logged time cost) ÷ project budget × 100. Shown as — when budget is 0.',
             })}
             hintColor={token.colorTextSecondary}
-            alignEnd
           />
         ),
         dataIndex: 'budget_used_pct',
