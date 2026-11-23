@@ -173,7 +173,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         dataIndex: 'progress_pct',
         key: 'progress_pct',
         width: 110,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.progress_pct - b.progress_pct,
         render: (value: number) => (
           <Text strong={value >= 100}>{`${Math.round(value)}%`}</Text>
@@ -184,7 +184,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         dataIndex: 'due_date',
         key: 'due_date',
         width: 120,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => (a.due_date || '').localeCompare(b.due_date || ''),
         render: (value: string | null) =>
           value ? dayjs(value).format('MMM D, YYYY') : <Text type="secondary">-</Text>,
@@ -203,7 +203,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         dataIndex: 'open_tasks',
         key: 'open_tasks',
         width: 120,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.open_tasks - b.open_tasks,
       },
       {
@@ -221,7 +221,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         dataIndex: 'overdue_tasks',
         key: 'overdue_tasks',
         width: 110,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.overdue_tasks - b.overdue_tasks,
         render: (value: number) =>
           value > 0 ? (
@@ -247,7 +247,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         dataIndex: 'budget_used_pct',
         key: 'budget_used_pct',
         width: 130,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.budget_used_pct - b.budget_used_pct,
         render: (value: number, row) =>
           row.budget > 0 ? (
