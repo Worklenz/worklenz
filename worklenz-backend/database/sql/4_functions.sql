@@ -3857,6 +3857,78 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION get_task_notify_recipients(_task_id uuid) RETURNS json
+    LANGUAGE plpgsql
+AS
+$$
+DECLARE
+    _output JSON;
+BEGIN
+    -- Same row shape as get_task_assignees plus task_subscribers (Notify feature),
+    -- deduplicated by user_id so an assignee who also subscribed gets one row.
+    SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
+    FROM (SELECT DISTINCT ON (user_id)
+                 team_member_id,
+                 project_member_id,
+                 name,
+                 email_notifications_enabled,
+                 avatar_url,
+                 user_id,
+                 email,
+                 socket_id,
+                 team_id
+          FROM (
+              SELECT tasks_assignees.team_member_id,
+                     tasks_assignees.project_member_id,
+                     COALESCE((SELECT name
+                               FROM team_member_info_view
+                               WHERE team_member_info_view.team_member_id = tm.id), '') AS name,
+                     COALESCE((SELECT email_notifications_enabled
+                               FROM notification_settings
+                               WHERE team_id = tm.team_id
+                                 AND notification_settings.user_id = u.id), false) AS email_notifications_enabled,
+                     COALESCE(u.avatar_url, '') AS avatar_url,
+                     u.id AS user_id,
+                     COALESCE(u.email, '') AS email,
+                     COALESCE(u.socket_id, '') AS socket_id,
+                     tm.team_id AS team_id
+              FROM tasks_assignees
+                       INNER JOIN team_members tm ON tm.id = tasks_assignees.team_member_id
+                       LEFT JOIN users u ON tm.user_id = u.id
+              WHERE tasks_assignees.task_id = _task_id
+
+              UNION ALL
+
+              SELECT ts.team_member_id,
+                     pm.id AS project_member_id,
+                     COALESCE((SELECT name
+                               FROM team_member_info_view
+                               WHERE team_member_info_view.team_member_id = tm.id), '') AS name,
+                     COALESCE((SELECT email_notifications_enabled
+                               FROM notification_settings
+                               WHERE team_id = tm.team_id
+                                 AND notification_settings.user_id = u.id), false) AS email_notifications_enabled,
+                     COALESCE(u.avatar_url, '') AS avatar_url,
+                     u.id AS user_id,
+                     COALESCE(u.email, '') AS email,
+                     COALESCE(u.socket_id, '') AS socket_id,
+                     tm.team_id AS team_id
+              FROM task_subscribers ts
+                       INNER JOIN team_members tm ON tm.id = ts.team_member_id
+                       LEFT JOIN users u ON u.id = ts.user_id
+                       LEFT JOIN project_members pm
+                              ON pm.team_member_id = tm.id
+                                  AND pm.project_id = (SELECT project_id FROM tasks WHERE id = _task_id)
+              WHERE ts.task_id = _task_id
+                AND u.is_deleted IS NOT TRUE
+          ) combined
+          ORDER BY user_id) rec
+    INTO _output;
+
+    RETURN _output;
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION get_task_complete_info(_task_id uuid, _status_id uuid) RETURNS json
     LANGUAGE plpgsql
 AS
@@ -4759,7 +4831,7 @@ BEGIN
             'color_code_dark', COALESCE((_task_info ->> 'color_code_dark')::TEXT, ''),
             'total_tasks', COALESCE((_task_info ->> 'total_tasks')::INT, 0),
             'total_completed', COALESCE((_task_info ->> 'total_completed')::INT, 0),
-            'members', COALESCE((_task_info ->> 'members')::JSON, '[]'::JSON),
+            'members', COALESCE(get_task_notify_recipients(_task_id), '[]'::JSON),
             'completed_at', _task_completed_at,
             'status_category', COALESCE(_status_category, '{}'::JSON),
             'schedule_id', COALESCE(_schedule_id, 'null'::JSON)
