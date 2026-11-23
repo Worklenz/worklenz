@@ -35,6 +35,21 @@ Serve the frontend and API from the same site so that the session's `SameSite=La
 
 The backend validates the Google signature, issuer, audience, expiration, verified email and optional hosted domain. Each attempt uses a five-minute, session-bound nonce consumed atomically in PostgreSQL, along with Worklenz CSRF protection, an exact origin check and rate limits. Login regenerates the Passport session. Access tokens and ID tokens should not be logged or included in URLs. Changes to these settings require a backend restart in typical container deployments.
 
+## Third-party services
+
+The self-hosted build ships with the following third-party integrations, and each is gated so a self-hosted deployment makes no third-party requests by default:
+
+| Service | What it does | When it loads |
+| --- | --- | --- |
+| Google Analytics | Page-view tracking via `worklenz-frontend/public/js/analytics.js` | Only on Worklenz-hosted origins (`app.worklenz.com`, `dev.worklenz.com`, `uat.app.worklenz.com`); the script returns early on any other hostname |
+| Microsoft Clarity | Session analytics via `worklenz-frontend/public/js/clarity.js` and `worklenz-backend/src/views/_scripts.pug` | Frontend script is hostname-gated like analytics.js; the backend template injects it only when `isProduction() && !isInternalServer()` |
+| HubSpot chat | Support widget via `worklenz-frontend/public/js/hubspot.js` | Only when `window.location.hostname === 'app.worklenz.com'` |
+| Mixpanel | Product analytics via `worklenz-frontend/src/utils/mixpanelInit.ts` | Only when a real project token is supplied at build time; the bundled placeholder token is rejected and initialization is skipped |
+| Sentry | Frontend error reporting via `worklenz-frontend/src/config/sentry.ts` | Only when `VITE_APP_ENV=production` and a `VITE_SENTRY_DSN` is provided; unset by default for self-hosting |
+| Google Fonts | Font loading | Requested by the frontend stylesheets; block or self-host fonts if your deployment must make no external requests |
+
+All other behaviour — projects, tasks, time tracking, notifications, the API — runs entirely on your own infrastructure.
+
 ## Network use and AGPLv3 §13
 
 If you modify the AGPLv3-licensed parts of Worklenz and make the result
