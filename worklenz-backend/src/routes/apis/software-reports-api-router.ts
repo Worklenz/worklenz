@@ -7,18 +7,17 @@ import { requireProjectPermission } from "../../middlewares/validators/require-p
 
 const softwareReportsApiRouter = express.Router();
 
-const requireTaskAccess = requireProjectPermission("tasks", {
-  sources: ["query.project_id", "body.project_id"],
-});
+const requireQueryProjectAccess = requireProjectPermission("tasks", { sources: ["query.project_id"] });
+const requireBodyProjectAccess = requireProjectPermission("tasks", { sources: ["body.project_id"] });
 
-softwareReportsApiRouter.get("/sprint", requireTaskAccess, safeControllerFunction(SoftwareReportsController.getSprintReport));
-softwareReportsApiRouter.get("/flow", requireTaskAccess, safeControllerFunction(SoftwareReportsController.getFlowReport));
-softwareReportsApiRouter.get("/cycle-time", requireTaskAccess, safeControllerFunction(SoftwareReportsController.getCycleTimeReport));
+softwareReportsApiRouter.get("/sprint", requireQueryProjectAccess, safeControllerFunction(SoftwareReportsController.getSprintReport));
+softwareReportsApiRouter.get("/flow", requireQueryProjectAccess, safeControllerFunction(SoftwareReportsController.getFlowReport));
+softwareReportsApiRouter.get("/cycle-time", requireQueryProjectAccess, safeControllerFunction(SoftwareReportsController.getCycleTimeReport));
 
-softwareReportsApiRouter.get("/custom", requireTaskAccess, safeControllerFunction(CustomReportsController.list));
-softwareReportsApiRouter.post("/custom", requireTaskAccess, safeControllerFunction(CustomReportsController.create));
-softwareReportsApiRouter.post("/custom/preview", requireTaskAccess, safeControllerFunction(CustomReportsController.preview));
-softwareReportsApiRouter.get("/custom/:id/data", requireTaskAccess, safeControllerFunction(CustomReportsController.getData));
-softwareReportsApiRouter.delete("/custom/:id", requireTaskAccess, safeControllerFunction(CustomReportsController.remove));
+softwareReportsApiRouter.get("/custom", requireQueryProjectAccess, safeControllerFunction(CustomReportsController.list));
+softwareReportsApiRouter.post("/custom", requireBodyProjectAccess, safeControllerFunction(CustomReportsController.create));
+softwareReportsApiRouter.post("/custom/preview", requireBodyProjectAccess, safeControllerFunction(CustomReportsController.preview));
+softwareReportsApiRouter.get("/custom/:id/data", requireQueryProjectAccess, safeControllerFunction(CustomReportsController.getData));
+softwareReportsApiRouter.delete("/custom/:id", requireQueryProjectAccess, safeControllerFunction(CustomReportsController.remove));
 
 export default softwareReportsApiRouter;
