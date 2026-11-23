@@ -444,6 +444,14 @@ class ImportsService {
       const shouldImportMembers = importOptions.importMembers !== false;
       const shouldImportAttachments = importOptions.importAttachments !== false;
       const jiraAuth = (sourceReference?.auth?.jira as any) || {};
+      const jiraSource =
+        (sourceReference?.source?.jira as any) ||
+        (sourceReference?.source as any) ||
+        {};
+      const rawJiraDomain =
+        jiraAuth?.domain || jiraSource?.domain || sourceReference?.domain || null;
+      const effectiveJiraDomain =
+        typeof rawJiraDomain === "string" ? rawJiraDomain.trim() : null;
       let jiraToken: string | null = jiraAuth?.api_token || null;
       if (!jiraToken && jiraAuth?.api_token_encrypted) {
         try {
@@ -1215,6 +1223,7 @@ class ImportsService {
         targetProjectId: job.target_project_id as string,
         createdByUserId: job.created_by,
         jiraAuthHeader,
+        jiraDomain: effectiveJiraDomain || null,
       };
 
       const importTaskComments = (taskId: string, raw: unknown) =>

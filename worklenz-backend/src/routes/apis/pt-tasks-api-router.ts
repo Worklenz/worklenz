@@ -4,6 +4,7 @@ import safeControllerFunction from "../../shared/safe-controller-function";
 import PtTasksController from "../../controllers/project-templates/pt-tasks-controller";
 import mapTasksToBulkUpdate from "../../middlewares/map-tasks-to-bulk-update";
 import bulkTasksValidator from "../../middlewares/validators/bulk-tasks-validator";
+import { verifyTemplateReadAccess } from "../../middlewares/verify-template-access";
 
 const ptTasksApiRouter = express.Router();
 
@@ -14,7 +15,7 @@ function getList(req: Request, res: Response) {
     return PtTasksController.getList(req, res);
   }
 
-ptTasksApiRouter.get("/list/:id", idParamValidator, safeControllerFunction(getList));
-ptTasksApiRouter.put("/bulk/delete", mapTasksToBulkUpdate, bulkTasksValidator, safeControllerFunction(PtTasksController.bulkDelete));
+ptTasksApiRouter.get("/list/:id", idParamValidator, verifyTemplateReadAccess, safeControllerFunction(getList));
+ptTasksApiRouter.put("/bulk/delete", bulkTasksValidator, mapTasksToBulkUpdate, safeControllerFunction(PtTasksController.bulkDelete));
 
 export default ptTasksApiRouter;

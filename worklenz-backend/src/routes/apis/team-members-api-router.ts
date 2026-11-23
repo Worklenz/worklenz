@@ -8,6 +8,7 @@ import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-o
 import teamRoleManagementValidator from "../../middlewares/validators/team-role-management-validator";
 import teamMemberSelfOrManagementValidator from "../../middlewares/validators/team-member-self-or-management-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
+import verifyProjectAccess from "../../middlewares/verify-project-access";
 
 const teamMembersApiRouter = express.Router();
 
@@ -22,8 +23,8 @@ teamMembersApiRouter.get("/tree-map", safeControllerFunction(TeamMembersControll
 teamMembersApiRouter.get("/tree-map-by-member", safeControllerFunction(TeamMembersController.getTreeDataByMember));
 teamMembersApiRouter.get("/tasks-by-members", safeControllerFunction(TeamMembersController.getTasksByMembers));
 teamMembersApiRouter.get("/all", safeControllerFunction(TeamMembersController.getAllMembers)); // Task list assignees list
-teamMembersApiRouter.get("/project/:id", safeControllerFunction(TeamMembersController.getTeamMembersByProject));
-teamMembersApiRouter.get("/projects/:id", safeControllerFunction(TeamMembersController.getProjectsByTeamMember));
+teamMembersApiRouter.get("/project/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(TeamMembersController.getTeamMembersByProject));
+teamMembersApiRouter.get("/projects/:id", idParamValidator, safeControllerFunction(TeamMembersController.getProjectsByTeamMember));
 teamMembersApiRouter.get("/overview/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(TeamMembersController.getOverview));
 teamMembersApiRouter.get("/overview-chart/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(TeamMembersController.getOverviewChart));
 teamMembersApiRouter.get("/:id", teamMemberSelfOrManagementValidator, idParamValidator, safeControllerFunction(TeamMembersController.getById));

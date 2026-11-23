@@ -6,8 +6,12 @@ import {
   UserMappingRow,
 } from "../imports-service";
 import { getWithRetries } from "./http-utils";
+import { AxiosRequestConfig } from "axios";
 import db from "../../config/db";
-import { assertSafeExternalHost } from "../../shared/ssrf-guard";
+import { assertSafeExternalHost, publicHttpsAgent } from "../../shared/ssrf-guard";
+
+const getJiraWithRetries = <T>(config: AxiosRequestConfig): Promise<T> =>
+  getWithRetries<T>({ ...config, httpsAgent: publicHttpsAgent, maxRedirects: 0, proxy: false });
 
 interface JiraIssue {
   id: string;
@@ -276,7 +280,7 @@ export default class JiraProvider implements ImportProvider {
   ): Promise<JiraField[]> {
     try {
       const [project, fields] = await Promise.all([
-        getWithRetries<{ id?: string }>({
+        getJiraWithRetries<{ id?: string }>({
           method: "GET",
           url: `https://${domain}/rest/api/3/project/${projectKey}`,
           headers: {
@@ -284,7 +288,7 @@ export default class JiraProvider implements ImportProvider {
             Accept: "application/json",
           },
         }),
-        getWithRetries<JiraField[]>({
+        getJiraWithRetries<JiraField[]>({
           method: "GET",
           url: `https://${domain}/rest/api/3/field`,
           headers: {
@@ -633,7 +637,7 @@ export default class JiraProvider implements ImportProvider {
     projectKey: string
   ): Promise<NonNullable<ProviderResult["hierarchy"]>> {
     try {
-      const resp = await getWithRetries<any>({
+      const resp = await getJiraWithRetries<any>({
         method: "GET",
         url: `https://${domain}/rest/api/3/project/${projectKey}/statuses`,
         headers: {
@@ -728,7 +732,7 @@ export default class JiraProvider implements ImportProvider {
 
     // Fetch all issues from JIRA project
     do {
-      const response = await getWithRetries<JiraSearchResponse>({
+      const response = await getJiraWithRetries<JiraSearchResponse>({
         method: "GET",
         //url: `https://${options.domain}/rest/api/3/search`,
         url: `https://${options.domain}/rest/api/3/search/jql`,
