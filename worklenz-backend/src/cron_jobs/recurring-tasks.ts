@@ -85,16 +85,19 @@ async function createSingleRecurringTask(
       return false;
     }
 
-    // Assign team members
+    // Assign team members. The template only stores project_member_id /
+    // team_member_id, so fall back to the template's reporter as the user
+    // who performed the assignment.
     if (template.assignees && Array.isArray(template.assignees)) {
       for (const assignee of template.assignees) {
-        if (assignee.team_member_id && assignee.assigned_by) {
+        const assignedBy = assignee.assigned_by || template.reporter_id;
+        if (assignee.team_member_id && assignedBy) {
           const assignQuery = `SELECT create_bulk_task_assignees($1,$2,$3,$4)`;
           await client.query(assignQuery, [
             assignee.team_member_id,
             template.project_id,
             createdTask.id,
-            assignee.assigned_by
+            assignedBy
           ]);
         }
       }
