@@ -1,14 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, lazy, Suspense, memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Button,
-  Dropdown,
-  Tooltip,
-  Badge,
-  ApiOutlined,
-  CrownOutlined,
-  Spin,
-} from '@/shared/antd-imports';
+import { Button, Dropdown, Tooltip, Badge, ApiOutlined, Spin } from '@/shared/antd-imports';
 const IntegrationsDropdown = lazy(() =>
   import('./IntegrationsDropdown').then(module => ({ default: module.IntegrationsDropdown }))
 );
@@ -18,8 +10,8 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { isSoftwareProjectType } from '@/lib/project/software-project';
 import { useAuthService } from '@/hooks/useAuth';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { showUpgradePrompt } from '@/features/admin-center/admin-center.slice';
+import { ProjectIntegrationCenterModal } from './ProjectIntegrationCenterModal';
+
 import type { ProjectIntegrationStatus } from './integrations.types';
 
 interface ProjectIntegrationsButtonProps {
@@ -30,7 +22,6 @@ interface ProjectIntegrationsButtonProps {
 export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps> = memo(
   ({ projectId, projectName }) => {
     const { t } = useTranslation('project-integrations');
-    const dispatch = useAppDispatch();
     const authService = useAuthService();
     const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
     const hasBusinessAccess = useMemo(
@@ -43,6 +34,7 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
     );
 
     const [open, setOpen] = useState(false);
+    const [centerOpen, setCenterOpen] = useState(false);
     const [hasOpened, setHasOpened] = useState(false);
     const [integrationStatus, setIntegrationStatus] = useState<ProjectIntegrationStatus | null>(
       null
@@ -122,29 +114,6 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
       fetchIntegrationStatus();
     }, [fetchIntegrationStatus]);
 
-    const handleUpgradeClick = useCallback(() => {
-      dispatch(
-        showUpgradePrompt({
-          title: 'Integrations',
-          description:
-            'Connect Slack, Teams, and GitHub to your projects. Available on the Business plan.',
-        })
-      );
-    }, [dispatch]);
-
-    // Non-business teams only get the upsell when no integration is available to them
-    if (!hasBusinessAccess && !isSoftwareProject) {
-      return (
-        <Tooltip
-          title={t('upgradeRequired', { defaultValue: 'Integrations available on Business plan' })}
-        >
-          <Badge count={<CrownOutlined style={{ color: '#faad14' }} />} offset={[-5, 5]}>
-            <Button shape="circle" icon={<ApiOutlined />} onClick={handleUpgradeClick} />
-          </Badge>
-        </Tooltip>
-      );
-    }
-
     const trigger = (
       <Tooltip title={t('tooltip', { defaultValue: 'Manage project integrations' })}>
         <Badge count={activeCount} offset={[-5, 5]} showZero={false}>
@@ -172,30 +141,41 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
     if (!hasOpened) return trigger;
 
     return (
-      <Dropdown
-        open={open}
-        onOpenChange={nextOpen => {
-          setOpen(nextOpen);
-          if (nextOpen) void fetchIntegrationStatus();
-        }}
-        popupRender={() => (
-          <Suspense fallback={<Spin size="small" />}>
-            <IntegrationsDropdown
-              projectId={projectId}
-              projectName={projectName}
-              status={integrationStatus}
-              hasBusinessAccess={hasBusinessAccess}
-              isSoftwareProject={isSoftwareProject}
-              onClose={() => setOpen(false)}
-              onRefresh={handleRefresh}
-            />
-          </Suspense>
-        )}
-        trigger={['click']}
-        placement="bottomRight"
-      >
-        {trigger}
-      </Dropdown>
+      <>
+        <Dropdown
+          open={open}
+          onOpenChange={nextOpen => {
+            setOpen(nextOpen);
+            if (nextOpen) void fetchIntegrationStatus();
+          }}
+          popupRender={() => (
+            <Suspense fallback={<Spin size="small" />}>
+              <IntegrationsDropdown
+                projectId={projectId}
+                projectName={projectName}
+                status={integrationStatus}
+                hasBusinessAccess={hasBusinessAccess}
+                isSoftwareProject={isSoftwareProject}
+                onClose={() => setOpen(false)}
+                onRefresh={handleRefresh}
+                onOpenCenter={() => setCenterOpen(true)}
+              />
+            </Suspense>
+          )}
+          trigger={['click']}
+          placement="bottomRight"
+        >
+          {trigger}
+        </Dropdown>
+        <ProjectIntegrationCenterModal
+          open={centerOpen}
+          projectId={projectId}
+          onClose={() => {
+            setCenterOpen(false);
+            void fetchIntegrationStatus();
+          }}
+        />
+      </>
     );
   }
 );

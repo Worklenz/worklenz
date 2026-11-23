@@ -21,5 +21,23 @@
   "googleCalendar": {
     "title": "Google Agenda",
     "description": "Synchronisez vos tâches et vos délais avec Google Agenda pour gérer votre emploi du temps, définir des rappels et ne jamais manquer les étapes importantes du projet."
+  },
+  "center": {
+    "title": "Centre des intégrations",
+    "viewLabel": "Vue des intégrations",
+    "explore": "Explorer",
+    "manage": "Gérer",
+    "searchPlaceholder": "Rechercher des intégrations",
+    "categoryLabel": "Catégorie d’intégration",
+    "allCategories": "Toutes les catégories",
+    "messaging": "Communication",
+    "development": "Développement",
+    "imports": "Importations",
+    "manageDescription": "Gérez Slack, GitHub et vos intégrations connectées.",
+    "noResults": "Aucune intégration trouvée.",
+    "searchLabel": "Rechercher des intégrations",
+    "planPro": "Pro",
+    "planEnterprise": "Entreprise",
+    "notConnected": "Non connecté"
   }
 }

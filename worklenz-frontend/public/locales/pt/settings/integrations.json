@@ -21,5 +21,23 @@
   "googleCalendar": {
     "title": "Google Agenda",
     "description": "Sincronize suas tarefas e prazos com o Google Calendar para gerenciar sua agenda, definir lembretes e nunca perder marcos importantes do projeto."
+  },
+  "center": {
+    "title": "Central de integrações",
+    "viewLabel": "Visualização de integrações",
+    "explore": "Explorar",
+    "manage": "Gerenciar",
+    "searchPlaceholder": "Pesquisar integrações",
+    "categoryLabel": "Categoria de integração",
+    "allCategories": "Todas as categorias",
+    "messaging": "Comunicação",
+    "development": "Desenvolvimento",
+    "imports": "Importações",
+    "manageDescription": "Gerencie Slack, GitHub e suas integrações conectadas.",
+    "noResults": "Nenhuma integração encontrada.",
+    "searchLabel": "Pesquisar integrações",
+    "planPro": "Pro",
+    "planEnterprise": "Empresarial",
+    "notConnected": "Não conectado"
   }
 }

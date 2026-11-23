@@ -338,15 +338,13 @@ export function SlackIntegration() {
     return (
       <>
         {contextHolder}
-        <div className="space-y-6">
-          <SlackConnectedCard
-            workspace={workspace}
-            channels={channels}
-            availableChannels={availableChannels}
-            onManage={() => setManageModalVisible(true)}
-            onDisconnect={handleDisconnect}
-          />
-        </div>
+        <SlackConnectedCard
+          workspace={workspace}
+          channels={channels}
+          availableChannels={availableChannels}
+          onManage={() => setManageModalVisible(true)}
+          onDisconnect={handleDisconnect}
+        />
 
         <SlackManageModal
           open={manageModalVisible}

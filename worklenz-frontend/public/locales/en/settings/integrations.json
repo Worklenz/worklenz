@@ -1,4 +1,22 @@
 {
+  "center": {
+    "title": "Integration Center",
+    "viewLabel": "Integration view",
+    "explore": "Explore",
+    "manage": "Manage",
+    "searchPlaceholder": "Search integrations",
+    "searchLabel": "Search integrations",
+    "categoryLabel": "Integration category",
+    "allCategories": "All categories",
+    "messaging": "Communication",
+    "development": "Development",
+    "imports": "Imports",
+    "manageDescription": "Manage Slack, GitHub, and your connected integrations.",
+    "noResults": "No integrations found.",
+    "planPro": "Pro",
+    "planEnterprise": "Enterprise",
+    "notConnected": "Not connected"
+  },
   "connect": "Connect",
   "comingSoon": "Coming Soon",
   "availableSoon": "Available Soon",
@@ -21,7 +39,5 @@
   "googleCalendar": {
     "title": "Google Calendar",
     "description": "Sync your tasks and deadlines with Google Calendar to manage your schedule, set reminders, and never miss important project milestones."
-  },
-  "connect": "Connect",
-  "comingSoon": "Coming Soon"
+  }
 }

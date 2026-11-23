@@ -42,14 +42,16 @@ vi.mock('react-i18next', () => ({
 vi.mock('./IntegrationsDropdown', () => {
   mocks.panelLoaded();
   return {
-    IntegrationsDropdown: ({ onClose }: { onClose: () => void }) => (
+    IntegrationsDropdown: ({ onClose, onOpenCenter }: { onClose: () => void; onOpenCenter: () => void }) => (
       <div>
         <span>Integration panel</span>
         <button onClick={onClose}>Close panel</button>
+        <button onClick={onOpenCenter}>Open center</button>
       </div>
     ),
   };
 });
+vi.mock('@/pages/settings/integrations/IntegrationsSettings', () => ({ default: ({ projectId }: { projectId: string }) => <div>Center for {projectId}</div> }));
 vi.mock('@/shared/antd-imports', async importOriginal => {
   const actual = await importOriginal<typeof import('@/shared/antd-imports')>();
   return {
@@ -101,13 +103,13 @@ describe('deferred integration menu', () => {
     }
   );
 
-  it('retains the upgrade action for teams without integration access', async () => {
+  it('opens the center for the current project even without Business access', async () => {
     mocks.hasBusiness = false;
     const user = userEvent.setup();
     render(<ProjectIntegrationsButton projectId="project" />);
-    await user.click(screen.getByRole('button'));
-    expect(mocks.dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: 'upgrade' }));
+    await user.click(screen.getByRole('button', { name: 'Manage project integrations' }));
+    await user.click(await screen.findByRole('button', { name: 'Open center' }));
+    expect(await screen.findByText('Center for project')).toBeInTheDocument();
     expect(mocks.getStatus).not.toHaveBeenCalled();
-    expect(mocks.dropdownRender).not.toHaveBeenCalled();
   });
 });

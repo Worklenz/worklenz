@@ -51,5 +51,9 @@
     "refreshChannelsFailed": "刷新频道失败",
     "addIntegrationFailed": "添加集成失败"
   },
-  "businessPlan": "商业"
+  "businessPlan": "商业",
+  "center": {
+    "title": "集成中心",
+    "teamScope": "团队集成。项目专用选项位于项目集成菜单中。"
+  }
 }

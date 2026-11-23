@@ -21,5 +21,23 @@
   "googleCalendar": {
     "title": "谷歌日历",
     "description": "将您的任务和截止日期与 Google Calendar 同步，以管理您的日程安排、设置提醒，并且永远不会错过重要的项目里程碑。"
+  },
+  "center": {
+    "title": "集成中心",
+    "viewLabel": "集成视图",
+    "explore": "浏览",
+    "manage": "管理",
+    "searchPlaceholder": "搜索集成",
+    "categoryLabel": "集成类别",
+    "allCategories": "所有类别",
+    "messaging": "沟通",
+    "development": "开发",
+    "imports": "导入",
+    "manageDescription": "管理 Slack、GitHub 和已连接的集成。",
+    "noResults": "未找到集成。",
+    "searchLabel": "搜索集成",
+    "planPro": "Pro",
+    "planEnterprise": "企业版",
+    "notConnected": "未连接"
   }
 }

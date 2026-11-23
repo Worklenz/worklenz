@@ -51,5 +51,9 @@
     "refreshChannelsFailed": "Dështoi rifreskimi i kanaleve",
     "addIntegrationFailed": "Dështoi shtimi i integrimit"
   },
-  "businessPlan": "Biznes"
+  "businessPlan": "Biznes",
+  "center": {
+    "title": "Qendra e integrimeve",
+    "teamScope": "Integrimet e ekipit. Opsionet e projektit janë në menunë e integrimeve të projektit."
+  }
 }

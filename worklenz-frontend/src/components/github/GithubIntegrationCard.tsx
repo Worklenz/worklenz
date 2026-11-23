@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 import {
   Alert,
   Avatar,
+  Badge,
   Button,
-  Card,
   Flex,
   Popconfirm,
   Skeleton,
@@ -13,7 +13,6 @@ import {
   Tooltip,
   Typography,
   message,
-  theme,
 } from '@/shared/antd-imports';
 import {
   CheckCircleOutlined,
@@ -25,11 +24,11 @@ import { githubApiService, IGithubStatus } from '@/api/github/github.api.service
 import logger from '@/utils/errorLogger';
 import { useGithubInstallResult } from './useGithubInstallResult';
 import { GithubSyncStatusDrawer } from './GithubSyncStatusDrawer';
+import { IntegrationTile } from '@/components/settings/integrations/IntegrationTile';
 
 /** Team-level GitHub connection card for Settings > Integrations. */
 export const GithubIntegrationCard = () => {
   const { t } = useTranslation('github-integration');
-  const { token } = theme.useToken();
   const [messageApi, contextHolder] = message.useMessage();
 
   const [status, setStatus] = useState<IGithubStatus | null>(null);
@@ -113,15 +112,6 @@ export const GithubIntegrationCard = () => {
     }
   };
 
-  const title = (
-    <Flex align="center" gap={12}>
-      <GithubOutlined style={{ fontSize: 32 }} aria-hidden />
-      <Typography.Title level={5} style={{ margin: 0 }}>
-        {t('title', { defaultValue: 'GitHub' })}
-      </Typography.Title>
-    </Flex>
-  );
-
   const renderBody = () => {
     if (isLoading) return <Skeleton active paragraph={{ rows: 3 }} />;
 
@@ -143,7 +133,7 @@ export const GithubIntegrationCard = () => {
     if (!status.configured) {
       return (
         <Flex vertical gap={12}>
-          <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
+          <Typography.Paragraph style={{ margin: 0 }}>
             {t('description', {
               defaultValue:
                 'Link GitHub repositories to software projects to see branches, pull requests and commits on your issues.',
@@ -164,8 +154,15 @@ export const GithubIntegrationCard = () => {
 
     if (!status.connected || !status.integration) {
       return (
-        <Flex vertical gap={16}>
-          <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
+        <Flex vertical gap={16} style={{ flex: 1 }}>
+          <Badge
+            status="default"
+            text={t('center.notConnected', {
+              ns: 'settings/integrations',
+              defaultValue: 'Not connected',
+            })}
+          />
+          <Typography.Paragraph style={{ margin: 0 }}>
             {t('description', {
               defaultValue:
                 'Link GitHub repositories to software projects to see branches, pull requests and commits on your issues.',
@@ -180,16 +177,14 @@ export const GithubIntegrationCard = () => {
                   })
             }
           >
-            <span>
+            <span style={{ marginTop: 'auto' }}>
               <Button
                 type="primary"
-                icon={<GithubOutlined />}
                 loading={isConnecting}
                 disabled={!status.can_manage}
                 onClick={handleConnect}
-                block
               >
-                {t('connect.button', { defaultValue: 'Connect GitHub' })}
+                {t('connect', { ns: 'settings/integrations', defaultValue: 'Connect' })}
               </Button>
             </span>
           </Tooltip>
@@ -270,9 +265,9 @@ export const GithubIntegrationCard = () => {
     <>
       {contextHolder}
       <GithubSyncStatusDrawer open={isSyncOpen} onClose={() => setIsSyncOpen(false)} />
-      <Card
-        title={title}
-        style={{ height: '100%', borderColor: token.colorBorderSecondary }}
+      <IntegrationTile
+        icon={<GithubOutlined />}
+        title={t('title', { defaultValue: 'GitHub' })}
         extra={
           !status?.can_manage && status?.configured && !isLoading ? (
             <Space size={4} style={{ color: token.colorTextTertiary, fontSize: 12 }}>
@@ -283,7 +278,7 @@ export const GithubIntegrationCard = () => {
         }
       >
         {renderBody()}
-      </Card>
+      </IntegrationTile>
     </>
   );
 };

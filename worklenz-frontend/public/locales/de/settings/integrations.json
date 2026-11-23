@@ -21,5 +21,23 @@
   "googleCalendar": {
     "title": "Google Kalender",
     "description": "Synchronisieren Sie Ihre Aufgaben und Fristen mit Google Kalender, um Ihren Zeitplan zu verwalten, Erinnerungen einzustellen und wichtige Projektmeilensteine nicht zu verpassen."
+  },
+  "center": {
+    "title": "Integrationszentrum",
+    "viewLabel": "Integrationsansicht",
+    "explore": "Entdecken",
+    "manage": "Verwalten",
+    "searchPlaceholder": "Integrationen suchen",
+    "categoryLabel": "Integrationskategorie",
+    "allCategories": "Alle Kategorien",
+    "messaging": "Kommunikation",
+    "development": "Entwicklung",
+    "imports": "Importe",
+    "manageDescription": "Verwalten Sie Slack, GitHub und Ihre verbundenen Integrationen.",
+    "noResults": "Keine Integrationen gefunden.",
+    "searchLabel": "Integrationen suchen",
+    "planPro": "Pro",
+    "planEnterprise": "Enterprise",
+    "notConnected": "Nicht verbunden"
   }
 }

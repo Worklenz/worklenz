@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { getAddonSlotItems } from '@/addons/addon-slots';
 import { Button, ApiOutlined, SettingOutlined, TeamOutlined, theme } from '@/shared/antd-imports';
 import { GithubOutlined } from '@ant-design/icons';
 import { SlackProjectIntegration } from '../../../components/projects/integrations/SlackProjectIntegration';
@@ -27,6 +27,7 @@ interface IntegrationsDropdownProps {
   isSoftwareProject: boolean;
   onClose: () => void;
   onRefresh?: () => void;
+  onOpenCenter: () => void;
 }
 
 export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
@@ -37,9 +38,9 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
   isSoftwareProject,
   onClose,
   onRefresh,
+  onOpenCenter,
 }) => {
   const { t } = useTranslation('project-integrations');
-  const navigate = useNavigate();
   const { token } = theme.useToken();
   const dispatch = useAppDispatch();
   const selectedProject = useAppSelector(state => state.projectReducer.project);
@@ -77,8 +78,8 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
   };
 
   const handleManageAll = () => {
-    navigate('/worklenz/settings/integrations');
     onClose();
+    onOpenCenter();
   };
 
   // Memoize dropdown styles with dark mode support
@@ -182,7 +183,7 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
 
         {/* Coming soon last */}
         {githubItem}
-        {teamsItem}
+        {!getAddonSlotItems('integrationSettings').some(item => item.key === 'integration-factory') && teamsItem}
       </div>
 
       {/* Footer */}

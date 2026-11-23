@@ -51,5 +51,9 @@
     "refreshChannelsFailed": "Failed to refresh channels",
     "addIntegrationFailed": "Failed to add integration"
   },
-  "businessPlan": "Business"
+  "businessPlan": "Business",
+  "center": {
+    "title": "Integration Center",
+    "teamScope": "Team integrations. Project-specific options are in the project integrations menu."
+  }
 }

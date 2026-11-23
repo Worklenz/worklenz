@@ -51,5 +51,9 @@
     "refreshChannelsFailed": "Échec de l'actualisation des chaînes",
     "addIntegrationFailed": "Échec de l'ajout de l'intégration"
   },
-  "businessPlan": "Affaires"
+  "businessPlan": "Affaires",
+  "center": {
+    "title": "Centre des intégrations",
+    "teamScope": "Intégrations de l’équipe. Les options du projet se trouvent dans son menu d’intégrations."
+  }
 }

@@ -21,5 +21,23 @@
   "googleCalendar": {
     "title": "Kalendari i Google",
     "description": "Sinkronizoni detyrat dhe afatet tuaja me Google Calendar për të menaxhuar orarin tuaj, për të vendosur kujtues dhe për të mos humbur asnjëherë pikat kryesore të rëndësishme të projektit."
+  },
+  "center": {
+    "title": "Qendra e integrimeve",
+    "viewLabel": "Pamja e integrimeve",
+    "explore": "Eksploro",
+    "manage": "Menaxho",
+    "searchPlaceholder": "Kërko integrime",
+    "categoryLabel": "Kategoria e integrimit",
+    "allCategories": "Të gjitha kategoritë",
+    "messaging": "Komunikimi",
+    "development": "Zhvillimi",
+    "imports": "Importet",
+    "manageDescription": "Menaxho Slack, GitHub dhe integrimet e lidhura.",
+    "noResults": "Nuk u gjetën integrime.",
+    "searchLabel": "Kërko integrime",
+    "planPro": "Pro",
+    "planEnterprise": "Enterprise",
+    "notConnected": "Nuk është lidhur"
   }
 }

@@ -51,5 +51,9 @@
     "refreshChannelsFailed": "Falha ao atualizar canais",
     "addIntegrationFailed": "Falha ao adicionar integração"
   },
-  "businessPlan": "Empresarial"
+  "businessPlan": "Empresarial",
+  "center": {
+    "title": "Central de integrações",
+    "teamScope": "Integrações da equipe. As opções do projeto estão no menu de integrações do projeto."
+  }
 }

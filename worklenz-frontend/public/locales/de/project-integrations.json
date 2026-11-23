@@ -51,5 +51,9 @@
     "refreshChannelsFailed": "Aktualisierung der Kanäle fehlgeschlagen",
     "addIntegrationFailed": "Hinzufügen der Integration fehlgeschlagen"
   },
-  "businessPlan": "Geschäft"
+  "businessPlan": "Geschäft",
+  "center": {
+    "title": "Integrationszentrum",
+    "teamScope": "Team-Integrationen. Projektspezifische Optionen finden Sie im Integrationsmenü des Projekts."
+  }
 }

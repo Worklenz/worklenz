@@ -21,5 +21,23 @@
   "googleCalendar": {
     "title": "Kalendarz Google",
     "description": "Synchronizuj swoje zadania i terminy z Kalendarzem Google, aby zarządzać harmonogramem, ustawiać przypomnienia i nigdy nie przegapić ważnych kamieni milowych projektu."
+  },
+  "center": {
+    "title": "Centrum integracji",
+    "viewLabel": "Widok integracji",
+    "explore": "Przeglądaj",
+    "manage": "Zarządzaj",
+    "searchPlaceholder": "Szukaj integracji",
+    "categoryLabel": "Kategoria integracji",
+    "allCategories": "Wszystkie kategorie",
+    "messaging": "Komunikacja",
+    "development": "Programowanie",
+    "imports": "Importy",
+    "manageDescription": "Zarządzaj Slackiem, GitHubem i połączonymi integracjami.",
+    "noResults": "Nie znaleziono integracji.",
+    "searchLabel": "Szukaj integracji",
+    "planPro": "Pro",
+    "planEnterprise": "Enterprise",
+    "notConnected": "Nie połączono"
   }
 }

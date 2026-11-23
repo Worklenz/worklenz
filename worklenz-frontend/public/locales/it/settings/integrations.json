@@ -21,5 +21,23 @@
   "googleCalendar": {
     "title": "Google Calendar",
     "description": "Sincronizza attività e scadenze con Google Calendar per gestire la pianificazione, impostare promemoria e non perdere le tappe importanti del progetto."
+  },
+  "center": {
+    "title": "Centro integrazioni",
+    "viewLabel": "Vista integrazioni",
+    "explore": "Esplora",
+    "manage": "Gestisci",
+    "searchPlaceholder": "Cerca integrazioni",
+    "categoryLabel": "Categoria integrazione",
+    "allCategories": "Tutte le categorie",
+    "messaging": "Comunicazione",
+    "development": "Sviluppo",
+    "imports": "Importazioni",
+    "manageDescription": "Gestisci Slack, GitHub e le integrazioni connesse.",
+    "noResults": "Nessuna integrazione trovata.",
+    "searchLabel": "Cerca integrazioni",
+    "planPro": "Pro",
+    "planEnterprise": "Enterprise",
+    "notConnected": "Non connesso"
   }
 }

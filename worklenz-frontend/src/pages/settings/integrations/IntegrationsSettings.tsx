@@ -1,132 +1,80 @@
-import { Card, Button, Spin } from 'antd';
-import { Suspense } from 'react';
+import { Empty, Spin } from 'antd';
+import { IntegrationCenterControls, IntegrationCenterSearch } from './IntegrationCenterControls';
+import { IntegrationCategoryNavigation } from './IntegrationCategoryNavigation';
+import { Suspense, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getAddonSlotItems } from '@/addons/addon-slots';
 import { SlackIntegration } from '@/components/settings/integrations/SlackIntegration';
 import { GithubIntegrationCard } from '@/components/github/GithubIntegrationCard';
-import {
-  MSTeamsIcon,
-  SlackIcon,
-  GoogleDriveIcon,
-  GoogleCalendarIcon,
-} from '@/components/settings/integrations/IntegrationIcons';
 
-interface IntegrationCardProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  available: boolean;
-  children?: React.ReactNode;
+interface IntegrationsSettingsProps {
+  projectId?: string;
+  hideTitle?: boolean;
 }
 
-function IntegrationCard({ icon, title, description, available, children }: IntegrationCardProps) {
+function IntegrationsSettings({ projectId, hideTitle = false }: IntegrationsSettingsProps) {
   const { t } = useTranslation('settings/integrations');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [category, setCategory] = useState('all');
+  const query = searchQuery.trim().toLocaleLowerCase();
+  const matches = (name: string, description: string) =>
+    !query || `${name} ${description}`.toLocaleLowerCase().includes(query);
+  const slackName = t('slack.title', { defaultValue: 'Slack' });
+  const slackDescription = t('slack.description', {
+    defaultValue:
+      'Integrate Slack to receive real-time notifications, create tasks, and sync your team.',
+  });
+  const githubName = t('github.title', { defaultValue: 'GitHub' });
+  const githubDescription = t('github.description', {
+    defaultValue: 'Connect GitHub repositories and synchronize development activity.',
+  });
 
-  if (available && children) {
-    return <>{children}</>;
-  }
+  const showSlack =
+    (category === 'all' || category === 'messaging') && matches(slackName, slackDescription);
+  const showGithub =
+    (category === 'all' || category === 'issue-tracking') && matches(githubName, githubDescription);
+  const addonItems = getAddonSlotItems('integrationSettings');
 
   return (
-    <Card
-      className="text-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-200"
-      styles={{ body: { padding: '32px 24px', height: '100%' } }}
-    >
-      <div className="flex flex-col items-center justify-between h-full">
-        {/* Icon */}
-        <div className="text-6xl text-gray-400 dark:text-gray-500 mb-6">{icon}</div>
-
-        {/* Content */}
-        <div className="flex-1 flex flex-col justify-center">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">{title}</h3>
-          <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-8 max-w-sm mx-auto">
-            {description}
-          </p>
-        </div>
-
-        {/* Action Button */}
-        <div className="w-full">
-          {available ? (
-            <Button
-              type="primary"
-              size="large"
-              className="w-full h-12 text-base font-medium bg-blue-500 hover:bg-blue-600 border-blue-500 hover:border-blue-600"
-            >
-              {t('connect', { defaultValue: 'Connect' })}
-            </Button>
-          ) : (
-            <Button disabled size="large" className="w-full h-12 text-base font-medium">
-              {t('comingSoon', { defaultValue: 'Coming Soon' })}
-            </Button>
-          )}
+    <div className="space-y-4">
+      <IntegrationCenterControls hideTitle={hideTitle} />
+      <div className="flex flex-col lg:flex-row gap-6">
+        <IntegrationCategoryNavigation category={category} onChange={setCategory} />
+        <div className="min-w-0 flex-1 space-y-4">
+          <IntegrationCenterSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {showSlack && <SlackIntegration />}
+            {showGithub && <GithubIntegrationCard />}
+            {!showSlack && !showGithub && addonItems.length === 0 && (
+              <Empty
+                className="col-span-full"
+                description={t('center.noResults', { defaultValue: 'No integrations found.' })}
+              />
+            )}
+            {addonItems.map(({ key, component: Component }) =>
+              Component ? (
+                <Suspense
+                  key={key}
+                  fallback={
+                    <div className="col-span-full">
+                      <Spin tip={t('loading', { defaultValue: 'Loading' })}>
+                        <div />
+                      </Spin>
+                    </div>
+                  }
+                >
+                  <Component
+                    projectId={projectId}
+                    searchQuery={searchQuery}
+                    category={category}
+                    hasBuiltinMatches={showSlack || showGithub}
+                  />
+                </Suspense>
+              ) : null
+            )}
+          </div>
         </div>
       </div>
-    </Card>
-  );
-}
-
-function IntegrationsSettings() {
-  const { t } = useTranslation('settings/integrations');
-
-  return (
-    <div className="space-y-6">
-      {/* Integration Cards Grid - Consistent Heights */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Slack Integration - Active */}
-        <IntegrationCard
-          icon={<SlackIcon />}
-          title={t('slack.title', { defaultValue: 'Slack' })}
-          description={t('slack.description', {
-            defaultValue:
-              'Integrate Slack to receive real-time notifications, create tasks, and sync your team.',
-          })}
-          available={true}
-        >
-          <SlackIntegration />
-        </IntegrationCard>
-
-        {/* GitHub Integration - Active (software projects) */}
-        <GithubIntegrationCard />
-
-        {/* MS Teams Integration - Coming Soon */}
-        <IntegrationCard
-          icon={<MSTeamsIcon />}
-          title={t('teams.title', { defaultValue: 'Microsoft Teams' })}
-          description={t('teams.description', {
-            defaultValue:
-              'Integrate Microsoft Teams with your Worklenz team to receive real-time notifications, create tasks from Teams, and keep your team synchronized across both platforms.',
-          })}
-          available={false}
-        />
-
-        {/* Google Drive Integration - Coming Soon */}
-        <IntegrationCard
-          icon={<GoogleDriveIcon />}
-          title={t('googleDrive.title', { defaultValue: 'Google Drive' })}
-          description={t('googleDrive.description', {
-            defaultValue:
-              'Connect Google Drive to attach files, share documents, and collaborate seamlessly with your team on project deliverables.',
-          })}
-          available={false}
-        />
-
-        {/* Google Calendar Integration - Coming Soon */}
-        <IntegrationCard
-          icon={<GoogleCalendarIcon />}
-          title={t('googleCalendar.title', { defaultValue: 'Google Calendar' })}
-          description={t('googleCalendar.description', {
-            defaultValue:
-              'Sync your tasks and deadlines with Google Calendar to manage your schedule, set reminders, and never miss important project milestones.',
-          })}
-          available={false}
-        />
-      </div>
-      {getAddonSlotItems('integrationSettings').map(({ key, component: Component }) =>
-        Component ? (
-          <Suspense key={key} fallback={<Spin tip={t('loading', { defaultValue: 'Loading' })} />}>
-            <Component />
-          </Suspense>
-        ) : null
-      )}
     </div>
   );
 }
