@@ -25,7 +25,7 @@
     "axios": "^1.20.0",
     "dayjs": "^1.11.23",
     "dompurify": "^3.4.16",
-    "i18next": "^25.3.2",
+    "i18next": "^27.2.7",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-grid-layout": "^2.3.0",
