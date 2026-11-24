@@ -49,7 +49,7 @@ async function releaseAdvisoryLock(client: PoolClient): Promise<void> {
 }
 
 // Create a single recurring task from a template
-async function createSingleRecurringTask(
+export async function createSingleRecurringTask(
   template: ITaskTemplate & IRecurringSchedule,
   nextEndDate: moment.Moment
 ): Promise<boolean> {
@@ -92,6 +92,15 @@ async function createSingleRecurringTask(
       for (const assignee of template.assignees) {
         const assignedBy = assignee.assigned_by || template.reporter_id;
         if (assignee.team_member_id && assignedBy) {
+          // create_bulk_task_assignees auto-creates a project_members row when
+          // none exists — running it for a stale template assignee would
+          // silently re-add a user who was removed from the project.
+          const membership = await client.query(
+            `SELECT 1 FROM project_members WHERE team_member_id = $1 AND project_id = $2`,
+            [assignee.team_member_id, template.project_id]
+          );
+          if (membership.rowCount === 0) continue;
+
           const assignQuery = `SELECT create_bulk_task_assignees($1,$2,$3,$4)`;
           await client.query(assignQuery, [
             assignee.team_member_id,
