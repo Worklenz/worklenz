@@ -232,6 +232,11 @@ const adminCenterSlice = createSlice({
         state.organization.logo_url = action.payload ?? undefined;
       }
     },
+    clearOrganization: state => {
+      state.organization = null;
+      state.loadingOrganization = false;
+      state.organizationAdmins = null;
+    },
   },
   extraReducers: builder => {
     builder.addCase(fetchBillingInfo.pending, (state, action) => {
@@ -358,6 +363,7 @@ export const {
   hideUpgradePrompt,
   clearHolidaysCache,
   setOrganizationLogo,
+  clearOrganization,
 } =
   adminCenterSlice.actions;
 

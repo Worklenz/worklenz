@@ -34,12 +34,13 @@ import { fetchCurrentRelease } from '@/features/whats-new/whatsNewSlice';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { RootState } from '@/app/store';
 import { selectCurrentProject } from '@/app/selectors';
 import {
   toggleUpgradeModal,
   fetchOrganizationDetails,
+  clearOrganization,
 } from '@/features/admin-center/admin-center.slice';
+import { fetchTeams } from '@/features/teams/teamSlice';
 import { isTeamLeadRole, ROLE_DEFINITIONS, ROLE_NAMES } from '@/types/roles/role.types';
 import { ConnectionStatusIndicator } from '@/components/connection-status/ConnectionStatusIndicator';
 import { getSessionRoleName } from '@/utils/role-permissions.utils';
@@ -73,7 +74,6 @@ const Navbar = () => {
   const { setIdentity } = useMixpanelTracking();
   const [navRoutesList, setNavRoutesList] = useState<NavRoutesType[]>(navRoutes);
   const showUpgradeTypes = useMemo(() => [ISUBSCRIPTION_TYPE.TRIAL], []);
-  const organization = useAppSelector((state: RootState) => state.adminCenterReducer.organization);
   const currentProject = useAppSelector(selectCurrentProject);
   const guestProjectStateRef = useRef<{ projectId: string | null; isGuest: boolean }>({
     projectId: null,
@@ -94,12 +94,21 @@ const Navbar = () => {
       });
   }, [authService, setIdentity]);
 
-  // Fetch organization details for navbar logo if not already loaded
+  // Teams list includes per-team logo_url — needed for the navbar logo for all roles
   useEffect(() => {
-    if (currentSession && !organization && isOwnerOrAdmin) {
-      dispatch(fetchOrganizationDetails());
+    if (currentSession) {
+      dispatch(fetchTeams());
     }
-  }, [currentSession, organization, isOwnerOrAdmin, dispatch]);
+  }, [currentSession?.team_id, dispatch]);
+
+  // Refetch organization details when the active team changes (owner/admin).
+  // Clear first so a previous team's logo cannot linger in Redux across soft switches.
+  useEffect(() => {
+    if (!currentSession?.team_id || !isOwnerOrAdmin) return;
+
+    dispatch(clearOrganization());
+    dispatch(fetchOrganizationDetails());
+  }, [currentSession?.team_id, isOwnerOrAdmin, dispatch]);
 
   // Fetched once per app load (session bootstrap), not on every route change —
   // server-evaluated eligibility only needs to be re-checked on a fresh load

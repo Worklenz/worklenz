@@ -27,6 +27,10 @@ import { useAuthService } from '@/hooks/useAuth';
 import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import { updateTeamLogo } from '@/features/teams/teamSlice';
+import {
+  clearOrganizationLogoCache,
+  writeOrganizationLogoCache,
+} from '@/utils/organization-logo-cache';
 
 interface OrganizationLogoProps {
   themeMode: string;
@@ -174,6 +178,11 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
               logoUrl: newLogoUrl,
             })
           );
+          if (newLogoUrl) {
+            writeOrganizationLogoCache(currentSession.team_id, newLogoUrl);
+          } else {
+            clearOrganizationLogoCache(currentSession.team_id);
+          }
         }
 
         refetch();
@@ -215,6 +224,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
               logoUrl: null,
             })
           );
+          clearOrganizationLogoCache(currentSession.team_id);
         }
 
         refetch();
