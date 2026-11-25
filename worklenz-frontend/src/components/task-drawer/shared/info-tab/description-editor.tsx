@@ -128,7 +128,24 @@ const SANITIZE_CONFIG = {
 
 const applyMentionFormatting = (editor: QuillEditorInstance, members: MentionMember[]) => {
   const text = editor.getText();
-  findMentionRanges(text, members).forEach(({ start, length }) => {
+  const ranges = findMentionRanges(text, members)
+    .slice()
+    .sort((a, b) => a.start - b.start);
+
+  if (editor.root.querySelector('.mentions')) {
+    let cursor = 0;
+    for (const { start, length } of ranges) {
+      if (start > cursor) {
+        editor.formatText(cursor, start - cursor, 'mention', false, 'silent');
+      }
+      cursor = Math.max(cursor, start + length);
+    }
+    if (text.length > cursor) {
+      editor.formatText(cursor, text.length - cursor, 'mention', false, 'silent');
+    }
+  }
+
+  ranges.forEach(({ start, length }) => {
     if (editor.getFormat(start, length).mention !== true) {
       editor.formatText(start, length, 'mention', true, 'silent');
     }
@@ -168,6 +185,7 @@ const DescriptionEditor = ({
   const filteredMentionMembersRef = useRef<MentionMember[]>([]);
   const selectedMentionIndexRef = useRef(selectedMentionIndex);
   const insertMentionRef = useRef<(member: MentionMember) => void>(() => undefined);
+  const pendingCaretRafRef = useRef<number | null>(null);
   mentionQueryRef.current = mentionQuery;
   selectedMentionIndexRef.current = selectedMentionIndex;
 
@@ -688,9 +706,19 @@ const DescriptionEditor = ({
       //Force turn OFF the mention format at the caret
       editor.format('mention', false, 'user');
 
-      requestAnimationFrame(() => {
-        editor.setSelection(caretPos, 0, 'silent');
-        editor.format('mention', false, 'silent');
+      if (pendingCaretRafRef.current !== null) {
+        cancelAnimationFrame(pendingCaretRafRef.current);
+      }
+      pendingCaretRafRef.current = requestAnimationFrame(() => {
+        pendingCaretRafRef.current = null;
+        const currentSelection = editor.getSelection();
+        if (
+          !currentSelection ||
+          (currentSelection.index === caretPos && currentSelection.length === 0)
+        ) {
+          editor.setSelection(caretPos, 0, 'silent');
+          editor.format('mention', false, 'silent');
+        }
       });
 
       setMentionQuery(null);
@@ -717,6 +745,10 @@ const DescriptionEditor = ({
   };
 
   const handleEditorChange = (nextHtml: string) => {
+    if (pendingCaretRafRef.current !== null) {
+      cancelAnimationFrame(pendingCaretRafRef.current);
+      pendingCaretRafRef.current = null;
+    }
     const editor = quillRef.current?.getEditor();
     if (editor) applyMentionFormatting(editor, mentionMembers);
     // Prefer live HTML after silent mention formatting so mention spans are
