@@ -12,6 +12,7 @@
   "mentionedInProjectComment": "<b>{{user}}</b> hat Sie in einem Kommentar zu <b>{{project}}</b> erwähnt",
   "mentionedInProjectDocument": "<b>{{user}}</b> hat Sie in einem Dokument zu <b>{{project}}</b> erwähnt",
   "phaseTaskAssigned": "Ihnen wurde eine Aufgabe in <b>{{phase}}</b> zugewiesen: <b>{{task}}</b>",
+  "taskMarkedDone": "Aufgabe <b>{{task}}</b> wurde als erledigt markiert",
   "security": {
     "invitationLimit": "Dieser Arbeitsbereich hat das Sicherheitslimit für Einladungen erreicht. Bitte versuchen Sie es später erneut.",
     "invitationsPaused": "Einladungen sind vorübergehend pausiert. Bitte wenden Sie sich an Ihren Administrator.",
