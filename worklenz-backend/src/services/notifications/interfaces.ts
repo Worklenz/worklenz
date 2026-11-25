@@ -4,7 +4,12 @@ export interface INotification {
 }
 
 export interface IReceiver {
-  receiver_socket_id: string;
+  /**
+   * Prefer `user_id` for real-time delivery (emits to `user:{id}` room).
+   * `receiver_socket_id` is a fallback for older call sites; it can be stale after reconnect.
+   */
+  receiver_socket_id?: string;
+  user_id?: string;
   team: string;
   team_id: string;
   message: string;

@@ -45,8 +45,11 @@ export class NotificationsService {
       const [data] = result.rows;
       const receiver = data.receiver || {};
 
-      if (receiver?.receiver_socket_id && reporterId !== userId) {
-        NotificationsService.sendNotification(receiver);
+      if (reporterId !== userId) {
+        NotificationsService.sendNotification({
+          ...receiver,
+          user_id: userId,
+        });
       }
     } catch (error) {
       log_error(error);
@@ -91,29 +94,25 @@ export class NotificationsService {
         [NotificationTypes.PHASE_TASK_ASSIGNED, reporterUserId, taskId, assigneeUserId, teamId, projectId]
       );
 
-      // 3. Real-time socket push
-      const socketResult = await db.query(`SELECT socket_id FROM users WHERE id = $1;`, [assigneeUserId]);
-      const receiverSocketId = socketResult.rows[0]?.socket_id;
-      if (receiverSocketId) {
-        const projectResult = await db.query(
-          `SELECT p.name AS project_name, p.color_code FROM projects p WHERE p.id = $1;`, [projectId]);
-        const projectRow = projectResult.rows[0];
-        const teamResult = await db.query(`SELECT name FROM teams WHERE id = $1;`, [teamId]);
-        const teamName = teamResult.rows[0]?.name || "";
-        NotificationsService.sendNotification({
-          receiver_socket_id: receiverSocketId,
-          team: teamName,
-          team_id: teamId,
-          message,
-          message_key: messageKey,
-          message_params: messageParams,
-          notification_type_key: "PHASE_TASK_ASSIGNED",
-          project: projectRow?.project_name,
-          project_color: projectRow?.color_code,
-          project_id: projectId,
-          task_id: taskId,
-        });
-      }
+      // 3. Real-time socket push (user room — reliable across reconnects)
+      const projectResult = await db.query(
+        `SELECT p.name AS project_name, p.color_code FROM projects p WHERE p.id = $1;`, [projectId]);
+      const projectRow = projectResult.rows[0];
+      const teamResult = await db.query(`SELECT name FROM teams WHERE id = $1;`, [teamId]);
+      const teamName = teamResult.rows[0]?.name || "";
+      NotificationsService.sendNotification({
+        user_id: assigneeUserId,
+        team: teamName,
+        team_id: teamId,
+        message,
+        message_key: messageKey,
+        message_params: messageParams,
+        notification_type_key: "PHASE_TASK_ASSIGNED",
+        project: projectRow?.project_name,
+        project_color: projectRow?.color_code,
+        project_id: projectId,
+        task_id: taskId,
+      });
     } catch (error) {
       log_error(error);
     }
@@ -170,11 +169,21 @@ export class NotificationsService {
       notification.setProjectId(receiver.project_id);
     }
 
-    IO.emit(
-      SocketEvents.NOTIFICATIONS_UPDATE,
-      receiver.receiver_socket_id,
-      notification,
-    );
+    // Prefer the per-user room joined on connect — survives reconnects when
+    // users.socket_id is NULL/stale. Fall back to direct socket emit for older callers.
+    if (receiver.user_id) {
+      IO.emitToRoom(
+        `user:${receiver.user_id}`,
+        SocketEvents.NOTIFICATIONS_UPDATE,
+        notification,
+      );
+    } else if (receiver.receiver_socket_id) {
+      IO.emit(
+        SocketEvents.NOTIFICATIONS_UPDATE,
+        receiver.receiver_socket_id,
+        notification,
+      );
+    }
   }
 
   public static async sendNotificationToUser(
@@ -187,20 +196,12 @@ export class NotificationsService {
     if (!userId || userId === actorUserId) return;
 
     try {
-      const result = await db.query(
-        "SELECT socket_id FROM users WHERE id = $1 AND ($2::uuid IS NULL OR id != $2);",
-        [userId, actorUserId],
-      );
-      const receiverSocketId = result.rows[0]?.socket_id;
-
-      if (receiverSocketId) {
-        this.sendNotification({
-          receiver_socket_id: receiverSocketId,
-          message,
-          team,
-          team_id: teamId,
-        });
-      }
+      this.sendNotification({
+        user_id: userId,
+        message,
+        team,
+        team_id: teamId,
+      });
     } catch (error) {
       log_error(error);
     }
@@ -268,8 +269,11 @@ export class NotificationsService {
       ]);
       const [response] = result.rows;
 
-      if (request.socketId) {
+      // Always push real-time via user room when we know the recipient.
+      // Do not gate on socketId — DB socket_id is often stale after silent reconnect.
+      if (request.userId) {
         this.sendNotification({
+          user_id: request.userId,
           receiver_socket_id: request.socketId,
           project: response?.project,
           message: request.message,
