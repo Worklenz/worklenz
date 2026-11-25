@@ -27,18 +27,42 @@ export const TimeReportTable: React.FC<TimeReportTableProps> = ({ rows, loading 
         width: 100,
         ellipsis: true,
         sorter: (a, b) => a.member_name.localeCompare(b.member_name),
+
         render: (name: string, record) => (
-          <Flex align="center" gap={8}>
+          <Flex
+            align="center"
+            gap={8}
+            style={{ width: '100%', minWidth: 0 }}
+          >
             <Avatar
               src={record.avatar_url || undefined}
               size={28}
-              style={{ backgroundColor: record.color_code }}
+              style={{
+                backgroundColor: record.color_code,
+                flexShrink: 0,
+              }}
             >
               {name?.charAt(0)?.toUpperCase()}
             </Avatar>
-            <Text strong>{name}</Text>
+            <Text
+              strong
+              tabIndex={0}
+              ellipsis={{
+                tooltip: {
+                  title: name,
+                  trigger: ['hover', 'focus'],
+                },
+              }}
+              style={{
+                flex: 1,
+                minWidth: 0,
+              }}
+            >
+              {name}
+            </Text>
           </Flex>
         ),
+
       },
       {
         title: t('trColProject', { defaultValue: 'Project' }),
@@ -103,20 +127,20 @@ export const TimeReportTable: React.FC<TimeReportTableProps> = ({ rows, loading 
   );
 
   const borderedColumns = columns.map((column) => ({
-  ...column,
-  onCell: () => ({
-    style: {
-      borderInlineEnd: `1px solid ${token.colorBorder}`,
-      borderBottom: `1px solid ${token.colorBorder}`,
-    },
-  }),
-  onHeaderCell: () => ({
-    style: {
-      borderInlineEnd: `1px solid ${token.colorBorder}`,
-      borderBottom: `1px solid ${token.colorBorder}`,
-    },
-  }),
-}));
+    ...column,
+    onCell: () => ({
+      style: {
+        borderInlineEnd: `1px solid ${token.colorBorder}`,
+        borderBottom: `1px solid ${token.colorBorder}`,
+      },
+    }),
+    onHeaderCell: () => ({
+      style: {
+        borderInlineEnd: `1px solid ${token.colorBorder}`,
+        borderBottom: `1px solid ${token.colorBorder}`,
+      },
+    }),
+  }));
 
   return (
     <Table<TimeReportRow>
