@@ -12,6 +12,7 @@
   "mentionedInProjectComment": "<b>{{user}}</b> wspomniał(a) o Tobie w komentarzu do <b>{{project}}</b>",
   "mentionedInProjectDocument": "<b>{{user}}</b> wspomniał(a) o Tobie w dokumencie w <b>{{project}}</b>",
   "phaseTaskAssigned": "Przypisano Ci zadanie w <b>{{phase}}</b>: <b>{{task}}</b>",
+  "taskMarkedDone": "Zadanie <b>{{task}}</b> zostało oznaczone jako Ukończone",
   "security": {
     "invitationLimit": "Ten obszar roboczy osiągnął limit bezpieczeństwa zaproszeń. Spróbuj ponownie później.",
     "invitationsPaused": "Zaproszenia zostały tymczasowo wstrzymane. Skontaktuj się z administratorem.",

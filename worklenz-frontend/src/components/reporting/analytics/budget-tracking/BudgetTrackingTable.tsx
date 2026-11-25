@@ -80,7 +80,7 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
         dataIndex: 'budget',
         key: 'budget',
         width: 130,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.budget - b.budget,
         render: (value: number, record) =>
           record.has_budget ? (
@@ -96,7 +96,7 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
         dataIndex: 'spent',
         key: 'spent',
         width: 130,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.spent - b.spent,
         render: (value: number, record) => (
           <Text strong style={{ color: record.burn_pct > 85 ? '#ff4d4f' : undefined }}>
@@ -109,7 +109,7 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
         dataIndex: 'remaining',
         key: 'remaining',
         width: 130,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.remaining - b.remaining,
         render: (value: number, record) =>
           record.has_budget ? (
@@ -124,7 +124,7 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
         title: t('btColBurn', { defaultValue: 'Burn rate' }),
         key: 'burn',
         width: 110,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.burn_pct - b.burn_pct,
         render: (_: unknown, record) =>
           record.has_budget ? (

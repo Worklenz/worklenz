@@ -27,18 +27,42 @@ export const TimeReportTable: React.FC<TimeReportTableProps> = ({ rows, loading 
         width: 100,
         ellipsis: true,
         sorter: (a, b) => a.member_name.localeCompare(b.member_name),
+
         render: (name: string, record) => (
-          <Flex align="center" gap={8}>
+          <Flex
+            align="center"
+            gap={8}
+            style={{ width: '100%', minWidth: 0 }}
+          >
             <Avatar
               src={record.avatar_url || undefined}
               size={28}
-              style={{ backgroundColor: record.color_code }}
+              style={{
+                backgroundColor: record.color_code,
+                flexShrink: 0,
+              }}
             >
               {name?.charAt(0)?.toUpperCase()}
             </Avatar>
-            <Text strong>{name}</Text>
+            <Text
+              strong
+              tabIndex={0}
+              ellipsis={{
+                tooltip: {
+                  title: name,
+                  trigger: ['hover', 'focus'],
+                },
+              }}
+              style={{
+                flex: 1,
+                minWidth: 0,
+              }}
+            >
+              {name}
+            </Text>
           </Flex>
         ),
+
       },
       {
         title: t('trColProject', { defaultValue: 'Project' }),
@@ -67,7 +91,7 @@ export const TimeReportTable: React.FC<TimeReportTableProps> = ({ rows, loading 
         dataIndex: 'logged_hours',
         key: 'logged_hours',
         width: 110,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.logged_hours - b.logged_hours,
         render: (value: number) => <Text strong>{fmtHours(value)}</Text>,
       },
@@ -76,7 +100,7 @@ export const TimeReportTable: React.FC<TimeReportTableProps> = ({ rows, loading 
         dataIndex: 'estimated_hours',
         key: 'estimated_hours',
         width: 120,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.estimated_hours - b.estimated_hours,
         render: (value: number) => fmtHours(value),
       },
@@ -85,7 +109,7 @@ export const TimeReportTable: React.FC<TimeReportTableProps> = ({ rows, loading 
         dataIndex: 'billable_hours',
         key: 'billable_hours',
         width: 110,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.billable_hours - b.billable_hours,
         render: (value: number) => fmtHours(value),
       },
@@ -94,7 +118,7 @@ export const TimeReportTable: React.FC<TimeReportTableProps> = ({ rows, loading 
         dataIndex: 'nonbillable_hours',
         key: 'nonbillable_hours',
         width: 130,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.nonbillable_hours - b.nonbillable_hours,
         render: (value: number) => fmtHours(value),
       },
@@ -103,20 +127,20 @@ export const TimeReportTable: React.FC<TimeReportTableProps> = ({ rows, loading 
   );
 
   const borderedColumns = columns.map((column) => ({
-  ...column,
-  onCell: () => ({
-    style: {
-      borderInlineEnd: `1px solid ${token.colorBorder}`,
-      borderBottom: `1px solid ${token.colorBorder}`,
-    },
-  }),
-  onHeaderCell: () => ({
-    style: {
-      borderInlineEnd: `1px solid ${token.colorBorder}`,
-      borderBottom: `1px solid ${token.colorBorder}`,
-    },
-  }),
-}));
+    ...column,
+    onCell: () => ({
+      style: {
+        borderInlineEnd: `1px solid ${token.colorBorder}`,
+        borderBottom: `1px solid ${token.colorBorder}`,
+      },
+    }),
+    onHeaderCell: () => ({
+      style: {
+        borderInlineEnd: `1px solid ${token.colorBorder}`,
+        borderBottom: `1px solid ${token.colorBorder}`,
+      },
+    }),
+  }));
 
   return (
     <Table<TimeReportRow>
