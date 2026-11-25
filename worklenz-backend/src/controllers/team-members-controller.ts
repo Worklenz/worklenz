@@ -274,6 +274,45 @@ export default class TeamMembersController extends WorklenzControllerBase {
     return data.exists;
   }
 
+  /**
+   * Mirrors the current_count seat population: active non-guest organization members.
+   * Guest-only members do not consume a seat until invited as a regular member.
+   */
+  public static async checkIfUserCountsTowardTeamSeatLimit(
+    owner_id: string,
+    email: string,
+  ) {
+    if (!owner_id) throw new Error("Owner not found.");
+
+    const q = `SELECT EXISTS(SELECT tmi.team_member_id
+              FROM team_member_info_view AS tmi
+                       JOIN teams AS t ON tmi.team_id = t.id
+                       JOIN team_members AS tm ON tmi.team_member_id = tm.id
+              WHERE LOWER(tmi.email) = LOWER($1::TEXT)
+                AND t.user_id = $2::UUID
+                AND tm.active = true
+                AND NOT EXISTS(
+                  SELECT 1
+                  FROM project_members pm_guest
+                  WHERE pm_guest.team_member_id = tm.id
+                    AND pm_guest.project_access_level_id = (
+                      SELECT id FROM project_access_levels WHERE key = 'GUEST'
+                    )
+                    AND NOT EXISTS(
+                      SELECT 1
+                      FROM project_members pm_non_guest
+                      WHERE pm_non_guest.team_member_id = tm.id
+                        AND pm_non_guest.project_access_level_id != (
+                          SELECT id FROM project_access_levels WHERE key = 'GUEST'
+                        )
+                    )
+                ));`;
+    const result = await db.query(q, [email, owner_id]);
+
+    const [data] = result.rows;
+    return data.exists;
+  }
+
   public static async createOrInviteMembers<T>(
     body: T,
     user: IPassportSession,
@@ -466,16 +505,12 @@ export default class TeamMembersController extends WorklenzControllerBase {
       req.body.emails.map(async (email: string) => {
         const trimmedEmail = email.trim();
 
-        const userExists = await this.checkIfUserAlreadyExists(
-          req.user?.owner_id as string,
-          trimmedEmail,
-        );
-        const isUserActive = await this.checkIfUserActiveInOtherTeams(
+        const alreadyCounted = await this.checkIfUserCountsTowardTeamSeatLimit(
           req.user?.owner_id as string,
           trimmedEmail,
         );
 
-        if (!userExists || !isUserActive) {
+        if (!alreadyCounted) {
           incrementBy = incrementBy + 1;
         }
       }),
@@ -657,29 +692,55 @@ export default class TeamMembersController extends WorklenzControllerBase {
        * previously could invite unlimited members.
        */
       if (subscriptionData.subscription_type === "FREE" && incrementBy > 0) {
-        const freePlanSettings = await getFreePlanSettings();
-        const freePlanLimit = parseInt(freePlanSettings?.team_member_limit) || 0;
-        const currentFreeMembers = parseInt(subscriptionData.current_count) || 0;
+        return withTeamSeatLock(teamId, async () => {
+          const currentSubscription = await checkTeamSubscriptionStatus(teamId);
+          const freePlanSettings = await getFreePlanSettings();
+          const freePlanLimit = parseInt(freePlanSettings?.team_member_limit) || 0;
+          const currentFreeMembers = parseInt(currentSubscription.current_count) || 0;
 
-        if (freePlanLimit > 0 && currentFreeMembers + incrementBy > freePlanLimit) {
-          const obj = {
-            error_code: 'SEAT_LIMIT_EXCEEDED',
-            seats_enough: false,
-            current_members: currentFreeMembers,
-            plan_seat_limit: freePlanLimit,
-            is_appsumo_user: false,
-            subscription_type: subscriptionData.subscription_type,
-            current_seat_amount: freePlanLimit,
-          };
+          if (freePlanLimit > 0 && currentFreeMembers + incrementBy > freePlanLimit) {
+            const obj = {
+              error_code: 'SEAT_LIMIT_EXCEEDED',
+              seats_enough: false,
+              current_members: currentFreeMembers,
+              plan_seat_limit: freePlanLimit,
+              is_appsumo_user: false,
+              subscription_type: currentSubscription.subscription_type,
+              current_seat_amount: freePlanLimit,
+            };
+            return res
+              .status(200)
+              .send(
+                new ServerResponse(
+                  false,
+                  obj,
+                ),
+              );
+          }
+
+          if (statusExclude.includes(currentSubscription.subscription_status)) {
+            return res
+              .status(200)
+              .send(
+                new ServerResponse(
+                  false,
+                  null,
+                  "Unable to add user! Please check your subscription status.",
+                ),
+              );
+          }
+
+          const newMembers = await this.createOrInviteMembers(req.body, req.user as IPassportSession);
           return res
             .status(200)
             .send(
               new ServerResponse(
-                false,
-                obj,
-              ),
+                true,
+                newMembers,
+                `Your teammates will get an email that gives them access to your team.`,
+              ).withTitle("Invitations sent"),
             );
-        }
+        });
       }
     }
 
