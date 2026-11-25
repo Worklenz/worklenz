@@ -13,7 +13,7 @@ exports.up = pgm => {
   // Members JSON shape must match get_task_assignees exactly — the
   // NotificationsService fanout reads user_id / team_id / socket_id / email.
   pgm.sql(`
-    CREATE OR REPLACE FUNCTION get_task_notify_recipients(_task_id uuid) RETURNS json
+    CREATE OR REPLACE FUNCTION get_task_notify_recipients(_task_id uuid, _include_subscribers boolean DEFAULT true) RETURNS json
         LANGUAGE plpgsql
     AS
     $$
@@ -51,6 +51,11 @@ exports.up = pgm => {
                            INNER JOIN team_members tm ON tm.id = tasks_assignees.team_member_id
                            LEFT JOIN users u ON tm.user_id = u.id
                   WHERE tasks_assignees.task_id = _task_id
+                    AND (_include_subscribers
+                         OR NOT EXISTS(SELECT 1
+                                       FROM task_subscribers subscriber_filter
+                                       WHERE subscriber_filter.task_id = _task_id
+                                         AND subscriber_filter.user_id = u.id))
 
                   UNION ALL
 
@@ -72,10 +77,11 @@ exports.up = pgm => {
                   FROM task_subscribers ts
                            INNER JOIN team_members tm ON tm.id = ts.team_member_id
                            LEFT JOIN users u ON u.id = ts.user_id
-                           LEFT JOIN project_members pm
-                                  ON pm.team_member_id = tm.id
-                                      AND pm.project_id = (SELECT project_id FROM tasks WHERE id = _task_id)
+                           INNER JOIN project_members pm
+                                    ON pm.team_member_id = tm.id
+                                        AND pm.project_id = (SELECT project_id FROM tasks WHERE id = _task_id)
                   WHERE ts.task_id = _task_id
+                    AND _include_subscribers
                     AND u.is_deleted IS NOT TRUE
               ) combined
               ORDER BY user_id) rec
@@ -143,6 +149,10 @@ exports.up = pgm => {
 
             _message = CONCAT(_updater_name, ' transitioned "', _task_name, '" from ', _previous_status_name, ' ⟶ ',
                               _new_status_name);
+
+            -- Done transitions use the dedicated task-completion subscriber fanout,
+            -- so subscribers are excluded here to avoid duplicate in-app notifications.
+            SELECT get_task_notify_recipients(_task_id, NOT _is_new_status_done) INTO _members;
         END IF;
 
         SELECT completed_at FROM tasks WHERE id = _task_id INTO _task_completed_at;
@@ -161,9 +171,6 @@ exports.up = pgm => {
               FROM sys_task_status_categories
               WHERE id = (SELECT category_id FROM task_statuses WHERE id = _status_id)) r
         INTO _status_category;
-
-        -- Notify assignees AND Notify-feature subscribers on task changes
-        SELECT get_task_notify_recipients(_task_id) INTO _members;
 
         RETURN JSON_BUILD_OBJECT(
                 'message', COALESCE(_message, ''),
@@ -280,5 +287,5 @@ exports.down = pgm => {
     $$;
   `);
 
-  pgm.sql(`DROP FUNCTION IF EXISTS get_task_notify_recipients(uuid);`);
+  pgm.sql(`DROP FUNCTION IF EXISTS get_task_notify_recipients(uuid, boolean);`);
 };

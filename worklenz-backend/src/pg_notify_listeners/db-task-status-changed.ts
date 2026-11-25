@@ -53,6 +53,10 @@ export async function notifyTaskDoneSubscribers(taskId: string): Promise<void> {
         WHERE ts.task_id = $1
           AND u.is_deleted IS NOT TRUE
           AND u.id IS NOT NULL
+          AND EXISTS(SELECT 1
+                     FROM project_members pm
+                     WHERE pm.team_member_id = ts.team_member_id
+                       AND pm.project_id = t.project_id)
         ORDER BY ts.created_at
       )
       SELECT user_id,
