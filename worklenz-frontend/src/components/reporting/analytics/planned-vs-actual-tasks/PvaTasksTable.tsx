@@ -36,7 +36,7 @@ export const PvaTasksTable: React.FC<PvaTasksTableProps> = ({ projects, loading 
         dataIndex: 'planned',
         key: 'planned',
         width: 130,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.planned - b.planned,
       },
       {
@@ -44,7 +44,7 @@ export const PvaTasksTable: React.FC<PvaTasksTableProps> = ({ projects, loading 
         dataIndex: 'completed',
         key: 'completed',
         width: 120,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.completed - b.completed,
       },
       {
@@ -52,7 +52,7 @@ export const PvaTasksTable: React.FC<PvaTasksTableProps> = ({ projects, loading 
         dataIndex: 'overdue',
         key: 'overdue',
         width: 110,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.overdue - b.overdue,
         render: (value: number) =>
           value > 0 ? <Text type="danger">{value}</Text> : <Text type="secondary">0</Text>,
@@ -62,7 +62,7 @@ export const PvaTasksTable: React.FC<PvaTasksTableProps> = ({ projects, loading 
         dataIndex: 'variance_days',
         key: 'variance_days',
         width: 120,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.variance_days - b.variance_days,
         render: (value: number) => {
           if (value > 0) {

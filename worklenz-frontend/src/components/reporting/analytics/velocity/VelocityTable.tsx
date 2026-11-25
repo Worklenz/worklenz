@@ -86,7 +86,7 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({
       dataIndex: 'committed',
       width: 150,
       key: 'committed',
-      align: 'right',
+      align: 'left',
       sorter: (a, b) => a.committed - b.committed,
       onCell: () => ({
         style: cellBorderStyle,
@@ -100,7 +100,7 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({
       dataIndex: 'completed',
       key: 'completed',
       width: 130,
-      align: 'right',
+      align: 'left',
       sorter: (a, b) => a.completed - b.completed,
       onCell: () => ({
         style: cellBorderStyle,
@@ -114,7 +114,7 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({
       dataIndex: 'commitment_accuracy',
       key: 'commitment_accuracy',
       width: 80,
-      align: 'right',
+      align: 'left',
       sorter: (a, b) =>
         (a.commitment_accuracy ?? -1) -
         (b.commitment_accuracy ?? -1),
