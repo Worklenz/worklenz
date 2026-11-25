@@ -711,10 +711,14 @@ const DescriptionEditor = ({
       }
       pendingCaretRafRef.current = requestAnimationFrame(() => {
         pendingCaretRafRef.current = null;
+        if (typeof document !== 'undefined' && !editor.root.contains(document.activeElement)) {
+          return;
+        }
         const currentSelection = editor.getSelection();
         if (
-          !currentSelection ||
-          (currentSelection.index === caretPos && currentSelection.length === 0)
+          currentSelection &&
+          currentSelection.index === caretPos &&
+          currentSelection.length === 0
         ) {
           editor.setSelection(caretPos, 0, 'silent');
           editor.format('mention', false, 'silent');
