@@ -37,18 +37,21 @@ The backend validates the Google signature, issuer, audience, expiration, verifi
 
 ## Third-party services
 
-The self-hosted build ships with the following third-party integrations, and each is gated so a self-hosted deployment makes no third-party requests by default:
+The self-hosted build ships with the following third-party integrations. They are not all disabled by default: Google Fonts is requested unconditionally by the frontend, and backend-rendered pages can inject Google Analytics and Microsoft Clarity in production as described below.
 
-| Service | What it does | When it loads |
+| Service | When it loads | How to disable or avoid it |
 | --- | --- | --- |
-| Google Analytics | Page-view tracking via `worklenz-frontend/public/js/analytics.js` | Only on Worklenz-hosted origins (`app.worklenz.com`, `dev.worklenz.com`, `uat.app.worklenz.com`); the script returns early on any other hostname |
-| Microsoft Clarity | Session analytics via `worklenz-frontend/public/js/clarity.js` and `worklenz-backend/src/views/_scripts.pug` | Frontend script is hostname-gated like analytics.js; the backend template injects it only when `isProduction() && !isInternalServer()` |
-| HubSpot chat | Support widget via `worklenz-frontend/public/js/hubspot.js` | Only when `window.location.hostname === 'app.worklenz.com'` |
-| Mixpanel | Product analytics via `worklenz-frontend/src/utils/mixpanelInit.ts` | Only when a real project token is supplied at build time; the bundled placeholder token is rejected and initialization is skipped |
-| Sentry | Frontend error reporting via `worklenz-frontend/src/config/sentry.ts` | Only when `VITE_APP_ENV=production` and a `VITE_SENTRY_DSN` is provided; unset by default for self-hosting |
-| Google Fonts | Font loading | Requested by the frontend stylesheets; block or self-host fonts if your deployment must make no external requests |
+| Google Analytics | `worklenz-frontend/public/js/analytics.js` contacts Google only on Worklenz-hosted origins (`app.worklenz.com`, `dev.worklenz.com`, `uat.app.worklenz.com`). Separately, `worklenz-backend/src/views/_scripts.pug` injects `gtag.js` when `isProduction() && !isInternalServer()`. | No action is needed for the frontend script on a self-hosted hostname. For the backend template injection, remove or change the Google block in `_scripts.pug` before building or deploying; there is currently no runtime environment toggle. |
+| Microsoft Clarity | `worklenz-frontend/public/js/clarity.js` runs only on `app.worklenz.com`. Separately, `_scripts.pug` injects Clarity when `isProduction() && !isInternalServer()`. | No action is needed for the frontend script on a self-hosted hostname. For the backend template injection, remove or change the Clarity block in `_scripts.pug` before building or deploying; there is currently no runtime environment toggle. |
+| HubSpot chat | Only when `window.location.hostname === 'app.worklenz.com'`. | No action needed on a self-hosted hostname; it remains inactive elsewhere. |
+| Mixpanel | When a real `VITE_MIXPANEL_TOKEN` is supplied at build time. The bundled `mixpanel-token` placeholder is rejected. | Leave `VITE_MIXPANEL_TOKEN` unset, empty, or as the placeholder when building the frontend. |
+| Sentry | When `VITE_APP_ENV=production` and `VITE_SENTRY_DSN` is provided. | Leave `VITE_SENTRY_DSN` unset or empty when building the frontend. |
+| Google Fonts | Requested unconditionally by the frontend font imports and preconnect links. | Remove the Google Fonts imports/preconnect links and self-host the font files, or block `fonts.googleapis.com` and `fonts.gstatic.com` at your network edge. |
+| Google sign-in and One Tap | Only when explicitly enabled with the Google environment variables documented above. Google redirect sign-in uses `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`, and build-time `VITE_ENABLE_GOOGLE_LOGIN=true`; One Tap uses `GOOGLE_ONE_TAP_ENABLED=true` and `GOOGLE_CLIENT_ID`. | Keep these variables unset or set the enable flags to `false`, which is the default. |
 
-All other behaviour — projects, tasks, time tracking, notifications, the API — runs entirely on your own infrastructure.
+`isInternalServer()` is narrow: it is true only when `FRONTEND_URL` exactly equals `localhost:5173`, `localhost:5174`, `localhost:4200`, `localhost:3000`, `127.0.0.1:3000`, or `localhost:5000` (these values have no URL scheme), or when `HOSTNAME` is `dev.worklenz.com` or `uat.app.worklenz.com`. A value such as `https://localhost` is not treated as internal. Consequently, a normal production self-hosted deployment is not internal and does include the `_scripts.pug` analytics tags unless those template blocks are changed. `NODE_ENV=production` can remain set; only the template blocks need to be removed or guarded.
+
+Apart from the integrations above, including the optional Google sign-in flows, projects, tasks, time tracking, notifications, and the API run entirely on your own infrastructure.
 
 ## Network use and AGPLv3 §13
 
