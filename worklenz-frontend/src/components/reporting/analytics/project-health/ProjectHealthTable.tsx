@@ -159,8 +159,8 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         title: (
           <ColumnTitleWithHint
             label={t('phColProgress', { defaultValue: 'Progress' })}
-            hint={t('phCalcColDeliveryConfidence', {
-              defaultValue: 'The project’s current delivery confidence: On track, At risk, Off track, or Not set.',
+            hint={t('phCalcColProgress', {
+              defaultValue: 'Completed tasks ÷ total non-archived tasks × 100.',
             })}
             hintColor={token.colorTextSecondary}
           />
@@ -187,9 +187,9 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
       {
         title: (
           <ColumnTitleWithHint
-            label={t('phColProgress', { defaultValue: 'Progress' })}
-            hint={t('phCalcColProgress', {
-              defaultValue: 'Completed tasks ÷ total non-archived tasks × 100.',
+            label={t('phColOpenTasks', { defaultValue: 'Open tasks' })}
+            hint={t('phCalcColOpenTasks', {
+              defaultValue: 'Incomplete, non-archived tasks in the project.',
             })}
             hintColor={token.colorTextSecondary}
           />
@@ -203,9 +203,10 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
       {
         title: (
           <ColumnTitleWithHint
-            label={t('phColOpenTasks', { defaultValue: 'Open tasks' })}
-            hint={t('phCalcColOpenTasks', {
-              defaultValue: 'Incomplete, non-archived tasks in the project.',
+            label={t('phColOverdue', { defaultValue: 'Overdue' })}
+            hint={t('phCalcColOverdue', {
+              defaultValue:
+                'Incomplete, non-archived tasks whose due date is before today.',
             })}
             hintColor={token.colorTextSecondary}
           />
@@ -227,9 +228,10 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
       {
         title: (
           <ColumnTitleWithHint
-            label={t('phColOverdue', { defaultValue: 'Overdue' })}
-            hint={t('phCalcColOverdue', {
-              defaultValue: 'Incomplete, non-archived tasks whose due date is before today.',
+            label={t('phColBudgetUsed', { defaultValue: 'Budget used' })}
+            hint={t('phCalcColBudgetUsed', {
+              defaultValue:
+                '(Task fixed costs + logged time cost) ÷ project budget × 100. Shown as — when budget is 0.',
             })}
             hintColor={token.colorTextSecondary}
           />

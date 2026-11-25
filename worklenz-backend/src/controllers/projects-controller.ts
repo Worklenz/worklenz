@@ -1948,7 +1948,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     
     // Ensure sortField is properly qualified for the inner project query
     // Replace "projects." with "p2." for the inner query
-    const innerSortField = safeSortField.replace(/\bprojects\./g, "p2.");
+    const innerSortField = safeSortField.replace("projects.", "p2.");
 
     const q = `
       SELECT ROW_TO_JSON(rec) AS groups
@@ -2031,19 +2031,19 @@ export default class ProjectsController extends WorklenzControllerBase {
                                                        AND tasks.project_id = p2.id)
                                              ELSE p2.updated_at END) AS updated_at
                             FROM projects p2
-                            ${groupJoin.replace(/\bprojects\./g, "p2.")}
+                            ${groupJoin.replace("projects.", "p2.")}
                             WHERE p2.team_id = $1
                               AND p2.id = ANY($${offsetParam + 1}::UUID[])
-                              AND ${groupField.replace(/\bprojects\./g, "p2.")} = ${groupField}
-                              ${categories.replace(/\bprojects\./g, "p2.")}
-                              ${statuses.replace(/\bprojects\./g, "p2.")}
-                              ${priorities.replace(/\bprojects\./g, "p2.")}
+                              AND ${groupField.replace("projects.", "p2.")} = ${groupField}
+                              ${categories.replace("projects.", "p2.")}
+                              ${statuses.replace("projects.", "p2.")}
+                              ${priorities.replace("projects.", "p2.")}
                               ${clientsInner}
-                              ${projectTypes.replace(/\bprojects\./g, "p2.")}
-                              ${isArchived.replace(/\bprojects\./g, "p2.")}
-                              ${isFavorites.replace(/\bprojects\./g, "p2.")}
-                              ${filterByMember.replace(/\bprojects\./g, "p2.")}
-                              ${searchQuery.replace(/\bprojects\./g, "p2.")}
+                              ${projectTypes.replace("projects.", "p2.")}
+                              ${isArchived.replace("projects.", "p2.")}
+                              ${isFavorites.replace("projects.", "p2.")}
+                              ${filterByMember.replace("projects.", "p2.")}
+                              ${searchQuery.replace("projects.", "p2.")}
                             ORDER BY ${innerSortField} ${safeSortOrder}
                           ) project_data
                          ) AS projects
