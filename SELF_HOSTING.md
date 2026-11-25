@@ -37,13 +37,13 @@ The backend validates the Google signature, issuer, audience, expiration, verifi
 
 ## Third-party services
 
-The self-hosted build ships with the following third-party integrations. They are not all disabled by default: Google Fonts is requested unconditionally by the frontend, and backend-rendered pages can inject Google Analytics and Microsoft Clarity in production as described below.
+The self-hosted build ships with the following third-party integrations. They are not all disabled by default: the frontend requests Google Fonts, and backend-rendered pages can load analytics or HubSpot under the conditions below.
 
 | Service | When it loads | How to disable or avoid it |
 | --- | --- | --- |
 | Google Analytics | `worklenz-frontend/public/js/analytics.js` contacts Google only on Worklenz-hosted origins (`app.worklenz.com`, `dev.worklenz.com`, `uat.app.worklenz.com`). Separately, `worklenz-backend/src/views/_scripts.pug` injects `gtag.js` when `isProduction() && !isInternalServer()`. | No action is needed for the frontend script on a self-hosted hostname. For the backend template injection, remove or change the Google block in `_scripts.pug` before building or deploying; there is currently no runtime environment toggle. |
 | Microsoft Clarity | `worklenz-frontend/public/js/clarity.js` runs only on `app.worklenz.com`. Separately, `_scripts.pug` injects Clarity when `isProduction() && !isInternalServer()`. | No action is needed for the frontend script on a self-hosted hostname. For the backend template injection, remove or change the Clarity block in `_scripts.pug` before building or deploying; there is currently no runtime environment toggle. |
-| HubSpot chat | Only when `window.location.hostname === 'app.worklenz.com'`. | No action needed on a self-hosted hostname; it remains inactive elsewhere. |
+| HubSpot chat | The frontend script runs only on `app.worklenz.com`. Separately, the backend layout includes `worklenz-backend/src/views/_hubspot.pug` on non-internal servers, regardless of `NODE_ENV`. | The frontend script needs no change on a self-hosted hostname. For backend-rendered pages, remove or guard the HubSpot partial in a custom build; there is no separate runtime opt-out for that partial. |
 | Mixpanel | When a real `VITE_MIXPANEL_TOKEN` is supplied at build time. The bundled `mixpanel-token` placeholder is rejected. | Leave `VITE_MIXPANEL_TOKEN` unset, empty, or as the placeholder when building the frontend. |
 | Sentry | When `VITE_APP_ENV=production` and `VITE_SENTRY_DSN` is provided. | Leave `VITE_SENTRY_DSN` unset or empty when building the frontend. |
 | Google Fonts | Requested unconditionally by the frontend font imports and preconnect links. | Remove the Google Fonts imports/preconnect links and self-host the font files, or block `fonts.googleapis.com` and `fonts.gstatic.com` at your network edge. |
