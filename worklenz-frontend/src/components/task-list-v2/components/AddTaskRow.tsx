@@ -90,11 +90,11 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
       : t('insertTaskText', { defaultValue: 'Insert Task' });
     const addTaskPlaceholder = isSoftwareProject
       ? t('createIssueInputPlaceholder', {
-          defaultValue: 'Type issue title and press Enter to save',
-        })
+        defaultValue: 'Type issue title and press Enter to save',
+      })
       : t('addTaskInputPlaceholder', {
-          defaultValue: 'Type task name and press Enter to save',
-        });
+        defaultValue: 'Type task name and press Enter to save',
+      });
 
     // Get session data for reporter_id and team_id
     const currentSession = useAuthService().getCurrentSession();
@@ -123,111 +123,111 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
 
     const handleAddTask = useCallback(
       (openDrawer: boolean = false) => {
-      if (creatingTask || !currentSession) return;
-      let normalizedTaskName =
-        taskName.trim() ||
-        (openDrawer ? t('untitledTaskName', { defaultValue: 'Untitled Task' }) : '');
-      if (!normalizedTaskName) return;
-      
-      // Truncate to 250 characters before sending
-      normalizedTaskName = normalizedTaskName.substring(0, 250);
+        if (creatingTask || !currentSession) return;
+        let normalizedTaskName =
+          taskName.trim() ||
+          (openDrawer ? t('untitledTaskName', { defaultValue: 'Untitled Task' }) : '');
+        if (!normalizedTaskName) return;
 
-      try {
-        const body: any = {
-          name: normalizedTaskName,
-          project_id: projectId,
-          reporter_id: currentSession.id,
-          team_id: currentSession.team_id,
-        };
+        // Truncate to 250 characters before sending
+        normalizedTaskName = normalizedTaskName.substring(0, 250);
 
-        if (isSoftwareProject) {
-          body.issue_type = issueType;
-        }
+        try {
+          const body: any = {
+            name: normalizedTaskName,
+            project_id: projectId,
+            reporter_id: currentSession.id,
+            team_id: currentSession.team_id,
+          };
 
-        // Map grouping type to correct field name expected by backend
-        switch (groupType) {
-          case 'status':
-            body.status_id = groupValue;
-            break;
-          case 'priority':
-            body.priority_id = groupValue;
-            break;
-          case 'phase':
-            body.phase_id = groupValue;
-            break;
-          case 'assignee':
-            // Assigned after creation (quick-create does not accept assignees)
-            break;
-          default:
-            // For any other grouping types, use the groupType as is
-            body[groupType] = groupValue;
-            break;
-        }
+          if (isSoftwareProject) {
+            body.issue_type = issueType;
+          }
 
-        // Backlog tab: keep newly created issues unassigned to a sprint
-        if (listMode === 'backlog' && !body.phase_id) {
-          body.phase_id = UNMAPPED_PHASE_ID;
-        }
+          // Map grouping type to correct field name expected by backend
+          switch (groupType) {
+            case 'status':
+              body.status_id = groupValue;
+              break;
+            case 'priority':
+              body.priority_id = groupValue;
+              break;
+            case 'phase':
+              body.phase_id = groupValue;
+              break;
+            case 'assignee':
+              // Assigned after creation (quick-create does not accept assignees)
+              break;
+            default:
+              // For any other grouping types, use the groupType as is
+              body[groupType] = groupValue;
+              break;
+          }
 
-        if (socket && connected) {
-          const targetInsertAfterTaskId = insertAfterTaskId || null;
-          setCreatingTask(true);
-          socket.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
+          // Backlog tab: keep newly created issues unassigned to a sprint
+          if (listMode === 'backlog' && !body.phase_id) {
+            body.phase_id = UNMAPPED_PHASE_ID;
+          }
 
-          // Set a timeout to handle socket response
-          const responseTimeout = setTimeout(() => {
-            console.warn('Task creation socket response timeout');
-            setCreatingTask(false);
-            // Keep the input focused anyway
-            setTimeout(() => {
-              inputRef.current?.focus();
-            }, 100);
-          }, 5000);
+          if (socket && connected) {
+            const targetInsertAfterTaskId = insertAfterTaskId || null;
+            setCreatingTask(true);
+            socket.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
 
-          socket.once(SocketEvents.QUICK_TASK.toString(), (task: any) => {
-            clearTimeout(responseTimeout);
-            setCreatingTask(false);
+            // Set a timeout to handle socket response
+            const responseTimeout = setTimeout(() => {
+              console.warn('Task creation socket response timeout');
+              setCreatingTask(false);
+              // Keep the input focused anyway
+              setTimeout(() => {
+                inputRef.current?.focus();
+              }, 100);
+            }, 5000);
 
-            // Check if task was created successfully
-            if (task?.id) {
-              // Task created successfully
-              setTaskName('');
-              if (groupType === 'assignee') {
-                assignTaskToMember({
-                  socket,
-                  taskId: task.id,
-                  projectId,
-                  teamMemberId: groupValue,
-                  reporterId: currentSession.id,
-                  teamId: currentSession.team_id,
-                });
+            socket.once(SocketEvents.QUICK_TASK.toString(), (task: any) => {
+              clearTimeout(responseTimeout);
+              setCreatingTask(false);
+
+              // Check if task was created successfully
+              if (task?.id) {
+                // Task created successfully
+                setTaskName('');
+                if (groupType === 'assignee') {
+                  assignTaskToMember({
+                    socket,
+                    taskId: task.id,
+                    projectId,
+                    teamMemberId: groupValue,
+                    reporterId: currentSession.id,
+                    teamId: currentSession.team_id,
+                  });
+                }
+                if (onTaskCreated) {
+                  onTaskCreated(task, {
+                    openDrawer,
+                    insertAfterTaskId: targetInsertAfterTaskId,
+                  });
+                }
+              } else if (task?.error) {
+                // Backend returned an error
+                console.error('Error creating task:', task.message);
+              } else {
+                // Null response might indicate the task name was empty or invalid
+                console.warn('Task creation returned null or invalid response');
               }
-              if (onTaskCreated) {
-                onTaskCreated(task, {
-                  openDrawer,
-                  insertAfterTaskId: targetInsertAfterTaskId,
-                });
-              }
-            } else if (task?.error) {
-              // Backend returned an error
-              console.error('Error creating task:', task.message);
-            } else {
-              // Null response might indicate the task name was empty or invalid
-              console.warn('Task creation returned null or invalid response');
-            }
-            
-            // Keep the input focused and ready for the next task
-            setTimeout(() => {
-              inputRef.current?.focus();
-            }, 100);
-          });
-        } else {
-          console.warn('Socket not connected, unable to create task');
+
+              // Keep the input focused and ready for the next task
+              setTimeout(() => {
+                inputRef.current?.focus();
+              }, 100);
+            });
+          } else {
+            console.warn('Socket not connected, unable to create task');
+          }
+        } catch (error) {
+          console.error('Error creating task:', error);
+          setCreatingTask(false);
         }
-      } catch (error) {
-        console.error('Error creating task:', error);
-        setCreatingTask(false);
-      }
       },
       [
         creatingTask,
@@ -296,6 +296,7 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
 
         const baseStyle = {
           width,
+          ...(columnId === 'attachments' && { minWidth: '138px' }),
           ...(isSticky && {
             position: 'sticky' as const,
             left: leftPosition,
