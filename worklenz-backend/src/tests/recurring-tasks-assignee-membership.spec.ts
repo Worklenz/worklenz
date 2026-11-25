@@ -71,4 +71,12 @@ describe("createSingleRecurringTask - assignee membership", () => {
     const assignCalls = callsMatching(/create_bulk_task_assignees/);
     expect(assignCalls.some(([, params]) => params[0] === REMOVED_MEMBER)).toBe(false);
   });
+  it("locks the membership row for the assignment transaction", async () => {
+    await createSingleRecurringTask(template as never, moment("2026-11-25"));
+
+    const membershipCalls = callsMatching(/FROM project_members/);
+    expect(membershipCalls.length).toBeGreaterThan(0);
+    expect(membershipCalls.every(([sql]) => String(sql).includes("FOR SHARE"))).toBe(true);
+  });
+
 });

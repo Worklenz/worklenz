@@ -96,7 +96,7 @@ export async function createSingleRecurringTask(
           // none exists — running it for a stale template assignee would
           // silently re-add a user who was removed from the project.
           const membership = await client.query(
-            `SELECT 1 FROM project_members WHERE team_member_id = $1 AND project_id = $2`,
+            `SELECT 1 FROM project_members WHERE team_member_id = $1 AND project_id = $2 FOR SHARE`,
             [assignee.team_member_id, template.project_id]
           );
           if (membership.rowCount === 0) continue;
