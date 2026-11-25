@@ -3,10 +3,12 @@ import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getByTask, popoverRender, trackMixpanelEvent } = vi.hoisted(() => ({
+const { getByTask, popoverRender, trackMixpanelEvent, getCurrentSession, dispatch } = vi.hoisted(() => ({
   getByTask: vi.fn(),
   popoverRender: vi.fn(),
   trackMixpanelEvent: vi.fn(),
+  getCurrentSession: vi.fn(),
+  dispatch: vi.fn(),
 }));
 
 vi.mock('@/api/tasks/task-time-logs.api.service', () => ({
@@ -14,6 +16,12 @@ vi.mock('@/api/tasks/task-time-logs.api.service', () => ({
 }));
 vi.mock('@/hooks/useMixpanelTracking', () => ({
   useMixpanelTracking: () => ({ trackMixpanelEvent }),
+}));
+vi.mock('@/hooks/useAuth', () => ({
+  useAuthService: () => ({ getCurrentSession }),
+}));
+vi.mock('@/hooks/useAppDispatch', () => ({
+  useAppDispatch: () => dispatch,
 }));
 vi.mock('@/components/common/single-avatar/single-avatar', () => ({ default: () => null }));
 vi.mock('@/i18n', () => ({ default: { language: 'en' } }));
@@ -38,6 +46,7 @@ import TaskTimer from './task-timer';
 describe('task timer log activation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getCurrentSession.mockReturnValue({ subscription_type: 'PADDLE' });
     getByTask.mockResolvedValue({ done: true, body: { logs: [] } });
   });
 
@@ -94,4 +103,41 @@ describe('task timer log activation', () => {
     await user.click(screen.getByText('0m 0s'));
     await waitFor(() => expect(getByTask).toHaveBeenCalledExactlyOnceWith('task-1'));
   });
+
+  it('reads the current session when starting the timer', async () => {
+    const user = userEvent.setup();
+    const handleStartTimer = vi.fn();
+    getCurrentSession.mockReturnValue({ subscription_type: 'PADDLE' });
+    render(
+      <TaskTimer
+        taskId="task-1"
+        started={false}
+        timeString="0m 0s"
+        handleStartTimer={handleStartTimer}
+      />
+    );
+
+    getCurrentSession.mockReturnValue({ subscription_type: 'FREE' });
+    await user.click(screen.getAllByRole('button')[0]);
+
+    expect(handleStartTimer).not.toHaveBeenCalled();
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: 'adminCenterReducer/toggleUpgradeModal' })
+    );
+  });
+
+  it('reads the current session when opening the log popover', async () => {
+    const user = userEvent.setup();
+    getCurrentSession.mockReturnValue({ subscription_type: 'PADDLE' });
+    render(<TaskTimer taskId="task-1" started={false} timeString="0m 0s" deferLogPopover />);
+
+    getCurrentSession.mockReturnValue({ subscription_type: 'FREE' });
+    await user.click(screen.getByRole('button', { name: 'Time: 0m 0s' }));
+
+    expect(getByTask).not.toHaveBeenCalled();
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: 'adminCenterReducer/toggleUpgradeModal' })
+    );
+  });
+
 });

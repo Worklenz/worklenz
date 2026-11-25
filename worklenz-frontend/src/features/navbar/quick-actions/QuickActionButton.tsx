@@ -130,7 +130,7 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
         dispatch(toggleAddClientDrawer());
         break;
       case 'log-time':
-        if (isFreeUser(currentSession)) {
+        if (isFreeUser(authService.getCurrentSession())) {
           dispatch(toggleUpgradeModal());
           break;
         }

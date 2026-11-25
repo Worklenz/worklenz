@@ -221,7 +221,6 @@ const TimerButton = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const authService = useAuthService();
-  const currentSession = authService.getCurrentSession();
   const currentProjectId = useAppSelector(state => state.projectReducer.projectId);
 
   // Store original task names to restore if drawer closes without saving
@@ -738,7 +737,7 @@ const TimerButton = () => {
               style={{ fontSize: 12, padding: 0 }}
               onClick={() => {
                 setDropdownOpen(false);
-                if (isFreeUser(currentSession)) {
+                if (isFreeUser(authService.getCurrentSession())) {
                   dispatch(toggleUpgradeModal());
                   return;
                 }

@@ -44,7 +44,6 @@ const TaskTimer = ({
   const [isLogOpen, setIsLogOpen] = useState(false);
   const dispatch = useAppDispatch();
   const authService = useAuthService();
-  const isFreeUserOnPlan = isFreeUser(authService.getCurrentSession());
   const { t } = useTranslation('task-list-table');
   const { trackMixpanelEvent } = useMixpanelTracking();
 
@@ -134,7 +133,7 @@ const TaskTimer = ({
 
   const handleOpenChange = (visible: boolean) => {
     if (disabled) return;
-    if (visible && isFreeUserOnPlan) {
+    if (visible && isFreeUser(authService.getCurrentSession())) {
       dispatch(toggleUpgradeModal());
       return;
     }
@@ -186,7 +185,7 @@ const TaskTimer = ({
           icon={<PlayCircleFilled style={{ color: colors.skyBlue, fontSize: 16 }} />}
           onClick={() => {
             if (disabled || !handleStartTimer) return;
-            if (isFreeUserOnPlan) {
+            if (isFreeUser(authService.getCurrentSession())) {
               dispatch(toggleUpgradeModal());
               return;
             }

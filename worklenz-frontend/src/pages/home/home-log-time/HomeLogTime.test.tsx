@@ -8,6 +8,8 @@ import HomeLogTime from './HomeLogTime';
 const mocks = vi.hoisted(() => ({
   getTasks: vi.fn(),
   dispatch: vi.fn(),
+  getCurrentSession: vi.fn(),
+  navigate: vi.fn(),
   projectId: 'p2',
   state: {
     themeReducer: {mode: 'light'},
@@ -17,9 +19,11 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 vi.mock('react-i18next', () => ({useTranslation: () => ({t: (key: string, options?: {defaultValue?: string}) => options?.defaultValue ?? key})}));
-vi.mock('react-router-dom', () => ({useNavigate: () => vi.fn()}));
+vi.mock('react-router-dom', () => ({useNavigate: () => mocks.navigate}));
 vi.mock('@/hooks/useAppSelector', () => ({useAppSelector: (selector: (state: typeof mocks.state) => unknown) => selector(mocks.state)}));
 vi.mock('@/hooks/useAppDispatch', () => ({useAppDispatch: () => mocks.dispatch}));
+vi.mock('@/hooks/useAuth', () => ({useAuthService: () => ({getCurrentSession: mocks.getCurrentSession})}));
+vi.mock('@/features/admin-center/admin-center.slice', () => ({openUpgradeModal: () => ({type: 'adminCenterReducer/openUpgradeModal'})}));
 vi.mock('@/hooks/useResponsive', () => ({useResponsive: () => ({isDesktop: true})}));
 vi.mock('@/socket/socketContext', () => ({useSocket: () => ({socket: null})}));
 vi.mock('@/app/store', () => ({store: {getState: () => mocks.state}}));
@@ -73,6 +77,7 @@ const chooseProject = () => fireEvent.change(screen.getByRole('combobox', {name:
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.projectId = 'p2';
+  mocks.getCurrentSession.mockReturnValue({subscription_type: 'PADDLE'});
   mocks.getTasks.mockResolvedValue({done: true, body: []});
 });
 
@@ -139,5 +144,20 @@ describe.each(['light', 'dark'])('HomeLogTime task creation in %s theme', mode =
     openCreation();
     fireEvent.click(screen.getByRole('button', {name: 'Cancel creation'}));
     expect(mocks.getTasks).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('HomeLogTime free-plan gate', () => {
+  it('opens the upgrade modal idempotently and redirects free users', async () => {
+    mocks.getCurrentSession.mockReturnValue({subscription_type: 'FREE'});
+    render(<HomeLogTime />);
+
+    await waitFor(() =>
+      expect(mocks.dispatch).toHaveBeenCalledWith({type: 'adminCenterReducer/openUpgradeModal'})
+    );
+    expect(mocks.navigate).toHaveBeenCalledWith('/worklenz/home', {replace: true});
+    expect(mocks.dispatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({type: 'adminCenterReducer/toggleUpgradeModal'})
+    );
   });
 });

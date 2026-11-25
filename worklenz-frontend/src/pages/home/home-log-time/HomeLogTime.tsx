@@ -24,7 +24,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAuthService } from '@/hooks/useAuth';
 import { isFreeUser } from '@/utils/subscription-utils';
-import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { openUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useGetProjectsByTeamQuery } from '@/api/home-page/home-page.api.service';
 import {
   taskTimeLogsApiService,
@@ -144,7 +144,7 @@ const HomeLogTime: React.FC = () => {
   // and send them back to the home overview.
   useEffect(() => {
     if (isFree) {
-      dispatch(toggleUpgradeModal());
+      dispatch(openUpgradeModal());
       navigate('/worklenz/home', { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
