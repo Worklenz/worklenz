@@ -46,7 +46,13 @@ export const TimeReportTable: React.FC<TimeReportTableProps> = ({ rows, loading 
             </Avatar>
             <Text
               strong
-              ellipsis={{ tooltip: name }}
+              tabIndex={0}
+              ellipsis={{
+                tooltip: {
+                  title: name,
+                  trigger: ['hover', 'focus'],
+                },
+              }}
               style={{
                 flex: 1,
                 minWidth: 0,
