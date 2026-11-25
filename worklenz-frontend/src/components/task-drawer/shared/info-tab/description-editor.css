@@ -7,14 +7,16 @@
   color: #40a9ff;
 }
 
-.description-editor-shell .description-content .mentions {
-  font-weight: 500;
+.description-editor-shell .description-content .mentions,
+.description-editor-shell .ql-editor .mentions {
+  display: inline-block;
+  padding: 0 4px;
   border-radius: 4px;
-  padding: 1px 4px;
-  margin: 0 1px;
-  background-color: #f0f2f5;
+  font-weight: 500;
+  background-color: rgba(24, 144, 255, 0.12);
   color: #1890ff;
-  border: 1px solid #1890ff;
+  margin-inline: 1px;
+  border: none;
 }
 
 .description-editor-shell .description-editor-preview {
@@ -126,10 +128,9 @@
   color: #74c0fc;
 }
 
-.description-editor-shell.is-dark .description-content .mentions {
-  background-color: #1f3344;
-  color: #69b1ff;
-  border-color: #69b1ff;
+.description-editor-shell.is-dark .description-content .mentions,
+.description-editor-shell.is-dark .ql-editor .mentions {
+  color: #1890ff;
 }
 
 .description-editor-shell.is-dark .description-editor-preview {
@@ -301,22 +302,6 @@ ol.ql-nested-list {
   margin-left: 2.5em !important;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
-}
-
-.description-editor-shell .ql-editor .mentions {
-  font-weight: 500;
-  border-radius: 4px;
-  padding: 1px 4px;
-  margin: 0 1px;
-  background-color: #f0f2f5;
-  color: #1890ff;
-  border: 1px solid #1890ff;
-}
-
-.description-editor-shell.is-dark .ql-editor .mentions {
-  background-color: #1f3344;
-  color: #69b1ff;
-  border-color: #69b1ff;
 }
 
 .description-mention-suggestions {
