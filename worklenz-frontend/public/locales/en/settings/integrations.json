@@ -1,5 +1,12 @@
 {
   "center": {
+    "configuredForProject": "Configured for this project",
+    "notConnectedToProject": "Not configured for this project",
+    "slackTeamScope": "The Slack workspace connection is shared by the team.",
+    "githubTeamScope": "The GitHub account connection is shared by the team.",
+    "addSlackChannel": "Add project channel",
+    "manageRepositories": "Manage project repositories",
+    "githubSoftwareOnly": "Available for software projects",
     "title": "Integration Center",
     "viewLabel": "Integration view",
     "explore": "Explore",

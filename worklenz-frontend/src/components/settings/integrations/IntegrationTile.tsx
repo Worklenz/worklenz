@@ -1,18 +1,32 @@
 import { Card, Flex, Typography, theme } from 'antd';
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
+import { RightOutlined } from '@ant-design/icons';
 
 interface IntegrationTileProps {
   icon: ReactNode;
   title: ReactNode;
   extra?: ReactNode;
   children: ReactNode;
+  onOpenDetails?: () => void;
 }
 
-export function IntegrationTile({ icon, title, extra, children }: IntegrationTileProps) {
+export function IntegrationTile({ icon, title, extra, children, onOpenDetails }: IntegrationTileProps) {
+  const titleId = useId();
   const { token } = theme.useToken();
   return (
     <Card
       className="h-full"
+      hoverable={Boolean(onOpenDetails)}
+      role={onOpenDetails ? 'button' : undefined}
+      tabIndex={onOpenDetails ? 0 : undefined}
+      aria-labelledby={onOpenDetails ? titleId : undefined}
+      onClick={onOpenDetails}
+      onKeyDown={onOpenDetails ? event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onOpenDetails();
+        }
+      } : undefined}
       style={{ borderColor: token.colorBorderSecondary, borderRadius: token.borderRadiusLG }}
       styles={{
         body: { padding: 20, height: '100%', display: 'flex', flexDirection: 'column', gap: 12 },
@@ -36,11 +50,11 @@ export function IntegrationTile({ icon, title, extra, children }: IntegrationTil
           >
             {icon}
           </span>
-          <Typography.Text strong style={{ fontSize: 15 }}>
+          <Typography.Text id={titleId} strong style={{ fontSize: 15 }}>
             {title}
           </Typography.Text>
         </Flex>
-        {extra}
+        <Flex align="center" gap={8}>{extra}{onOpenDetails && <RightOutlined aria-hidden="true" style={{ color: token.colorTextSecondary }} />}</Flex>
       </Flex>
       {children}
     </Card>

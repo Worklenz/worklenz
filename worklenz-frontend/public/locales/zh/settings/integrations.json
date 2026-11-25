@@ -23,6 +23,13 @@
     "description": "将您的任务和截止日期与 Google Calendar 同步，以管理您的日程安排、设置提醒，并且永远不会错过重要的项目里程碑。"
   },
   "center": {
+    "configuredForProject": "已为此项目配置",
+    "notConnectedToProject": "尚未为此项目配置",
+    "slackTeamScope": "Slack 工作区连接由团队共享。",
+    "githubTeamScope": "GitHub 账户连接由团队共享。",
+    "addSlackChannel": "添加项目频道",
+    "manageRepositories": "管理项目代码仓库",
+    "githubSoftwareOnly": "适用于软件项目",
     "title": "集成中心",
     "viewLabel": "集成视图",
     "explore": "浏览",

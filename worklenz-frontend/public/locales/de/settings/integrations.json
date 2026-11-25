@@ -23,6 +23,13 @@
     "description": "Synchronisieren Sie Ihre Aufgaben und Fristen mit Google Kalender, um Ihren Zeitplan zu verwalten, Erinnerungen einzustellen und wichtige Projektmeilensteine nicht zu verpassen."
   },
   "center": {
+    "configuredForProject": "Für dieses Projekt konfiguriert",
+    "notConnectedToProject": "Für dieses Projekt nicht konfiguriert",
+    "slackTeamScope": "Die Slack-Workspace-Verbindung wird vom Team gemeinsam genutzt.",
+    "githubTeamScope": "Die GitHub-Kontoverbindung wird vom Team gemeinsam genutzt.",
+    "addSlackChannel": "Projektkanal hinzufügen",
+    "manageRepositories": "Projekt-Repositories verwalten",
+    "githubSoftwareOnly": "Für Softwareprojekte verfügbar",
     "title": "Integrationszentrum",
     "viewLabel": "Integrationsansicht",
     "explore": "Entdecken",

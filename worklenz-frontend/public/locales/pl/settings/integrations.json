@@ -23,6 +23,13 @@
     "description": "Synchronizuj swoje zadania i terminy z Kalendarzem Google, aby zarządzać harmonogramem, ustawiać przypomnienia i nigdy nie przegapić ważnych kamieni milowych projektu."
   },
   "center": {
+    "configuredForProject": "Skonfigurowano dla tego projektu",
+    "notConnectedToProject": "Nie skonfigurowano dla tego projektu",
+    "slackTeamScope": "Połączenie z obszarem roboczym Slack jest współdzielone przez zespół.",
+    "githubTeamScope": "Połączenie z kontem GitHub jest współdzielone przez zespół.",
+    "addSlackChannel": "Dodaj kanał projektu",
+    "manageRepositories": "Zarządzaj repozytoriami projektu",
+    "githubSoftwareOnly": "Dostępne dla projektów programistycznych",
     "title": "Centrum integracji",
     "viewLabel": "Widok integracji",
     "explore": "Przeglądaj",

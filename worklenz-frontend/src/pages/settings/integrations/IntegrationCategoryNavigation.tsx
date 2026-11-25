@@ -1,5 +1,5 @@
 import { AppstoreOutlined, CodeOutlined, ImportOutlined, MessageOutlined } from '@ant-design/icons';
-import { Button, Typography, theme } from 'antd';
+import { Button, Select, Typography, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
 
 interface IntegrationCategoryNavigationProps {
@@ -43,7 +43,9 @@ export function IntegrationCategoryNavigation({
       <Typography.Text type="secondary" className="hidden lg:block mb-2 px-3">
         {t('center.categoryLabel', { defaultValue: 'Integration category' })}
       </Typography.Text>
-      <div className="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible">
+      <Select className="w-full lg:hidden" aria-label={t('center.categoryLabel', { defaultValue: 'Integration category' })}
+        value={category} onChange={onChange} options={categories.map(item => ({ value: item.value, label: item.label }))} />
+      <div className="hidden gap-1 lg:flex lg:flex-col">
         {categories.map(item => (
           <Button
             key={item.value}

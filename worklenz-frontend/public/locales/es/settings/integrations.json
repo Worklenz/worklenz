@@ -23,6 +23,13 @@
     "description": "Sincronice sus tareas y plazos con Google Calendar para administrar su agenda, establecer recordatorios y nunca perder hitos importantes del proyecto."
   },
   "center": {
+    "configuredForProject": "Configurado para este proyecto",
+    "notConnectedToProject": "No configurado para este proyecto",
+    "slackTeamScope": "La conexión del espacio de trabajo de Slack se comparte con el equipo.",
+    "githubTeamScope": "La conexión de la cuenta de GitHub se comparte con el equipo.",
+    "addSlackChannel": "Añadir canal del proyecto",
+    "manageRepositories": "Administrar repositorios del proyecto",
+    "githubSoftwareOnly": "Disponible para proyectos de software",
     "title": "Centro de integraciones",
     "viewLabel": "Vista de integraciones",
     "explore": "Explorar",

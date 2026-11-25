@@ -23,6 +23,13 @@
     "description": "Synchronisez vos tâches et vos délais avec Google Agenda pour gérer votre emploi du temps, définir des rappels et ne jamais manquer les étapes importantes du projet."
   },
   "center": {
+    "configuredForProject": "Configuré pour ce projet",
+    "notConnectedToProject": "Non configuré pour ce projet",
+    "slackTeamScope": "La connexion à l’espace de travail Slack est partagée par l’équipe.",
+    "githubTeamScope": "La connexion au compte GitHub est partagée par l’équipe.",
+    "addSlackChannel": "Ajouter un canal au projet",
+    "manageRepositories": "Gérer les dépôts du projet",
+    "githubSoftwareOnly": "Disponible pour les projets logiciels",
     "title": "Centre des intégrations",
     "viewLabel": "Vue des intégrations",
     "explore": "Explorer",

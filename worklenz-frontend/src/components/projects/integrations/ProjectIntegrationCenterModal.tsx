@@ -7,12 +7,14 @@ const IntegrationCenter = lazy(() => import('@/pages/settings/integrations/Integ
 interface ProjectIntegrationCenterModalProps {
   open: boolean;
   projectId: string;
+  projectName?: string;
   onClose: () => void;
 }
 
 export function ProjectIntegrationCenterModal({
   open,
   projectId,
+  projectName,
   onClose,
 }: ProjectIntegrationCenterModalProps) {
   const { t } = useTranslation('project-integrations');
@@ -24,17 +26,13 @@ export function ProjectIntegrationCenterModal({
       width={1200}
       style={{ maxWidth: 'calc(100vw - 32px)', top: 16 }}
       styles={{ body: { maxHeight: 'calc(100dvh - 120px)', overflowY: 'auto' } }}
-      title={t('center.title', { defaultValue: 'Integration Center' })}
+      title={projectName
+        ? t('center.projectTitle', { defaultValue: 'Integrations · {{project}}', project: projectName })
+        : t('center.title', { defaultValue: 'Integration Center' })}
       destroyOnHidden
     >
-      <p style={{ margin: '0 0 16px' }}>
-        {t('center.teamScope', {
-          defaultValue:
-            'Team integrations. Project-specific options are in the project integrations menu.',
-        })}
-      </p>
       <Suspense fallback={<Spin />}>
-        <IntegrationCenter projectId={projectId} hideTitle />
+        <IntegrationCenter projectId={projectId} projectName={projectName} onClose={onClose} hideTitle />
       </Suspense>
     </Modal>
   );

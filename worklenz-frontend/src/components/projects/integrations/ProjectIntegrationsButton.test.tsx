@@ -1,115 +1,27 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ComponentProps } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-const mocks = vi.hoisted(() => ({
-  getStatus: vi.fn(),
-  getConfigs: vi.fn(),
-  getRepositories: vi.fn(),
-  panelLoaded: vi.fn(),
-  dropdownRender: vi.fn(),
-  dispatch: vi.fn(),
-  hasBusiness: true,
-}));
-vi.mock('@/api/slack/slack.api.service', () => ({
-  slackApiService: { getStatus: mocks.getStatus, getProjectChannelConfigs: mocks.getConfigs },
-}));
-vi.mock('@/api/github/github.api.service', () => ({
-  githubApiService: { getProjectRepositories: mocks.getRepositories },
-}));
-vi.mock('@/hooks/useAppDispatch', () => ({ useAppDispatch: () => mocks.dispatch }));
-vi.mock('@/hooks/useAppSelector', () => ({
-  useAppSelector: (
-    selector: (state: { projectReducer: { project: { project_type: string } } }) => unknown
-  ) => selector({ projectReducer: { project: { project_type: 'default' } } }),
-}));
-vi.mock('@/hooks/useAuth', () => ({
-  useAuthService: () => ({ getCurrentSession: () => ({ id: 'user' }) }),
-}));
-vi.mock('@/utils/subscription-utils', () => ({
-  hasBusinessFeatureAccess: () => mocks.hasBusiness,
-}));
-vi.mock('@/lib/project/software-project', () => ({ isSoftwareProjectType: () => false }));
-vi.mock('@/features/admin-center/admin-center.slice', () => ({
-  showUpgradePrompt: (payload: unknown) => ({ type: 'upgrade', payload }),
-}));
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, options?: { defaultValue?: string }) => options?.defaultValue || key,
-  }),
-}));
-vi.mock('./IntegrationsDropdown', () => {
-  mocks.panelLoaded();
-  return {
-    IntegrationsDropdown: ({ onClose, onOpenCenter }: { onClose: () => void; onOpenCenter: () => void }) => (
-      <div>
-        <span>Integration panel</span>
-        <button onClick={onClose}>Close panel</button>
-        <button onClick={onOpenCenter}>Open center</button>
-      </div>
-    ),
-  };
-});
-vi.mock('@/pages/settings/integrations/IntegrationsSettings', () => ({ default: ({ projectId }: { projectId: string }) => <div>Center for {projectId}</div> }));
-vi.mock('@/shared/antd-imports', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/shared/antd-imports')>();
-  return {
-    ...actual,
-    Dropdown: (props: ComponentProps<typeof actual.Dropdown>) => {
-      mocks.dropdownRender(props.open);
-      return <actual.Dropdown {...props} />;
-    },
-  };
-});
-
+import { describe, expect, it, vi } from 'vitest';
 import { ProjectIntegrationsButton } from './ProjectIntegrationsButton';
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  mocks.hasBusiness = true;
-  mocks.getStatus.mockResolvedValue({ connected: true });
-  mocks.getConfigs.mockResolvedValue({
-    body: [{ id: 'channel', slackChannelName: 'Project channel', isActive: true }],
-  });
-});
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (_key: string, options?: { defaultValue?: string }) => options?.defaultValue }),
+}));
+vi.mock('./ProjectIntegrationCenterModal', () => ({
+  ProjectIntegrationCenterModal: ({ open, projectId, projectName, onClose }: { open: boolean; projectId: string; projectName?: string; onClose: () => void }) =>
+    open ? <div role="dialog"><span>{projectName}: {projectId}</span><button onClick={onClose}>Close</button></div> : null,
+}));
 
-describe('deferred integration menu', () => {
-  it('keeps the connection badge without mounting or importing the closed menu', async () => {
-    render(<ProjectIntegrationsButton projectId="project" />);
-    await waitFor(() => expect(screen.getByText('1')).toBeInTheDocument());
-    expect(mocks.getConfigs).toHaveBeenCalledWith('project');
-    expect(mocks.dropdownRender).not.toHaveBeenCalled();
-    expect(mocks.panelLoaded).not.toHaveBeenCalled();
-  });
-
-  it.each(['click', 'Enter', 'Space'])(
-    'opens on the first %s and can close and reopen',
-    async activation => {
-      const user = userEvent.setup();
-      render(<ProjectIntegrationsButton projectId="project" />);
-      await waitFor(() => expect(screen.getByText('1')).toBeInTheDocument());
-      const button = screen.getByRole('button', { name: 'Manage project integrations' });
-      if (activation === 'click') await user.click(button);
-      else {
-        button.focus();
-        await user.keyboard(activation === 'Enter' ? '{Enter}' : ' ');
-      }
-      expect(await screen.findByText('Integration panel')).toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: 'Close panel' }));
-      await waitFor(() => expect(mocks.dropdownRender).toHaveBeenLastCalledWith(false));
-      await user.click(screen.getByRole('button', { name: 'Manage project integrations' }));
-      await waitFor(() => expect(mocks.dropdownRender).toHaveBeenLastCalledWith(true));
-    }
-  );
-
-  it('opens the center for the current project even without Business access', async () => {
-    mocks.hasBusiness = false;
+describe('project integrations button', () => {
+  it.each(['click', 'Enter', 'Space'])('opens the project center directly with %s and can reopen', async activation => {
     const user = userEvent.setup();
-    render(<ProjectIntegrationsButton projectId="project" />);
-    await user.click(screen.getByRole('button', { name: 'Manage project integrations' }));
-    await user.click(await screen.findByRole('button', { name: 'Open center' }));
-    expect(await screen.findByText('Center for project')).toBeInTheDocument();
-    expect(mocks.getStatus).not.toHaveBeenCalled();
+    render(<ProjectIntegrationsButton projectId="project-1" projectName="Planning" />);
+    const button = screen.getByRole('button', { name: 'Manage project integrations' });
+    if (activation === 'click') await user.click(button);
+    else { button.focus(); await user.keyboard(activation === 'Enter' ? '{Enter}' : ' '); }
+    expect(screen.getByRole('dialog')).toHaveTextContent('Planning: project-1');
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await user.click(button);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 });

@@ -23,6 +23,13 @@
     "description": "Sinkronizoni detyrat dhe afatet tuaja me Google Calendar për të menaxhuar orarin tuaj, për të vendosur kujtues dhe për të mos humbur asnjëherë pikat kryesore të rëndësishme të projektit."
   },
   "center": {
+    "configuredForProject": "Konfiguruar për këtë projekt",
+    "notConnectedToProject": "Nuk është konfiguruar për këtë projekt",
+    "slackTeamScope": "Lidhja e hapësirës së punës Slack ndahet nga ekipi.",
+    "githubTeamScope": "Lidhja e llogarisë GitHub ndahet nga ekipi.",
+    "addSlackChannel": "Shto kanalin e projektit",
+    "manageRepositories": "Menaxho depot e projektit",
+    "githubSoftwareOnly": "E disponueshme për projektet softuerike",
     "title": "Qendra e integrimeve",
     "viewLabel": "Pamja e integrimeve",
     "explore": "Eksploro",
