@@ -767,3 +767,38 @@
 .rich-comment-rendered a:hover {
   text-decoration: underline;
 }
+
+/* Match task drawer comment bubbles and link contrast in both themes. */
+.project-view-updates.theme-light .chat-msg-bubble.mine {
+  background: #e1f3ff;
+  color: #333;
+}
+
+.project-view-updates.theme-dark .chat-msg-bubble.mine {
+  background: #1e3a5f;
+  color: #d1d0d3;
+}
+
+.project-view-updates.theme-light .chat-msg-bubble.mine a {
+  color: #0958d9;
+  text-decoration: underline;
+  text-decoration-color: #91caff;
+  text-underline-offset: 2px;
+}
+
+.project-view-updates.theme-light .chat-msg-bubble.mine a:hover {
+  color: #003eb3;
+  text-decoration-color: #0958d9;
+}
+
+.project-view-updates.theme-dark .chat-msg-bubble.mine a {
+  color: #69b1ff;
+  text-decoration: underline;
+  text-decoration-color: #3a5a7d;
+  text-underline-offset: 2px;
+}
+
+.project-view-updates.theme-dark .chat-msg-bubble.mine a:hover {
+  color: #95cbff;
+  text-decoration-color: #69b1ff;
+}
