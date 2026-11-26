@@ -3,6 +3,7 @@ import { Table, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
+import { analyticsDisplayText } from '@/lib/reporting/analytics-display-text';
 import type { PlannedVsActualTasksRow } from '@/types/reporting/analytics-planned-vs-actual-tasks.types';
 
 const { Text } = Typography;
@@ -29,7 +30,15 @@ export const PvaTasksTable: React.FC<PvaTasksTableProps> = ({ projects, loading 
         key: 'project_name',
         width: 200,
         ellipsis: true,
-        sorter: (a, b) => a.project_name.localeCompare(b.project_name),
+        sorter: (a, b) =>
+          analyticsDisplayText(a.project_name).localeCompare(
+            analyticsDisplayText(b.project_name)
+          ),
+        render: (name: string) => (
+          <Text ellipsis={{ tooltip: analyticsDisplayText(name) }}>
+            {analyticsDisplayText(name)}
+          </Text>
+        ),
       },
       {
         title: t('pvaTasksColPlanned', { defaultValue: 'Planned tasks' }),

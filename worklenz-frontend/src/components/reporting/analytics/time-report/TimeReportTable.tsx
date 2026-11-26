@@ -3,6 +3,7 @@ import { Avatar, Flex, Table, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
+import { analyticsDisplayText } from '@/lib/reporting/analytics-display-text';
 import type { TimeReportRow } from '@/types/reporting/analytics-time-report.types';
 
 const { Text } = Typography;
@@ -28,40 +29,43 @@ export const TimeReportTable: React.FC<TimeReportTableProps> = ({ rows, loading 
         ellipsis: true,
         sorter: (a, b) => a.member_name.localeCompare(b.member_name),
 
-        render: (name: string, record) => (
-          <Flex
-            align="center"
-            gap={8}
-            style={{ width: '100%', minWidth: 0 }}
-          >
-            <Avatar
-              src={record.avatar_url || undefined}
-              size={28}
-              style={{
-                backgroundColor: record.color_code,
-                flexShrink: 0,
-              }}
+        render: (name: string, record) => {
+          const displayName = analyticsDisplayText(name);
+          return (
+            <Flex
+              align="center"
+              gap={8}
+              style={{ width: '100%', minWidth: 0 }}
             >
-              {name?.charAt(0)?.toUpperCase()}
-            </Avatar>
-            <Text
-              strong
-              tabIndex={0}
-              ellipsis={{
-                tooltip: {
-                  title: name,
-                  trigger: ['hover', 'focus'],
-                },
-              }}
-              style={{
-                flex: 1,
-                minWidth: 0,
-              }}
-            >
-              {name}
-            </Text>
-          </Flex>
-        ),
+              <Avatar
+                src={record.avatar_url || undefined}
+                size={28}
+                style={{
+                  backgroundColor: record.color_code,
+                  flexShrink: 0,
+                }}
+              >
+                {displayName?.charAt(0)?.toUpperCase()}
+              </Avatar>
+              <Text
+                strong
+                tabIndex={0}
+                ellipsis={{
+                  tooltip: {
+                    title: displayName,
+                    trigger: ['hover', 'focus'],
+                  },
+                }}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                }}
+              >
+                {displayName}
+              </Text>
+            </Flex>
+          );
+        },
 
       },
       {
@@ -70,7 +74,10 @@ export const TimeReportTable: React.FC<TimeReportTableProps> = ({ rows, loading 
         key: 'project_name',
         width: 220,
         ellipsis: true,
-        sorter: (a, b) => a.project_name.localeCompare(b.project_name),
+        sorter: (a, b) =>
+          analyticsDisplayText(a.project_name).localeCompare(
+            analyticsDisplayText(b.project_name)
+          ),
         render: (name: string, record) => (
           <Flex align="center" gap={8}>
             <span
@@ -82,7 +89,7 @@ export const TimeReportTable: React.FC<TimeReportTableProps> = ({ rows, loading 
                 flexShrink: 0,
               }}
             />
-            <Text>{name}</Text>
+            <Text>{analyticsDisplayText(name)}</Text>
           </Flex>
         ),
       },
