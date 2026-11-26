@@ -34,8 +34,7 @@
     "react-responsive": "^10.0.1",
     "react-router-dom": "^7.18.7",
     "recharts": "^3.10.1",
-    "socket.io-client": "^4.8.1",
-    "typescript-eslint": "^8.37.0"
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
@@ -47,14 +46,15 @@
     "@typescript-eslint/eslint-plugin": "^8.37.0",
     "@typescript-eslint/parser": "^8.37.0",
     "@vitejs/plugin-react": "^4.7.0",
-    "@vitest/coverage-v8": "^5.0.2",
+    "@vitest/coverage-v8": "^5.1.2",
     "eslint": "^9.31.0",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.14",
     "jsdom": "^29.1.1",
     "sass": "^1.72.0",
     "typescript": "^5.2.2",
+    "typescript-eslint": "^8.74.0",
     "vite": "^6.4.5",
-    "vitest": "^5.0.2"
+    "vitest": "^5.1.2"
   }
 }
