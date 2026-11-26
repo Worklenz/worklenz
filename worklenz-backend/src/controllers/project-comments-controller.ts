@@ -6,7 +6,7 @@ import db from "../config/db";
 import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
-import { escapeRegExp, getColor, htmlToPlainText, slugify, sanitizeCommentContent, megabytesToBytes } from "../shared/utils";
+import { decodeHtmlEntities, escapeRegExp, getColor, htmlToPlainText, slugify, sanitizeCommentContent, megabytesToBytes } from "../shared/utils";
 import { HTML_TAG_REGEXP } from "../shared/constants";
 import { IProjectCommentEmailNotification } from "../interfaces/comment-email-notification";
 import { sendProjectComment } from "../shared/email-notifications";
@@ -88,14 +88,16 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
   }
 
   private static async sendMail(config: IMailConfig) {
-    const subject = config.message.replace(HTML_TAG_REGEXP, "");
+    // Names are stored HTML-escaped via sanitizePlainText; decode before Pug
+    // re-escapes them so & < > render as characters, not &amp; &lt; &gt;.
+    const subject = decodeHtmlEntities(config.message.replace(HTML_TAG_REGEXP, ""));
     const logoUrl = await getOrganizationLogoUrl(config.teamId);
 
     const data: IProjectCommentEmailNotification = {
-      greeting: `Hi ${config.receiverName}`,
+      greeting: `Hi ${decodeHtmlEntities(config.receiverName || "")}`,
       summary: subject,
-      team: config.teamName,
-      project_name: config.projectName,
+      team: decodeHtmlEntities(config.teamName || ""),
+      project_name: decodeHtmlEntities(config.projectName || ""),
       // Email templates escape HTML; convert rich-text/mentions to plain text first
       comment: htmlToPlainText(config.content || ""),
       settings_url: `${getBaseUrl()}/worklenz/settings/notifications`,

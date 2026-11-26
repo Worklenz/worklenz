@@ -6,7 +6,7 @@ import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { NotificationsService } from "../services/notifications/notifications.service";
-import { escapeRegExp, htmlToPlainText, humanFileSize, log_error, megabytesToBytes, sanitizeCommentContent, sanitizePlainText } from "../shared/utils";
+import { decodeHtmlEntities, escapeRegExp, htmlToPlainText, humanFileSize, log_error, megabytesToBytes, sanitizeCommentContent, sanitizePlainText } from "../shared/utils";
 import { HTML_TAG_REGEXP, S3_URL } from "../shared/constants";
 import { getBaseUrl } from "../cron_jobs/helpers";
 import { ICommentEmailNotification } from "../interfaces/comment-email-notification";
@@ -138,17 +138,19 @@ export default class TaskCommentsController extends WorklenzControllerBase {
   }
 
   private static async sendMail(config: IMailConfig) {
-    const subject = config.message.replace(HTML_TAG_REGEXP, "");
+    // Names are stored HTML-escaped via sanitizePlainText; decode before Pug
+    // re-escapes them so & < > render as characters, not &amp; &lt; &gt;.
+    const subject = decodeHtmlEntities(config.message.replace(HTML_TAG_REGEXP, ""));
     const taskUrl = `${getBaseUrl()}/worklenz/projects/${config.projectId}?tab=tasks-list&task=${config.taskId}&from=notification&focus=comments`;
     const settingsUrl = `${getBaseUrl()}/worklenz/settings/notifications`;
 
     const data: ICommentEmailNotification = {
-      greeting: `Hi ${config.receiverName}`,
+      greeting: `Hi ${decodeHtmlEntities(config.receiverName || "")}`,
       summary: subject,
-      team: config.teamName,
-      project_name: config.projectName,
+      team: decodeHtmlEntities(config.teamName || ""),
+      project_name: decodeHtmlEntities(config.projectName || ""),
       comment: this.toEmailCommentText(config.content),
-      task: config.taskName,
+      task: decodeHtmlEntities(config.taskName || ""),
       settings_url: settingsUrl,
       task_url: taskUrl,
     };
