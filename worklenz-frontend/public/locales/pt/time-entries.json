@@ -97,6 +97,8 @@
   "tableViewToggleLabel": "Visualização da tabela",
   "tableViewFlat": "Individual",
   "tableViewByTask": "Por tarefa",
+  "tableViewFlatTooltip": "Cada registro de tempo na sua própria linha, como foi registrado.",
+  "tableViewByTaskTooltip": "Uma linha por tarefa, com o tempo de todos os seus registros somado.",
   "colStatus": "Estado",
   "colPriority": "Prioridade",
   "colBillable": "Faturável",

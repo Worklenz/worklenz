@@ -97,6 +97,8 @@
   "tableViewToggleLabel": "Vue tableau",
   "tableViewFlat": "Plat",
   "tableViewByTask": "Par tâche",
+  "tableViewFlatTooltip": "Chaque entrée de temps sur sa propre ligne, telle qu'elle a été saisie.",
+  "tableViewByTaskTooltip": "Une ligne par tâche, avec le temps de toutes ses entrées additionné.",
   "colStatus": "Statut",
   "colPriority": "Priorité",
   "colBillable": "Facturable",
