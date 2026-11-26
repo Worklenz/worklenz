@@ -20,6 +20,10 @@ import {
   chartToPngDataUrl,
   chartToSvgMarkup,
 } from '@/lib/reporting/chart-export';
+import {
+  analyticsDisplayText,
+  shortAnalyticsLabel,
+} from '@/lib/reporting/analytics-display-text';
 import { InChartEmptyState } from '../states/ReportStateViews';
 import type { TimeReportProjectSeries } from '@/types/reporting/analytics-time-report.types';
 
@@ -37,11 +41,6 @@ interface TimeReportChartProps {
 /** Logged vs estimated by project (prototype Time Report chart). */
 const LOGGED_COLOR = '#1890ff';
 const ESTIMATED_COLOR = '#722ed1';
-
-const shortLabel = (name: string, max = 16): string => {
-  if (name.length <= max) return name;
-  return `${name.slice(0, max - 1)}…`;
-};
 
 const fmtHours = (value: number): string => `${Number(value.toFixed(1))}h`;
 
@@ -64,7 +63,7 @@ export const TimeReportChart = forwardRef<TimeReportChartHandle, TimeReportChart
 
     const chartData = useMemo((): ChartData<'bar'> => {
       return {
-        labels: projects.map(p => shortLabel(p.project_name)),
+        labels: projects.map(p => shortAnalyticsLabel(p.project_name, 16)),
         datasets: [
           {
             label: t('trLegendLogged', { defaultValue: 'Logged' }),
@@ -105,7 +104,7 @@ export const TimeReportChart = forwardRef<TimeReportChartHandle, TimeReportChart
             callbacks: {
               title: items => {
                 const index = items[0]?.dataIndex ?? 0;
-                return projects[index]?.project_name ?? '';
+                return analyticsDisplayText(projects[index]?.project_name);
               },
               label: item => {
                 const label = item.dataset.label ?? '';

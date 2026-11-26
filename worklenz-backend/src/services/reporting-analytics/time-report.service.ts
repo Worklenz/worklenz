@@ -6,6 +6,7 @@ import {
   withLastUpdated,
 } from "../../redis/analytics-cache";
 import { sanitizeCsvFormulaValue } from "../../shared/csv-utils";
+import { decodeHtmlEntities } from "../../shared/html-entity-utils";
 import { getColor } from "../../shared/utils";
 
 export interface TimeReportFilters {
@@ -138,7 +139,7 @@ function cacheParts(filters: TimeReportFilters): Array<string | number> {
     dt: filters.dateTo,
     st: filters.sessionTeamId,
   });
-  return ["time-report", createHash("sha1").update(payload).digest("hex")];
+  return ["time-report-v2", createHash("sha1").update(payload).digest("hex")];
 }
 
 type Payload = Omit<TimeReportResult, "last_updated_at">;
@@ -270,14 +271,14 @@ export async function getTimeReportSeries(
     const loggedHours = round2(Number(row.logged_hours) || 0);
     const billableHours = round2(Number(row.billable_hours) || 0);
     const estimatedHours = round2(Number(row.estimated_hours) || 0);
-    const name = String(row.member_name || "");
+    const name = decodeHtmlEntities(String(row.member_name || ""));
     return {
       team_member_id: String(row.team_member_id),
       member_name: name,
       avatar_url: (row.avatar_url as string | null) || null,
       color_code: getColor(name),
       project_id: String(row.project_id),
-      project_name: String(row.project_name || ""),
+      project_name: decodeHtmlEntities(String(row.project_name || "")),
       project_color: (row.project_color as string | null) || null,
       logged_hours: loggedHours,
       estimated_hours: estimatedHours,
@@ -375,7 +376,7 @@ export function buildTimeReportCsv(result: TimeReportResult): string {
 }
 
 function csvEscape(value: string): string {
-  const text = sanitizeCsvFormulaValue(value);
+  const text = sanitizeCsvFormulaValue(decodeHtmlEntities(value));
   if (/[",\n\r]/.test(text)) {
     return `"${text.replace(/"/g, '""')}"`;
   }
