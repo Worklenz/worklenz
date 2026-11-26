@@ -187,4 +187,5 @@ export interface TaskAttachmentImportContext {
   targetProjectId: string;
   createdByUserId: string;
   jiraAuthHeader: string | null;
+  jiraDomain: string | null;
 }

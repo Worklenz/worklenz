@@ -103,9 +103,10 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
   @HandleExceptions()
   protected static async insertProjectTemplate(body: IProjectTemplate) {
     const { name, key, description, phase_label } = body;
+    const projectType = body.project_type === "software" ? "software" : "general";
 
-    const q = `INSERT INTO pt_project_templates(name, key, description, phase_label) VALUES ($1, $2, $3, $4) RETURNING id;`;
-    const result = await db.query(q, [name, key, description, phase_label]);
+    const q = `INSERT INTO pt_project_templates(name, key, description, phase_label, project_type) VALUES ($1, $2, $3, $4, $5) RETURNING id;`;
+    const result = await db.query(q, [name, key, description, phase_label, projectType]);
     const [data] = result.rows;
     return data.id;
   }
@@ -202,6 +203,7 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                 name,
                 description,
                 phase_label,
+                project_type,
                 image_url,
                 color_code,
                 (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
@@ -229,6 +231,7 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                 (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                     FROM (SELECT name,
                             (SELECT name FROM pt_statuses WHERE status_id = pt_statuses.id) AS status_name,
+                            (SELECT category_id FROM pt_statuses WHERE status_id = pt_statuses.id) AS status_category_id,
                             (SELECT name FROM task_priorities tp WHERE priority_id = tp.id ) AS priority_name,
                             (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                                 FROM (SELECT name
@@ -1354,7 +1357,7 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
         const q = `INSERT INTO tasks(name, project_id, status_id, priority_id, reporter_id,
                               sort_order, roadmap_sort_order,
                               status_sort_order, priority_sort_order, phase_sort_order, member_sort_order)
-                    VALUES ($1, $2, (SELECT id FROM task_statuses ts WHERE ts.name = $3 AND ts.project_id = $2),
+                    VALUES ($1, $2, (SELECT id FROM task_statuses ts WHERE ts.project_id = $2 AND (ts.name = $3 OR ts.category_id = $7::uuid) ORDER BY (ts.name = $3) DESC, (LOWER(REPLACE(ts.name, ' ', '')) = 'todo') DESC, ts.sort_order LIMIT 1),
                             (SELECT id FROM task_priorities tp WHERE tp.name = $4), $5,
                             $6, $6,
                             $6, $6, $6, $6)
@@ -1366,6 +1369,7 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
           task.priority_name,
           user_id,
           key,
+          task.status_category_id ?? null,
         ]);
         const [data] = result.rows;
 

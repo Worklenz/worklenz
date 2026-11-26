@@ -66,7 +66,7 @@ export const CfdTable: React.FC<CfdTableProps> = ({ data, visibleStatusIds, stat
         ),
         dataIndex: statusId,
         key: statusId,
-        align: 'right',
+        align: 'left',
         width: 80,
       });
     });

@@ -12,6 +12,7 @@
   "mentionedInProjectComment": "<strong>{{user}}</strong> 在 <strong>{{project}}</strong> 的评论中提及了您",
   "mentionedInProjectDocument": "<strong>{{user}}</strong> 在 <strong>{{project}}</strong> 的文档中提及了您",
   "phaseTaskAssigned": "在 <strong>{{phase}}</strong> 中已将一项任务指派给您：<strong>{{task}}</strong>",
+  "taskMarkedDone": "任务 <strong>{{task}}</strong> 已标记为已完成",
   "orgSwapped": "您的组织 <strong>{{previousOrganization}}</strong> 已与 <strong>{{organization}}</strong> 互换。您现在是其所有者。",
   "teamOwnershipChanged": "您对 <strong>{{team}}</strong> 的所有权已变更。"
 }

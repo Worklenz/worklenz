@@ -14,6 +14,7 @@ import {
   TableProps,
   Tooltip,
   Typography,
+  message,
 } from '@/shared/antd-imports';
 import { useEffect, useCallback, useMemo, useState } from 'react';
 import { colors } from '@/styles/colors';
@@ -37,15 +38,16 @@ import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const ClientsSettings: React.FC = () => {
   const { t } = useTranslation('settings/clients');
-  const { clients } = useAppSelector(state => state.clientReducer);
+  const { clients, loading } = useAppSelector(state => state.clientReducer);
   const dispatch = useAppDispatch();
   const { trackMixpanelEvent } = useMixpanelTracking();
 
   useDocumentTitle(t('pageTitle', { defaultValue: 'Clients' }));
 
-  const [hoverRow, setHoverRow] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<IClientViewModel | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [confirmOpenForId, setConfirmOpenForId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: DEFAULT_PAGE_SIZE,
@@ -77,15 +79,26 @@ const ClientsSettings: React.FC = () => {
     dispatch(toggleClientDrawer());
   };
 
-  const deleteClientHandler = async (id: string | undefined) => {
-    if (!id) return;
-    try {
-      await dispatch(deleteClient(id)).unwrap();
-      getClients();
-    } catch (error) {
-      logger.error('Failed to delete client:', error);
-    }
-  };
+  const deleteClientHandler = useCallback(
+    async (id: string | undefined) => {
+      if (!id) return;
+      setIsDeleting(true);
+      try {
+        await dispatch(deleteClient(id)).unwrap();
+        message.success(
+          t('deleteClientSuccessMessage', { defaultValue: 'Client deleted successfully.' })
+        );
+        setConfirmOpenForId(null);
+        // Row is removed from Redux immediately via deleteClient.fulfilled — no refetch wait.
+      } catch (error) {
+        // API interceptor already surfaces the server validation message.
+        logger.error('Failed to delete client:', error);
+      } finally {
+        setIsDeleting(false);
+      }
+    },
+    [dispatch, t]
+  );
 
   const columns: TableProps['columns'] = useMemo(
     () => [
@@ -110,111 +123,177 @@ const ClientsSettings: React.FC = () => {
           record.projects_count ? (
             <Typography.Text>{record.projects_count}</Typography.Text>
           ) : (
-            <Typography.Text type="secondary">{t('noProjectsAvailable', { defaultValue: 'No projects' })}</Typography.Text>
+            <Typography.Text type="secondary">
+              {t('noProjectsAvailable', { defaultValue: 'No projects' })}
+            </Typography.Text>
           ),
       },
       {
         key: 'actionBtns',
         width: 80,
-        render: (record: IClientViewModel) =>
-          hoverRow === record.id && (
-            <Flex gap={8} style={{ padding: 0 }}>
-              <Tooltip title={t('editTooltip', { defaultValue: 'Edit' })}>
-                <Button
-                  size="small"
-                  icon={<EditOutlined />}
-                  onClick={() => handleClientSelect(record)}
-                />
-              </Tooltip>
-              <Popconfirm
-                title={t('deleteConfirmationTitle', { defaultValue: 'Are you sure?' })}
-                icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
-                okText={t('deleteConfirmationOk', { defaultValue: 'Yes' })}
-                cancelText={t('deleteConfirmationCancel', { defaultValue: 'Cancel' })}
-                onConfirm={() => deleteClientHandler(record.id)}
-              >
-                <Tooltip title={t('deleteTooltip', { defaultValue: 'Delete' })}>
+        render: (record: IClientViewModel) => {
+          const hasProjects = Number(record.projects_count ?? 0) > 0;
+          const projectCount = Number(record.projects_count ?? 0);
+          const isConfirmOpen = confirmOpenForId === record.id;
+
+          return (
+            <div
+              className={`row-action-buttons${isConfirmOpen ? ' row-action-buttons--open' : ''}`}
+              onClick={e => e.stopPropagation()}
+            >
+              <Flex gap={8} style={{ padding: 0 }}>
+                <Tooltip title={t('editTooltip', { defaultValue: 'Edit' })}>
                   <Button
-                    shape="default"
-                    icon={<DeleteOutlined />}
                     size="small"
-                  // ✅ REMOVED onClick handler - Popconfirm will handle the confirmation
+                    icon={<EditOutlined />}
+                    onClick={e => {
+                      e.stopPropagation();
+                      handleClientSelect(record);
+                    }}
                   />
                 </Tooltip>
-              </Popconfirm>
-            </Flex>
-          ),
+                <Popconfirm
+                  open={isConfirmOpen}
+                  onOpenChange={open => {
+                    if (isDeleting) return;
+                    setConfirmOpenForId(open ? (record.id ?? null) : null);
+                  }}
+                  title={
+                    hasProjects
+                      ? t('cannotDeleteTitle', { defaultValue: 'Cannot delete client' })
+                      : t('deleteConfirmationTitle', { defaultValue: 'Are you sure?' })
+                  }
+                  description={
+                    hasProjects
+                      ? t('cannotDeleteWithProjects', {
+                          count: projectCount,
+                          defaultValue:
+                            'This client is assigned to {{count}} project(s) and cannot be deleted. Reassign or remove those projects first.',
+                        })
+                      : undefined
+                  }
+                  icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
+                  okText={
+                    hasProjects
+                      ? t('cannotDeleteOk', { defaultValue: 'OK' })
+                      : t('deleteConfirmationOk', { defaultValue: 'Yes' })
+                  }
+                  cancelText={t('deleteConfirmationCancel', { defaultValue: 'Cancel' })}
+                  showCancel={!hasProjects}
+                  okType={hasProjects ? 'default' : 'primary'}
+                  okButtonProps={{ loading: isDeleting && !hasProjects }}
+                  onConfirm={e => {
+                    e?.stopPropagation();
+                    if (hasProjects) {
+                      setConfirmOpenForId(null);
+                      return;
+                    }
+                    return deleteClientHandler(record.id);
+                  }}
+                  onCancel={e => {
+                    e?.stopPropagation();
+                    setConfirmOpenForId(null);
+                  }}
+                  destroyTooltipOnHide={false}
+                >
+                  <Tooltip title={t('deleteTooltip', { defaultValue: 'Delete' })}>
+                    <Button
+                      shape="default"
+                      icon={<DeleteOutlined />}
+                      size="small"
+                      onClick={e => e.stopPropagation()}
+                    />
+                  </Tooltip>
+                </Popconfirm>
+              </Flex>
+            </div>
+          );
+        },
       },
     ],
-    [hoverRow, t, dispatch]
+    [t, deleteClientHandler, confirmOpenForId, isDeleting]
   );
 
   return (
-    <Card
-      style={{ width: '100%' }}
-      title={
-        <Flex justify="flex-end">
-          <Flex gap={8} align="center" justify="flex-end" style={{ width: '100%', maxWidth: 400 }}>
-            <Input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.currentTarget.value)}
-              placeholder={t('searchPlaceholder', { defaultValue: 'Search by name' })}
-              style={{ maxWidth: 232 }}
-              suffix={<SearchOutlined />}
-            />
-            <Button
-              type="primary"
-              onClick={() => {
-                dispatch(toggleClientDrawer());
-                setSelectedClient(null);
-              }}
-            >
-              {t('createClient', { defaultValue: 'Create Client' })}
-            </Button>
-            <Tooltip title={t('pinTooltip', { defaultValue: 'Pin to navbar' })} trigger={'hover'}>
-              <PinRouteToNavbarButton
-                name="clients"
-                path="/worklenz/settings/clients"
-                adminOnly={true}
+    <>
+      <style>
+        {`
+          .custom-two-colors-row-table .row-action-buttons {
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+          }
+
+          .custom-two-colors-row-table .ant-table-tbody > tr:hover .row-action-buttons,
+          .custom-two-colors-row-table .row-action-buttons--open {
+            opacity: 1;
+          }
+        `}
+      </style>
+      <Card
+        style={{ width: '100%' }}
+        title={
+          <Flex justify="flex-end">
+            <Flex gap={8} align="center" justify="flex-end" style={{ width: '100%', maxWidth: 400 }}>
+              <Input
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.currentTarget.value)}
+                placeholder={t('searchPlaceholder', { defaultValue: 'Search by name' })}
+                style={{ maxWidth: 232 }}
+                suffix={<SearchOutlined />}
               />
-            </Tooltip>
+              <Button
+                type="primary"
+                onClick={() => {
+                  dispatch(toggleClientDrawer());
+                  setSelectedClient(null);
+                }}
+              >
+                {t('createClient', { defaultValue: 'Create Client' })}
+              </Button>
+              <Tooltip title={t('pinTooltip', { defaultValue: 'Pin to navbar' })} trigger={'hover'}>
+                <PinRouteToNavbarButton
+                  name="clients"
+                  path="/worklenz/settings/clients"
+                  adminOnly={true}
+                />
+              </Tooltip>
+            </Flex>
           </Flex>
-        </Flex>
-      }
-    >
-      <Table
-        className="custom-two-colors-row-table"
-        dataSource={clients.data}
-        columns={columns}
-        rowKey={record => record.id}
-        onRow={record => ({
-          onMouseEnter: () => setHoverRow(record.id),
-        })}
-        pagination={{
-          showSizeChanger: true,
-          defaultPageSize: DEFAULT_PAGE_SIZE,
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          total: clients.total,
-        }}
-        onChange={(paginationInfo, _filters, sorter) => {
-          const sort = Array.isArray(sorter) ? sorter[0] : sorter;
-          setPagination(prev => ({
-            current: paginationInfo.current ?? prev.current,
-            pageSize: paginationInfo.pageSize ?? prev.pageSize,
-            field: (sort?.field as string) ?? prev.field,
-            order: sort?.order === 'ascend' ? 'asc' : sort?.order === 'descend' ? 'desc' : prev.order,
-          }));
-        }}
-      />
-      <ClientDrawer
-        client={selectedClient}
-        drawerClosed={() => {
-          setSelectedClient(null);
-          getClients();
-        }}
-      />
-    </Card>
+        }
+      >
+        <Table
+          className="custom-two-colors-row-table"
+          dataSource={clients.data}
+          columns={columns}
+          rowKey={record => record.id}
+          loading={loading && !isDeleting}
+          pagination={{
+            showSizeChanger: true,
+            defaultPageSize: DEFAULT_PAGE_SIZE,
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: clients.total,
+          }}
+          onChange={(paginationInfo, _filters, sorter) => {
+            const sort = Array.isArray(sorter) ? sorter[0] : sorter;
+            setPagination(prev => ({
+              current: paginationInfo.current ?? prev.current,
+              pageSize: paginationInfo.pageSize ?? prev.pageSize,
+              field: (sort?.field as string) ?? prev.field,
+              order:
+                sort?.order === 'ascend' ? 'asc' : sort?.order === 'descend' ? 'desc' : prev.order,
+            }));
+          }}
+        />
+        <ClientDrawer
+          client={selectedClient}
+          drawerClosed={() => {
+            setSelectedClient(null);
+            getClients();
+          }}
+        />
+      </Card>
+    </>
   );
 };
 

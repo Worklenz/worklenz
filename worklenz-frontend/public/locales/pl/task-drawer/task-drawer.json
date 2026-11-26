@@ -59,7 +59,7 @@
       "labels": "Etykiety",
       "billable": "Płatne",
       "notify": "Powiadom",
-      "notify-tooltip": "Wybrani członkowie otrzymają powiadomienie e-mail, gdy to zadanie zostanie oznaczone jako ukończone.",
+      "notify-tooltip": "Wybrani członkowie otrzymają powiadomienie w aplikacji i e-mail, gdy to zadanie zostanie oznaczone jako ukończone.",
       "when-done-notify": "Po zakończeniu powiadom",
       "start-date": "Data rozpoczęcia",
       "end-date": "Data zakończenia",

@@ -15,7 +15,7 @@
   "projectColor": "Kolor",
   "startingFrom": "Zaczynając od",
   "blankSelectedHint": "Pusty projekt. Wybierz szablon po prawej stronie, aby uzyskać przewagę.",
-  "blankSoftwareSelectedHint": "Pusty projekt oprogramowania z domyślnymi ustawieniami śledzenia problemów. Szablony nie są używane w projektach oprogramowania.",
+  "blankSoftwareProjectSelectedHint": "Pusty projekt oprogramowania z domyślnymi ustawieniami śledzenia problemów.",
   "templateSelectedHint": "Struktura szablonu zostanie skopiowana do Twojego projektu.",
   "searchTemplates": "Wyszukaj szablony",
   "searchYourLibrary": "Przeszukaj swoją bibliotekę",

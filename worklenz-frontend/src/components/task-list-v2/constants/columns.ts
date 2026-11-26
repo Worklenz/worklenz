@@ -107,7 +107,8 @@ export const BASE_COLUMNS: ColumnConfig[] = [
   {
     id: 'attachments',
     label: 'attachmentsColumn',
-    width: '120px',
+    width: '138px',
+    minWidth: '138px',
     key: COLUMN_KEYS.ATTACHMENTS,
   },
   {

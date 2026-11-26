@@ -36,6 +36,7 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
       SELECT
         pt.id,
         pt.name,
+        pt.project_type,
         pt.image_url,
         (SELECT COUNT(*) FROM pt_tasks WHERE template_id = pt.id)::int AS task_count,
         (SELECT COUNT(*) FROM pt_phases WHERE template_id = pt.id)::int AS phase_count
@@ -330,6 +331,7 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
         name: safeProjectName || data.name,
         notes: data.description ? data.description.substring(0, 500) : null, // truncate to DB limit of 500 chars
         phase_label: data.phase_label,
+        project_type: data.project_type === "software" ? "software" : "general",
         color_code: safeColorCode || data.color_code,
         image_url: data.image_url,
         team_id: req.user?.team_id || null,
@@ -349,6 +351,13 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
 
       await this.insertTeamLabels(labels, req.user?.team_id);
       await this.insertProjectPhases(phases, project_id as string);
+      if (data.project_type === "software" && phases.length === 0) {
+        await db.query(
+          `INSERT INTO project_phases (name, color_code, project_id, sort_index, sprint_status)
+           VALUES ($1, $2, $3, 1, 'planned')`,
+          ["Sprint 1", "#fbc84c", project_id]
+        );
+      }
       await this.insertProjectTasks(
         tasks,
         projectData.team_id,

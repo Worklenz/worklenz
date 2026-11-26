@@ -9,8 +9,10 @@ import ImportsService, {
 } from "../services/imports-service";
 import safeControllerFunction from "../shared/safe-controller-function";
 import createHttpError from "http-errors";
-import { assertSafeExternalHost } from "../shared/ssrf-guard";
+import { assertSafeExternalHost, publicHttpsAgent } from "../shared/ssrf-guard";
 import { ServerResponse } from "../models/server-response";
+import { getProjectAccessForRequest } from "../shared/project-access";
+import { TEAM_ROLE_NAMES } from "../shared/team-permissions";
 import ImportIngestionService from "../services/import-ingestion-service";
 import axios from "axios";
 import crypto from "crypto";
@@ -196,10 +198,19 @@ export default class ImportsController {
     return id;
   }
 
-  private static async assertJob(jobId: string, _userId?: string) {
-    const job = await ImportsService.getJob(jobId);
+  private static async assertJob(jobId: string, userId: string) {
+    const job = await ImportsService.getJobForUser(jobId, userId);
     if (job) return job;
     throw createHttpError(404, "Import job not found");
+  }
+
+  private static async assertTargetAccess(req: IWorkLenzRequest, projectId: string): Promise<void> {
+    const access = await getProjectAccessForRequest(req, projectId);
+    // Import can create team members in addition to modifying project data.
+    if ((access.teamRole !== TEAM_ROLE_NAMES.OWNER && access.teamRole !== TEAM_ROLE_NAMES.ADMIN) ||
+        !access.permissions.tasks || !access.permissions.statuses || !access.permissions.phases || !access.permissions.customColumns) {
+      throw createHttpError(403, "You are not authorized to import into this project");
+    }
   }
 
   static create = safeControllerFunction(
@@ -217,6 +228,7 @@ export default class ImportsController {
         throw createHttpError(400, "provider and flowType are required");
       if (isCsvImport(provider, flowType) && !canUseFeature(req.user, "csv_import"))
         throw createHttpError(403, "CSV import requires a Pro plan");
+      if (targetProjectId) await this.assertTargetAccess(req, targetProjectId);
       const job = await ImportsService.createJob({
         provider,
         flowType,
@@ -367,12 +379,13 @@ export default class ImportsController {
 
   static setTarget = safeControllerFunction(
     async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
-      this.getUserId(req); // ensure authenticated
-      const job = await this.assertJob(req.params.jobId);
+      const userId = this.getUserId(req);
+      const job = await this.assertJob(req.params.jobId, userId);
       const { targetProjectId, targetSpaceType, targetTemplate } =
         req.body || {};
       if (!targetProjectId)
         throw createHttpError(400, "targetProjectId is required");
+      await this.assertTargetAccess(req, targetProjectId);
 
       await ImportsService.updateJobTargets(
         job.id,
@@ -387,8 +400,7 @@ export default class ImportsController {
 
   static get = safeControllerFunction(
     async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
-      const job = await ImportsService.getJob(req.params.jobId);
-      if (!job) throw createHttpError(404, "Import job not found");
+      const job = await this.assertJob(req.params.jobId, this.getUserId(req));
       return res.status(200).send(new ServerResponse(true, job));
     },
   );
@@ -396,8 +408,7 @@ export default class ImportsController {
   static autoHierarchy = safeControllerFunction(
     async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
       const jobId = req.params.jobId;
-      const job = await ImportsService.getJob(jobId);
-      if (!job) throw createHttpError(404, "Import job not found");
+      const job = await this.assertJob(jobId, this.getUserId(req));
       let rows = autoHierarchyTemplate;
       const providerKey = (job.provider || "").toLowerCase();
 
@@ -453,8 +464,7 @@ export default class ImportsController {
   static autoFields = safeControllerFunction(
     async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
       const jobId = req.params.jobId;
-      const job = await ImportsService.getJob(jobId);
-      if (!job) throw createHttpError(404, "Import job not found");
+      const job = await this.assertJob(jobId, this.getUserId(req));
       let rows = autoFieldTemplate;
       const providerKey = (job.provider || "").toLowerCase();
 
@@ -528,8 +538,7 @@ export default class ImportsController {
       const rows = req.body?.fields || [];
       if (!Array.isArray(rows))
         throw createHttpError(400, "fields must be array");
-      const job = await ImportsService.getJob(jobId);
-      if (!job) throw createHttpError(404, "Import job not found");
+      const job = await this.assertJob(jobId, this.getUserId(req));
       await ImportsService.upsertFields(jobId, rows);
       return res.status(200).send(new ServerResponse(true, rows));
     },
@@ -648,13 +657,6 @@ export default class ImportsController {
           .send(new ServerResponse(true, { ...data, ingest: result }));
       } catch (err: any) {
         await ImportsService.updateJobStatus(job.id, "failed", err?.message || "Ingest failed");
-        if (job.target_project_id) {
-          try {
-            await ImportsService.deleteTargetProject(job.target_project_id);
-          } catch {
-            // Ignore cleanup errors — don't mask the original error
-          }
-        }
         const message = err?.status ? err.message : "Failed to process the import file. Please check your file and try again.";
         throw createHttpError(err?.status || 422, message);
       }
@@ -676,6 +678,9 @@ export default class ImportsController {
       const job = await this.assertJob(req.params.jobId, userId);
       if (isCsvImport(job.provider, job.flow_type) && !canUseFeature(req.user, "csv_import"))
         throw createHttpError(403, "CSV import requires a Pro plan");
+
+      if (!job.target_project_id) throw createHttpError(400, "Target project is required");
+      await this.assertTargetAccess(req, job.target_project_id);
 
       // Run the commit pipeline asynchronously to avoid request timeouts for large imports.
       // Progress can be tracked via GET /api/v1/imports/:jobId/progress.
@@ -1160,6 +1165,12 @@ export default class ImportsController {
 
       // Validate the user-supplied domain and reject internal/private hosts (SSRF guard)
       const cleanDomain = assertSafeExternalHost(domain);
+      if (!/^[a-zA-Z0-9-]+\.(atlassian\.net|jira\.com)$/i.test(cleanDomain)) {
+        throw createHttpError(
+          400,
+          "Only Jira Cloud domains (*.atlassian.net or *.jira.com) are supported",
+        );
+      }
       const baseUrl = `https://${cleanDomain}`;
 
       // Create Basic Auth header
@@ -1170,6 +1181,9 @@ export default class ImportsController {
       try {
         const response = await axios.get(`${baseUrl}/rest/api/3/myself`, {
           headers: authHeader,
+          httpsAgent: publicHttpsAgent,
+          maxRedirects: 0,
+          proxy: false,
         });
         void response;
       } catch (err: any) {
@@ -1194,6 +1208,9 @@ export default class ImportsController {
           `${baseUrl}/rest/api/3/project/search`,
           {
             headers: authHeader,
+            httpsAgent: publicHttpsAgent,
+            maxRedirects: 0,
+            proxy: false,
             params: { maxResults: 100 },
           },
         );

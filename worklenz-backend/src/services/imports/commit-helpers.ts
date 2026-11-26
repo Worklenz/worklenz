@@ -1,5 +1,6 @@
 import { PoolClient } from "pg";
 import axios from "axios";
+import { assertSafeExternalHost, publicHttpAgent, publicHttpsAgent } from "../../shared/ssrf-guard";
 import { getKey, uploadBuffer } from "../../shared/storage";
 import {
   ImportedJiraAttachment,
@@ -178,13 +179,47 @@ export const importTaskAttachments = async (
     );
     const contentType = attachment?.mimeType || "application/octet-stream";
     try {
-      const response = await axios.get<ArrayBuffer>(sourceUrl, {
+      const parsedUrl = new URL(sourceUrl);
+      if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") throw new Error("Unsupported attachment URL");
+      assertSafeExternalHost(sourceUrl);
+      const jiraHost = ctx.jiraDomain ? assertSafeExternalHost(ctx.jiraDomain) : null;
+      const canSendCredentials = parsedUrl.protocol === "https:" && jiraHost === parsedUrl.hostname;
+      let response = await axios.get<ArrayBuffer>(sourceUrl, {
+        httpAgent: publicHttpAgent,
+        httpsAgent: publicHttpsAgent,
+        maxRedirects: 0,
+        proxy: false,
         responseType: "arraybuffer",
         timeout: 30000,
-        headers: ctx.jiraAuthHeader
+        validateStatus: status => (status >= 200 && status < 300) || status === 303,
+        headers: ctx.jiraAuthHeader && canSendCredentials
           ? { Authorization: ctx.jiraAuthHeader, Accept: "*/*" }
           : { Accept: "*/*" },
       });
+
+      if (response.status === 303) {
+        if (!response.headers?.location) {
+          throw new Error("303 redirect missing Location header");
+        }
+        const redirectUrl = new URL(response.headers.location, sourceUrl).toString();
+        const redirectParsed = new URL(redirectUrl);
+        if (redirectParsed.protocol !== "http:" && redirectParsed.protocol !== "https:") {
+          throw new Error("Unsupported attachment redirect URL");
+        }
+        assertSafeExternalHost(redirectUrl);
+        const canSendRedirectCreds = redirectParsed.protocol === "https:" && jiraHost === redirectParsed.hostname;
+        response = await axios.get<ArrayBuffer>(redirectUrl, {
+          httpAgent: publicHttpAgent,
+          httpsAgent: publicHttpsAgent,
+          maxRedirects: 0,
+          proxy: false,
+          responseType: "arraybuffer",
+          timeout: 30000,
+          headers: ctx.jiraAuthHeader && canSendRedirectCreds
+            ? { Authorization: ctx.jiraAuthHeader, Accept: "*/*" }
+            : { Accept: "*/*" },
+        });
+      }
       const buffer = Buffer.from(response.data);
       const sizeBytes =
         attachment?.size && attachment.size > 0

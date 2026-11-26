@@ -4,6 +4,12 @@ import { useTranslation } from 'react-i18next';
 
 import { useSelector } from 'react-redux';
 import { RootState } from '@/app/store';
+import { useAuthService } from '@/hooks/useAuth';
+import {
+  clearOrganizationLogoCache,
+  readOrganizationLogoCache,
+  writeOrganizationLogoCache,
+} from '@/utils/organization-logo-cache';
 
 import { LOGO_LIGHT, LOGO_DARK, XMAS_LOGO_LIGHT, XMAS_LOGO_DARK } from '@/shared/constants';
 
@@ -14,6 +20,10 @@ const NavbarLogo = () => {
   const loadingOrganization = useSelector(
     (state: RootState) => state.adminCenterReducer.loadingOrganization
   );
+  const teamsList = useSelector((state: RootState) => state.teamReducer.teamsList);
+  const { getCurrentSession } = useAuthService();
+  const session = getCurrentSession();
+  const teamId = session?.team_id;
 
   const isChristmasSeason = useMemo(() => {
     const now = new Date();
@@ -32,38 +42,56 @@ const NavbarLogo = () => {
     [themeMode, isChristmasSeason]
   );
 
+  const activeTeam = useMemo(
+    () => (teamId ? teamsList.find(team => team.id === teamId) : undefined),
+    [teamsList, teamId]
+  );
+
+  // Prefer the active team's logo from the teams list (available to all roles).
+  // Once the active team is known, do not fall back to organization.logo_url —
+  // that can still hold the previous team's logo until org details refetch.
+  const liveLogoUrl =
+    activeTeam !== undefined
+      ? activeTeam.logo_url || null
+      : organization?.logo_url || null;
+
   const logoSrc = useMemo(() => {
-    // If API logo is available, save to localStorage and use it
-    if (organization?.logo_url) {
-      localStorage.setItem('organizationLogo', organization.logo_url);
-      return organization.logo_url;
+    if (liveLogoUrl) {
+      writeOrganizationLogoCache(teamId, liveLogoUrl);
+      return liveLogoUrl;
     }
 
-    // Organization has loaded but has no logo — clear cache and use default
-    if (organization !== null && !loadingOrganization) {
-      localStorage.removeItem('organizationLogo');
+    const hasResolvedNoLogo =
+      // Active team is known and has no logo
+      (activeTeam !== undefined && !activeTeam.logo_url) ||
+      // Teams not loaded yet, but organization loaded and has no logo
+      (activeTeam === undefined &&
+        organization !== null &&
+        !loadingOrganization &&
+        !organization?.logo_url);
+
+    if (hasResolvedNoLogo) {
+      clearOrganizationLogoCache(teamId);
       return defaultLogo;
     }
 
-    // Organization not yet loaded — use cached logo to avoid flash
-    const cachedLogo = localStorage.getItem('organizationLogo');
+    // Still resolving — use only the cache for the current team (never the
+    // legacy unscoped key, which kept the previous team's logo after a switch).
+    const cachedLogo = readOrganizationLogoCache(teamId);
     if (cachedLogo) return cachedLogo;
 
     return defaultLogo;
-  }, [organization, loadingOrganization, defaultLogo]);
+  }, [liveLogoUrl, activeTeam, organization, loadingOrganization, teamId, defaultLogo]);
 
   const logoHeight = useMemo(() => {
-    // For custom logos, maintain aspect ratio but constrain to navbar height
-    if (organization?.logo_url) {
-      return isChristmasSeason ? 36 : 26;
-    }
     return isChristmasSeason ? 36 : 26;
-  }, [organization?.logo_url, isChristmasSeason]);
+  }, [isChristmasSeason]);
 
   return (
     <Link to={'/worklenz/home'}>
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center', height: 44 }}>
         <img
+          key={teamId || 'default'}
           src={logoSrc}
           alt={t('logoAlt')}
           style={{
@@ -71,7 +99,7 @@ const NavbarLogo = () => {
             maxHeight: 44,
             maxWidth: 140,
             display: 'block',
-            marginBottom: isChristmasSeason && !organization?.logo_url ? 12 : 0,
+            marginBottom: isChristmasSeason && logoSrc === defaultLogo ? 12 : 0,
             objectFit: 'contain',
           }}
           onError={e => {

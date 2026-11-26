@@ -18,12 +18,11 @@ const ColumnTitleWithHint: React.FC<{
   label: string;
   hint: string;
   hintColor: string;
-  alignEnd?: boolean;
-}> = ({ label, hint, hintColor, alignEnd = false }) => (
+}> = ({ label, hint, hintColor }) => (
   <Flex
     align="center"
     gap={4}
-    justify={alignEnd ? 'flex-end' : 'flex-start'}
+    justify="flex-start"
     style={{ width: '100%' }}
   >
     <span>{label}</span>
@@ -118,12 +117,9 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
       {
         title: (
           <ColumnTitleWithHint
-            label={t('phColDeliveryConfidence', {
-              defaultValue: 'Delivery confidence',
-            })}
+            label={t('phColDeliveryConfidence', { defaultValue: 'Delivery Confidence' })}
             hint={t('phCalcColDeliveryConfidence', {
-              defaultValue:
-                'Delivery confidence set on the project (or Progress Tracking): On track, At risk, Off track, or Not set.',
+              defaultValue: 'The project’s current delivery confidence: On track, At risk, Off track, or Not set.',
             })}
             hintColor={token.colorTextSecondary}
           />
@@ -167,13 +163,12 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
               defaultValue: 'Completed tasks ÷ total non-archived tasks × 100.',
             })}
             hintColor={token.colorTextSecondary}
-            alignEnd
           />
         ),
         dataIndex: 'progress_pct',
         key: 'progress_pct',
         width: 110,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.progress_pct - b.progress_pct,
         render: (value: number) => (
           <Text strong={value >= 100}>{`${Math.round(value)}%`}</Text>
@@ -184,7 +179,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         dataIndex: 'due_date',
         key: 'due_date',
         width: 120,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => (a.due_date || '').localeCompare(b.due_date || ''),
         render: (value: string | null) =>
           value ? dayjs(value).format('MMM D, YYYY') : <Text type="secondary">-</Text>,
@@ -197,13 +192,12 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
               defaultValue: 'Incomplete, non-archived tasks in the project.',
             })}
             hintColor={token.colorTextSecondary}
-            alignEnd
           />
         ),
         dataIndex: 'open_tasks',
         key: 'open_tasks',
         width: 120,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.open_tasks - b.open_tasks,
       },
       {
@@ -215,13 +209,12 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
                 'Incomplete, non-archived tasks whose due date is before today.',
             })}
             hintColor={token.colorTextSecondary}
-            alignEnd
           />
         ),
         dataIndex: 'overdue_tasks',
         key: 'overdue_tasks',
         width: 110,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.overdue_tasks - b.overdue_tasks,
         render: (value: number) =>
           value > 0 ? (
@@ -241,13 +234,12 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
                 '(Task fixed costs + logged time cost) ÷ project budget × 100. Shown as — when budget is 0.',
             })}
             hintColor={token.colorTextSecondary}
-            alignEnd
           />
         ),
         dataIndex: 'budget_used_pct',
         key: 'budget_used_pct',
         width: 130,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.budget_used_pct - b.budget_used_pct,
         render: (value: number, row) =>
           row.budget > 0 ? (

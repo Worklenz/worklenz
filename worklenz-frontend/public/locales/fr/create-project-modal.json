@@ -15,7 +15,7 @@
   "projectColor": "Couleur",
   "startingFrom": "À partir de",
   "blankSelectedHint": "Projet vide. Choisissez un modèle sur la droite pour prendre une longueur d'avance.",
-  "blankSoftwareSelectedHint": "Projet logiciel vierge avec valeurs par défaut de suivi des problèmes. Les modèles ne sont pas utilisés pour les projets logiciels.",
+  "blankSoftwareProjectSelectedHint": "Projet logiciel vierge avec valeurs par défaut de suivi des problèmes.",
   "templateSelectedHint": "La structure du modèle sera copiée dans votre projet.",
   "searchTemplates": "Modèles de recherche",
   "searchYourLibrary": "Recherchez votre bibliothèque",

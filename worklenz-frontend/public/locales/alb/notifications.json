@@ -12,6 +12,7 @@
   "mentionedInProjectComment": "<strong>{{user}}</strong> ju përmendi në një koment në <strong>{{project}}</strong>",
   "mentionedInProjectDocument": "<strong>{{user}}</strong> ju përmendi në një dokument në <strong>{{project}}</strong>",
   "phaseTaskAssigned": "Një detyrë ju është caktuar në <strong>{{phase}}</strong>: <strong>{{task}}</strong>",
+  "taskMarkedDone": "Detyra <strong>{{task}}</strong> është shënuar si e Përfunduar",
   "orgSwapped": "Organizata juaj <strong>{{previousOrganization}}</strong> u shkëmbye me <strong>{{organization}}</strong>. Tani jeni pronari i saj.",
   "teamOwnershipChanged": "Pronësia juaj për <strong>{{team}}</strong> ka ndryshuar."
 }

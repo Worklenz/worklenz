@@ -3,7 +3,7 @@ import express from "express";
 import GanttController from "../../controllers/gantt-controller";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import verifyProjectAccess, { verifyNonGuestProjectAccess } from "../../middlewares/verify-project-access";
-import { verifyNonGuestTaskAccess } from "../../middlewares/verify-task-access";
+import verifyTaskAccess, { verifyNonGuestTaskAccess } from "../../middlewares/verify-task-access";
 import verifyGuestViewAccess from "../../middlewares/verify-guest-view-access";
 import { requireProjectPermission } from "../../middlewares/validators/require-project-permission";
 import { PROJECT_ROLE_PERMISSIONS } from "../../shared/organization-permissions";
@@ -27,7 +27,7 @@ ganttApiRouter.get("/project-workload", verifyProjectAccess('query', 'project_id
 ganttApiRouter.get("/roadmap-tasks", verifyProjectAccess('query', 'project_id'), verifyGuestViewAccess('query', 'project_id', 'roadmap'), safeControllerFunction(GanttController.getRoadmapTasks));
 ganttApiRouter.post("/export", roadmapExportRateLimiter, verifyProjectAccess('body', 'project_id'), verifyGuestViewAccess('body', 'project_id', 'roadmap'), safeControllerFunction(GanttController.exportRoadmap));
 ganttApiRouter.get("/project-phases", verifyProjectAccess('query', 'project_id'), verifyGuestViewAccess('query', 'project_id', 'roadmap'), safeControllerFunction(GanttController.getProjectPhases));
-ganttApiRouter.post("/update-task-dates", requireFeature("gantt_edit"), verifyNonGuestTaskAccess('body', 'task_id'), safeControllerFunction(GanttController.updateTaskDates));
+ganttApiRouter.post("/update-task-dates", verifyTaskAccess("body", "task_id"), requireFeature("gantt_edit"), verifyNonGuestTaskAccess('body', 'task_id'), safeControllerFunction(GanttController.updateTaskDates));
 ganttApiRouter.post("/create-task", requireFeature("gantt_edit"), verifyNonGuestProjectAccess('body', 'project_id', PROJECT_ROLE_PERMISSIONS.CREATE_TASKS), safeControllerFunction(GanttController.createTask));
 ganttApiRouter.post("/create-phase", requireFeature("gantt_edit"), requirePhases, safeControllerFunction(GanttController.createPhase));
 ganttApiRouter.put("/update-phase", requireFeature("gantt_edit"), requirePhases, safeControllerFunction(GanttController.updatePhase));

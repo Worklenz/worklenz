@@ -15,7 +15,7 @@
   "projectColor": "Cor",
   "startingFrom": "Começando de",
   "blankSelectedHint": "Projeto em branco. Escolha um modelo à direita para começar.",
-  "blankSoftwareSelectedHint": "Projeto de software em branco com padrões de rastreamento de problemas. Os modelos não são usados ​​para projetos de software.",
+  "blankSoftwareProjectSelectedHint": "Projeto de software em branco com padrões de rastreamento de problemas.",
   "templateSelectedHint": "A estrutura do modelo será copiada para seu projeto.",
   "searchTemplates": "Pesquisar modelos",
   "searchYourLibrary": "Pesquisar sua biblioteca",

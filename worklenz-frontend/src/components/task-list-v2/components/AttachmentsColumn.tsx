@@ -388,15 +388,15 @@ export const AttachmentsColumn: React.FC<AttachmentsColumnProps> = ({
           'group relative flex h-full min-h-10 items-center border-r border-gray-200 px-2 dark:border-gray-700',
           isDragging
             ? [
-                'bg-blue-50 dark:bg-blue-900/20',
-                // outline overlay
-                "after:content-[''] after:pointer-events-none after:absolute after:inset-0 after:m-1 after:rounded-md",
-                'after:border-2 after:border-dashed after:border-blue-500/80 dark:after:border-blue-400/70',
-                'ring-1 ring-blue-400/30',
-              ].join(' ')
+              'bg-blue-50 dark:bg-blue-900/20',
+              // outline overlay
+              "after:content-[''] after:pointer-events-none after:absolute after:inset-0 after:m-1 after:rounded-md",
+              'after:border-2 after:border-dashed after:border-blue-500/80 dark:after:border-blue-400/70',
+              'ring-1 ring-blue-400/30',
+            ].join(' ')
             : '',
         ].join(' ')}
-        style={{ width }}
+        style={{ width, minWidth: '138px' }}
         onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}

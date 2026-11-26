@@ -15,7 +15,7 @@
   "projectColor": "Color",
   "startingFrom": "Comenzando desde",
   "blankSelectedHint": "Proyecto vacío. Elige una plantilla a la derecha para comenzar.",
-  "blankSoftwareSelectedHint": "Proyecto de software en blanco con valores predeterminados de seguimiento de problemas. Las plantillas no se utilizan para proyectos de software.",
+  "blankSoftwareProjectSelectedHint": "Proyecto de software en blanco con valores predeterminados de seguimiento de problemas.",
   "templateSelectedHint": "La estructura de la plantilla se copiará en tu proyecto.",
   "searchTemplates": "Buscar plantillas",
   "searchYourLibrary": "Buscar tu biblioteca",

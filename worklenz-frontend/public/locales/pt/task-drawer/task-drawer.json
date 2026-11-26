@@ -59,7 +59,7 @@
       "labels": "Etiquetas",
       "billable": "Faturável",
       "notify": "Notificar",
-      "notify-tooltip": "Os membros selecionados receberão uma notificação por e-mail quando questa tarefa for marcada como concluída.",
+      "notify-tooltip": "Os membros selecionados receberão uma notificação in-app e por e-mail quando esta tarefa for marcada como concluída.",
       "when-done-notify": "Ao concluir, notificar",
       "start-date": "Data de início",
       "end-date": "Data de término",

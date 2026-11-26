@@ -1,5 +1,5 @@
 import { selectEffectiveStatusCategoryOrder } from '@/features/project/project.slice';
-import { getDoneStatusGroupIds, getCollapsedGroupIds } from '@/utils/status-category-order';
+import { getCollapsedGroupIds } from '@/utils/status-category-order';
 import { BacklogSectionColumnHeader } from './components/BacklogSectionColumnHeader';
 import {
   BACKLOG_COLUMN_HEADER_HEIGHT,
@@ -129,13 +129,9 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const sortOrder = useAppSelector(state => state.taskManagement.sortOrder);
   const persistedCollapsedGroups = useAppSelector(selectCollapsedGroups);
   const groupStates = useAppSelector(selectGroupStates);
-  const doneStatusGroupIds = useMemo(
-    () => getDoneStatusGroupIds(groups, statuses),
-    [groups, statuses]
-  );
   const collapsedGroups = useMemo(
-    () => getCollapsedGroupIds(groups, doneStatusGroupIds, persistedCollapsedGroups, groupStates),
-    [groups, doneStatusGroupIds, persistedCollapsedGroups, groupStates]
+    () => getCollapsedGroupIds(groups, persistedCollapsedGroups, groupStates),
+    [groups, persistedCollapsedGroups, groupStates]
   );
   const isOpenDuplicateTaskModal = useAppSelector(
     state => state.taskManagement.isOpenDuplicateTaskModal

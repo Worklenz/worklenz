@@ -959,6 +959,7 @@ CREATE TABLE IF NOT EXISTS pt_project_templates (
     id          UUID DEFAULT uuid_generate_v4() NOT NULL,
     name        TEXT                            NOT NULL,
     key         TEXT                            NOT NULL,
+    project_type TEXT DEFAULT 'general' NOT NULL CHECK (project_type IN ('general', 'software')),
     description TEXT,
     phase_label TEXT,
     image_url   TEXT,

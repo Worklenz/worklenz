@@ -60,7 +60,7 @@ export default class ClientsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const {searchQuery, searchParams = [], sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name", false, 2);
+    const {searchQuery, searchParams = [], sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name", false, 2, ["id", "name", "projects_count"]);
     const limitParam = searchParams.length + 2;
     const offsetParam = searchParams.length + 3;
 
@@ -102,6 +102,26 @@ export default class ClientsController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async deleteById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teamId = req.user?.team_id || null;
+
+    // Block deletion while projects still reference this client so Settings > Clients
+    // can show a clear validation message instead of silently nulling project.client_id.
+    const projectsCheck = await db.query(
+      `SELECT COUNT(*)::int AS projects_count
+         FROM projects
+        WHERE client_id = $1
+          AND team_id = $2`,
+      [req.params.id, teamId]
+    );
+    const projectsCount = projectsCheck.rows[0]?.projects_count ?? 0;
+    if (projectsCount > 0) {
+      return res.status(409).send(
+        new ServerResponse(
+          false,
+          { code: "CLIENT_HAS_PROJECTS", projects_count: projectsCount },
+          "This client is assigned to one or more projects and cannot be deleted. Reassign or remove those projects first."
+        )
+      );
+    }
 
     // A bare DELETE here would cascade away a Client Portal client's users, invitations, approvals,
     // change requests and discussions with no warning and no way back. A client that is part of the Client

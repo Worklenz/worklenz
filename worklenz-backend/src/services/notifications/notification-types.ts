@@ -12,4 +12,5 @@ export const NotificationTypes = {
   ADD_TO_A_TEAM: "ADD_TO_A_TEAM",
   REMOVED_FROM_A_TEAM: "REMOVED_FROM_A_TEAM",
   PHASE_TASK_ASSIGNED: "phase_task_assigned",
+  TASK_MARKED_DONE: "TASK_MARKED_DONE",
 };

@@ -18,6 +18,7 @@ import {
   SORT_FIELDS,
 } from "../../controllers/reporting/progress-tracking/progress-tracking-query";
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
+import { verifyReportingScope } from "../../middlewares/verify-reporting-scope";
 import {
   validateUuidParam,
   validateUuidArrayParam,
@@ -45,52 +46,63 @@ reportingApiRouter.get("/overview/projects",
 reportingApiRouter.get("/overview/projects/:team_id",
   teamOwnerOrAdminValidator,
   validateUuidParam("team_id", "params"),
+  verifyReportingScope({ resource: "team", location: "params", field: "team_id" }),
   safeControllerFunction(ReportingOverviewController.getProjectsByTeamOrMember)
 );
 reportingApiRouter.get("/overview/members/:team_id",
   teamOwnerOrAdminValidator,
   validateUuidParam("team_id", "params"),
+  verifyReportingScope({ resource: "team", location: "params", field: "team_id" }),
   safeControllerFunction(ReportingOverviewController.getMembersByTeam)
 );
 reportingApiRouter.get("/overview/team/info/:team_id",
   teamOwnerOrAdminValidator,
   validateUuidParam("team_id", "params"),
+  verifyReportingScope({ resource: "team", location: "params", field: "team_id" }),
   safeControllerFunction(ReportingOverviewController.getTeamOverview)
 );
 
 reportingApiRouter.get("/overview/project/info/:project_id",
   teamOwnerOrAdminValidator,
   validateUuidParam("project_id", "params"),
+  verifyReportingScope({ resource: "project", location: "params", field: "project_id" }),
   safeControllerFunction(ReportingOverviewController.getProjectOverview)
 );
 reportingApiRouter.get("/overview/project/members/:project_id",
   teamOwnerOrAdminValidator,
   validateUuidParam("project_id", "params"),
+  verifyReportingScope({ resource: "project", location: "params", field: "project_id" }),
   safeControllerFunction(ReportingOverviewController.getProjectMembers)
 );
 reportingApiRouter.get("/overview/project/tasks/:project_id",
   teamOwnerOrAdminValidator,
   validateUuidParam("project_id", "params"),
+  verifyReportingScope({ resource: "project", location: "params", field: "project_id" }),
   safeControllerFunction(ReportingOverviewController.getProjectTasks)
 );
 reportingApiRouter.get("/overview/project/tasks-paginated/:project_id",
   teamOwnerOrAdminValidator,
   validateUuidParam("project_id", "params"),
+  verifyReportingScope({ resource: "project", location: "params", field: "project_id" }),
   validatePaginationParams(),
   safeControllerFunction(ReportingOverviewController.getProjectTasksPaginated)
 );
 
 reportingApiRouter.get("/overview/member/info",
   teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "member", location: "query", field: "teamMemberId" }),
   safeControllerFunction(ReportingOverviewController.getMemberOverview)
 );
 reportingApiRouter.get("/overview/team-member/info",
   teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "member", location: "query", field: "teamMemberId" }),
   safeControllerFunction(ReportingOverviewController.getTeamMemberOverview)
 );
 reportingApiRouter.get("/overview/member/tasks/:team_member_id",
   teamOwnerOrAdminValidator,
   validateUuidParam("team_member_id", "params"),
+  verifyReportingScope({ resource: "member", location: "params", field: "team_member_id" }),
+  verifyReportingScope({ resource: "project", location: "query", field: "project", optional: true }),
   safeControllerFunction(ReportingOverviewController.getMemberTasks)
 );
 
@@ -135,45 +147,154 @@ reportingApiRouter.get("/members",
   safeControllerFunction(ReportingMembersController.getReportingMembers)
 );
 
-reportingApiRouter.post("/members/all", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.getReportingMembers));
-reportingApiRouter.post("/projects-by-member", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.getProjectsByMember));
+reportingApiRouter.post("/members/all",
+  teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "team", location: "body", field: "teamId", optional: true }),
+  verifyReportingScope({ resource: "project", location: "body", field: "projects", optional: true, isArray: true }),
+  safeControllerFunction(ReportingController.getReportingMembers)
+);
+reportingApiRouter.post("/projects-by-member",
+  teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "member", location: "body", field: "memberId", optional: true }),
+  verifyReportingScope({ resource: "project", location: "body", field: "projects", optional: true, isArray: true }),
+  safeControllerFunction(ReportingController.getProjectsByMember)
+);
 reportingApiRouter.get("/members/unassigned", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.getUnAssignedUsers));
-reportingApiRouter.get("/members/overdue/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(ReportingController.getMembersWithOverDueTasks));
-reportingApiRouter.get("/member/stats/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(ReportingController.getReportingMemberStats));
-reportingApiRouter.get("/member/overview/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(ReportingController.getReportingMemberOverview));
-reportingApiRouter.get("/member/projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.getMemberProjects));
+reportingApiRouter.get("/members/overdue/:id",
+  teamOwnerOrAdminValidator,
+  idParamValidator,
+  verifyReportingScope({ resource: "member", location: "params", field: "id" }),
+  safeControllerFunction(ReportingController.getMembersWithOverDueTasks)
+);
+reportingApiRouter.get("/member/stats/:id",
+  teamOwnerOrAdminValidator,
+  idParamValidator,
+  verifyReportingScope({ resource: "member", location: "params", field: "id" }),
+  safeControllerFunction(ReportingController.getReportingMemberStats)
+);
+reportingApiRouter.get("/member/overview/:id",
+  teamOwnerOrAdminValidator,
+  idParamValidator,
+  verifyReportingScope({ resource: "member", location: "params", field: "id" }),
+  safeControllerFunction(ReportingController.getReportingMemberOverview)
+);
+reportingApiRouter.get("/member/projects",
+  teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "team", location: "query", field: "teamId", optional: true }),
+  verifyReportingScope({ resource: "member", location: "query", field: "memberId", optional: true }),
+  safeControllerFunction(ReportingController.getMemberProjects)
+);
 
-reportingApiRouter.get("/member/project", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.getTasksByProject));
-reportingApiRouter.get("/member/tasks", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.getReportingMembersTasks));
+reportingApiRouter.get("/member/project",
+  teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "project", location: "query", field: "projectId", optional: true }),
+  verifyReportingScope({ resource: "member", location: "query", field: "memberId", optional: true }),
+  safeControllerFunction(ReportingController.getTasksByProject)
+);
+reportingApiRouter.get("/member/tasks",
+  teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "team", location: "query", field: "teamId", optional: true }),
+  verifyReportingScope({ resource: "member", location: "query", field: "memberId", optional: true }),
+  safeControllerFunction(ReportingController.getReportingMembersTasks)
+);
 
 reportingApiRouter.post("/", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.create));
-reportingApiRouter.post("/actual-vs-estimate", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.getEstimatedVsActualTime));
-reportingApiRouter.post("/allocation", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.getAllocation));
+reportingApiRouter.post("/actual-vs-estimate",
+  teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "team", location: "body", field: "teams", optional: true, isArray: true }),
+  safeControllerFunction(ReportingController.getEstimatedVsActualTime)
+);
+reportingApiRouter.post("/allocation",
+  teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "team", location: "body", field: "teams", optional: true, isArray: true }),
+  verifyReportingScope({ resource: "project", location: "body", field: "projects", optional: true, isArray: true }),
+  safeControllerFunction(ReportingAllocationController.getAllocation)
+);
 reportingApiRouter.get("/allocation/teams", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.getMyTeams));
-reportingApiRouter.post("/allocation/categories", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.getCategoriesByTeams));
-reportingApiRouter.post("/allocation/projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.getProjectsByTeams));
+reportingApiRouter.post("/allocation/categories",
+  teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "team", location: "body", field: "", optional: true, isArray: true }),
+  safeControllerFunction(ReportingController.getCategoriesByTeams)
+);
+reportingApiRouter.post("/allocation/projects",
+  teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "team", location: "body", field: "selectedTeams", optional: true, isArray: true }),
+  safeControllerFunction(ReportingController.getProjectsByTeams)
+);
 
 reportingApiRouter.get("/overview/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.exportOverviewExcel));
-reportingApiRouter.get("/allocation/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.exportAllocation));
-reportingApiRouter.get("/projects/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.exportProjects));
-reportingApiRouter.get("/members/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.exportMembers));
-reportingApiRouter.get("/members/single-member-task-stats", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.getMemberTaskStats));
-reportingApiRouter.get("/members/single-member-projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.getSingleMemberProjects));
+reportingApiRouter.get("/allocation/export",
+  teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "team", location: "query", field: "teams", optional: true, isArray: true }),
+  verifyReportingScope({ resource: "project", location: "query", field: "projects", optional: true, isArray: true }),
+  safeControllerFunction(ReportingController.exportAllocation)
+);
+reportingApiRouter.get("/projects/export",
+  teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "team", location: "query", field: "teams", optional: true, isArray: true }),
+  safeControllerFunction(ReportingController.exportProjects)
+);
+reportingApiRouter.get("/members/export",
+  teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "team", location: "query", field: "id", optional: true }),
+  verifyReportingScope({ resource: "team", location: "query", field: "team", optional: true }),
+  verifyReportingScope({ resource: "project", location: "query", field: "projects", optional: true, isArray: true }),
+  safeControllerFunction(ReportingController.exportMembers)
+);
+reportingApiRouter.get("/members/single-member-task-stats",
+  teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "member", location: "query", field: "team_member_id", optional: true }),
+  safeControllerFunction(ReportingMembersController.getMemberTaskStats)
+);
+reportingApiRouter.get("/members/single-member-projects",
+  teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "member", location: "query", field: "team_member_id", optional: true }),
+  safeControllerFunction(ReportingMembersController.getSingleMemberProjects)
+);
 
 reportingApiRouter.get("/member-projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.getMemberProjects));
-reportingApiRouter.post("/members/single-member-activities", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.getMemberActivities));
-reportingApiRouter.post("/members/single-member-timelogs", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.getMemberTimelogs));
+reportingApiRouter.post("/members/single-member-activities",
+  teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "member", location: "body", field: "team_member_id", optional: true }),
+  verifyReportingScope({ resource: "team", location: "body", field: "team_id", optional: true }),
+  safeControllerFunction(ReportingMembersController.getMemberActivities)
+);
+reportingApiRouter.post("/members/single-member-timelogs",
+  teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "member", location: "body", field: "team_member_id", optional: true }),
+  verifyReportingScope({ resource: "team", location: "body", field: "team_id", optional: true }),
+  safeControllerFunction(ReportingMembersController.getMemberTimelogs)
+);
 // Superseded by /time-logs below (server-side pagination, totals, user/project/practice filters).
 // Kept as-is so a client still running an older frontend build keeps working.
-reportingApiRouter.post("/members/timelogs-flat", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.getTimelogsFlat));
+reportingApiRouter.post("/members/timelogs-flat",
+  teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "member", location: "body", field: "team_member_id", optional: true }),
+  safeControllerFunction(ReportingMembersController.getTimelogsFlat)
+);
 reportingApiRouter.post("/time-logs", teamOwnerOrAdminValidator, safeControllerFunction(ReportingTimeLogsController.getTimeLogs));
 reportingApiRouter.post("/time-logs/groups", teamOwnerOrAdminValidator, safeControllerFunction(ReportingTimeLogsController.getTimeLogGroups));
 reportingApiRouter.get("/time-logs/members", teamOwnerOrAdminValidator, safeControllerFunction(ReportingTimeLogsController.getTimeLogMembers));
 reportingApiRouter.get("/time-logs/projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingTimeLogsController.getTimeLogProjects));
 
-reportingApiRouter.post("/time-reports/projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.getProjectTimeSheets));
-reportingApiRouter.post("/time-reports/members", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.getMemberTimeSheets));
-reportingApiRouter.post("/time-reports/estimated-vs-actual", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.getEstimatedVsActual));
+reportingApiRouter.post("/time-reports/projects",
+  teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "team", location: "body", field: "teams", optional: true, isArray: true }),
+  verifyReportingScope({ resource: "project", location: "body", field: "projects", optional: true, isArray: true }),
+  safeControllerFunction(ReportingAllocationController.getProjectTimeSheets)
+);
+reportingApiRouter.post("/time-reports/members",
+  teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "team", location: "body", field: "teams", optional: true, isArray: true }),
+  verifyReportingScope({ resource: "project", location: "body", field: "projects", optional: true, isArray: true }),
+  safeControllerFunction(ReportingAllocationController.getMemberTimeSheets)
+);
+reportingApiRouter.post("/time-reports/estimated-vs-actual",
+  teamOwnerOrAdminValidator,
+  verifyReportingScope({ resource: "team", location: "body", field: "teams", optional: true, isArray: true }),
+  verifyReportingScope({ resource: "project", location: "body", field: "projects", optional: true, isArray: true }),
+  safeControllerFunction(ReportingAllocationController.getEstimatedVsActual)
+);
 
 
 // All Tasks Report - Export routes must come BEFORE base route for proper matching

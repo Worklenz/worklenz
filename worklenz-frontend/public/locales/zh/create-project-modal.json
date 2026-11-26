@@ -15,7 +15,7 @@
   "projectColor": "颜色",
   "startingFrom": "开始于",
   "blankSelectedHint": "空白项目。在右边选择一个模板以开始。",
-  "blankSoftwareSelectedHint": "具有问题跟踪默认值的空白软件项目。模板不用于软件项目。",
+  "blankSoftwareProjectSelectedHint": "具有问题跟踪默认值的空白软件项目。",
   "templateSelectedHint": "模板结构将被复制到你的项目中。",
   "searchTemplates": "搜索模板",
   "searchYourLibrary": "搜索你的库",

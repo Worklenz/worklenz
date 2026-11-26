@@ -376,6 +376,19 @@ export default class GanttController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null, "Project ID and task name are required"));
     }
 
+    // A status or phase from another project must never be linked to this task.
+    if (status_id || phase_id) {
+      const validation = await db.query(
+        `SELECT
+          ($2::uuid IS NULL OR EXISTS(SELECT 1 FROM task_statuses WHERE id = $2 AND project_id = $1)) AS status_valid,
+          ($3::uuid IS NULL OR EXISTS(SELECT 1 FROM project_phases WHERE id = $3 AND project_id = $1)) AS phase_valid`,
+        [project_id, status_id || null, phase_id || null],
+      );
+      if (!validation.rows[0]?.status_valid || !validation.rows[0]?.phase_valid) {
+        return res.status(400).send(new ServerResponse(false, null, "Status and phase must belong to the project"));
+      }
+    }
+
     // Get default status if not provided
     let defaultStatusId = status_id;
     if (!defaultStatusId) {

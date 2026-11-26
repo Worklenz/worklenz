@@ -6,6 +6,7 @@ import {ServerResponse} from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import {allocateCopyName} from "../shared/template-copy-name";
+import {hasProjectAccess} from "../middlewares/verify-project-access";
 
 export default class TasktemplatesController extends WorklenzControllerBase {
   protected static async getTaskTemplateAccess(
@@ -376,6 +377,10 @@ export default class TasktemplatesController extends WorklenzControllerBase {
     );
     if (!access?.canAccess) {
       return res.status(404).send(new ServerResponse(false, null, "Template not found"));
+    }
+
+    if (!req.user?.team_id || !(await hasProjectAccess(id, req.user.team_id))) {
+      return res.status(403).send(new ServerResponse(false, null, "You do not have permission to access this project"));
     }
 
     const q = `SELECT import_tasks_from_template($1, $2, $3);`;

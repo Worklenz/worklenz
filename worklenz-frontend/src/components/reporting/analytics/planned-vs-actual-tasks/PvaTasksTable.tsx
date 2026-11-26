@@ -3,6 +3,7 @@ import { Table, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
+import { analyticsDisplayText } from '@/lib/reporting/analytics-display-text';
 import type { PlannedVsActualTasksRow } from '@/types/reporting/analytics-planned-vs-actual-tasks.types';
 
 const { Text } = Typography;
@@ -29,14 +30,22 @@ export const PvaTasksTable: React.FC<PvaTasksTableProps> = ({ projects, loading 
         key: 'project_name',
         width: 200,
         ellipsis: true,
-        sorter: (a, b) => a.project_name.localeCompare(b.project_name),
+        sorter: (a, b) =>
+          analyticsDisplayText(a.project_name).localeCompare(
+            analyticsDisplayText(b.project_name)
+          ),
+        render: (name: string) => (
+          <Text ellipsis={{ tooltip: analyticsDisplayText(name) }}>
+            {analyticsDisplayText(name)}
+          </Text>
+        ),
       },
       {
         title: t('pvaTasksColPlanned', { defaultValue: 'Planned tasks' }),
         dataIndex: 'planned',
         key: 'planned',
         width: 130,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.planned - b.planned,
       },
       {
@@ -44,7 +53,7 @@ export const PvaTasksTable: React.FC<PvaTasksTableProps> = ({ projects, loading 
         dataIndex: 'completed',
         key: 'completed',
         width: 120,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.completed - b.completed,
       },
       {
@@ -52,7 +61,7 @@ export const PvaTasksTable: React.FC<PvaTasksTableProps> = ({ projects, loading 
         dataIndex: 'overdue',
         key: 'overdue',
         width: 110,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.overdue - b.overdue,
         render: (value: number) =>
           value > 0 ? <Text type="danger">{value}</Text> : <Text type="secondary">0</Text>,
@@ -62,7 +71,7 @@ export const PvaTasksTable: React.FC<PvaTasksTableProps> = ({ projects, loading 
         dataIndex: 'variance_days',
         key: 'variance_days',
         width: 120,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.variance_days - b.variance_days,
         render: (value: number) => {
           if (value > 0) {

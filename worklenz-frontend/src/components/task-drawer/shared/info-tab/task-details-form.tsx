@@ -271,7 +271,7 @@ const TaskDetailsForm = ({ taskFormViewModel = null, canCreateTask = true, isGue
           tooltip={{
             title: t('taskInfoTab.details.notify-tooltip', {
               defaultValue:
-                'Selected members will receive an email notification when this task is marked as Done.',
+                'Selected members will receive an in-app and email notification when this task is marked as Done.',
             }),
             icon: (
               <InfoCircleOutlined

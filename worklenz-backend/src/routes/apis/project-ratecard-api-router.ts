@@ -11,24 +11,18 @@ const projectRatecardApiRouter = express.Router();
 // Project rate cards are a Business Edition feature — gate every route server-side.
 projectRatecardApiRouter.use(requireFeature("finance_module"));
 
-const requireFinance = requireProjectPermission("finance", {
-  sources: [
-    "query.current_project_id",
-    "params.project_id",
-    "body.project_id",
-    "query.project_id",
-  ],
-});
+const requireBodyProjectFinance = requireProjectPermission("finance", { sources: ["body.project_id"] });
+const requirePathProjectFinance = requireProjectPermission("finance", { sources: ["params.project_id"] });
 
-projectRatecardApiRouter.post("/", requireFinance, safeControllerFunction(ProjectRateCardController.createMany));
+projectRatecardApiRouter.post("/", requireBodyProjectFinance, safeControllerFunction(ProjectRateCardController.createMany));
 projectRatecardApiRouter.post(
   "/create-project-rate-card-role",
-  requireFinance,
+  requireBodyProjectFinance,
   safeControllerFunction(ProjectRateCardController.createOne)
 );
 projectRatecardApiRouter.get(
   "/project/:project_id",
-  requireFinance,
+  requirePathProjectFinance,
   safeControllerFunction(ProjectRateCardController.getByProjectId)
 );
 projectRatecardApiRouter.get(
@@ -45,13 +39,13 @@ projectRatecardApiRouter.put(
 );
 projectRatecardApiRouter.put(
   "/project/:project_id",
-  requireFinance,
+  requirePathProjectFinance,
   safeControllerFunction(ProjectRateCardController.updateByProjectId)
 );
 projectRatecardApiRouter.put(
   "/project/:project_id/members/:id/rate-card-role",
   idParamValidator,
-  requireFinance,
+  requirePathProjectFinance,
   safeControllerFunction(ProjectRateCardController.updateProjectMemberByProjectIdAndMemberId)
 );
 projectRatecardApiRouter.delete(
@@ -62,7 +56,7 @@ projectRatecardApiRouter.delete(
 );
 projectRatecardApiRouter.delete(
   "/project/:project_id",
-  requireFinance,
+  requirePathProjectFinance,
   safeControllerFunction(ProjectRateCardController.deleteByProjectId)
 );
 
