@@ -221,7 +221,7 @@ export const RichMessageEditor = ({
 
   // A controlled editor follows value changes that did not come from typing (form prefill / reset).
   useEffect(() => {
-    if (!editor || !controlled || value === lastEmittedRef.current) return;
+    if (!editor || editor.isDestroyed || !controlled || value === lastEmittedRef.current) return;
     lastEmittedRef.current = value;
     editor.commands.setContent(toEditorHtml(value), { emitUpdate: false });
     setCharCount(editor.getText({ blockSeparator: ' ' }).trim().length);
@@ -229,17 +229,20 @@ export const RichMessageEditor = ({
 
   // Clear from outside after a message is sent.
   useEffect(() => {
-    if (editor && value === '' && !editor.isEmpty) editor.commands.clearContent();
+    if (editor && !editor.isDestroyed && value === '' && !editor.isEmpty) editor.commands.clearContent();
   }, [editor, value]);
 
   useEffect(() => {
-    editor?.setEditable(!disabled);
+    if (!editor || editor.isDestroyed) return;
+    editor.setEditable(!disabled);
   }, [editor, disabled]);
 
+  // Modal mount/remount can leave a destroyed editor instance briefly; extensionManager is null then.
   useEffect(() => {
-    if (!editor) return;
-    const placeholderExtension = editor.extensionManager.extensions.find(extension => extension.name === 'placeholder');
-    if (placeholderExtension) {
+    const extensions = editor?.extensionManager?.extensions;
+    if (!editor || editor.isDestroyed || !extensions) return;
+    const placeholderExtension = extensions.find(extension => extension.name === 'placeholder');
+    if (placeholderExtension && editor.view) {
       placeholderExtension.options.placeholder = placeholder;
       editor.view.dispatch(editor.state.tr);
     }
@@ -248,7 +251,7 @@ export const RichMessageEditor = ({
   // Switching between a client-visible reply and an internal comment changes who can be mentioned.
   // A chip for someone who no longer can be becomes plain "@Name" text instead of being sent.
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || editor.isDestroyed) return;
     const stale: Array<{ pos: number; size: number; label: string }> = [];
     editor.state.doc.descendants((node, pos) => {
       if (node.type.name === 'mention' && !mentionOptions.some(person => person.id === node.attrs.id)) {
@@ -341,16 +344,30 @@ const Toolbar = ({ editor, disabled, basic }: { editor: Editor; disabled: boolea
   const { token } = theme.useToken();
   const active = useEditorState({
     editor,
-    selector: ({ editor: current }) => ({
-      h1: current.isActive('heading', { level: 1 }),
-      h2: current.isActive('heading', { level: 2 }),
-      bold: current.isActive('bold'),
-      italic: current.isActive('italic'),
-      underline: current.isActive('underline'),
-      bullet: current.isActive('bulletList'),
-      ordered: current.isActive('orderedList'),
-      link: current.isActive('link'),
-    }),
+    selector: ({ editor: current }) => {
+      if (!current || current.isDestroyed) {
+        return {
+          h1: false,
+          h2: false,
+          bold: false,
+          italic: false,
+          underline: false,
+          bullet: false,
+          ordered: false,
+          link: false,
+        };
+      }
+      return {
+        h1: current.isActive('heading', { level: 1 }),
+        h2: current.isActive('heading', { level: 2 }),
+        bold: current.isActive('bold'),
+        italic: current.isActive('italic'),
+        underline: current.isActive('underline'),
+        bullet: current.isActive('bulletList'),
+        ordered: current.isActive('orderedList'),
+        link: current.isActive('link'),
+      };
+    },
   });
 
   const button = (
