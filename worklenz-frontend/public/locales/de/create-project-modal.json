@@ -15,7 +15,7 @@
   "projectColor": "Farbe",
   "startingFrom": "Start ab",
   "blankSelectedHint": "Leeres Projekt. Wählen Sie rechts eine Vorlage, um zu beginnen.",
-  "blankSoftwareSelectedHint": "Leeres Softwareprojekt mit Standardwerten für die Problemverfolgung. Vorlagen werden nicht für Softwareprojekte verwendet.",
+  "blankSoftwareProjectSelectedHint": "Leeres Softwareprojekt mit Standardwerten für die Problemverfolgung.",
   "templateSelectedHint": "Die Vorlagenstruktur wird in Ihr Projekt kopiert.",
   "searchTemplates": "Vorlagen durchsuchen",
   "searchYourLibrary": "Durchsuchen Sie Ihre Bibliothek",
