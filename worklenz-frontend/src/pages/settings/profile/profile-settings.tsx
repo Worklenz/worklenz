@@ -280,6 +280,29 @@ const ProfileSettings = () => {
               marginRight={0}
             />
           </div>
+
+          {!hasAvatar && (
+            <span
+              title="Upload profile picture"
+              aria-label="Upload profile picture"
+              style={{
+                position: 'absolute',
+                bottom: 6,
+                right: 6,
+                width: 24,
+                height: 24,
+                borderRadius: '50%',
+                background: token.colorPrimary,
+                color: '#fff',
+                border: `2px solid ${token.colorBgContainer}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <PlusOutlined style={{ fontSize: 12 }} />
+            </span>
+          )}
         </Flex>
       )}
     </div>
