@@ -39,6 +39,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Test Compose migration safeguards
+        run: node scripts/tests/compose-migrate.test.js
+
       - name: TypeScript Compile Check
         run: npm run compile:prod
 
