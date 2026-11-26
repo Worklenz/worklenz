@@ -55,7 +55,9 @@ services:
       # credentials, but do not let host-side overrides target another DB.
       MIGRATION_DB_HOST: db
       MIGRATION_DB_PORT: 5432
-      MIGRATION_DB_NAME: ${DB_NAME:-worklenz_db}
+      # Empty override makes the migration runner use DB_NAME from env_file,
+      # exactly as the backend does, even when the shell exports DB_NAME.
+      MIGRATION_DB_NAME: ""
       WORKLENZ_DEPLOYMENT_MODE: ${WORKLENZ_DEPLOYMENT_MODE:-self_hosted}
     depends_on:
       db:
