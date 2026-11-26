@@ -6,7 +6,7 @@ import db from "../config/db";
 import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
-import { escapeRegExp, getColor, slugify, sanitizeCommentContent, megabytesToBytes } from "../shared/utils";
+import { escapeRegExp, getColor, htmlToPlainText, slugify, sanitizeCommentContent, megabytesToBytes } from "../shared/utils";
 import { HTML_TAG_REGEXP } from "../shared/constants";
 import { IProjectCommentEmailNotification } from "../interfaces/comment-email-notification";
 import { sendProjectComment } from "../shared/email-notifications";
@@ -96,7 +96,8 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
       summary: subject,
       team: config.teamName,
       project_name: config.projectName,
-      comment: config.content,
+      // Email templates escape HTML; convert rich-text/mentions to plain text first
+      comment: htmlToPlainText(config.content || ""),
       settings_url: `${getBaseUrl()}/worklenz/settings/notifications`,
       project_url: `${getBaseUrl()}/worklenz/projects/${config.projectId}`,
       logo_url: logoUrl,
