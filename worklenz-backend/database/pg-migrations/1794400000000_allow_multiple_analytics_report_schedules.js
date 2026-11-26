@@ -8,6 +8,11 @@ exports.shorthands = undefined;
  * Previously unique on (owner_id, report_kind) and (owner_id, template_id)
  * limited each user to one schedule per report.
  *
+ * Unbounded creates are prevented in application code (not a DB unique index):
+ * AnalyticsSchedulesController / analytics-schedules.service enforce
+ * MAX_ANALYTICS_SCHEDULES_PER_KIND and MAX_ANALYTICS_SCHEDULES_PER_USER under a
+ * per-team advisory lock before INSERT.
+ *
  * @param {import('node-pg-migrate').MigrationBuilder} pgm
  */
 exports.up = async (pgm) => {

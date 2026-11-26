@@ -34,6 +34,7 @@ beforeEach(() => {
         role_name: "Admin",
         is_owner: false,
         is_admin_role: true,
+        is_guest: false,
       },
     ],
   });
@@ -101,5 +102,30 @@ describe("canOwnerSendSchedule", () => {
     await expect(
       canOwnerSendSchedule(userId, teamId, "project-health")
     ).resolves.toBe(false);
+  });
+
+  it("denies when the owner was downgraded to guest", async () => {
+    (db.query as jest.Mock).mockResolvedValue({
+      rows: [
+        {
+          team_member_id: "tm-1",
+          role_name: "Member",
+          is_owner: false,
+          is_admin_role: false,
+          is_guest: true,
+        },
+      ],
+    });
+    jest.mocked(hasOrganizationPermission).mockImplementation(async (user, permission) => {
+      // Mirror Guest scheme: guests lack View reports / View finance.
+      if (user?.is_guest) return false;
+      return permission === ORGANIZATION_PERMISSIONS.VIEW_REPORTS;
+    });
+
+    await expect(canOwnerSendSchedule(userId, teamId, "velocity")).resolves.toBe(false);
+    expect(hasOrganizationPermission).toHaveBeenCalledWith(
+      expect.objectContaining({ id: userId, is_guest: true }),
+      ORGANIZATION_PERMISSIONS.VIEW_REPORTS
+    );
   });
 });

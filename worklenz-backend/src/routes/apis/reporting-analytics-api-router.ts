@@ -22,11 +22,37 @@ import {
   viewFinanceValidator,
   viewReportsValidator,
 } from "../../middlewares/validators/organization-permission-validator";
+import { isFinanceAnalyticsReportKind } from "../../shared/reporting-analytics.constants";
 
 const router = express.Router();
 
 /** View reports + paid plan — same gate as classic reporting. */
-const requireAnalyticsAccess = viewReportsValidator
+const requireAnalyticsAccess = viewReportsValidator;
+
+/**
+ * Create/update schedules for finance report kinds must match live report gates
+ * (View finance + finance_module). Updates that omit report_kind are still
+ * re-checked in AnalyticsSchedulesController / service against the stored kind;
+ * the cron also revalidates owner entitlements before each send.
+ */
+const requireFinanceGatesForFinanceScheduleBody = (
+  req: IWorkLenzRequest,
+  res: IWorkLenzResponse,
+  next: express.NextFunction
+): void => {
+  const kind = req.body?.report_kind;
+  if (typeof kind !== "string" || !isFinanceAnalyticsReportKind(kind)) {
+    next();
+    return;
+  }
+  void viewFinanceValidator(req, res, (err?: unknown) => {
+    if (err) {
+      next(err);
+      return;
+    }
+    requireFeature("finance_module")(req, res, next);
+  });
+};
 
 router.get(
   "/meta",
@@ -343,6 +369,7 @@ router.post(
   "/schedules",
   requireAnalyticsAccess,
   requireFeature("advanced_reporting"),
+  requireFinanceGatesForFinanceScheduleBody,
   safeControllerFunction(AnalyticsSchedulesController.upsert)
 );
 
@@ -350,6 +377,7 @@ router.patch(
   "/schedules/:id",
   requireAnalyticsAccess,
   requireFeature("advanced_reporting"),
+  requireFinanceGatesForFinanceScheduleBody,
   safeControllerFunction(AnalyticsSchedulesController.update)
 );
 

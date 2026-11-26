@@ -26,7 +26,8 @@ export async function loadScheduleOwnerSession(
        tm.id AS team_member_id,
        r.name AS role_name,
        COALESCE(r.owner, FALSE) AS is_owner,
-       COALESCE(r.admin_role, FALSE) AS is_admin_role
+       COALESCE(r.admin_role, FALSE) AS is_admin_role,
+       COALESCE(tm.is_guest, FALSE) AS is_guest
      FROM team_members tm
      JOIN roles r ON r.id = tm.role_id
      WHERE tm.user_id = $1::UUID
@@ -46,6 +47,8 @@ export async function loadScheduleOwnerSession(
     role_name: row.role_name,
     owner: !!row.is_owner,
     is_admin: !!row.is_admin_role && String(row.role_name).toLowerCase() === "admin",
+    // Required so View reports / View finance use the Guest scheme after downgrade.
+    is_guest: !!row.is_guest,
   };
 }
 

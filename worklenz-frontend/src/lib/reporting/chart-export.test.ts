@@ -1,6 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Chart } from 'chart.js';
-import { chartToPngDataUrl } from './chart-export';
+import { chartToPngDataUrl, isLightExportColor } from './chart-export';
+
+describe('isLightExportColor', () => {
+  it('detects dark-mode secondary text and near-white hex', () => {
+    expect(isLightExportColor('rgba(255, 255, 255, 0.65)')).toBe(true);
+    expect(isLightExportColor('#f5f5f5')).toBe(true);
+    expect(isLightExportColor('#595959')).toBe(false);
+    expect(isLightExportColor('rgba(0, 0, 0, 0.65)')).toBe(false);
+  });
+});
 
 describe('chartToPngDataUrl', () => {
   it('restores colors on the current options after an update replaces them', () => {
@@ -10,6 +19,14 @@ describe('chartToPngDataUrl', () => {
     const chart = {
       canvas: source,
       options: { scales: { x: { ticks: { color: 'white' }, grid: { color: 'gray' } } } },
+      data: {
+        datasets: [
+          {
+            type: 'line',
+            borderColor: 'rgba(255, 255, 255, 0.65)',
+          },
+        ],
+      },
       update: vi.fn(),
     };
     chart.update.mockImplementation(() => {
@@ -22,6 +39,7 @@ describe('chartToPngDataUrl', () => {
       expect(chartToPngDataUrl(chart as unknown as Chart)).toBe('data:image/png;base64,test');
       expect(chart.options.scales.x.ticks.color).toBe('white');
       expect(chart.options.scales.x.grid.color).toBe('gray');
+      expect(chart.data.datasets[0].borderColor).toBe('rgba(255, 255, 255, 0.65)');
     } finally {
       getContext.mockRestore();
       toDataURL.mockRestore();

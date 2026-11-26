@@ -1,5 +1,9 @@
 import { jsPDF } from 'jspdf';
 import worklenzLogo from '@/assets/images/worklenz-light-mode.png';
+import {
+  ANALYTICS_PDF_FONT_FAMILY,
+  registerAnalyticsPdfFont,
+} from '@/lib/reporting/analytics-pdf-fonts';
 
 export interface AnalyticsPdfKpiTile {
   label: string;
@@ -140,7 +144,7 @@ function drawFilterDetailsLine(
 
   const drawSegment = (text: string, bold: boolean) => {
     if (!text) return;
-    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    doc.setFont(ANALYTICS_PDF_FONT_FAMILY, bold ? 'bold' : 'normal');
     // Keep separator / label tokens intact; wrap value words.
     const tokens = bold || text === ' · ' ? [text] : text.split(/(\s+)/);
     for (const token of tokens) {
@@ -185,7 +189,7 @@ function drawHeader(
   const titleX = PAGE.marginX + logoW + 14;
   const titleMaxW = PAGE.width - titleX - PAGE.marginX;
   doc.setTextColor(38, 38, 38);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(ANALYTICS_PDF_FONT_FAMILY, 'bold');
   doc.setFontSize(14);
   doc.text(title, titleX, PAGE.marginTop + (filterDetails ? 12 : 18), {
     maxWidth: titleMaxW,
@@ -219,7 +223,7 @@ function drawKpiCards(
   if (!kpis.length) return startY;
 
   let y = startY;
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(ANALYTICS_PDF_FONT_FAMILY, 'bold');
   doc.setFontSize(11);
   doc.setTextColor(38, 38, 38);
   doc.text('Summary', PAGE.marginX, y);
@@ -242,18 +246,18 @@ function drawKpiCards(
     doc.circle(x + 14, y + 18, 4, 'F');
 
     doc.setTextColor(89, 89, 89);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(ANALYTICS_PDF_FONT_FAMILY, 'bold');
     doc.setFontSize(12);
     doc.text(kpi.label, x + 24, y + 22, { maxWidth: cardW - 34 });
 
     doc.setTextColor(tr, tg, tb);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(ANALYTICS_PDF_FONT_FAMILY, 'bold');
     doc.setFontSize(18);
     doc.text(String(kpi.value), x + 14, y + 48, { maxWidth: cardW - 28 });
 
     if (kpi.sub) {
       doc.setTextColor(140, 140, 140);
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(ANALYTICS_PDF_FONT_FAMILY, 'normal');
       doc.setFontSize(8);
       doc.text(kpi.sub, x + 14, y + 66, { maxWidth: cardW - 28 });
     }
@@ -277,7 +281,7 @@ function drawFooter(
     doc.setPage(page);
     doc.setDrawColor(238, 238, 238);
     doc.line(PAGE.marginX, y - 10, PAGE.width - PAGE.marginX, y - 10);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(ANALYTICS_PDF_FONT_FAMILY, 'normal');
     doc.setFontSize(8);
     doc.setTextColor(140, 140, 140);
     doc.text(note, PAGE.marginX, y, { maxWidth: PAGE.width - PAGE.marginX * 2 - 80 });
@@ -341,12 +345,12 @@ function drawTable(
   };
 
   let y = ensureSpace(startY, 40).y;
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(ANALYTICS_PDF_FONT_FAMILY, 'bold');
   doc.setFontSize(11);
   doc.setTextColor(38, 38, 38);
   doc.text('Table', PAGE.marginX, y);
   y += 8;
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(ANALYTICS_PDF_FONT_FAMILY, 'normal');
   doc.setFontSize(8);
   doc.setTextColor(140, 140, 140);
   doc.text(`Report data (${body.length} row${body.length === 1 ? '' : 's'})`, PAGE.marginX, y);
@@ -357,7 +361,7 @@ function drawTable(
     doc.setFillColor(240, 241, 243);
     doc.rect(PAGE.marginX, atY, tableWidth, headerRowH, 'F');
     strokeCellGrid(atY, colCount, headerRowH);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(ANALYTICS_PDF_FONT_FAMILY, 'bold');
     doc.setFontSize(10);
     doc.setTextColor(38, 38, 38);
     header.forEach((cell, i) => {
@@ -380,7 +384,7 @@ function drawTable(
     doc.setFillColor(255, 255, 255);
     doc.rect(PAGE.marginX, y, tableWidth, rowH, 'F');
     strokeCellGrid(y, colCount, rowH);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(ANALYTICS_PDF_FONT_FAMILY, 'normal');
     doc.setFontSize(8);
     const rowColors = cellColors?.[rowIndex + 1] || [];
     header.forEach((_, i) => {
@@ -465,7 +469,7 @@ function drawChartCardWithTopic(
 
   let imageY = y + CHART_CARD_PAD;
   if (hasTopic) {
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(ANALYTICS_PDF_FONT_FAMILY, 'bold');
     doc.setFontSize(11);
     doc.setTextColor(38, 38, 38);
     doc.text(topic!.trim(), x + CHART_CARD_PAD, y + CHART_CARD_PAD + 11, {
@@ -495,6 +499,8 @@ export async function downloadAnalyticsBrandedPdf(
   const exportedOn = options.exportedOn || new Date().toISOString().slice(0, 10);
   const logoDataUrl = await resolveLogoDataUrl(options.logoUrl);
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+  // Helvetica cannot render CJK / many non-Latin glyphs used in localized reports.
+  await registerAnalyticsPdfFont(doc);
 
   let cursorY = drawHeader(doc, options.title, logoDataUrl, options.filterDetails);
   cursorY = drawKpiCards(doc, options.kpis || [], cursorY);
