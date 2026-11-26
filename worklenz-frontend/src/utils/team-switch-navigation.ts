@@ -1,3 +1,5 @@
+import { clearOrganizationLogoCache } from '@/utils/organization-logo-cache';
+
 /** Concrete projects list route — `/worklenz/projects` is only an index redirect. */
 const PROJECTS_LIST_PATH = '/worklenz/projects/all-projects';
 const TASK_SHORT_LINK_PREFIX = '/worklenz/t/';
@@ -69,6 +71,10 @@ export const stripTeamScopedSearchParams = (search: string): string => {
  * Always drops team-scoped task deep-link query params before reload/assign.
  */
 export const navigateAfterTeamSwitch = (pathname: string): void => {
+  // Drop the legacy unscoped logo cache before reload so the previous team's
+  // logo cannot flash (or stick) while the new team's logo resolves.
+  clearOrganizationLogoCache();
+
   const targetPath = getPostTeamSwitchLocation(pathname);
   const cleanedSearch =
     targetPath === pathname ? stripTeamScopedSearchParams(window.location.search) : '';
