@@ -2,6 +2,8 @@ export interface PlannedVsActualTasksFilters {
   project_ids?: string[];
   member_ids?: string[];
   team_ids?: string[];
+  date_from?: string;
+  date_to?: string;
 }
 
 export interface PlannedVsActualTasksRow {

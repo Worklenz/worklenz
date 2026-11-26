@@ -12,6 +12,8 @@ const filtersToBody = (filters: PlannedVsActualTasksFilters) => ({
   project_ids: filters.project_ids,
   member_ids: filters.member_ids,
   team_ids: filters.team_ids,
+  date_from: filters.date_from,
+  date_to: filters.date_to,
 });
 
 export const analyticsPlannedVsActualTasksApiService = {

@@ -63,13 +63,12 @@ export const TisPerIssueChart = forwardRef<TisPerIssueChartHandle, TisPerIssueCh
     const chartRef = useRef<ChartJS<'bar'>>(null);
 
     useImperativeHandle(ref, () => ({
-          toPngDataUrl: () => chartToPngDataUrl(chartRef.current, token.colorBgContainer),
-    toSvgMarkup: () =>
-      chartToSvgMarkup(
-        chartRef.current,
-        t('timeInStatus', { defaultValue: 'Time in Status' }),
-        token.colorBgContainer
-      ),
+      toPngDataUrl: () => chartToPngDataUrl(chartRef.current),
+      toSvgMarkup: () =>
+        chartToSvgMarkup(
+          chartRef.current,
+          t('timeInStatus', { defaultValue: 'Time in Status' })
+        ),
     }));
 
     const chartData: ChartData<'bar'> = useMemo(() => {

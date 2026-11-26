@@ -1,6 +1,14 @@
-import React, { useMemo } from 'react';
-import { ArcElement, Chart as ChartJS, Legend, Tooltip, type ChartOptions } from 'chart.js';
+import React, { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
+import {
+  ArcElement,
+  Chart as ChartJS,
+  Legend,
+  Tooltip,
+  type Chart as ChartInstance,
+  type ChartOptions,
+} from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
+import html2canvas from 'html2canvas';
 import { useTranslation } from 'react-i18next';
 import { Badge, Flex, Typography, theme } from '@/shared/antd-imports';
 import { MetricCalcHint } from '../MetricCalcHint';
@@ -14,6 +22,11 @@ import type {
 ChartJS.register(ArcElement, Legend, Tooltip);
 
 const { Text } = Typography;
+
+export interface ProjectHealthDonutChartHandle {
+  /** Captures chart body (center total, legend, hint). Topic title is drawn by the PDF. */
+  toPngDataUrl: () => Promise<string | null>;
+}
 
 interface ProjectHealthDonutChartProps {
   kpis: ProjectHealthKpis;
@@ -39,11 +52,72 @@ const TONE_META: Record<
 
 const TONE_ORDER: ProjectHealthTone[] = ['on_track', 'at_risk', 'off_track', 'not_set'];
 
-export const ProjectHealthDonutChart: React.FC<ProjectHealthDonutChartProps> = ({
-  kpis,
-}) => {
+export const ProjectHealthDonutChart = forwardRef<
+  ProjectHealthDonutChartHandle,
+  ProjectHealthDonutChartProps
+>(({ kpis }, ref) => {
   const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
+  const chartRef = useRef<ChartInstance<'doughnut'>>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    toPngDataUrl: async () => {
+      const card = cardRef.current;
+      if (!card) return null;
+
+      // Export as a light card matching PDF (page may be in dark mode).
+      const prev = {
+        border: card.style.border,
+        background: card.style.background,
+        color: card.style.color,
+      };
+      card.style.border = 'none';
+      card.style.background = '#ffffff';
+      card.style.color = 'rgba(0,0,0,0.88)';
+
+      // PDF draws "Health status" as the chart topic — hide the on-card title for capture.
+      const hideEls = Array.from(
+        card.querySelectorAll('[data-pdf-hide]')
+      ) as HTMLElement[];
+      const hidePrev = hideEls.map(el => ({ el, display: el.style.display }));
+      hideEls.forEach(el => {
+        el.style.display = 'none';
+      });
+
+      const texts = Array.from(card.querySelectorAll('.ant-typography')) as HTMLElement[];
+      const textPrev = texts.map(el => ({
+        el,
+        color: el.style.color,
+      }));
+      texts.forEach(el => {
+        const isSecondary = el.classList.contains('ant-typography-secondary');
+        el.style.color = isSecondary ? 'rgba(0,0,0,0.45)' : 'rgba(0,0,0,0.88)';
+      });
+
+      try {
+        const canvas = await html2canvas(card, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+        });
+        return canvas.toDataURL('image/png', 1);
+      } catch {
+        return null;
+      } finally {
+        card.style.border = prev.border;
+        card.style.background = prev.background;
+        card.style.color = prev.color;
+        hidePrev.forEach(({ el, display }) => {
+          el.style.display = display;
+        });
+        textPrev.forEach(({ el, color }) => {
+          el.style.color = color;
+        });
+      }
+    },
+  }));
 
   const slices = useMemo((): HealthSlice[] => {
     const counts: Record<ProjectHealthTone, number> = {
@@ -117,6 +191,7 @@ export const ProjectHealthDonutChart: React.FC<ProjectHealthDonutChartProps> = (
 
   return (
     <div
+      ref={cardRef}
       style={{
         width: '100%',
         minHeight: 280,
@@ -126,7 +201,7 @@ export const ProjectHealthDonutChart: React.FC<ProjectHealthDonutChartProps> = (
         background: token.colorBgContainer,
       }}
     >
-      <Flex align="center" gap={6} style={{ marginBottom: 12 }}>
+      <Flex align="center" gap={6} style={{ marginBottom: 12 }} data-pdf-hide>
         <Text strong style={{ fontSize: 14 }}>
           {t('phDonutTitle', { defaultValue: 'Health status' })}
         </Text>
@@ -140,7 +215,7 @@ export const ProjectHealthDonutChart: React.FC<ProjectHealthDonutChartProps> = (
       </Flex>
       <Flex gap={24} align="center" wrap="wrap">
         <div style={{ width: 180, height: 180, flexShrink: 0, position: 'relative' }}>
-          <Doughnut data={chartData} options={options} />
+          <Doughnut ref={chartRef} data={chartData} options={options} />
           <Flex
             vertical
             align="center"
@@ -188,4 +263,6 @@ export const ProjectHealthDonutChart: React.FC<ProjectHealthDonutChartProps> = (
       </Text>
     </div>
   );
-};
+});
+
+ProjectHealthDonutChart.displayName = 'ProjectHealthDonutChart';

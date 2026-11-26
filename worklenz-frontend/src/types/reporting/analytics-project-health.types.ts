@@ -7,6 +7,8 @@ export interface ProjectHealthFilters {
   health_ids?: string[];
   member_ids?: string[];
   team_ids?: string[];
+  date_from?: string;
+  date_to?: string;
 }
 
 export interface ProjectHealthRow {

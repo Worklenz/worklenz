@@ -79,13 +79,12 @@ export const CfdChart = forwardRef<CfdChartHandle, CfdChartProps>(
     const chartRef = useRef<ChartJS<'line'>>(null);
 
     useImperativeHandle(ref, () => ({
-          toPngDataUrl: () => chartToPngDataUrl(chartRef.current, token.colorBgContainer),
-    toSvgMarkup: () =>
-      chartToSvgMarkup(
-        chartRef.current,
-        t('cumulativeFlow', { defaultValue: 'Cumulative Flow' }),
-        token.colorBgContainer
-      ),
+      toPngDataUrl: () => chartToPngDataUrl(chartRef.current),
+      toSvgMarkup: () =>
+        chartToSvgMarkup(
+          chartRef.current,
+          t('cumulativeFlow', { defaultValue: 'Cumulative Flow' })
+        ),
     }));
 
     const statusById = useMemo(() => {

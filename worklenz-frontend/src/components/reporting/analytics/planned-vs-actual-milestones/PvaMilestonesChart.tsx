@@ -49,13 +49,12 @@ export const PvaMilestonesChart = forwardRef<PvaMilestonesChartHandle, PvaMilest
     const chartRef = useRef<ChartJS<'bar'>>(null);
 
     useImperativeHandle(ref, () => ({
-          toPngDataUrl: () => chartToPngDataUrl(chartRef.current, token.colorBgContainer),
-    toSvgMarkup: () =>
-      chartToSvgMarkup(
-        chartRef.current,
-        t('plannedVsActualMilestones', { defaultValue: 'Planned vs Actual: Milestones' }),
-        token.colorBgContainer
-      ),
+      toPngDataUrl: () => chartToPngDataUrl(chartRef.current),
+      toSvgMarkup: () =>
+        chartToSvgMarkup(
+          chartRef.current,
+          t('plannedVsActualMilestones', { defaultValue: 'Planned vs Actual: Milestones' })
+        ),
     }));
 
     const chartData = useMemo((): ChartData<'bar'> => {

@@ -6,7 +6,16 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { jsPDF } from 'jspdf';
+import {
+  downloadAnalyticsBrandedPdf,
+  resolveAnalyticsPdfLogoUrl,
+} from '@/lib/reporting/analytics-branded-pdf';
+import { buildAnalyticsPdfFilterDetails } from '@/lib/reporting/analytics-pdf-filter-details';
+import {
+  formatVarianceDaysLabel,
+  overdueCountColor,
+  varianceDaysColor,
+} from '@/lib/reporting/analytics-table-value-colors';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -37,7 +46,6 @@ import {
   usePersistedAnalyticsFilters,
 } from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
-import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import {
   getAnalyticsDashboardPermissions,
   resolveAnalyticsActorRole,
@@ -48,8 +56,9 @@ import {
   latestUpdatedProjectIds,
   resolveAnalyticsDisplayProjects,
 } from '@/lib/reporting/analytics-chart-projects';
+import { buildAnalyticsScheduleFilters } from '@/lib/reporting/analytics-schedule-filters';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
-import { analyticsDisplayText } from '@/lib/reporting/analytics-display-text';
+import { BOUNDED_ANALYTICS_DATE_PRESETS, resolveAnalyticsDateBounds } from '@/utils/date-presets';
 import type {
   PlannedVsActualTasksFilters,
   PlannedVsActualTasksSeriesResponse,
@@ -80,10 +89,12 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
     userId: session?.id,
   });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
+  const teamsList = useAppSelector(state => state.teamReducer.teamsList);
 
   const {
     datePreset,
-    setDatePreset,
+    customRange,
+    setDateFilter,
     selectedProjectIds,
     setSelectedProjectIds,
     setAutomaticProjectIds,
@@ -116,9 +127,14 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
       setSelectedProjectIds,
       setSelectedMemberIds,
       setSelectedTeamIds,
-      setDatePreset,
+      setDateFilter,
     });
-  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds, setDatePreset]);
+  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds, setDateFilter]);
+
+  const dateBounds = useMemo(
+    () => resolveAnalyticsDateBounds(datePreset, customRange),
+    [datePreset, customRange]
+  );
 
   const {
     templates,
@@ -135,12 +151,18 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
     wasRestored: hasRestoredFilters,
-    getFilters: () => ({
-      project_ids: selectedProjectIds,
-      member_ids: selectedMemberIds,
-      team_ids: selectedTeamIds,
-      date_preset: datePreset,
-    }),
+    getFilters: () =>
+      buildAnalyticsScheduleFilters({
+        selectedProjectIds,
+        projectOptionsCount: projectOptions.length,
+        selectedMemberIds,
+        selectedTeamIds,
+        datePreset,
+        dateFrom: dateBounds.date_from,
+        dateTo: dateBounds.date_to,
+        forceLiveProjectScope: true,
+        extra: { custom_range: customRange },
+      }),
   });
 
   const title = (isCustomTemplateView && customTemplateName?.trim()) || baseTitle;
@@ -163,13 +185,17 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
 
   // Load the full team set for KPIs / table.
   // Projects selection only scopes the bar chart (latest 20 by default).
+  // Date range keeps projects whose effective span overlaps the selected range
+  // (start_date ?? created_at → end_date ?? updated_at).
   const filters: PlannedVsActualTasksFilters = useMemo(
     () => ({
       project_ids: [],
       team_ids: selectedTeamIds,
       member_ids: selectedMemberIds,
+      date_from: dateBounds.date_from,
+      date_to: dateBounds.date_to,
     }),
-    [selectedTeamIds, selectedMemberIds]
+    [selectedTeamIds, selectedMemberIds, dateBounds]
   );
 
   const loadTeams = useCallback(async () => {
@@ -361,22 +387,65 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
       }
       if (format === 'pdf') {
         const png = chartRef.current?.toPngDataUrl();
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-        doc.setFontSize(16);
-        doc.text(title, 40, 40);
-        doc.setFontSize(11);
-        doc.text(
-          `${t('pvaTasksStatPlanned', { defaultValue: 'Planned tasks' })}: ${data.kpis.planned}  |  ` +
-            `${t('pvaTasksStatCompleted', { defaultValue: 'Completed' })}: ${data.kpis.completed}  |  ` +
-            `${t('pvaTasksStatOverdue', { defaultValue: 'Overdue' })}: ${data.kpis.overdue}  |  ` +
-            `${t('pvaTasksStatAvgVariance', { defaultValue: 'Avg variance' })}: ${data.kpis.avg_variance_days}d`,
-          40,
-          60
-        );
-        if (png) {
-          doc.addImage(png, 'PNG', 40, 80, 720, 360);
-        }
-        doc.save(`planned-vs-actual-tasks-${stamp}.pdf`);
+        await downloadAnalyticsBrandedPdf({
+          title,
+          filename: `planned-vs-actual-tasks-${stamp}.pdf`,
+          logoUrl: resolveAnalyticsPdfLogoUrl(teamsList, session?.team_id),
+          filterDetails: buildAnalyticsPdfFilterDetails({
+            datePreset,
+            customRange,
+            dateFrom: dateBounds.date_from,
+            dateTo: dateBounds.date_to,
+            selectedProjectIds,
+            projectOptionsCount: projectOptions.length,
+            selectedTeamIds,
+            selectedMemberIds,
+          }),
+          chartPngDataUrl: png,
+          chartTitle: baseTitle,
+          tableRows: [
+            ['Project', 'Planned', 'Completed', 'Overdue', 'Variance'],
+            ...data.projects.map(row => [
+              row.project_name,
+              String(row.planned),
+              String(row.completed),
+              String(row.overdue),
+              formatVarianceDaysLabel(row.variance_days),
+            ]),
+          ],
+          tableCellColors: [
+            [null, null, null, null, null],
+            ...data.projects.map(row => [
+              null,
+              null,
+              null,
+              overdueCountColor(row.overdue),
+              varianceDaysColor(row.variance_days),
+            ]),
+          ],
+          kpis: [
+            {
+              label: t('pvaTasksStatPlanned', { defaultValue: 'Planned tasks' }),
+              value: String(data.kpis.planned),
+              tone: '#1890ff',
+            },
+            {
+              label: t('pvaTasksStatCompleted', { defaultValue: 'Completed' }),
+              value: String(data.kpis.completed),
+              tone: '#52c41a',
+            },
+            {
+              label: t('pvaTasksStatOverdue', { defaultValue: 'Overdue' }),
+              value: String(data.kpis.overdue),
+              tone: '#ff4d4f',
+            },
+            {
+              label: t('pvaTasksStatAvgVariance', { defaultValue: 'Avg variance' }),
+              value: `${data.kpis.avg_variance_days}d`,
+              tone: '#faad14',
+            },
+          ],
+        });
       }
     } catch {
       message.error(t('exportFailed', { defaultValue: 'Export failed' }));
@@ -417,6 +486,10 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
         selectedTeamIds={selectedTeamIds}
         onTeamsChange={setSelectedTeamIds}
         defaultTeamIds={defaultTeamIds}
+        datePreset={datePreset}
+        customRange={customRange}
+        onDateChange={setDateFilter}
+        availableDatePresets={BOUNDED_ANALYTICS_DATE_PRESETS}
         loading={filtersLoading}
       />
     </Flex>
@@ -485,6 +558,23 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
       onExport={handleExport}
       exportLoading={exporting}
       exportDisabled={!data || data.projects.length === 0}
+      schedule={{
+        reportKind: 'planned-vs-actual-tasks',
+        reportName: title,
+        templateId: customTemplateId,
+        getFilters: () =>
+          buildAnalyticsScheduleFilters({
+            selectedProjectIds,
+            projectOptionsCount: projectOptions.length,
+            selectedMemberIds,
+            selectedTeamIds,
+            datePreset,
+            dateFrom: dateBounds.date_from,
+            dateTo: dateBounds.date_to,
+            forceLiveProjectScope: true,
+            extra: { custom_range: customRange },
+          }),
+      }}
       actions={
         !isCustomTemplateView ? (
           <AnalyticsTemplateActions

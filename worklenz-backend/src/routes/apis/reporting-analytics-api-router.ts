@@ -15,17 +15,44 @@ import UtilizationController from "../../controllers/reporting-analytics/utiliza
 import TimeReportController from "../../controllers/reporting-analytics/time-report-controller";
 import BudgetTrackingController from "../../controllers/reporting-analytics/budget-tracking-controller";
 import AnalyticsTemplatesController from "../../controllers/reporting-analytics/analytics-templates-controller";
+import AnalyticsSchedulesController from "../../controllers/reporting-analytics/analytics-schedules-controller";
 import { requireFeature } from "../../shared/entitlements/gates";
 
 import {
   viewFinanceValidator,
   viewReportsValidator,
 } from "../../middlewares/validators/organization-permission-validator";
+import { isFinanceAnalyticsReportKind } from "../../shared/reporting-analytics.constants";
 
 const router = express.Router();
 
 /** View reports + paid plan — same gate as classic reporting. */
-const requireAnalyticsAccess = viewReportsValidator
+const requireAnalyticsAccess = viewReportsValidator;
+
+/**
+ * Create/update schedules for finance report kinds must match live report gates
+ * (View finance + finance_module). Updates that omit report_kind are still
+ * re-checked in AnalyticsSchedulesController / service against the stored kind;
+ * the cron also revalidates owner entitlements before each send.
+ */
+const requireFinanceGatesForFinanceScheduleBody = (
+  req: IWorkLenzRequest,
+  res: IWorkLenzResponse,
+  next: express.NextFunction
+): void => {
+  const kind = req.body?.report_kind;
+  if (typeof kind !== "string" || !isFinanceAnalyticsReportKind(kind)) {
+    next();
+    return;
+  }
+  void viewFinanceValidator(req, res, (err?: unknown) => {
+    if (err) {
+      next(err);
+      return;
+    }
+    requireFeature("finance_module")(req, res, next);
+  });
+};
 
 router.get(
   "/meta",
@@ -321,6 +348,51 @@ router.post(
   requireAnalyticsAccess,
   requireFeature("advanced_reporting"),
   safeControllerFunction(AnalyticsTemplatesController.setShare)
+);
+
+// —— Report schedules (email cadence; live export at send time) ——
+router.get(
+  "/schedules",
+  requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
+  safeControllerFunction(AnalyticsSchedulesController.list)
+);
+
+router.get(
+  "/schedules/by-report",
+  requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
+  safeControllerFunction(AnalyticsSchedulesController.getByReport)
+);
+
+router.post(
+  "/schedules",
+  requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
+  requireFinanceGatesForFinanceScheduleBody,
+  safeControllerFunction(AnalyticsSchedulesController.upsert)
+);
+
+router.patch(
+  "/schedules/:id",
+  requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
+  requireFinanceGatesForFinanceScheduleBody,
+  safeControllerFunction(AnalyticsSchedulesController.update)
+);
+
+router.post(
+  "/schedules/:id/pause",
+  requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
+  safeControllerFunction(AnalyticsSchedulesController.setPaused)
+);
+
+router.delete(
+  "/schedules/:id",
+  requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
+  safeControllerFunction(AnalyticsSchedulesController.remove)
 );
 
 export default router;

@@ -204,6 +204,9 @@ const LANGUAGE_SOURCE_VALUES = {
     '← Discussions',
     // "Pagination" is also the correct French label for the navigation landmark.
     'Pagination',
+    // Same spelling as English; correct French for export format / schedule status.
+    'Format',
+    'Active',
     // Color names spelled the same in French.
     'Cyan',
     'Orange',
@@ -211,10 +214,10 @@ const LANGUAGE_SOURCE_VALUES = {
   ]),
   // Color names that are identical in these languages.
   alb: new Set(['Magenta']),
-  de: new Set(['Portal', 'Portfolio', 'Link', 'Cyan', 'Orange', 'Magenta']),
+  de: new Set(['Portal', 'Portfolio', 'Link', 'Cyan', 'Orange', 'Magenta', 'Format']),
   es: new Set(['Portal', 'Magenta']),
   pt: new Set(['Portal', 'Link', 'Magenta']),
-  pl: new Set(['Link', 'Magenta', 'Portfolio']),
+  pl: new Set(['Link', 'Magenta', 'Portfolio', 'Format']),
   // Product names, technical terms and example names also used in Italian.
   it: new Set([
     'Password', 'Jane', 'Jane Doe', 'Dashboard', 'Zoom', 'Rev {{revision}}',

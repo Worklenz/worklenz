@@ -3,7 +3,12 @@ import { Flex, Table, Tag, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
-import { analyticsDisplayText } from '@/lib/reporting/analytics-display-text';
+import {
+  budgetAlertColor,
+  budgetBurnPctColor,
+  budgetRemainingColor,
+  budgetSpentColor,
+} from '@/lib/reporting/analytics-table-value-colors';
 import type {
   BudgetAlert,
   BudgetTrackingRow,
@@ -22,18 +27,7 @@ const fmtMoney = (value: number, currency = 'USD'): string =>
     maximumFractionDigits: 0,
   }).format(value)}`;
 
-const burnColor = (pct: number): string => {
-  if (pct > 85) return '#ff4d4f';
-  if (pct > 65) return '#faad14';
-  return '#52c41a';
-};
-
-const alertColor = (alert: BudgetAlert): string => {
-  if (alert === 'high') return '#ff4d4f';
-  if (alert === 'watch') return '#faad14';
-  if (alert === 'ok') return '#52c41a';
-  return 'default';
-};
+const alertTagColor = (alert: BudgetAlert): string => budgetAlertColor(alert) || 'default';
 
 export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
   projects,
@@ -110,7 +104,7 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
         align: 'left',
         sorter: (a, b) => a.spent - b.spent,
         render: (value: number, record) => (
-          <Text strong style={{ color: record.burn_pct > 85 ? '#ff4d4f' : undefined }}>
+          <Text strong style={{ color: budgetSpentColor(record.burn_pct) || undefined }}>
             {fmtMoney(value, record.currency)}
           </Text>
         ),
@@ -124,7 +118,7 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
         sorter: (a, b) => a.remaining - b.remaining,
         render: (value: number, record) =>
           record.has_budget ? (
-            <Text strong style={{ color: value < 0 ? '#ff4d4f' : '#52c41a' }}>
+            <Text strong style={{ color: budgetRemainingColor(value) }}>
               {fmtMoney(value, record.currency)}
             </Text>
           ) : (
@@ -139,7 +133,9 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
         sorter: (a, b) => a.burn_pct - b.burn_pct,
         render: (_: unknown, record) =>
           record.has_budget ? (
-            <Text style={{ color: burnColor(record.burn_pct) }}>{record.burn_pct}%</Text>
+            <Text style={{ color: budgetBurnPctColor(record.burn_pct) }}>
+              {record.burn_pct}%
+            </Text>
           ) : (
             <Text type="secondary">—</Text>
           ),
@@ -165,7 +161,7 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
                 : alert === 'ok'
                   ? t('btAlertOk', { defaultValue: 'OK' })
                   : t('btAlertNone', { defaultValue: 'None' });
-          return <Tag color={alertColor(alert)}>{alertLabel}</Tag>;
+          return <Tag color={alertTagColor(alert)}>{alertLabel}</Tag>;
         },
       },
     ],

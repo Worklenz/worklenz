@@ -48,7 +48,8 @@
     "build:addons": "node scripts/build-addons.js",
     "migrate:bootstrap": "node scripts/migrate-bootstrap.js",
     "migrate:reconcile-legacy-ids": "node scripts/reconcile-legacy-migration-ids.js",
-    "migrate:validate-ids": "node scripts/validate-migration-ids.js"
+    "migrate:validate-ids": "node scripts/validate-migration-ids.js",
+    "sample:analytics-pdf": "ts-node --transpile-only -O \"{\\\"module\\\":\\\"commonjs\\\",\\\"jsx\\\":\\\"react-jsx\\\"}\" scripts/generate-sample-analytics-pdf.ts"
   },
   "jestSonar": {
     "reportPath": "coverage",
@@ -74,6 +75,7 @@
     "bcrypt": "^6.0.0",
     "bluebird": "^3.7.2",
     "chartjs-to-image": "^1.2.1",
+    "chartsheet": "^0.3.2",
     "compression": "^1.8.2",
     "connect-flash": "^0.1.1",
     "connect-pg-simple": "^10.0.0",

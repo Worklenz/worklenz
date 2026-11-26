@@ -7,7 +7,11 @@ import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
 import { MetricCalcHint } from '@/components/reporting/analytics/MetricCalcHint';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { jsPDF } from 'jspdf';
+import {
+  downloadAnalyticsBrandedPdf,
+  resolveAnalyticsPdfLogoUrl,
+} from '@/lib/reporting/analytics-branded-pdf';
+import { buildAnalyticsPdfFilterDetails } from '@/lib/reporting/analytics-pdf-filter-details';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -32,7 +36,10 @@ import {
   ProjectHealthChart,
   type ProjectHealthChartHandle,
 } from '@/components/reporting/analytics/project-health/ProjectHealthChart';
-import { ProjectHealthDonutChart } from '@/components/reporting/analytics/project-health/ProjectHealthDonutChart';
+import {
+  ProjectHealthDonutChart,
+  type ProjectHealthDonutChartHandle,
+} from '@/components/reporting/analytics/project-health/ProjectHealthDonutChart';
 import { ProjectHealthKpiTiles } from '@/components/reporting/analytics/project-health/ProjectHealthKpiTiles';
 import { ProjectHealthTable } from '@/components/reporting/analytics/project-health/ProjectHealthTable';
 import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
@@ -40,7 +47,7 @@ import {
   usePersistedAnalyticsFilters,
 } from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
-import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
+import { buildAnalyticsScheduleFilters } from '@/lib/reporting/analytics-schedule-filters';
 import {
   getAnalyticsDashboardPermissions,
   resolveAnalyticsActorRole,
@@ -49,10 +56,10 @@ import {
   DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT,
   latestUpdatedOptionIds,
   latestUpdatedProjectIds,
-  resolveAnalyticsDisplayProjects,
+  sortProjectsByUpdatedAtDesc,
 } from '@/lib/reporting/analytics-chart-projects';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
-import { analyticsDisplayText } from '@/lib/reporting/analytics-display-text';
+import { BOUNDED_ANALYTICS_DATE_PRESETS, resolveAnalyticsDateBounds } from '@/utils/date-presets';
 import type {
   ProjectHealthFilters,
   ProjectHealthSeriesResponse,
@@ -83,11 +90,13 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     userId: session?.id,
   });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
+  const teamsList = useAppSelector(state => state.teamReducer.teamsList);
   const { projectHealths } = useAppSelector(state => state.projectHealthReducer);
 
   const {
     datePreset,
-    setDatePreset,
+    customRange,
+    setDateFilter,
     selectedProjectIds,
     setSelectedProjectIds,
     setAutomaticProjectIds,
@@ -109,8 +118,14 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * When set, Progress & budget is narrowed to these ids (user Projects pick).
+   * Cleared whenever the filtered series changes so the bar tracks table/donut.
+   */
+  const [barProjectOverrideIds, setBarProjectOverrideIds] = useState<string[] | null>(null);
 
   const chartRef = useRef<ProjectHealthChartHandle>(null);
+  const donutRef = useRef<ProjectHealthDonutChartHandle>(null);
   /** Tracks team keys we already seeded with the latest-20 project default. */
   const projectOptionsScope = JSON.stringify([session?.team_id, session?.id, customTemplateId]);
   const seededProjectsForTeamsRef = useScopedAnalyticsProjectSeed(projectOptionsScope);
@@ -123,15 +138,20 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       setSelectedMemberIds,
       setSelectedTeamIds,
       setSelectedHealthIds,
-      setDatePreset,
+      setDateFilter,
     });
   }, [
     setSelectedProjectIds,
     setSelectedMemberIds,
     setSelectedTeamIds,
     setSelectedHealthIds,
-    setDatePreset,
+    setDateFilter,
   ]);
+
+  const dateBounds = useMemo(
+    () => resolveAnalyticsDateBounds(datePreset, customRange),
+    [datePreset, customRange]
+  );
 
   const {
     templates,
@@ -148,13 +168,19 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
     wasRestored: hasRestoredFilters,
-    getFilters: () => ({
-      project_ids: selectedProjectIds,
-      member_ids: selectedMemberIds,
-      team_ids: selectedTeamIds,
-      health_ids: selectedHealthIds,
-      date_preset: datePreset,
-    }),
+    getFilters: () =>
+      buildAnalyticsScheduleFilters({
+        selectedProjectIds,
+        projectOptionsCount: projectOptions.length,
+        selectedMemberIds,
+        selectedTeamIds,
+        selectedHealthIds,
+        datePreset,
+        dateFrom: dateBounds.date_from,
+        dateTo: dateBounds.date_to,
+        forceLiveProjectScope: true,
+        extra: { custom_range: customRange },
+      }),
   });
 
   const title = (isCustomTemplateView && customTemplateName?.trim()) || baseTitle;
@@ -187,14 +213,18 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
 
   // Load the full team set for KPIs / health donut / table.
   // Projects selection only scopes the Progress & budget bar chart (latest 20 by default).
+  // Date range keeps projects whose effective span overlaps the selected range
+  // (start_date ?? created_at → end_date ?? updated_at).
   const filters: ProjectHealthFilters = useMemo(
     () => ({
       project_ids: [],
       team_ids: selectedTeamIds,
       health_ids: selectedHealthIds,
       member_ids: selectedMemberIds,
+      date_from: dateBounds.date_from,
+      date_to: dateBounds.date_to,
     }),
-    [selectedTeamIds, selectedHealthIds, selectedMemberIds]
+    [selectedTeamIds, selectedHealthIds, selectedMemberIds, dateBounds]
   );
 
   const loadTeams = useCallback(async () => {
@@ -343,22 +373,24 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     void loadSeries();
   }, [loadSeries]);
 
-  // Default project filter: latest updated 20 (once per team selection).
+  // Drop manual Projects override on every series-filter change (date/health/members/teams),
+  // even when the resulting project id set is unchanged — otherwise the bar stays stuck
+  // on a prior single-project pick while the table/donut show the full series.
   useEffect(() => {
-    const teamKey = [...selectedTeamIds].sort().join(',');
-    if (selectedProjectIds.length > 0) {
-      seededProjectsForTeamsRef.current = teamKey;
-      return;
-    }
-    if (!matchingData?.projects?.length) return;
-    if (seededProjectsForTeamsRef.current === teamKey) return;
+    setBarProjectOverrideIds(null);
+  }, [seriesRequestKey]);
 
+  useEffect(() => {
+    if (!matchingData?.projects?.length) return;
     const topIds = latestUpdatedProjectIds(matchingData.projects);
     if (topIds.length === 0) return;
-    seededProjectsForTeamsRef.current = teamKey;
+    const seriesProjectKey = matchingData.projects
+      .map(project => project.project_id)
+      .sort()
+      .join(',');
+    seededProjectsForTeamsRef.current = seriesProjectKey;
     setAutomaticProjectIds(topIds);
-  }, [matchingData, selectedProjectIds.length, selectedTeamIds, seededProjectsForTeamsRef, setAutomaticProjectIds]);
-
+  }, [matchingData, seededProjectsForTeamsRef, setAutomaticProjectIds]);
   const handleExport = async (format: AnalyticsExportFormat) => {
     if (!data) return;
     setExporting(true);
@@ -390,22 +422,64 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       }
       if (format === 'pdf') {
         const png = chartRef.current?.toPngDataUrl();
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-        doc.setFontSize(16);
-        doc.text(title, 40, 40);
-        doc.setFontSize(11);
-        doc.text(
-          `${t('statOnTrack', { defaultValue: 'On track' })}: ${data.kpis.on_track}  |  ` +
-            `${t('statAtRisk', { defaultValue: 'At risk' })}: ${data.kpis.at_risk}  |  ` +
-            `${t('statOffTrack', { defaultValue: 'Off track' })}: ${data.kpis.off_track}  |  ` +
-            `${t('statOverdueTasks', { defaultValue: 'Overdue tasks' })}: ${data.kpis.overdue_tasks}`,
-          40,
-          60
-        );
-        if (png) {
-          doc.addImage(png, 'PNG', 40, 80, 720, 360);
-        }
-        doc.save(`project-health-${stamp}.pdf`);
+        const donutPng = (await donutRef.current?.toPngDataUrl()) ?? null;
+        await downloadAnalyticsBrandedPdf({
+          title,
+          filename: `project-health-${stamp}.pdf`,
+          logoUrl: resolveAnalyticsPdfLogoUrl(teamsList, session?.team_id),
+          filterDetails: buildAnalyticsPdfFilterDetails({
+            datePreset,
+            customRange,
+            dateFrom: dateBounds.date_from,
+            dateTo: dateBounds.date_to,
+            selectedProjectIds,
+            projectOptionsCount: projectOptions.length,
+            selectedTeamIds,
+            selectedMemberIds,
+            selectedHealthIds,
+            forceLiveProjectScope: true,
+          }),
+          chartPngDataUrl: png,
+          secondaryChartPngDataUrl: donutPng,
+          chartTitle: t('phProgressBudgetTitle', { defaultValue: 'Progress & budget' }),
+          secondaryChartTitle: t('phDonutTitle', { defaultValue: 'Health status' }),
+          tableRows: [
+            ['Project', 'Health', 'Progress %', 'Open', 'Overdue'],
+            ...data.projects.map(row => [
+              row.project_name,
+              row.health_name,
+              String(row.progress_pct),
+              String(row.open_tasks),
+              String(row.overdue_tasks),
+            ]),
+          ],
+          kpis: [
+            {
+              label: t('statOnTrack', { defaultValue: 'On track' }),
+              value: String(data.kpis.on_track),
+              sub: t('statProjects', { defaultValue: 'projects' }),
+              tone: '#52c41a',
+            },
+            {
+              label: t('statAtRisk', { defaultValue: 'At risk' }),
+              value: String(data.kpis.at_risk),
+              sub: t('statProjects', { defaultValue: 'projects' }),
+              tone: '#faad14',
+            },
+            {
+              label: t('statOffTrack', { defaultValue: 'Off track' }),
+              value: String(data.kpis.off_track),
+              sub: t('statProjects', { defaultValue: 'projects' }),
+              tone: '#ff4d4f',
+            },
+            {
+              label: t('statOverdueTasks', { defaultValue: 'Overdue tasks' }),
+              value: String(data.kpis.overdue_tasks),
+              sub: t('statAcrossSelection', { defaultValue: 'across selection' }),
+              tone: '#1890ff',
+            },
+          ],
+        });
       }
     } catch {
       message.error(t('exportFailed', { defaultValue: 'Export failed' }));
@@ -414,22 +488,35 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     }
   };
 
-  // Progress & budget bar only: latest 20 by default; all after Select all / custom picks.
+  // Progress & budget: same filtered series as the table by default (latest 20).
+  // Only narrow when the user picks Projects after the latest series load.
   const isSelectAllProjects =
     projectOptions.length > 0 && selectedProjectIds.length >= projectOptions.length;
 
   const barChartProjects = useMemo(() => {
     if (!data?.projects?.length) return [];
-    return resolveAnalyticsDisplayProjects(data.projects, {
-      selectedProjectIds,
-      projectOptionsCount: projectOptions.length,
-      limit: DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT,
-    });
-  }, [data?.projects, selectedProjectIds, projectOptions.length]);
+    const sorted = sortProjectsByUpdatedAtDesc(data.projects);
+    if (barProjectOverrideIds && barProjectOverrideIds.length > 0 && !isSelectAllProjects) {
+      const selected = new Set(barProjectOverrideIds);
+      const filtered = sorted.filter(project => selected.has(project.project_id));
+      if (filtered.length > 0) return filtered;
+    }
+    return sorted.slice(0, DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT);
+  }, [data?.projects, barProjectOverrideIds, isSelectAllProjects]);
 
   const chartProjectIds = useMemo(
     () => barChartProjects.map(p => p.project_id),
     [barChartProjects]
+  );
+
+  const handleProjectsChange = useCallback(
+    (ids: string[]) => {
+      setSelectedProjectIds(ids);
+      const isSelectAll =
+        projectOptions.length > 0 && ids.length >= projectOptions.length;
+      setBarProjectOverrideIds(ids.length === 0 || isSelectAll ? null : ids);
+    },
+    [projectOptions.length, setSelectedProjectIds]
   );
 
   const filterBar = (
@@ -437,7 +524,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       <AnalyticsFilterBar
         projectOptions={projectOptions}
         selectedProjectIds={selectedProjectIds}
-        onProjectsChange={setSelectedProjectIds}
+        onProjectsChange={handleProjectsChange}
         indicatedProjectIds={chartProjectIds}
         memberOptions={memberOptions}
         selectedMemberIds={selectedMemberIds}
@@ -450,6 +537,10 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
         selectedStatusIds={selectedHealthIds}
         onStatusesChange={setSelectedHealthIds}
         statusFilterLabel={t('filterHealth', { defaultValue: 'Health' })}
+        datePreset={datePreset}
+        customRange={customRange}
+        onDateChange={setDateFilter}
+        availableDatePresets={BOUNDED_ANALYTICS_DATE_PRESETS}
         loading={filtersLoading}
       />
     </Flex>
@@ -478,7 +569,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
           rowCount={data.projects.length}
           chart={
             <Flex gap={16} wrap="wrap" align="stretch" style={{ width: '100%' }}>
-              <div style={{ flex: '2 1 420px', minWidth: 280 }}>
+              <div style={{ flex: '3 1 420px', minWidth: 280 }}>
                 <Flex align="center" gap={6} style={{ marginBottom: 4 }}>
                   <Text strong style={{ fontSize: 14 }}>
                     {t('phProgressBudgetTitle', { defaultValue: 'Progress & budget' })}
@@ -507,10 +598,14 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
                       })}
                     </Text>
                   )}
-                <ProjectHealthChart ref={chartRef} projects={barChartProjects} />
+                <ProjectHealthChart
+                  key={chartProjectIds.join('|') || 'empty'}
+                  ref={chartRef}
+                  projects={barChartProjects}
+                />
               </div>
-              <div style={{ flex: '1 1 280px', minWidth: 260, maxWidth: 420 }}>
-                <ProjectHealthDonutChart kpis={data.kpis} />
+              <div style={{ flex: '1 1 200px', minWidth: 200, maxWidth: 320 }}>
+                <ProjectHealthDonutChart ref={donutRef} kpis={data.kpis} />
               </div>
             </Flex>
           }
@@ -534,6 +629,24 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       onExport={handleExport}
       exportLoading={exporting}
       exportDisabled={!data || data.projects.length === 0}
+      schedule={{
+        reportKind: 'project-health',
+        reportName: title,
+        templateId: customTemplateId,
+        getFilters: () =>
+          buildAnalyticsScheduleFilters({
+            selectedProjectIds,
+            projectOptionsCount: projectOptions.length,
+            selectedMemberIds,
+            selectedTeamIds,
+            selectedHealthIds,
+            datePreset,
+            dateFrom: dateBounds.date_from,
+            dateTo: dateBounds.date_to,
+            forceLiveProjectScope: true,
+            extra: { custom_range: customRange },
+          }),
+      }}
       actions={
         !isCustomTemplateView ? (
           <AnalyticsTemplateActions

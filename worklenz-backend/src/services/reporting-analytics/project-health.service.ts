@@ -18,6 +18,8 @@ export interface ProjectHealthFilters {
   healthIds: string[];
   memberIds: string[];
   teamIds: string[];
+  dateFrom: string;
+  dateTo: string;
   sessionTeamId: string;
 }
 
@@ -83,6 +85,23 @@ export function mapHealthTone(name: string | null | undefined): ProjectHealthTon
   return "not_set";
 }
 
+function toDateOnly(value: string | null | undefined, fallback: string): string {
+  if (!value) return fallback;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return fallback;
+  return d.toISOString().slice(0, 10);
+}
+
+function defaultDateRange(): { from: string; to: string } {
+  const to = new Date();
+  const from = new Date();
+  from.setUTCDate(from.getUTCDate() - 30);
+  return {
+    from: from.toISOString().slice(0, 10),
+    to: to.toISOString().slice(0, 10),
+  };
+}
+
 export function parseProjectHealthFilters(
   query: Record<string, unknown>,
   accessibleProjectIds: string[],
@@ -100,11 +119,28 @@ export function parseProjectHealthFilters(
     projectIds = projectIds.slice(0, MAX_PROJECTS);
   }
 
+  const defaults = defaultDateRange();
+  let dateFrom = toDateOnly(
+    typeof query.date_from === "string" ? query.date_from : null,
+    defaults.from
+  );
+  let dateTo = toDateOnly(
+    typeof query.date_to === "string" ? query.date_to : null,
+    defaults.to
+  );
+  if (dateFrom > dateTo) {
+    const swap = dateFrom;
+    dateFrom = dateTo;
+    dateTo = swap;
+  }
+
   return {
     projectIds,
     healthIds: parseCsvIds(query.health_ids),
     memberIds: parseCsvIds(query.member_ids),
     teamIds: parseCsvIds(query.team_ids),
+    dateFrom,
+    dateTo,
     sessionTeamId,
   };
 }
@@ -119,6 +155,8 @@ function cacheParts(
     h: [...filters.healthIds].sort(),
     m: [...filters.memberIds].sort(),
     t: [...filters.teamIds].sort(),
+    df: filters.dateFrom,
+    dt: filters.dateTo,
     st: filters.sessionTeamId,
     cm: calcMethod,
     hpd: hoursPerDay,
@@ -191,6 +229,18 @@ export async function getProjectHealthSeries(
     params.push(filters.teamIds);
     param += 1;
   }
+
+  // Keep projects whose effective span overlaps the selected range.
+  // Effective start = start_date ?? created_at; effective end = end_date ?? updated_at.
+  const dateFromParam = param;
+  params.push(filters.dateFrom);
+  param += 1;
+  const dateToParam = param;
+  params.push(filters.dateTo);
+  param += 1;
+  const dateClause = `
+      AND COALESCE(p.start_date::DATE, p.created_at::DATE) <= $${dateToParam}::DATE
+      AND COALESCE(p.end_date::DATE, p.updated_at::DATE) >= $${dateFromParam}::DATE`;
 
   const q = `
     SELECT
@@ -267,6 +317,7 @@ export async function getProjectHealthSeries(
       ${healthClause}
       ${memberClause}
       ${teamClause}
+      ${dateClause}
     ORDER BY LOWER(p.name) ASC
   `;
 

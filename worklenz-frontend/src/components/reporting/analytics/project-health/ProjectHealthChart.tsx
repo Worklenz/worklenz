@@ -49,12 +49,11 @@ export const ProjectHealthChart = forwardRef<ProjectHealthChartHandle, ProjectHe
     const chartRef = useRef<ChartJS<'bar'>>(null);
 
     useImperativeHandle(ref, () => ({
-      toPngDataUrl: () => chartToPngDataUrl(chartRef.current, token.colorBgContainer),
+      toPngDataUrl: () => chartToPngDataUrl(chartRef.current),
       toSvgMarkup: () =>
         chartToSvgMarkup(
           chartRef.current,
-          t('projectHealth', { defaultValue: 'Project Health' }),
-          token.colorBgContainer
+          t('projectHealth', { defaultValue: 'Project Health' })
         ),
     }));
 

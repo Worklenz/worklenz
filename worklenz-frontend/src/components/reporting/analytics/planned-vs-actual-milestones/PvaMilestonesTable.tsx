@@ -4,7 +4,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
-import { analyticsDisplayText } from '@/lib/reporting/analytics-display-text';
+import { varianceDaysColor } from '@/lib/reporting/analytics-table-value-colors';
 import type { PlannedVsActualMilestonesRow } from '@/types/reporting/analytics-planned-vs-actual-milestones.types';
 
 const { Text } = Typography;
@@ -94,27 +94,11 @@ export const PvaMilestonesTable: React.FC<PvaMilestonesTableProps> = ({
         width: 120,
         align: 'left',
         sorter: (a, b) => a.variance_days - b.variance_days,
-        render: (value: number) => {
-          if (value > 0) {
-            return (
-              <Text type="danger">
-                {formatVariance(value)} {t('pvaMsDaysUnit', { defaultValue: 'days' })}
-              </Text>
-            );
-          }
-          if (value < 0) {
-            return (
-              <Text type="success">
-                {formatVariance(value)} {t('pvaMsDaysUnit', { defaultValue: 'days' })}
-              </Text>
-            );
-          }
-          return (
-            <Text type="secondary">
-              0 {t('pvaMsDaysUnit', { defaultValue: 'days' })}
-            </Text>
-          );
-        },
+        render: (value: number) => (
+          <Text style={{ color: varianceDaysColor(value) }}>
+            {formatVariance(value)} {t('pvaMsDaysUnit', { defaultValue: 'days' })}
+          </Text>
+        ),
       },
     ],
     [t]

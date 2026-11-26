@@ -1,6 +1,9 @@
 export { AnalyticsSidebar } from './AnalyticsSidebar';
 export { ReportPageShell } from './ReportPageShell';
-export type { ReportPageShellProps } from './ReportPageShell';
+export type {
+  ReportPageShellProps,
+  ReportPageShellScheduleConfig,
+} from './ReportPageShell';
 export { ChartTableWrapper } from './ChartTableWrapper';
 export {
   AnalyticsExportMenu,
@@ -18,3 +21,8 @@ export {
 export { AnalyticsTemplateActions } from './templates/AnalyticsTemplateActions';
 export { SaveAnalyticsTemplateModal } from './templates/SaveAnalyticsTemplateModal';
 export type { SaveAnalyticsTemplateValues } from './templates/SaveAnalyticsTemplateModal';
+export { AnalyticsScheduleAction } from './schedule/AnalyticsScheduleAction';
+export type { AnalyticsScheduleActionProps } from './schedule/AnalyticsScheduleAction';
+export { ScheduleReportModal } from './schedule/ScheduleReportModal';
+export type { ScheduleReportModalProps } from './schedule/ScheduleReportModal';
+export { ScheduledReportsHubPanel } from './schedule/ScheduledReportsHubPanel';
