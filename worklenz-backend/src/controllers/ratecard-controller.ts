@@ -32,7 +32,7 @@ export default class RateCardController extends WorklenzControllerBase {
   ): Promise<IWorkLenzResponse> {
     // team_id is $1, size is $2, offset is $3, so search params start at $4
     const { searchQuery, searchParams, sortField, sortOrder, size, offset } =
-      this.toPaginationOptions(req.query, "name", false, 4);
+      this.toPaginationOptions(req.query, "name", false, 4, ["id", "name", "currency", "created_at", "updated_at"]);
 
     const q = `
     SELECT ROW_TO_JSON(rec) AS rate_cards

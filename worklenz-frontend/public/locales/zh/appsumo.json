@@ -10,9 +10,9 @@
         "title": "高级报表：速率与累积流图",
         "description": "尽早发现瓶颈，用真实交付数据规划冲刺"
       },
-      "clientPortal": {
-        "title": "客户门户",
-        "description": "在一处保持客户信息同步"
+      "brandedClientPortal": {
+        "title": "品牌化客户门户",
+        "description": "添加您的徽标和品牌颜色"
       },
       "finance": {
         "title": "财务访问",

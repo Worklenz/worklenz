@@ -22,6 +22,8 @@ export interface IProjectTemplate {
     /** Unique identifier for the template */
     id?: string;
     
+    project_type?: "general" | "software";
+
     /** Project key/code */
     key?: string;
     
@@ -118,6 +120,8 @@ export interface IProjectTemplateTask {
     /** UUID reference to the task status */
     status_id?: string;
     
+    status_category_id?: string;
+
     /** Human-readable status name (e.g., "To Do", "In Progress", "Done") */
     status_name?: string;
     

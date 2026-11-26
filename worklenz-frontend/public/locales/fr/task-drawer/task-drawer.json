@@ -59,6 +59,7 @@
       "labels": "Étiquettes",
       "billable": "Facturable",
       "notify": "Notifier",
+      "notify-tooltip": "Les membres sélectionnés recevront une notification in-app et par e-mail lorsque cette tâche sera marquée comme terminée.",
       "when-done-notify": "Une fois terminé, prévenez",
       "start-date": "Date de début",
       "end-date": "Date de fin",

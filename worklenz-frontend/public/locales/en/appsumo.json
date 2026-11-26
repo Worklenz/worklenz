@@ -10,9 +10,9 @@
         "title": "Advanced reporting: Velocity and Cumulative Flow",
         "description": "Spot bottlenecks early and plan sprints with real delivery data"
       },
-      "clientPortal": {
-        "title": "Client portal",
-        "description": "Keep clients updated in one place"
+      "brandedClientPortal": {
+        "title": "Branded Client Portal",
+        "description": "Add your logo and brand colors"
       },
       "finance": {
         "title": "Finance access",

@@ -411,6 +411,16 @@ export default class AdminCenterTeamsController extends WorklenzControllerBase {
         );
     }
 
+    // Scope both the team and member to the caller's organization.
+    const scope = await db.query(
+      `SELECT 1 FROM teams t JOIN team_members tm ON tm.team_id = t.id
+       WHERE t.id = $1 AND tm.id = $2 AND t.user_id = $3`,
+      [teamId, id, req.user?.owner_id || null],
+    );
+    if (!scope.rows.length) {
+      return res.status(403).send(new ServerResponse(false, null, "You are not authorized to perform this action"));
+    }
+
     // check subscription status
     const subscriptionData = await checkTeamSubscriptionStatus(teamId);
     if (statusExclude.includes(subscriptionData.subscription_status)) {

@@ -97,6 +97,8 @@
   "tableViewToggleLabel": "Widok stołu",
   "tableViewFlat": "Płaski",
   "tableViewByTask": "Według zadania",
+  "tableViewFlatTooltip": "Każdy wpis czasu w osobnym wierszu, tak jak został zapisany.",
+  "tableViewByTaskTooltip": "Jeden wiersz na zadanie, z sumą czasu wszystkich jego wpisów.",
   "colStatus": "Stan",
   "colPriority": "Priorytet",
   "colBillable": "Płatne",

@@ -12,6 +12,7 @@
   "mentionedInProjectComment": "<b>{{user}}</b> vous a mentionné dans un commentaire sur <b>{{project}}</b>",
   "mentionedInProjectDocument": "<b>{{user}}</b> vous a mentionné dans un document sur <b>{{project}}</b>",
   "phaseTaskAssigned": "Une tâche vous a été assignée dans <b>{{phase}}</b> : <b>{{task}}</b>",
+  "taskMarkedDone": "La tâche <b>{{task}}</b> a été marquée comme Terminée",
   "security": {
     "invitationLimit": "Cet espace de travail a atteint sa limite de sécurité pour les invitations. Veuillez réessayer plus tard.",
     "invitationsPaused": "Les invitations sont temporairement suspendues. Veuillez contacter votre administrateur.",

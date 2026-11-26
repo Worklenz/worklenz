@@ -27,5 +27,14 @@ GRANT SELECT ON sys_project_statuses TO worklenz_client;
 REVOKE ALL PRIVILEGES ON sys_project_healths FROM worklenz_client;
 GRANT SELECT ON sys_project_healths TO worklenz_client;
 
-CREATE USER worklenz_backend WITH PASSWORD 'n?&bb24=aWmnw+G@';
+-- Role created without a hardcoded default password. To enable password login for this
+-- role, set a strong password in your deployment environment:
+--   ALTER ROLE worklenz_backend WITH LOGIN PASSWORD 'your_secure_password';
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'worklenz_backend') THEN
+    CREATE ROLE worklenz_backend WITH NOLOGIN;
+  END IF;
+END
+$$;
 GRANT worklenz_client TO worklenz_backend;

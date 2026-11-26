@@ -1,3 +1,4 @@
+import TeamMembersController from "../controllers/team-members-controller";
 import db from "../config/db";
 import PtTaskStatusesController from "../controllers/project-templates/pt-task-statuses-controller";
 import ReportingController from "../controllers/reporting-controller";
@@ -149,5 +150,23 @@ describe("client service sorting", () => {
     await handler.call(ClientsController, createMockRequest({ query: { sortBy: injected, sortOrder: injected } }), createMockResponse());
     expect(lastQuery()[0]).not.toContain(injected);
     expect(lastQuery()[0]).toContain(`ORDER BY ${defaultColumn}`);
+  });
+});
+
+describe("team-scoped member endpoints", () => {
+  it("rejects invitations targeting another team before querying it", async () => {
+    const response = createMockResponse();
+    await TeamMembersController.addTeamMember(createMockRequest({
+      params: { id: "another-team" }, body: { emails: ["member@example.com"] },
+    }), response);
+    expect(response.status).toHaveBeenCalledWith(403);
+    expect(queryMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a request to list another team's members", async () => {
+    const response = createMockResponse();
+    await TeamMembersController.getTeamMemberList(createMockRequest({ query: { teamId: "another-team" } }), response);
+    expect(response.status).toHaveBeenCalledWith(403);
+    expect(queryMock).not.toHaveBeenCalled();
   });
 });

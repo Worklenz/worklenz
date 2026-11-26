@@ -94,7 +94,8 @@ export const TimeLogsFilterPanel: React.FC<TimeLogsFilterPanelProps> = ({
     label: string,
     group: ITimeLogsFilterOptions,
     selected: string[],
-    onChange: (next: string[]) => void
+    onChange: (next: string[]) => void,
+    showBulkActions = false
   ) => (
     <MultiSelectFilterPill
       label={label}
@@ -104,6 +105,7 @@ export const TimeLogsFilterPanel: React.FC<TimeLogsFilterPanelProps> = ({
       options={group.options}
       value={selected}
       onChange={onChange}
+      showBulkActions={showBulkActions}
     />
   );
 
@@ -142,7 +144,8 @@ export const TimeLogsFilterPanel: React.FC<TimeLogsFilterPanelProps> = ({
           t('timeLogsFilterMembers', { defaultValue: 'Members' }),
           members,
           draft.userIds,
-          userIds => patch({ userIds })
+          userIds => patch({ userIds }),
+          true
         )}
         <MultiSelectFilterPill
           label={t('timeLogsFilterBillable', { defaultValue: 'Billable' })}

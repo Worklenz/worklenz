@@ -1,8 +1,8 @@
 {
   "name": "Nazwa projektu",
   "projectType": "Typ projektu",
-  "projectTypeSoftware": "Projekt oprogramowania",
-  "projectTypeGeneral": "Projekt ogólny",
+  "projectTypeSoftware": "Oprogramowanie",
+  "projectTypeGeneral": "Ogólny",
   "projectTypeSoftwareTooltip": "Projekt oprogramowania — zgłoszenia, backlog i sprinty",
   "projectTypeGeneralTooltip": "Projekt ogólny — zadania, fazy i tablice",
   "client": "Klient",

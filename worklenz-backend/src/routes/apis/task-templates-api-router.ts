@@ -6,11 +6,18 @@ import importTaskTemplatesValidator from "../../middlewares/validators/import-ta
 import bodyNameValidator from "../../middlewares/validators/body-name-validator";
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
+import { verifyNonGuestProjectAccess } from "../../middlewares/verify-project-access";
+import { PROJECT_ROLE_PERMISSIONS } from "../../shared/organization-permissions";
 
 const taskTemplatesApiRouter = express.Router();
 
 taskTemplatesApiRouter.post("/", bodyNameValidator, safeControllerFunction(TasktemplatesController.create));
-taskTemplatesApiRouter.post("/import/:id", importTaskTemplatesValidator, safeControllerFunction(TasktemplatesController.import));
+taskTemplatesApiRouter.post(
+  "/import/:id",
+  importTaskTemplatesValidator,
+  verifyNonGuestProjectAccess("params", "id", PROJECT_ROLE_PERMISSIONS.CREATE_TASKS),
+  safeControllerFunction(TasktemplatesController.import)
+);
 taskTemplatesApiRouter.get("/", safeControllerFunction(TasktemplatesController.get));
 taskTemplatesApiRouter.post(
   "/:id/duplicate",

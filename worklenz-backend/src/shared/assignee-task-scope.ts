@@ -367,7 +367,7 @@ export const resolveAssigneeTaskScope = async (
       { userId, projectId },
       error
     );
-    return { applyFilter: false, teamMemberId: null };
+    return { applyFilter: true, teamMemberId: null };
   }
 };
 

@@ -136,12 +136,43 @@ const sessionForTaskProjectTeam = (
   is_guest: context.isGuest,
 });
 
+/**
+ * Activates the task's project team only when:
+ * - manual-switch suppression is not active, and
+ * - users.active_team still matches `fromTeamId` or the requested team.
+ * Returns false when the write is skipped so callers can 403 without mutating session.
+ */
 const activateTaskProjectTeam = async (
   req: IWorkLenzRequest,
   userId: string,
-  context: TaskProjectTeamContext
-): Promise<void> => {
-  await db.query(`SELECT activate_team($1, $2)`, [context.projectTeamId, userId]);
+  context: TaskProjectTeamContext,
+  fromTeamId: string
+): Promise<boolean> => {
+
+  // Check the deadline and active team atomically while acquiring the row lock.
+  const activateResult = await db.query(
+    `WITH switched AS (
+     UPDATE users
+     SET active_team = $1
+     WHERE id = $2
+       AND (active_team IS NOT DISTINCT FROM $3 OR active_team = $1)
+       AND (manual_team_switch_until IS NULL OR manual_team_switch_until <= clock_timestamp())
+       AND EXISTS (
+         SELECT 1 FROM team_members
+         WHERE team_id = $1 AND user_id = $2 AND active = TRUE
+       )
+     RETURNING id
+     ), removed_invitations AS (
+       DELETE FROM email_invitations WHERE team_id = $1 AND team_member_id IN (
+         SELECT id FROM team_members WHERE team_id = $1 AND user_id = $2
+       ) AND EXISTS (SELECT 1 FROM switched)
+     ) SELECT id FROM switched`,
+    [context.projectTeamId, userId, fromTeamId]
+  );
+
+  if (!activateResult.rowCount) {
+    return false;
+  }
 
   if (req.user) {
     req.user.team_id = context.projectTeamId;
@@ -151,6 +182,8 @@ const activateTaskProjectTeam = async (
     req.user.role_name = context.roleName ?? undefined;
     req.user.is_guest = context.isGuest;
   }
+
+  return true;
 };
 
 /**
@@ -227,6 +260,7 @@ export default function verifyTaskAccess(
       let pendingTeam: TaskProjectTeamContext | null = null;
 
       if (projectTeamId !== teamId) {
+
         try {
           pendingTeam = await resolveTaskProjectTeamContext(
             userId,
@@ -273,8 +307,14 @@ export default function verifyTaskAccess(
       }
 
       if (pendingTeam) {
+
         try {
-          await activateTaskProjectTeam(req, userId, pendingTeam);
+          const switched = await activateTaskProjectTeam(req, userId, pendingTeam, teamId);
+          if (!switched) {
+            return res.status(403).send(
+              new ServerResponse(false, null, "You do not have permission to access this task")
+            );
+          }
         } catch (switchError) {
           log_error(switchError);
           console.error(
@@ -424,6 +464,16 @@ export function verifyBulkTaskAccessMiddleware(
     if (!teamId) {
       return res.status(401).send(
         new ServerResponse(false, null, "Authentication required")
+      );
+    }
+
+    if (req.user?.is_guest) {
+      return res.status(403).send(
+        new ServerResponse(
+          false,
+          null,
+          "Guests are not permitted to perform bulk task operations"
+        )
       );
     }
 

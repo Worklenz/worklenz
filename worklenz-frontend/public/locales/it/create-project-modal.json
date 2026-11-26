@@ -15,7 +15,7 @@
   "projectColor": "Colore",
   "startingFrom": "Punto di partenza",
   "blankSelectedHint": "Progetto vuoto. Scegli un modello a destra per iniziare più velocemente.",
-  "blankSoftwareSelectedHint": "Progetto software vuoto con impostazioni per il monitoraggio delle issue. I modelli non sono usati nei progetti software.",
+  "blankSoftwareProjectSelectedHint": "Progetto software vuoto con impostazioni per il monitoraggio delle issue.",
   "templateSelectedHint": "La struttura del modello sarà copiata nel progetto.",
   "searchTemplates": "Cerca modelli",
   "searchYourLibrary": "Cerca nella tua raccolta",

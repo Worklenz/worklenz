@@ -1,3 +1,4 @@
+import { buildAssigneeScopeFilter, resolveAssigneeTaskScope } from "../shared/assignee-task-scope";
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import { IO } from "../shared/io";
@@ -522,6 +523,11 @@ export default class AttachmentController extends WorklenzControllerBase {
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
     const { size, offset } = this.toPaginationOptions(req.query, "name");
+    // Use the project team's actual role rather than the session's potentially
+    // stale role after a cross-team project access switch.
+    const scope = await resolveAssigneeTaskScope(req.user?.id, req.params.id);
+    const filter = buildAssigneeScopeFilter(scope, "task_attachments.task_id", 5);
+    const scopeClause = filter.clause ? `AND ${filter.clause}` : "";
 
     const q = `
               SELECT ROW_TO_JSON(rec) AS attachments
@@ -539,18 +545,19 @@ export default class AttachmentController extends WorklenzControllerBase {
                                         (SELECT name FROM users WHERE id = task_attachments.uploaded_by)        AS uploader_name
                                   FROM task_attachments
                                           LEFT JOIN tasks t ON task_attachments.task_id = t.id
-                                  WHERE task_attachments.project_id = $1
+                                  WHERE task_attachments.project_id = $1 ${scopeClause}
                                   ORDER BY created_at DESC
                           LIMIT $3 OFFSET $4)t) AS data
                     FROM task_attachments
                             LEFT JOIN tasks t ON task_attachments.task_id = t.id
-                    WHERE task_attachments.project_id = $1) rec;
+                    WHERE task_attachments.project_id = $1 ${scopeClause}) rec;
     `;
     const result = await db.query(q, [
       req.params.id,
       `${getStorageUrl()}/${getRootDir()}`,
       size,
       offset,
+      ...filter.params,
     ]);
     const [data] = result.rows;
 

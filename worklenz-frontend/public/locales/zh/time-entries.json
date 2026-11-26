@@ -97,6 +97,8 @@
   "tableViewToggleLabel": "表格视图",
   "tableViewFlat": "明细",
   "tableViewByTask": "按任务",
+  "tableViewFlatTooltip": "每条工时记录单独一行，保持原样。",
+  "tableViewByTaskTooltip": "每个任务一行，汇总其所有记录的工时。",
   "colStatus": "状态",
   "colPriority": "优先级",
   "colBillable": "可计费",

@@ -1,3 +1,4 @@
+import fs from "fs";
 import path from "path";
 import { Font } from "@react-pdf/renderer";
 
@@ -5,44 +6,89 @@ import { Font } from "@react-pdf/renderer";
  * Fonts come from @fontsource packages (plain npm deps, so `npm ci` is the only install step).
  * Helvetica, react-pdf's default, can't render non-Latin text, hence Noto Sans plus the
  * Latin Extended, Sinhala and Tamil faces as fallbacks.
- * The portable Droid fallback covers Chinese, Japanese, and Korean glyphs.
+ * The portable Droid fallback covers Chinese, Japanese, and Korean glyphs when available.
  */
 export const PDF_FONT_FAMILY = ["NotoSans", "NotoSansLatinExt", "NotoSansSinhala", "NotoSansTamil"];
 
-const fontFile = (pkg: string, file: string): string =>
-  path.join(path.dirname(require.resolve(`${pkg}/package.json`)), "files", file);
+const packageRoot = (pkg: string): string => path.dirname(require.resolve(`${pkg}/package.json`));
+
+/** @fontsource stores faces under `files/`; @reductoai/portable-fonts keeps them at the package root. */
+const fontFile = (pkg: string, file: string): string => {
+  const root = packageRoot(pkg);
+  const nested = path.join(root, "files", file);
+  if (fs.existsSync(nested)) return nested;
+  const flat = path.join(root, file);
+  if (fs.existsSync(flat)) return flat;
+  throw new Error(`Font file not found: ${pkg}/${file}`);
+};
+
+const tryFontFile = (pkg: string, file: string): string | null => {
+  try {
+    return fontFile(pkg, file);
+  } catch {
+    return null;
+  }
+};
 
 let registered = false;
+
+/** True only when DroidSansFallback was registered from a face that contains CJK glyphs. */
+export let hasCjkFontFace = false;
 
 export const registerPdfFonts = (): void => {
   if (registered) return;
 
   const families: Array<{ family: string; pkg: string; subset: string }> = [
-    { family: "NotoSans",        pkg: "@fontsource/noto-sans",        subset: "noto-sans-latin" },
-    { family: "NotoSansLatinExt",pkg: "@fontsource/noto-sans",        subset: "noto-sans-latin-ext" },
+    { family: "NotoSans", pkg: "@fontsource/noto-sans", subset: "noto-sans-latin" },
+    { family: "NotoSansLatinExt", pkg: "@fontsource/noto-sans", subset: "noto-sans-latin-ext" },
     { family: "NotoSansSinhala", pkg: "@fontsource/noto-sans-sinhala", subset: "noto-sans-sinhala-sinhala" },
-    { family: "NotoSansTamil",   pkg: "@fontsource/noto-sans-tamil",   subset: "noto-sans-tamil-tamil" },
+    { family: "NotoSansTamil", pkg: "@fontsource/noto-sans-tamil", subset: "noto-sans-tamil-tamil" },
   ];
 
   for (const { family, pkg, subset } of families) {
+    const regular = tryFontFile(pkg, `${subset}-400-normal.woff`);
+    const bold = tryFontFile(pkg, `${subset}-700-normal.woff`);
+    if (!regular || !bold) continue;
     Font.register({
       family,
       fonts: [
-        { src: fontFile(pkg, `${subset}-400-normal.woff`), fontWeight: 400 },
-        { src: fontFile(pkg, `${subset}-700-normal.woff`), fontWeight: 700 },
+        { src: regular, fontWeight: 400 },
+        { src: bold, fontWeight: 700 },
       ],
     });
   }
 
-  const cjk = fontFile("@reductoai/portable-fonts", "DroidSansFallback.ttf");
-  Font.register({ family: "RoadmapSans", fonts: [
-    { src: fontFile("@reductoai/portable-fonts", "Carlito-Regular.ttf"), fontWeight: 400 },
-    { src: fontFile("@reductoai/portable-fonts", "Carlito-Bold.ttf"), fontWeight: 700 },
-  ] });
-  Font.register({ family: "DroidSansFallback", fonts: [
-    { src: cjk, fontWeight: 400 },
-    { src: cjk, fontWeight: 700 },
-  ] });
+  const carlitoRegular = tryFontFile("@reductoai/portable-fonts", "Carlito-Regular.ttf");
+  const carlitoBold = tryFontFile("@reductoai/portable-fonts", "Carlito-Bold.ttf");
+  const cjk = tryFontFile("@reductoai/portable-fonts", "DroidSansFallback.ttf");
+  const notoRegular = tryFontFile("@fontsource/noto-sans", "noto-sans-latin-400-normal.woff");
+  const notoBold = tryFontFile("@fontsource/noto-sans", "noto-sans-latin-700-normal.woff");
+
+  // Prefer Carlito when present; otherwise reuse Noto Sans so Latin roadmap PDF still exports.
+  const roadmapRegular = carlitoRegular || notoRegular;
+  const roadmapBold = carlitoBold || notoBold;
+  if (roadmapRegular && roadmapBold) {
+    Font.register({
+      family: "RoadmapSans",
+      fonts: [
+        { src: roadmapRegular, fontWeight: 400 },
+        { src: roadmapBold, fontWeight: 700 },
+      ],
+    });
+  }
+
+  // Only register DroidSansFallback when the real CJK face is available — never alias Latin files as CJK.
+  hasCjkFontFace = false;
+  if (cjk) {
+    Font.register({
+      family: "DroidSansFallback",
+      fonts: [
+        { src: cjk, fontWeight: 400 },
+        { src: cjk, fontWeight: 700 },
+      ],
+    });
+    hasCjkFontFace = true;
+  }
 
   // Never hyphenate: names, numbers and addresses should wrap whole.
   Font.registerHyphenationCallback(word => [word]);

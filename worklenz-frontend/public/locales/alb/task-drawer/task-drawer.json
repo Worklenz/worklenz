@@ -59,6 +59,7 @@
       "labels": "Etiketat",
       "billable": "I faturueshëm",
       "notify": "Njofto",
+      "notify-tooltip": "Anëtarët e përzgjedhur do të marrin një njoftim në aplikacion dhe me email kur kjo detyrë të shënohet si e përfunduar.",
       "when-done-notify": "Kur përfundon, njofto",
       "start-date": "Data e fillimit",
       "end-date": "Data e përfundimit",

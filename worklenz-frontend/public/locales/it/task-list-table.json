@@ -248,6 +248,7 @@
       "addSelection": "+ Aggiungi una selezione",
       "selectionPlaceholder": "Digitare una selezione e premere Invio",
       "selectionNameLabel": "Nome della selezione",
+      "reorderSelection": "Trascina per riordinare la selezione",
       "labels": "Etichette",
       "addLabel": "+ Aggiungi un'etichetta",
       "keyLabelPlaceholder": "es: MK"
@@ -290,6 +291,7 @@
       "optionPlaceholder": "Digitare un'opzione e premere Invio",
       "optionNameLabel": "Nome dell'opzione",
       "optionColorLabel": "Colore opzione",
+      "reorderOption": "Trascina per riordinare l'opzione",
       "moveTo": "Spostati in…",
       "moveToLabel": "Sposta l'opzione in un altro gruppo {{parent}}",
       "removeOption": "Rimuovi opzione",

@@ -76,7 +76,7 @@ export const PvaMilestonesTable: React.FC<PvaMilestonesTableProps> = ({
         dataIndex: 'variance_days',
         key: 'variance_days',
         width: 120,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.variance_days - b.variance_days,
         render: (value: number) => (
           <Text style={{ color: varianceDaysColor(value) }}>

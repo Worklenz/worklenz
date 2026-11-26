@@ -247,6 +247,7 @@
       "addSelection": "+ 添加选项",
       "selectionPlaceholder": "输入选项并按 Enter",
       "selectionNameLabel": "选项名称",
+      "reorderSelection": "拖动以重新排序选择项",
       "labels": "标签",
       "addLabel": "+ 添加标签",
       "keyLabelPlaceholder": "例如：MK"
@@ -289,6 +290,7 @@
       "optionPlaceholder": "输入选项并按 Enter",
       "optionNameLabel": "选项名称",
       "optionColorLabel": "选项颜色",
+      "reorderOption": "拖动以重新排序选项",
       "moveTo": "移动到…",
       "moveToLabel": "将选项移动到另一个 {{parent}} 分组",
       "removeOption": "删除选项",

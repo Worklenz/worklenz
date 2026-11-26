@@ -97,6 +97,8 @@
   "tableViewToggleLabel": "Pamja e tabelës",
   "tableViewFlat": "Individuale",
   "tableViewByTask": "Sipas detyrës",
+  "tableViewFlatTooltip": "Çdo regjistrim kohe në rreshtin e vet, ashtu siç u regjistrua.",
+  "tableViewByTaskTooltip": "Një rresht për detyrë, me kohën e të gjitha regjistrimeve të mbledhur së bashku.",
   "colStatus": "Statusi",
   "colPriority": "Prioriteti",
   "colBillable": "E faturueshme",

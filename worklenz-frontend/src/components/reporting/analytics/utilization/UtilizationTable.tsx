@@ -66,7 +66,7 @@ export const UtilizationTable: React.FC<UtilizationTableProps> = ({ members, loa
         dataIndex: 'capacity_hours',
         key: 'capacity_hours',
         width: 110,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.capacity_hours - b.capacity_hours,
         render: (value: number) => fmtHours(value),
       },
@@ -75,7 +75,7 @@ export const UtilizationTable: React.FC<UtilizationTableProps> = ({ members, loa
         dataIndex: 'logged_hours',
         key: 'logged_hours',
         width: 110,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.logged_hours - b.logged_hours,
         render: (value: number) => <Text strong>{fmtHours(value)}</Text>,
       },
@@ -84,7 +84,7 @@ export const UtilizationTable: React.FC<UtilizationTableProps> = ({ members, loa
         dataIndex: 'utilization_pct',
         key: 'utilization_pct',
         width: 110,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.utilization_pct - b.utilization_pct,
         render: (pct: number) => (
           <Text style={{ color: utilizationPctColor(pct) }}>{pct}%</Text>

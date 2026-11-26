@@ -59,6 +59,7 @@
       "labels": "Bezeichnungen",
       "billable": "Abrechenbar",
       "notify": "Benachrichtigen",
+      "notify-tooltip": "Ausgewählte Mitglieder erhalten eine In-App- und E-Mail-Benachrichtigung, wenn diese Aufgabe als erledigt markiert wird.",
       "when-done-notify": "Bei Fertigstellung benachrichtigen",
       "start-date": "Startdatum",
       "end-date": "Enddatum",

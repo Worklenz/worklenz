@@ -59,6 +59,7 @@
       "labels": "Labels",
       "billable": "Billable",
       "notify": "Notify",
+      "notify-tooltip": "Selected members will receive an in-app and email notification when this task is marked as Done.",
       "when-done-notify": "When done, notify",
       "start-date": "Start Date",
       "end-date": "End Date",

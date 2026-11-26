@@ -151,8 +151,20 @@ export const TimeEntriesFilters: React.FC<TimeEntriesFiltersProps> = ({
           onChange={onTableViewChange}
           ariaLabel={t('tableViewToggleLabel', { defaultValue: 'Table view' })}
           options={[
-            { value: 'flat', label: t('tableViewFlat', { defaultValue: 'Flat' }) },
-            { value: 'task', label: t('tableViewByTask', { defaultValue: 'By task' }) },
+            {
+              value: 'flat',
+              label: t('tableViewFlat', { defaultValue: 'Flat' }),
+              tooltip: t('tableViewFlatTooltip', {
+                defaultValue: 'Every time entry on its own row, as it was logged.',
+              }),
+            },
+            {
+              value: 'task',
+              label: t('tableViewByTask', { defaultValue: 'By task' }),
+              tooltip: t('tableViewByTaskTooltip', {
+                defaultValue: 'One row per task, with the time of all its entries added up.',
+              }),
+            },
           ]}
         />
       )}

@@ -10,9 +10,9 @@
         "title": "Rapports avancés : Velocity et Cumulative Flow",
         "description": "Repérez les goulots d'étranglement tôt et planifiez les sprints avec de vraies données"
       },
-      "clientPortal": {
-        "title": "Portail client",
-        "description": "Gardez les clients informés en un seul endroit"
+      "brandedClientPortal": {
+        "title": "Portail client personnalisé",
+        "description": "Ajoutez votre logo et vos couleurs de marque"
       },
       "finance": {
         "title": "Accès Finance",

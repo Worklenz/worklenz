@@ -41,7 +41,7 @@ export default class JobTitlesController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     // team_id is $1, size is $2, offset is $3, so search params start at $4
-    const {searchQuery, searchParams, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name", false, 4);
+    const {searchQuery, searchParams, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name", false, 4, ["id", "name"]);
 
     const q = `
       SELECT ROW_TO_JSON(rec) AS job_titles
