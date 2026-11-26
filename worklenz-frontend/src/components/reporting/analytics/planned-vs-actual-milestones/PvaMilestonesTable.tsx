@@ -44,7 +44,15 @@ export const PvaMilestonesTable: React.FC<PvaMilestonesTableProps> = ({
         key: 'milestone_name',
         width: 250,
         ellipsis: true,
-        sorter: (a, b) => a.milestone_name.localeCompare(b.milestone_name),
+        sorter: (a, b) =>
+          analyticsDisplayText(a.milestone_name).localeCompare(
+            analyticsDisplayText(b.milestone_name)
+          ),
+        render: (name: string) => (
+          <Text ellipsis={{ tooltip: analyticsDisplayText(name) }}>
+            {analyticsDisplayText(name)}
+          </Text>
+        ),
       },
       {
         title: t('pvaMsColProject', { defaultValue: 'Project' }),
@@ -52,7 +60,15 @@ export const PvaMilestonesTable: React.FC<PvaMilestonesTableProps> = ({
         key: 'project_name',
         width: 250,
         ellipsis: true,
-        sorter: (a, b) => a.project_name.localeCompare(b.project_name),
+        sorter: (a, b) =>
+          analyticsDisplayText(a.project_name).localeCompare(
+            analyticsDisplayText(b.project_name)
+          ),
+        render: (name: string) => (
+          <Text ellipsis={{ tooltip: analyticsDisplayText(name) }}>
+            {analyticsDisplayText(name)}
+          </Text>
+        ),
       },
       {
         title: t('pvaMsColPlanned', { defaultValue: 'Planned date' }),

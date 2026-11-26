@@ -44,7 +44,10 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
         key: 'project_name',
         width: 200,
         ellipsis: true,
-        sorter: (a, b) => a.project_name.localeCompare(b.project_name),
+        sorter: (a, b) =>
+          analyticsDisplayText(a.project_name).localeCompare(
+            analyticsDisplayText(b.project_name)
+          ),
         render: (name: string, record) => (
           <Flex align="center" gap={8}>
             <span
@@ -56,7 +59,7 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
                 flexShrink: 0,
               }}
             />
-            <Text strong>{name}</Text>
+            <Text strong>{analyticsDisplayText(name)}</Text>
           </Flex>
         ),
       },
@@ -66,9 +69,16 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
         key: 'client_name',
         width: 150,
         ellipsis: true,
-        sorter: (a, b) => (a.client_name || '').localeCompare(b.client_name || ''),
+        sorter: (a, b) =>
+          analyticsDisplayText(a.client_name).localeCompare(
+            analyticsDisplayText(b.client_name)
+          ),
         render: (value: string | null) =>
-          value ? <Text>{value}</Text> : <Text type="secondary">—</Text>,
+          value ? (
+            <Text>{analyticsDisplayText(value)}</Text>
+          ) : (
+            <Text type="secondary">—</Text>
+          ),
       },
       {
         title: t('btColBudget', { defaultValue: 'Budget' }),

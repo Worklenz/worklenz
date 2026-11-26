@@ -237,7 +237,7 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
           (res.body as Array<{ id: string; name: string }>).forEach(project => {
             if (!seen.has(project.id)) {
               seen.add(project.id);
-              projects.push({ value: project.id, label: project.name });
+              projects.push({ value: project.id, label: analyticsDisplayText(project.name) });
             }
           });
         }

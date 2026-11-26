@@ -20,6 +20,10 @@ import {
   chartToPngDataUrl,
   chartToSvgMarkup,
 } from '@/lib/reporting/chart-export';
+import {
+  analyticsDisplayText,
+  shortAnalyticsLabel,
+} from '@/lib/reporting/analytics-display-text';
 import { InChartEmptyState } from '../states/ReportStateViews';
 import type { PlannedVsActualMilestonesRow } from '@/types/reporting/analytics-planned-vs-actual-milestones.types';
 
@@ -36,11 +40,6 @@ interface PvaMilestonesChartProps {
 
 /** Prototype color c4 — Days late */
 const VARIANCE_COLOR = '#fa8c16';
-
-const shortLabel = (name: string, max = 16): string => {
-  if (name.length <= max) return name;
-  return `${name.slice(0, max - 1)}…`;
-};
 
 export const PvaMilestonesChart = forwardRef<PvaMilestonesChartHandle, PvaMilestonesChartProps>(
   ({ milestones }, ref) => {
@@ -60,7 +59,7 @@ export const PvaMilestonesChart = forwardRef<PvaMilestonesChartHandle, PvaMilest
 
     const chartData = useMemo((): ChartData<'bar'> => {
       return {
-        labels: milestones.map(m => shortLabel(m.milestone_name)),
+        labels: milestones.map(m => shortAnalyticsLabel(m.milestone_name, 16)),
         datasets: [
           {
             label: t('pvaMsLegendDaysLate', { defaultValue: 'Days late' }),
@@ -96,7 +95,7 @@ export const PvaMilestonesChart = forwardRef<PvaMilestonesChartHandle, PvaMilest
                 const index = items[0]?.dataIndex ?? 0;
                 const row = milestones[index];
                 if (!row) return '';
-                return `${row.milestone_name} · ${row.project_name}`;
+                return `${analyticsDisplayText(row.milestone_name)} · ${analyticsDisplayText(row.project_name)}`;
               },
               label: item => {
                 const value = Number(item.raw ?? 0);

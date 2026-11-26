@@ -20,6 +20,10 @@ import {
   chartToPngDataUrl,
   chartToSvgMarkup,
 } from '@/lib/reporting/chart-export';
+import {
+  analyticsDisplayText,
+  shortAnalyticsLabel,
+} from '@/lib/reporting/analytics-display-text';
 import { InChartEmptyState } from '../states/ReportStateViews';
 import type { PlannedVsActualTasksRow } from '@/types/reporting/analytics-planned-vs-actual-tasks.types';
 
@@ -39,11 +43,6 @@ const PLANNED_COLOR = '#1890ff';
 const COMPLETED_COLOR = '#13c2c2';
 const OVERDUE_COLOR = '#eb2f96';
 
-const shortLabel = (name: string, max = 14): string => {
-  if (name.length <= max) return name;
-  return `${name.slice(0, max - 1)}…`;
-};
-
 export const PvaTasksChart = forwardRef<PvaTasksChartHandle, PvaTasksChartProps>(
   ({ projects }, ref) => {
     const { t } = useTranslation('reporting-analytics');
@@ -62,7 +61,7 @@ export const PvaTasksChart = forwardRef<PvaTasksChartHandle, PvaTasksChartProps>
 
     const chartData = useMemo((): ChartData<'bar'> => {
       return {
-        labels: projects.map(p => shortLabel(p.project_name)),
+        labels: projects.map(p => shortAnalyticsLabel(p.project_name)),
         datasets: [
           {
             label: t('pvaTasksLegendPlanned', { defaultValue: 'Planned' }),
@@ -110,7 +109,7 @@ export const PvaTasksChart = forwardRef<PvaTasksChartHandle, PvaTasksChartProps>
             callbacks: {
               title: items => {
                 const index = items[0]?.dataIndex ?? 0;
-                return projects[index]?.project_name ?? '';
+                return analyticsDisplayText(projects[index]?.project_name);
               },
               label: item => {
                 const label = item.dataset.label ?? '';

@@ -6,7 +6,7 @@ import {
   withLastUpdated,
 } from "../../redis/analytics-cache";
 import { sanitizeCsvFormulaValue } from "../../shared/csv-utils";
-import { formatVarianceDaysLabel } from "./analytics-table-cell-colors";
+import { decodeHtmlEntities } from "../../shared/html-entity-utils";
 
 export interface PlannedVsActualTasksFilters {
   projectIds: string[];
@@ -44,7 +44,7 @@ export interface PlannedVsActualTasksResult {
   last_updated_at: string;
 }
 
-/** Safety cap only — high enough for org portfolios (chart still shows latest 20). */
+/** Safety cap only â€” high enough for org portfolios (chart still shows latest 20). */
 const MAX_PROJECTS = 5000;
 
 function parseCsvIds(value: unknown): string[] {
@@ -255,7 +255,7 @@ export async function getPlannedVsActualTasksSeries(
 
   const projects: PlannedVsActualTasksRow[] = result.rows.map((row: Record<string, unknown>) => ({
     project_id: String(row.project_id),
-    project_name: String(row.project_name),
+    project_name: decodeHtmlEntities(String(row.project_name)),
     planned: Number(row.planned) || 0,
     completed: Number(row.completed) || 0,
     overdue: Number(row.overdue) || 0,
@@ -307,7 +307,7 @@ export function buildPlannedVsActualTasksCsv(result: PlannedVsActualTasksResult)
 }
 
 function csvEscape(value: string): string {
-  const text = sanitizeCsvFormulaValue(value);
+  const text = sanitizeCsvFormulaValue(decodeHtmlEntities(value));
   if (/[",\n\r]/.test(text)) {
     return `"${text.replace(/"/g, '""')}"`;
   }

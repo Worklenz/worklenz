@@ -8,6 +8,7 @@ import {
 import { getOrgFinanceSettings } from "../../controllers/finance-overview-controller";
 import { buildRateSql } from "../../shared/finance-rate";
 import { sanitizeCsvFormulaValue } from "../../shared/csv-utils";
+import { decodeHtmlEntities } from "../../shared/html-entity-utils";
 
 export type BudgetAlert = "high" | "watch" | "ok" | "none";
 
@@ -280,9 +281,11 @@ export async function getBudgetTrackingSeries(
 
     return {
       project_id: String(row.project_id),
-      project_name: String(row.project_name || ""),
+      project_name: decodeHtmlEntities(String(row.project_name || "")),
       color_code: String(row.color_code || "#1890ff"),
-      client_name: row.client_name ? String(row.client_name) : null,
+      client_name: row.client_name
+        ? decodeHtmlEntities(String(row.client_name))
+        : null,
       currency: String(row.currency || "USD").toUpperCase(),
       budget,
       spent,
@@ -354,7 +357,7 @@ export function buildBudgetTrackingCsv(result: BudgetTrackingResult): string {
 }
 
 function csvEscape(value: string): string {
-  const text = sanitizeCsvFormulaValue(value);
+  const text = sanitizeCsvFormulaValue(decodeHtmlEntities(value));
   if (/[",\n\r]/.test(text)) {
     return `"${text.replace(/"/g, '""')}"`;
   }
