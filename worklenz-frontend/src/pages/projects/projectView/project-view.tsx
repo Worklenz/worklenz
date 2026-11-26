@@ -35,6 +35,7 @@ import {
   setProjectId,
   setProjectView,
   setStatusCategoryOrder,
+  setRefreshTimestamp,
   clearProjectAccessForId,
 } from '@/features/project/project.slice';
 import type { IStatusCategoryOrderChangedEvent } from '@/types/project/status-category-order.types';
@@ -255,6 +256,14 @@ const ProjectView = React.memo(() => {
       );
     };
 
+    // Files/Links tabs are destroyOnHidden; bump refreshTimestamp from the always-mounted
+    // project shell so lists refetch as soon as the tab remounts or if it is already open.
+    const handleProjectFilesOrLinksUpdated = (data?: string | { project_id?: string }) => {
+      const updatedProjectId = typeof data === 'string' ? data : data?.project_id;
+      if (updatedProjectId && updatedProjectId !== projectId) return;
+      dispatch(setRefreshTimestamp());
+    };
+
     const handlers: Record<string, (...args: any[]) => void> = {
       [SocketEvents.PROJECT_DATA_CHANGE.toString()]: notify('projectDataUpdatedDesc'),
       [SocketEvents.PROJECT_HEALTH_CHANGE.toString()]: notify('projectHealthUpdatedDesc'),
@@ -265,6 +274,11 @@ const ProjectView = React.memo(() => {
       [SocketEvents.PROJECT_PERMISSION_CHANGED.toString()]: handlePermissionChanged,
       [SocketEvents.PROJECT_STATUS_CATEGORY_ORDER_CHANGED.toString()]:
         handleStatusCategoryOrderChanged,
+      [SocketEvents.PROJECT_FILES_UPDATED.toString()]: handleProjectFilesOrLinksUpdated,
+      [SocketEvents.PROJECT_LINKS_UPDATED.toString()]: handleProjectFilesOrLinksUpdated,
+      // Stable string names (backend emits both name + numeric forms).
+      PROJECT_FILES_UPDATED: handleProjectFilesOrLinksUpdated,
+      PROJECT_LINKS_UPDATED: handleProjectFilesOrLinksUpdated,
     };
 
     Object.entries(handlers).forEach(([event, handler]) => socket.on(event, handler));

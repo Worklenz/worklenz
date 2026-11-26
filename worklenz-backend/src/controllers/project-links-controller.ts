@@ -4,6 +4,9 @@ import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import { ServerResponse } from "../models/server-response";
 import HandleExceptions from "../decorators/handle-exceptions";
 import WorklenzControllerBase from "./worklenz-controller-base";
+import { IO } from "../shared/io";
+import { SocketEvents } from "../socket.io/events";
+import { log_error } from "../shared/utils";
 
 const MAX_PAGE_SIZE = 100;
 
@@ -19,6 +22,29 @@ function isValidHttpUrl(value: string): boolean {
 }
 
 export default class ProjectLinksController extends WorklenzControllerBase {
+  /** Notify project-room clients that the links list changed so open Links tabs refresh live. */
+  private static async emitProjectLinksUpdated(projectId?: string) {
+    if (!projectId) return;
+    try {
+      const io = IO.getInstance();
+      if (!io) {
+        log_error(new Error(`PROJECT_LINKS_UPDATED skipped: IO not initialized (project=${projectId})`));
+        return;
+      }
+      const payload = { project_id: projectId };
+      const roomSize = (await io.in(projectId).fetchSockets()).length;
+      // Emit by stable event *name* (not numeric enum index) so FE/BE stay in sync
+      // even if SocketEvents gain members in different orders.
+      io.to(projectId).emit("PROJECT_LINKS_UPDATED", payload);
+      // Also emit the numeric form used by the rest of the app, for listeners that
+      // subscribe via SocketEvents.PROJECT_LINKS_UPDATED.toString().
+      io.to(projectId).emit(SocketEvents.PROJECT_LINKS_UPDATED.toString(), payload);
+      console.log(`[PROJECT_LINKS_UPDATED] project=${projectId} roomSize=${roomSize}`);
+    } catch (e) {
+      log_error(e);
+    }
+  }
+
   @HandleExceptions()
   public static async list(
     req: IWorkLenzRequest,
@@ -85,6 +111,7 @@ export default class ProjectLinksController extends WorklenzControllerBase {
     `;
 
     const result = await db.query(q, [projectId, teamId, title.trim(), url.trim(), description?.trim() || null, userId]);
+    void ProjectLinksController.emitProjectLinksUpdated(projectId);
     return res.status(200).send(new ServerResponse(true, result.rows[0]));
   }
 
@@ -116,6 +143,7 @@ export default class ProjectLinksController extends WorklenzControllerBase {
       return res.status(404).send(new ServerResponse(false, null, "Link not found or cannot be edited"));
     }
 
+    void ProjectLinksController.emitProjectLinksUpdated(projectId);
     return res.status(200).send(new ServerResponse(true, null));
   }
 
@@ -137,6 +165,7 @@ export default class ProjectLinksController extends WorklenzControllerBase {
       return res.status(404).send(new ServerResponse(false, null, "Link not found or cannot be deleted"));
     }
 
+    void ProjectLinksController.emitProjectLinksUpdated(projectId);
     return res.status(200).send(new ServerResponse(true, null));
   }
 }

@@ -37,6 +37,7 @@ import { useTranslation } from 'react-i18next';
 import projectFilesApiService from '@/api/projects/project-files.api.service';
 import taskAttachmentsApiService from '@/api/tasks/task-attachments.api.service';
 import { DEFAULT_PAGE_SIZE, IconsMap } from '@/shared/constants';
+import { SocketEvents } from '@/shared/socket-events';
 import { evt_file_uploaded, evt_project_files_visit } from '@/shared/worklenz-analytics-events';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
@@ -47,6 +48,7 @@ import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { fetchStorageInfo } from '@/features/admin-center/admin-center.slice';
 import { toggleUpgradeModal, openUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useSocket } from '@/socket/socketContext';
 import { colors } from '@/styles/colors';
 import {
   ProjectFile,
@@ -119,6 +121,7 @@ const ProjectViewFiles = () => {
     ? BUSINESS_FILE_SIZE_LIMIT_BYTES
     : STARTER_FILE_SIZE_LIMIT_BYTES;
   const maxFileSizeMb = hasBusinessAccess ? 250 : 25;
+  const { socket } = useSocket();
   const { projectId, refreshTimestamp } = useAppSelector(state => state.projectReducer);
   const storageInfo = useAppSelector(state => state.adminCenterReducer.storageInfo);
   type PendingUploadFile = Omit<UploadFile, 'status'> & {
@@ -337,6 +340,30 @@ const ProjectViewFiles = () => {
     searchValue,
     refreshTimestamp,
   ]);
+
+  // Keep Project Files in sync when another team member uploads or deletes a file.
+  // refreshTimestamp is also bumped from project-view for the same events (covers remounts).
+  const fetchFilesRef = useRef(fetchFiles);
+  fetchFilesRef.current = fetchFiles;
+
+  useEffect(() => {
+    if (!socket || !projectId) return;
+
+    const handleProjectFilesUpdated = (data?: string | { project_id?: string }) => {
+      const updatedProjectId = typeof data === 'string' ? data : data?.project_id;
+      // Event is room-scoped; refresh unless it clearly belongs to another project.
+      if (updatedProjectId && updatedProjectId !== projectId) return;
+      void fetchFilesRef.current();
+    };
+
+    const numericEvent = SocketEvents.PROJECT_FILES_UPDATED.toString();
+    socket.on(numericEvent, handleProjectFilesUpdated);
+    socket.on('PROJECT_FILES_UPDATED', handleProjectFilesUpdated);
+    return () => {
+      socket.off(numericEvent, handleProjectFilesUpdated);
+      socket.off('PROJECT_FILES_UPDATED', handleProjectFilesUpdated);
+    };
+  }, [socket, projectId]);
 
   useEffect(() => {
     if (activeTab === 'task') {

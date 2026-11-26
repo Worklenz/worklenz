@@ -132,4 +132,12 @@ export enum SocketEvents {
 
   // Session was revoked by a password change; force the client to sign out.
   SESSION_REVOKED,
+
+  // Project files changed (uploaded/deleted); clients on the Files tab should refresh.
+  // Appended last to keep existing numeric values.
+  PROJECT_FILES_UPDATED,
+
+  // Project links changed (created/updated/deleted); clients on the Links tab should refresh.
+  // Appended last to keep existing numeric values.
+  PROJECT_LINKS_UPDATED,
 }

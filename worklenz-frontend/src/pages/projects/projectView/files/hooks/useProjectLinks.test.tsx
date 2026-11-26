@@ -17,6 +17,10 @@ vi.mock('@/api/projects/project-links.api.service', () => {
   };
 });
 
+vi.mock('@/socket/socketContext', () => ({
+  useSocket: () => ({ socket: null }),
+}));
+
 import projectLinksApiService from '@/api/projects/project-links.api.service';
 
 const listMock = projectLinksApiService.list as unknown as ReturnType<typeof vi.fn>;

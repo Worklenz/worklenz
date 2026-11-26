@@ -1,12 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import projectLinksApiService from '@/api/projects/project-links.api.service';
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/shared/constants';
+import { SocketEvents } from '@/shared/socket-events';
+import { useSocket } from '@/socket/socketContext';
 import logger from '@/utils/errorLogger';
 import type { ICreateLinkBody, IProjectLink, IUpdateLinkBody } from '@/types/projects/project-links.types';
 
 export const useProjectLinks = (active: boolean) => {
-  const { projectId } = useAppSelector(state => state.projectReducer);
+  const { projectId, refreshTimestamp } = useAppSelector(state => state.projectReducer);
+  const { socket } = useSocket();
 
   const [links, setLinks] = useState<IProjectLink[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,11 +37,35 @@ export const useProjectLinks = (active: boolean) => {
     } finally {
       setLoading(false);
     }
-  }, [projectId, active, pageIndex, pageSize]);
+  }, [projectId, active, pageIndex, pageSize, refreshTimestamp]);
+
+  const fetchLinksRef = useRef(fetchLinks);
+  fetchLinksRef.current = fetchLinks;
 
   useEffect(() => {
     void fetchLinks();
   }, [fetchLinks]);
+
+  // Keep the Links tab in sync when another team member creates, edits, or deletes a link.
+  // refreshTimestamp is also bumped from project-view for the same events (covers remounts).
+  useEffect(() => {
+    if (!socket || !projectId || !active) return;
+
+    const handleProjectLinksUpdated = (data?: string | { project_id?: string }) => {
+      const updatedProjectId = typeof data === 'string' ? data : data?.project_id;
+      // Event is room-scoped; refresh unless it clearly belongs to another project.
+      if (updatedProjectId && updatedProjectId !== projectId) return;
+      void fetchLinksRef.current();
+    };
+
+    const numericEvent = SocketEvents.PROJECT_LINKS_UPDATED.toString();
+    socket.on(numericEvent, handleProjectLinksUpdated);
+    socket.on('PROJECT_LINKS_UPDATED', handleProjectLinksUpdated);
+    return () => {
+      socket.off(numericEvent, handleProjectLinksUpdated);
+      socket.off('PROJECT_LINKS_UPDATED', handleProjectLinksUpdated);
+    };
+  }, [socket, projectId, active]);
 
   const goToPage = useCallback(
     (page: number, size: number = pageSize) => {

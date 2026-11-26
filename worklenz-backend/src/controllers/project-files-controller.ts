@@ -29,6 +29,8 @@ import {
   PRESIGN_EXPIRY_MS,
   sanitizeDisplayName,
 } from "../shared/project-file-rules";
+import { IO } from "../shared/io";
+import { SocketEvents } from "../socket.io/events";
 
 const ALLOWED_SORT_FIELDS: Record<string, string> = {
   name: "pf.name",
@@ -40,6 +42,29 @@ const ALLOWED_SORT_FIELDS: Record<string, string> = {
 const MAX_PAGE_SIZE = 100;
 
 export default class ProjectFilesController extends WorklenzControllerBase {
+  /** Notify project-room clients that the files list changed so open Files tabs refresh live. */
+  private static async emitProjectFilesUpdated(projectId?: string) {
+    if (!projectId) return;
+    try {
+      const io = IO.getInstance();
+      if (!io) {
+        log_error(new Error(`PROJECT_FILES_UPDATED skipped: IO not initialized (project=${projectId})`));
+        return;
+      }
+      const payload = { project_id: projectId };
+      const roomSize = (await io.in(projectId).fetchSockets()).length;
+      // Emit by stable event *name* (not numeric enum index) so FE/BE stay in sync
+      // even if SocketEvents gain members in different orders.
+      io.to(projectId).emit("PROJECT_FILES_UPDATED", payload);
+      // Also emit the numeric form used by the rest of the app, for listeners that
+      // subscribe via SocketEvents.PROJECT_FILES_UPDATED.toString().
+      io.to(projectId).emit(SocketEvents.PROJECT_FILES_UPDATED.toString(), payload);
+      console.log(`[PROJECT_FILES_UPDATED] project=${projectId} roomSize=${roomSize}`);
+    } catch (e) {
+      log_error(e);
+    }
+  }
+
   @HandleExceptions()
   public static async upload(
     req: IWorkLenzRequest,
@@ -129,6 +154,8 @@ export default class ProjectFilesController extends WorklenzControllerBase {
         userId,
       ]);
       const uploadedBy = uploader.rows?.[0]?.name || "";
+
+      void ProjectFilesController.emitProjectFilesUpdated(projectId);
 
       return res.status(200).send(
         new ServerResponse(true, {
@@ -338,6 +365,8 @@ export default class ProjectFilesController extends WorklenzControllerBase {
 
     void deleteObject(storageKey);
     replacementKeys.forEach((key) => void deleteObject(key));
+
+    void ProjectFilesController.emitProjectFilesUpdated(projectId);
 
     return res
       .status(200)
@@ -587,6 +616,8 @@ export default class ProjectFilesController extends WorklenzControllerBase {
     }
 
     const [data] = confirmResult.rows;
+
+    void ProjectFilesController.emitProjectFilesUpdated(projectId);
 
     return res.status(200).send(new ServerResponse(true, data));
   }

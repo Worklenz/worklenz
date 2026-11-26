@@ -1,7 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import projectFilesApiService from '@/api/projects/project-files.api.service';
 import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
+import { SocketEvents } from '@/shared/socket-events';
+import { useSocket } from '@/socket/socketContext';
 import logger from '@/utils/errorLogger';
 import type {
   ProjectFile,
@@ -12,6 +14,7 @@ import type { PaginationConfig, SortConfig, StorageUsage } from '../types';
 
 export const useProjectFiles = () => {
   const { projectId, refreshTimestamp } = useAppSelector(state => state.projectReducer);
+  const { socket } = useSocket();
 
   const [files, setFiles] = useState<ProjectFile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -90,6 +93,29 @@ export const useProjectFiles = () => {
   useEffect(() => {
     void fetchFiles();
   }, [fetchFiles]);
+
+  const fetchFilesRef = useRef(fetchFiles);
+  fetchFilesRef.current = fetchFiles;
+
+  // Keep Project Files in sync when another team member uploads or deletes a file.
+  useEffect(() => {
+    if (!socket || !projectId) return;
+
+    const handleProjectFilesUpdated = (data?: string | { project_id?: string }) => {
+      const updatedProjectId = typeof data === 'string' ? data : data?.project_id;
+      // Event is room-scoped; refresh unless it clearly belongs to another project.
+      if (updatedProjectId && updatedProjectId !== projectId) return;
+      void fetchFilesRef.current();
+    };
+
+    const numericEvent = SocketEvents.PROJECT_FILES_UPDATED.toString();
+    socket.on(numericEvent, handleProjectFilesUpdated);
+    socket.on('PROJECT_FILES_UPDATED', handleProjectFilesUpdated);
+    return () => {
+      socket.off(numericEvent, handleProjectFilesUpdated);
+      socket.off('PROJECT_FILES_UPDATED', handleProjectFilesUpdated);
+    };
+  }, [socket, projectId]);
 
   return {
     files,
