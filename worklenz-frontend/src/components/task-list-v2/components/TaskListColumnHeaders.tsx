@@ -10,6 +10,8 @@ import { SortableContext, horizontalListSortingStrategy, useSortable } from '@dn
 import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
 import { CSS } from '@dnd-kit/utilities';
 import { useTranslation } from 'react-i18next';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 import { AddCustomColumnButton, CustomColumnHeader } from './CustomColumnComponents';
 import type { ColumnConfig } from '../constants/columns';
 import { isTaskListProfilingEnabled, recordTaskListRender } from '../task-list-profiling';
@@ -46,6 +48,9 @@ export const TaskListColumnHeaders = React.memo((props: TaskListColumnHeadersPro
     isGuest,
   } = props;
   const { t } = useTranslation('task-list-table');
+  const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
+  const isSoftwareProject = isSoftwareProjectType(projectType);
+  const canAddCustomColumn = !isBacklogMode || isSoftwareProject;
   const { handleResizeKeyDown, handleResizeMouseDown } = useColumnResize(props);
   const reorderableColumnIds = useMemo(
     () => visibleColumns.filter(column => !column.isSticky).map(column => column.id),
@@ -216,12 +221,16 @@ export const TaskListColumnHeaders = React.memo((props: TaskListColumnHeadersPro
               );
             })}
             {/* Add Custom Column Button - positioned at the end and scrolls with content */}
-            {!isBacklogMode && (
+            {canAddCustomColumn && (
               <div
-                className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
-                style={{ width: '50px', flexShrink: 0 }}
+                className="flex items-center justify-center px-1 border-r border-gray-200 dark:border-gray-700"
+                style={{
+                  width: isBacklogMode ? '40px' : '50px',
+                  flexShrink: 0,
+                  height: '100%',
+                }}
               >
-                <AddCustomColumnButton />
+                <AddCustomColumnButton compact={isBacklogMode} />
               </div>
             )}
           </div>

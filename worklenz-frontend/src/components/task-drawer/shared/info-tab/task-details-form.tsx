@@ -220,6 +220,7 @@ const TaskDetailsForm = ({ taskFormViewModel = null, canCreateTask = true, isGue
           {task && <TaskDrawerEpicSelector task={task} disabled={isReadOnly} />}
           {task && <TaskDrawerReleaseSelector task={task} disabled={isReadOnly} />}
           {priorityField}
+          {task && <TaskDrawerLabels task={task} t={t} isGuest={isReadOnly} />}
           {task && <TaskDrawerStoryPoints task={task} disabled={isReadOnly} />}
           {task && <TaskDrawerBlocked task={task} disabled={isReadOnly} />}
         </Form>
@@ -254,7 +255,7 @@ const TaskDetailsForm = ({ taskFormViewModel = null, canCreateTask = true, isGue
         {task && <TaskDrawerEstimation t={t} task={task} form={form} disabled={isReadOnly} />}
         {task && <ConditionalProgressInput task={task} form={form} />}
         {priorityField}
-        {task && <TaskDrawerLabels task={task} t={t} isGuest={isGuest} />}
+        {task && <TaskDrawerLabels task={task} t={t} isGuest={isReadOnly} />}
 
         <Form.Item name="billable" label={t('taskInfoTab.details.billable', { defaultValue: 'Billable' })}>
           {task && <TaskDrawerBillable task={task} disabled={isReadOnly} />}

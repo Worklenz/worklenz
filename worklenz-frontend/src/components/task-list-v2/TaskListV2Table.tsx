@@ -470,10 +470,6 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
             background-color: var(--tl-backlog-group-header-bg) !important;
           }
 
-          .tasklist-backlog .border-r {
-            border-right-color: transparent !important;
-          }
-
           .tasklist-backlog .ant-select-borderless .ant-select-selector {
             background-color: transparent !important;
             border: 1px solid transparent !important;
@@ -564,7 +560,12 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                     className="sticky top-0 z-30 bg-[var(--tl-header-bg)]"
                     style={{ minWidth: 'max-content', height: BACKLOG_COLUMN_HEADER_HEIGHT }}
                   >
-                    <BacklogSectionColumnHeader visibleColumns={visibleColumns} pinned />
+                    <BacklogSectionColumnHeader
+                      visibleColumns={visibleColumns}
+                      pinned
+                      isGuest={isGuest}
+                      handleCustomColumnSettings={handleCustomColumnSettings}
+                    />
                   </div>
                 ) : (
                   <div

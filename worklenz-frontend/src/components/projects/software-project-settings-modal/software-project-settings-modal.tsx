@@ -15,6 +15,7 @@ import {
   NumberOutlined,
   ProfileOutlined,
   Skeleton,
+  TableOutlined,
   Tag,
   TeamOutlined,
   ThunderboltOutlined,
@@ -54,6 +55,7 @@ import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 
 import ManageStatusContent from '@/components/task-management/ManageStatusContent';
+import CustomColumnsSettingsSection from '../project-settings-modal/sections/custom-columns-settings-section';
 import IntegrationsSettingsSection from '../project-settings-modal/sections/integrations-settings-section';
 import TaskExportSettingsSection from '../project-settings-modal/sections/task-export-settings-section';
 import DangerZoneSection from '../project-settings-modal/sections/danger-zone-section';
@@ -333,6 +335,18 @@ export const SoftwareProjectSettingsModal = ({ onClose }: SoftwareProjectSetting
             disabled={!canEditSettings}
           />
         ) : null,
+      },
+      {
+        key: 'customFields',
+        group: 'configuration',
+        icon: <TableOutlined />,
+        label: t('customColumnsTab', { defaultValue: 'Custom Columns' }),
+        content: (
+          <CustomColumnsSettingsSection
+            projectId={projectId}
+            disabled={!canEditSettings}
+          />
+        ),
       },
       {
         key: 'integrations',

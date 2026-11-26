@@ -728,7 +728,13 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
 };
 
 /** Sections shown in the software issue drawer, in display order. */
-const SOFTWARE_SECTION_ORDER = ['description', 'details', 'development', 'comments'];
+const SOFTWARE_SECTION_ORDER = [
+  'description',
+  'details',
+  'customFields',
+  'development',
+  'comments',
+];
 
 /** Small uppercase section heading used by the software issue drawer. */
 const SoftwareSectionLabel = ({ children }: { children: React.ReactNode }) => (

@@ -1,28 +1,33 @@
 import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { theme } from '@/shared/antd-imports';
-
-interface BacklogSectionColumn {
-  id: string;
-  label: string;
-  width?: string;
-  isSticky?: boolean;
-  minWidth?: unknown;
-  maxWidth?: unknown;
-}
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
+import type { ColumnConfig } from '../constants/columns';
+import { AddCustomColumnButton, CustomColumnHeader } from './CustomColumnComponents';
 
 interface BacklogSectionColumnHeaderProps {
-  visibleColumns: BacklogSectionColumn[];
+  visibleColumns: ColumnConfig[];
   /** List-level bar that stays fixed while issue rows scroll. */
   pinned?: boolean;
   isActiveSprint?: boolean;
+  isGuest?: boolean;
+  handleCustomColumnSettings?: (columnKey: string) => void;
 }
 
 /** Compact column labels for the software Backlog. Pinned above the sprint headers. */
 export const BacklogSectionColumnHeader: React.FC<BacklogSectionColumnHeaderProps> = memo(
-  ({ visibleColumns, pinned = false, isActiveSprint = false }) => {
+  ({
+    visibleColumns,
+    pinned = false,
+    isActiveSprint = false,
+    isGuest = false,
+    handleCustomColumnSettings,
+  }) => {
     const { t } = useTranslation('task-list-table');
     const { token } = theme.useToken();
+    const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
+    const showAddCustomColumn = isSoftwareProjectType(projectType);
 
     return (
       <div
@@ -64,6 +69,8 @@ export const BacklogSectionColumnHeader: React.FC<BacklogSectionColumnHeaderProp
                 height: '100%',
                 display: 'flex',
                 alignItems: 'center',
+                position: 'relative',
+                borderRight: `1px solid ${token.colorBorderSecondary}`,
                 ...(typeof column.minWidth === 'string' && { minWidth: column.minWidth }),
                 ...(typeof column.maxWidth === 'string' && { maxWidth: column.maxWidth }),
                 ...(column.isSticky && {
@@ -74,10 +81,30 @@ export const BacklogSectionColumnHeader: React.FC<BacklogSectionColumnHeaderProp
                 }),
               }}
             >
-              {showLabel ? t(column.label, { defaultValue: column.label }) : null}
+              {!showLabel ? null : column.isCustom && handleCustomColumnSettings ? (
+                <CustomColumnHeader
+                  column={column}
+                  onSettingsClick={handleCustomColumnSettings}
+                  isGuest={isGuest}
+                />
+              ) : (
+                t(column.label, { defaultValue: column.label })
+              )}
             </div>
           );
         })}
+        {showAddCustomColumn && (
+          <div
+            className="flex items-center justify-center shrink-0"
+            style={{
+              width: 40,
+              height: '100%',
+              borderRight: `1px solid ${token.colorBorderSecondary}`,
+            }}
+          >
+            <AddCustomColumnButton compact />
+          </div>
+        )}
       </div>
     );
   }

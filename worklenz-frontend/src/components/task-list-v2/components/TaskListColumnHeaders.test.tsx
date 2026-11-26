@@ -10,6 +10,10 @@ vi.mock('react-i18next', () => ({
       (options.defaultValue || key).replace('{{column}}', options.column || ''),
   }),
 }));
+vi.mock('@/hooks/useAppSelector', () => ({
+  useAppSelector: (selector: (state: { projectReducer: { project: { project_type: string } } }) => unknown) =>
+    selector({ projectReducer: { project: { project_type: 'general' } } }),
+}));
 vi.mock('./CustomColumnComponents', () => ({
   AddCustomColumnButton: () => <button>Add column</button>,
   CustomColumnHeader: () => <span>Custom column</span>,

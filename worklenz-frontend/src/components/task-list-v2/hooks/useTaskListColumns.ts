@@ -24,9 +24,18 @@ const SOFTWARE_COLUMN_LABELS: Record<string, string> = {
   assignees: 'assigneeColumn',
 };
 
-const BACKLOG_COLUMN_IDS: readonly string[] = ['status', 'epic', 'assignees', 'priority', 'points'];
+const BACKLOG_COLUMN_IDS: readonly string[] = [
+  'status',
+  'epic',
+  'assignees',
+  'labels',
+  'priority',
+  'points',
+];
 /** Card borders (3px active-sprint accent + 1px right) and row padding around backlog columns. */
 const BACKLOG_ROW_CHROME_WIDTH = 18;
+/** Header slot for the software-backlog “add custom column” control. */
+const BACKLOG_ADD_COLUMN_WIDTH = 40;
 
 export interface UseTaskListColumnsParams {
   projectId?: string;
@@ -133,10 +142,19 @@ export const useTaskListColumns = ({
         return true;
       }
 
+      // Backlog: keep the software column set, but honor Fields toggles (incl. Labels)
       if (isBacklogMode) {
-        return BACKLOG_COLUMN_IDS.includes(column.id);
+        if (!BACKLOG_COLUMN_IDS.includes(column.id)) {
+          return false;
+        }
+        const backlogField = fields.find(f => f.key === column.key);
+        if (backlogField) {
+          return backlogField.visible;
+        }
+        // Epic / Points stay visible until added to Fields state
+        return true;
       }
-      // For other columns (including taskKey), respect the visibility settings
+
       // Primary: Check local fields configuration
       const field = fields.find(f => f.key === column.key);
       if (field) {
@@ -171,7 +189,7 @@ export const useTaskListColumns = ({
     // Add visible custom columns
     const visibleCustomColumns =
       customColumns
-        ?.filter(column => column.pinned && !isBacklogMode)
+        ?.filter(column => column.pinned)
         ?.map(column => {
           // Give selection columns more width for dropdown content
           const fieldType = column.custom_column_obj?.fieldType;
@@ -311,11 +329,13 @@ export const useTaskListColumns = ({
     const otherColumnsWidth = visibleColumns
       .filter(col => col.id !== 'title')
       .reduce((total, col) => total + (parseFloat(String(col.width)) || 0), 0);
+    // Reserve space for the software backlog “+” add-custom-column control so it stays on-screen.
+    const addColumnWidth = isSoftwareProject ? BACKLOG_ADD_COLUMN_WIDTH : 0;
     const availableWidth =
-      backlogViewportWidth - otherColumnsWidth - BACKLOG_ROW_CHROME_WIDTH;
+      backlogViewportWidth - otherColumnsWidth - BACKLOG_ROW_CHROME_WIDTH - addColumnWidth;
     const baseWidth = parseFloat(String(titleColumn.width)) || 0;
     return `${Math.max(baseWidth, Math.floor(availableWidth))}px`;
-  }, [isBacklogMode, backlogViewportWidth, visibleColumns]);
+  }, [isBacklogMode, isSoftwareProject, backlogViewportWidth, visibleColumns]);
 
   const containerStyle = useMemo(() => {
     const style: React.CSSProperties & Record<string, string> = {};

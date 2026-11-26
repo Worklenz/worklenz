@@ -213,6 +213,7 @@ export default class SoftwareIssuesController extends WorklenzControllerBase {
              sprint.name AS sprint_name,
              assignee.name AS assignee_name,
              assignee.avatar_url AS assignee_avatar_url,
+             COALESCE(lbl.labels, '[]'::JSON) AS labels,
              EXISTS (
                SELECT 1 FROM tasks_assignees ta
                INNER JOIN team_members tm ON tm.id = ta.team_member_id
@@ -239,6 +240,15 @@ export default class SoftwareIssuesController extends WorklenzControllerBase {
         ORDER BY ta.created_at
         LIMIT 1
       ) assignee ON TRUE
+      LEFT JOIN LATERAL (
+        SELECT COALESCE(JSON_AGG(rec), '[]'::JSON) AS labels
+        FROM (
+          SELECT tl.label_id AS id, tml.name, tml.color_code
+          FROM task_labels tl
+          LEFT JOIN team_labels tml ON tml.id = tl.label_id
+          WHERE tl.task_id = t.id
+        ) rec
+      ) lbl ON TRUE
       WHERE t.project_id = $1::UUID
         AND t.archived IS FALSE
       ORDER BY t.created_at, t.task_no;`;

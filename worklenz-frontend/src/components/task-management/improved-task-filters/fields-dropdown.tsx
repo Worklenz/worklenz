@@ -6,16 +6,36 @@ import { useSelector } from 'react-redux';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import {
+  setFields,
   syncFieldWithDatabase,
   toggleField,
+  type TaskListField,
 } from '@/features/task-management/taskListFields.slice';
 import { selectColumns } from '@/features/task-management/task-management.selectors';
 import { fetchTasksV3, toggleColumnVisibility } from '@/features/task-management/task-management.slice';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { useTaskListMode } from '@/features/task-management/task-list-mode-context';
 import { ThemeClasses } from './types';
 
 const LOCAL_STORAGE_KEY = 'worklenz.taskManagement.fields';
+
+/** Software-only columns that are not in the shared DEFAULT_FIELDS list. */
+const SOFTWARE_EXTRA_FIELDS: TaskListField[] = [
+  { key: 'EPIC', label: 'Epic', visible: true, order: 4 },
+  { key: 'POINTS', label: 'Points', visible: true, order: 9 },
+];
+
+/** Fields that map to software backlog columns (incl. Labels). */
+const SOFTWARE_BACKLOG_FIELD_KEYS = new Set([
+  'STATUS',
+  'EPIC',
+  'ASSIGNEES',
+  'LABELS',
+  'PRIORITY',
+  'POINTS',
+]);
 
 interface FieldsDropdownProps {
   themeClasses: ThemeClasses;
@@ -35,6 +55,10 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
   const { t: tTable } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
+  const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
+  const isSoftwareProject = isSoftwareProjectType(projectType);
+  const listMode = useTaskListMode();
+  const isSoftwareBacklog = isSoftwareProject && listMode === 'backlog';
 
   const getFieldLabel = useCallback(
     (fieldKey: string) => {
@@ -42,11 +66,12 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
         KEY: 'keyColumn',
         DESCRIPTION: 'descriptionColumn',
         PROGRESS: 'progressColumn',
-        ASSIGNEES: 'assigneesColumn',
+        ASSIGNEES: isSoftwareProject ? 'assigneeColumn' : 'assigneesColumn',
         LABELS: 'labelsColumn',
         ATTACHMENTS: 'attachmentsColumn',
-        PHASE: 'phaseColumn',
-
+        PHASE: isSoftwareProject ? 'sprintColumn' : 'phaseColumn',
+        EPIC: 'epicColumn',
+        POINTS: 'pointsColumn',
         COMMENTS: 'commentsColumn',
         STATUS: 'statusColumn',
         PRIORITY: 'priorityColumn',
@@ -65,11 +90,12 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
         KEY: 'Key',
         DESCRIPTION: 'Description',
         PROGRESS: 'Progress',
-        ASSIGNEES: 'Assignees',
+        ASSIGNEES: isSoftwareProject ? 'Assignee' : 'Assignees',
         LABELS: 'Labels',
         ATTACHMENTS: 'Attachments',
-        PHASE: 'Phase',
-
+        PHASE: isSoftwareProject ? 'Sprint' : 'Phase',
+        EPIC: 'Epic',
+        POINTS: 'Points',
         COMMENTS: 'Latest Comment',
         STATUS: 'Status',
         PRIORITY: 'Priority',
@@ -89,14 +115,28 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
         ? tTable(translationKey, { defaultValue: defaultLabels[fieldKey] || fieldKey })
         : fieldKey;
     },
-    [tTable]
+    [isSoftwareProject, tTable]
   );
 
   const fieldsRaw = useSelector((state: RootState) => state.taskManagementFields);
   const columns = useSelector(selectColumns);
   const projectId = useAppSelector(state => state.projectReducer.projectId);
   const fields = Array.isArray(fieldsRaw) ? fieldsRaw : fieldsRaw?.fields || [];
-  const sortedFields = useMemo(() => [...fields].sort((a, b) => a.order - b.order), [fields]);
+
+  // Ensure software projects can toggle Epic / Points (and Labels stays in the shared list).
+  useEffect(() => {
+    if (!isSoftwareProject) return;
+    const knownKeys = new Set(fields.map(field => field.key));
+    const missing = SOFTWARE_EXTRA_FIELDS.filter(field => !knownKeys.has(field.key));
+    if (missing.length === 0) return;
+    dispatch(setFields([...fields, ...missing]));
+  }, [dispatch, fields, isSoftwareProject]);
+
+  const sortedFields = useMemo(() => {
+    const list = [...fields].sort((a, b) => a.order - b.order);
+    if (!isSoftwareBacklog) return list;
+    return list.filter(field => SOFTWARE_BACKLOG_FIELD_KEYS.has(field.key));
+  }, [fields, isSoftwareBacklog]);
   const customFields = useMemo(() => {
     const customColumns = columns.filter(
       column => !!column.custom_column && !!column.key && column.key !== 'TASK'
@@ -146,7 +186,7 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
     const standardVisible = sortedFields.filter(field => field.visible).length;
     const customVisible = customFields.filter(field => field.visible).length;
     return standardVisible + customVisible;
-  }, [sortedFields, customFields]);
+  }, [customFields, sortedFields]);
 
   const handleFieldToggle = useCallback(
     (fieldKey: string, currentVisible: boolean, isCustomField = false) => {
@@ -205,7 +245,7 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
         title={fieldsTitle}
         aria-label={fieldsTitle}
         className={`
-          inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
+          inline-flex h-[30px] box-border items-center ${isSoftwareProject ? 'justify-center gap-1 px-2' : 'gap-1.5 px-2.5'} py-0 text-xs font-medium rounded-md
           border transition-all duration-200 ease-in-out
           ${
             visibleCount > 0
@@ -221,7 +261,9 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
         aria-haspopup="true"
       >
         <EyeOutlined className="w-3.5 h-3.5" />
-        <span>{t('fieldsText', { defaultValue: 'Fields' })}</span>
+        {!isSoftwareProject && (
+          <span>{t('fieldsText', { defaultValue: 'Fields' })}</span>
+        )}
         {visibleCount > 0 && (
           <span
             className={`inline-flex items-center justify-center w-4 h-4 text-xs font-bold ${isDarkMode ? 'text-white bg-gray-500' : 'text-gray-800 bg-gray-300'} rounded-full`}
