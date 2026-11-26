@@ -285,13 +285,11 @@ export const CreateProjectModal = ({
   const handleProjectTypeChange = useCallback((value: ProjectType | string) => {
     const nextType = value === 'software' ? 'software' : 'general';
     setProjectType(nextType);
-    if (nextType === 'software') {
-      setSelectedTemplateId(null);
-      setSelectedTemplateType(null);
-      setIsCsvImportSelected(false);
-      setActiveTab('templates');
-      setTemplateSearch('');
-    }
+    setSelectedTemplateId(null);
+    setSelectedTemplateType(null);
+    setIsCsvImportSelected(false);
+    setActiveTab('templates');
+    setTemplateSearch('');
   }, []);
 
   const modalCssVariables = useMemo<CreateProjectCssVariables>(
@@ -374,9 +372,11 @@ export const CreateProjectModal = ({
 
   const filteredTemplates = useMemo(() => {
     const query = templateSearch.trim().toLowerCase();
-    if (!query) return templates;
-    return templates.filter(template => (template.name ?? '').toLowerCase().includes(query));
-  }, [templates, templateSearch]);
+    return templates.filter(template =>
+      (template.project_type ?? 'general') === projectType &&
+      (template.name ?? '').toLowerCase().includes(query)
+    );
+  }, [templates, templateSearch, projectType]);
 
   const filteredCustomTemplates = useMemo(() => {
     const query = templateSearch.trim().toLowerCase();
@@ -570,9 +570,9 @@ export const CreateProjectModal = ({
     setIsCreatingProject(true);
 
     try {
-      if (!isSoftwareProject && selectedTemplateId) {
+      if (selectedTemplateId) {
         const projectId = await createFromTemplate(name, selectedColor);
-        finishCreate(projectId, { showSetupBanner: true, projectType: 'general' });
+        finishCreate(projectId, { showSetupBanner: true, projectType });
         return;
       }
 
@@ -636,7 +636,7 @@ export const CreateProjectModal = ({
 
     try {
       const projectId =
-        !isSoftwareProject && selectedTemplateId
+        selectedTemplateId
           ? await createFromTemplate(name, selectedColor)
           : await createBlankProject({
               name,
@@ -760,8 +760,8 @@ export const CreateProjectModal = ({
 
   const canCreate = isCsvImportSelected
     ? projectName.trim().length > 0 && !!defaultStatusId
-    : (projectName.trim().length > 0 || (!isSoftwareProject && !!selectedTemplateId)) &&
-      (!isSoftwareProject && selectedTemplateId ? true : !!defaultStatusId);
+    : (projectName.trim().length > 0 || !!selectedTemplateId) &&
+      (selectedTemplateId ? true : !!defaultStatusId);
 
   const handleCsvImportStarted = useCallback(
     (projectId: string) => {
@@ -823,14 +823,14 @@ export const CreateProjectModal = ({
             <aside className="create-project-config-panel">
               <Form.Item
                 label={t('projectName', { defaultValue: 'Project name' })}
-                required={!selectedTemplateId || isSoftwareProject}
+                required={!selectedTemplateId}
                 style={{ marginBottom: 16 }}
               >
                 <Input
                   ref={nameInputRef}
                   size="large"
                   placeholder={
-                    !isSoftwareProject && selectedTemplateId
+                    selectedTemplateId
                       ? t('projectNameOptional', {
                         defaultValue: 'Optional - will use template name',
                       })
@@ -900,14 +900,14 @@ export const CreateProjectModal = ({
                   {selectedTemplateName}
                 </Typography.Text>
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {selectedTemplateId && !isSoftwareProject
+                  {selectedTemplateId
                     ? t('templateSelectedHint', {
                         defaultValue: 'Template structure will be copied into your project.',
                       })
                     : isSoftwareProject
-                      ? t('blankSoftwareSelectedHint', {
+                      ? t('blankSoftwareProjectSelectedHint', {
                           defaultValue:
-                            'Blank software project with issue tracking defaults. Templates are not used for Software projects.',
+                            'Blank software project with issue tracking defaults.',
                         })
                       : t('blankSelectedHint', {
                           defaultValue:
@@ -987,8 +987,7 @@ export const CreateProjectModal = ({
                 {/* Templates Tab */}
                 {activeTab === 'templates' && (
                   <>
-                    {!isSoftwareProject && (
-                      <div className="create-project-template-toolbar">
+                    <div className="create-project-template-toolbar">
                         <Input
                           size="middle"
                           placeholder={t('searchTemplates', { defaultValue: 'Search templates' })}
@@ -998,8 +997,7 @@ export const CreateProjectModal = ({
                           className="create-project-template-search"
                           aria-label={t('searchTemplates', { defaultValue: 'Search templates' })}
                         />
-                      </div>
-                    )}
+                    </div>
 
                     <div
                       className="create-project-template-list"
@@ -1008,7 +1006,7 @@ export const CreateProjectModal = ({
                     >
                       <TemplateCard
                         template={blankTemplate}
-                        selected={!selectedTemplateId || isSoftwareProject}
+                        selected={!selectedTemplateId}
                         onClick={() => {
                           setSelectedTemplateId(null);
                           setSelectedTemplateType(null);
@@ -1019,8 +1017,7 @@ export const CreateProjectModal = ({
                         }
                       />
 
-                      {!isSoftwareProject &&
-                        (loadingTemplates ? (
+                      {loadingTemplates ? (
                           <Skeleton active paragraph={{ rows: 2 }} title={false} />
                         ) : filteredTemplates.length === 0 ? (
                           <Typography.Text
@@ -1050,7 +1047,7 @@ export const CreateProjectModal = ({
                               }}
                             />
                           ))
-                        ))}
+                        )}
                     </div>
                   </>
                 )}
