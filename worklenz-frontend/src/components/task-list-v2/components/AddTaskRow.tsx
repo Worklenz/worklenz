@@ -65,7 +65,7 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
     const [creatingTask, setCreatingTask] = useState(false);
     const inputRef = useRef<any>(null);
     const rowRef = useRef<HTMLDivElement>(null);
-    const visibleWidth = useVisibleScrollWidth(rowRef);
+    const visibleWidth = useVisibleScrollWidth(rowRef, isBacklogWorkItemRow);
     const { socket, connected } = useSocket();
     const { t } = useTranslation('task-list-table');
     const { t: tProjectView } = useTranslation('project-view');
@@ -503,10 +503,14 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
 const ISSUE_TYPES: IssueType[] = ['task', 'story', 'bug'];
 
 /** Width of the nearest horizontally scrolling ancestor (visible viewport). */
-const useVisibleScrollWidth = (ref: React.RefObject<HTMLElement | null>) => {
+const useVisibleScrollWidth = (
+  ref: React.RefObject<HTMLElement | null>,
+  isStickyMode: boolean
+) => {
   const [width, setWidth] = useState<number | null>(null);
 
   useEffect(() => {
+    if (!isStickyMode) return;
     const scrollParent = findHorizontalScrollParent(ref.current);
     if (!scrollParent) return;
     const updateWidth = () => setWidth(scrollParent.clientWidth);
@@ -514,7 +518,7 @@ const useVisibleScrollWidth = (ref: React.RefObject<HTMLElement | null>) => {
     const observer = new ResizeObserver(updateWidth);
     observer.observe(scrollParent);
     return () => observer.disconnect();
-  }, [ref]);
+  }, [ref, isStickyMode]);
 
   return width;
 };
