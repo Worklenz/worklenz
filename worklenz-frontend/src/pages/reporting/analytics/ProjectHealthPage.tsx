@@ -288,7 +288,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
           ).forEach(project => {
             if (!seen.has(project.id)) {
               seen.add(project.id);
-              projects.push({ value: project.id, label: project.name });
+              projects.push({ value: project.id, label: analyticsDisplayText(project.name) });
               projectsWithUpdatedAt.push({
                 id: project.id,
                 updated_at: project.updated_at ?? null,

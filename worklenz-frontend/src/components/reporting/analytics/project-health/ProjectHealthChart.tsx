@@ -20,6 +20,10 @@ import {
   chartToPngDataUrl,
   chartToSvgMarkup,
 } from '@/lib/reporting/chart-export';
+import {
+  analyticsDisplayText,
+  shortAnalyticsLabel,
+} from '@/lib/reporting/analytics-display-text';
 import { InChartEmptyState } from '../states/ReportStateViews';
 import type { ProjectHealthRow } from '@/types/reporting/analytics-project-health.types';
 
@@ -36,11 +40,6 @@ interface ProjectHealthChartProps {
 
 const PROGRESS_COLOR = '#1890ff';
 const BUDGET_COLOR = '#fa8c16';
-
-const shortLabel = (name: string, max = 14): string => {
-  if (name.length <= max) return name;
-  return `${name.slice(0, max - 1)}…`;
-};
 
 export const ProjectHealthChart = forwardRef<ProjectHealthChartHandle, ProjectHealthChartProps>(
   ({ projects }, ref) => {
@@ -60,7 +59,7 @@ export const ProjectHealthChart = forwardRef<ProjectHealthChartHandle, ProjectHe
 
     const chartData = useMemo((): ChartData<'bar'> => {
       return {
-        labels: projects.map(p => shortLabel(p.project_name)),
+        labels: projects.map(p => shortAnalyticsLabel(p.project_name)),
         datasets: [
           {
             label: t('phLegendProgress', { defaultValue: 'Progress %' }),
@@ -101,7 +100,7 @@ export const ProjectHealthChart = forwardRef<ProjectHealthChartHandle, ProjectHe
             callbacks: {
               title: items => {
                 const index = items[0]?.dataIndex ?? 0;
-                return projects[index]?.project_name ?? '';
+                return analyticsDisplayText(projects[index]?.project_name);
               },
               label: item => {
                 const label = item.dataset.label ?? '';

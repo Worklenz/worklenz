@@ -20,6 +20,10 @@ import {
   chartToPngDataUrl,
   chartToSvgMarkup,
 } from '@/lib/reporting/chart-export';
+import {
+  analyticsDisplayText,
+  shortAnalyticsLabel,
+} from '@/lib/reporting/analytics-display-text';
 import { InChartEmptyState } from '../states/ReportStateViews';
 import type { BudgetTrackingRow } from '@/types/reporting/analytics-budget-tracking.types';
 
@@ -36,11 +40,6 @@ interface BudgetTrackingChartProps {
 
 const BUDGET_COLOR = '#1890ff';
 const SPENT_COLOR = '#eb2f96';
-
-const shortLabel = (name: string, max = 16): string => {
-  if (name.length <= max) return name;
-  return `${name.slice(0, max - 1)}…`;
-};
 
 const fmtMoney = (value: number, currency = 'USD'): string =>
   `${currency.toUpperCase()} ${new Intl.NumberFormat('en-US', {
@@ -72,7 +71,7 @@ export const BudgetTrackingChart = forwardRef<
 
   const chartData = useMemo((): ChartData<'bar'> => {
     return {
-      labels: chartProjects.map(p => shortLabel(p.project_name)),
+      labels: chartProjects.map(p => shortAnalyticsLabel(p.project_name, 16)),
       datasets: [
         {
           label: t('btLegendBudget', { defaultValue: 'Budget' }),
@@ -113,7 +112,7 @@ export const BudgetTrackingChart = forwardRef<
           callbacks: {
             title: items => {
               const index = items[0]?.dataIndex ?? 0;
-              return chartProjects[index]?.project_name ?? '';
+              return analyticsDisplayText(chartProjects[index]?.project_name);
             },
             label: item => {
               const label = item.dataset.label ?? '';

@@ -6,6 +6,7 @@ import {
   withLastUpdated,
 } from "../../redis/analytics-cache";
 import { sanitizeCsvFormulaValue } from "../../shared/csv-utils";
+import { decodeHtmlEntities } from "../../shared/html-entity-utils";
 
 export interface PlannedVsActualMilestonesFilters {
   projectIds: string[];
@@ -224,9 +225,9 @@ export async function getPlannedVsActualMilestonesSeries(
   const milestones: PlannedVsActualMilestonesRow[] = result.rows.map(
     (row: Record<string, unknown>) => ({
       milestone_id: String(row.milestone_id),
-      milestone_name: String(row.milestone_name),
+      milestone_name: decodeHtmlEntities(String(row.milestone_name)),
       project_id: String(row.project_id),
-      project_name: String(row.project_name),
+      project_name: decodeHtmlEntities(String(row.project_name)),
       planned_date: String(row.planned_date),
       actual_date: row.actual_date ? String(row.actual_date) : null,
       variance_days: Number(row.variance_days) || 0,
@@ -277,7 +278,7 @@ export function buildPlannedVsActualMilestonesCsv(
 }
 
 function csvEscape(value: string): string {
-  const text = sanitizeCsvFormulaValue(value);
+  const text = sanitizeCsvFormulaValue(decodeHtmlEntities(value));
   if (/[",\n\r]/.test(text)) {
     return `"${text.replace(/"/g, '""')}"`;
   }

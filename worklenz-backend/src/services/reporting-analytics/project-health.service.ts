@@ -6,6 +6,7 @@ import {
   withLastUpdated,
 } from "../../redis/analytics-cache";
 import { sanitizeCsvFormulaValue } from "../../shared/csv-utils";
+import { decodeHtmlEntities } from "../../shared/html-entity-utils";
 import { getOrgFinanceSettings } from "../../controllers/finance-overview-controller";
 import { buildRateSql } from "../../shared/finance-rate";
 
@@ -334,14 +335,14 @@ export async function getProjectHealthSeries(
 
     return {
       project_id: String(row.project_id),
-      project_name: String(row.project_name),
+      project_name: decodeHtmlEntities(String(row.project_name)),
       health_id: row.health_id ? String(row.health_id) : null,
       health_name: healthName,
       health_color: String(row.health_color || "#a9a9a9"),
       health_tone: mapHealthTone(healthName),
       delivery_confidence: parseDeliveryConfidence(row.delivery_confidence),
       delivery_confidence_note: row.delivery_confidence_note
-        ? String(row.delivery_confidence_note)
+        ? decodeHtmlEntities(String(row.delivery_confidence_note))
         : null,
       progress_pct: progressPct,
       budget_used_pct: budgetUsedPct,
@@ -349,7 +350,7 @@ export async function getProjectHealthSeries(
       open_tasks: Number(row.open_tasks) || 0,
       overdue_tasks: Number(row.overdue_tasks) || 0,
       budget,
-      lead_name: row.lead_name ? String(row.lead_name) : null,
+      lead_name: row.lead_name ? decodeHtmlEntities(String(row.lead_name)) : null,
       updated_at: row.updated_at ? String(row.updated_at) : null,
     };
   });
@@ -412,7 +413,7 @@ export function buildProjectHealthCsv(result: ProjectHealthResult): string {
 }
 
 function csvEscape(value: string): string {
-  const text = sanitizeCsvFormulaValue(value);
+  const text = sanitizeCsvFormulaValue(decodeHtmlEntities(value));
   if (/[",\n\r]/.test(text)) {
     return `"${text.replace(/"/g, '""')}"`;
   }

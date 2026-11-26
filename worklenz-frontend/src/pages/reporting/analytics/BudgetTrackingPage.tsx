@@ -58,7 +58,7 @@ import {
 } from '@/lib/reporting/analytics-chart-projects';
 import { buildAnalyticsScheduleFilters } from '@/lib/reporting/analytics-schedule-filters';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
-import { BOUNDED_ANALYTICS_DATE_PRESETS, resolveAnalyticsDateBounds } from '@/utils/date-presets';
+import { analyticsDisplayText } from '@/lib/reporting/analytics-display-text';
 import type {
   BudgetTrackingFilters,
   BudgetTrackingSeriesResponse,
@@ -267,7 +267,7 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
           ).forEach(project => {
             if (!seen.has(project.id)) {
               seen.add(project.id);
-              projects.push({ value: project.id, label: project.name });
+              projects.push({ value: project.id, label: analyticsDisplayText(project.name) });
               projectsWithUpdatedAt.push({
                 id: project.id,
                 updated_at: project.updated_at ?? null,
