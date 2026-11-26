@@ -51,6 +51,11 @@ services:
     environment:
       DB_HOST: db
       DB_PORT: 5432
+      # The Compose API always uses this database. Keep migration-specific
+      # credentials, but do not let host-side overrides target another DB.
+      MIGRATION_DB_HOST: db
+      MIGRATION_DB_PORT: 5432
+      MIGRATION_DB_NAME: ${DB_NAME:-worklenz_db}
       WORKLENZ_DEPLOYMENT_MODE: ${WORKLENZ_DEPLOYMENT_MODE:-self_hosted}
     depends_on:
       db:

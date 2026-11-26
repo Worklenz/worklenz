@@ -13,6 +13,11 @@ the backend starts. New databases are initialized and migrated automatically.
 Image `3.4.3` does not support this migration service; use the matching images
 specified in this release's Compose file.
 
+For this Compose deployment, migrations target the bundled database and
+`DB_NAME`, matching the API, even if migration-specific host, port, or database
+overrides are set in `.env`. `MIGRATION_DB_USER` and `MIGRATION_DB_PASSWORD`
+remain available when migrations need a more privileged database role.
+
 An existing or restored database must have recorded Node migration history.
 Otherwise the migration service stops without running migrations: back up the
 database and review [the migration guide](worklenz-backend/database/README-pg-migrations.md)
