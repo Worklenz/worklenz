@@ -7,6 +7,7 @@ import {
 } from "../../redis/analytics-cache";
 import { sanitizeCsvFormulaValue } from "../../shared/csv-utils";
 import { decodeHtmlEntities } from "../../shared/html-entity-utils";
+import { formatVarianceDaysLabel } from "./analytics-table-cell-colors";
 
 export interface PlannedVsActualTasksFilters {
   projectIds: string[];
