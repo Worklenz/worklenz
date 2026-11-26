@@ -572,21 +572,19 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     const rows = result.rows.map((row: { id: string }) => ({ id: row.id }));
     return res.status(200).send(new ServerResponse(true, rows));
   }
-
-
   @HandleExceptions()
   public static async deleteAttachmentById(
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
     const lookupQ = `
-      SELECT tca.task_id,
-             tca.comment_id,
-             COALESCE(tca.project_id, t.project_id) AS project_id
-      FROM task_comment_attachments tca
-      LEFT JOIN tasks t ON t.id = tca.task_id
-      WHERE tca.id = $1 AND tca.task_id = $2;
-    `;
+    SELECT tca.task_id,
+           tca.comment_id,
+           COALESCE(tca.project_id, t.project_id) AS project_id
+    FROM task_comment_attachments tca
+    LEFT JOIN tasks t ON t.id = tca.task_id
+    WHERE tca.id = $1 AND tca.task_id = $2;
+  `;
 
     const lookupResult = await db.query(lookupQ, [
       req.params.id,
@@ -598,47 +596,55 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     const projectId = lookupResult.rows[0]?.project_id as string | undefined;
 
     const q = `
-      DELETE FROM task_comment_attachments
-      WHERE id = $1 AND task_id = $2;
-    `;
+    DELETE FROM task_comment_attachments
+    WHERE id = $1 AND task_id = $2;
+  `;
 
     const result = await db.query(q, [
       req.params.id,
       req.params.taskId,
     ]);
 
-    if (result.rowCount && commentId) {
-      // Mark the comment as deleted if it has no remaining attachments
-      // and contains no text.
-      await db.query(
-        `
-          UPDATE task_comments tc
-          SET is_deleted = TRUE,
-              updated_at = NOW()
-          WHERE tc.id = $1
-            AND tc.task_id = $2
-            AND NOT EXISTS (
-              SELECT 1
-              FROM task_comment_attachments tca
-              WHERE tca.comment_id = tc.id
-            )
-            AND NOT EXISTS (
-              SELECT 1
-              FROM task_comment_contents tcc
-              WHERE tcc.comment_id = tc.id
-                AND NULLIF(BTRIM(tcc.text_content), '') IS NOT NULL
-            );
-        `,
-        [commentId, taskId]
-      );
+    if (result.rowCount && commentId && taskId) {
+      // Only the comment owner can automatically soft-delete the comment.
+      const softDeleteQ = `
+      UPDATE task_comments tc
+      SET is_deleted = TRUE,
+          updated_at = NOW()
+      WHERE tc.id = $1
+        AND tc.task_id = $2
+        AND tc.user_id = $3
+        AND tc.is_deleted IS NOT TRUE
+        AND NOT EXISTS (
+          SELECT 1
+          FROM task_comment_attachments tca
+          WHERE tca.comment_id = tc.id
+        )
+        AND NOT EXISTS (
+          SELECT 1
+          FROM task_comment_contents tcc
+          WHERE tcc.comment_id = tc.id
+            AND NULLIF(BTRIM(tcc.text_content), '') IS NOT NULL
+        )
+      RETURNING tc.id;
+    `;
 
-      void deleteCommentLinks(commentId);
+      const softDeleteResult = await db.query(softDeleteQ, [
+        commentId,
+        taskId,
+        req.user?.id || null,
+      ]);
+
+      // Remove comment links only when the comment was actually soft-deleted.
+      if (softDeleteResult.rowCount) {
+        void deleteCommentLinks(commentId);
+      }
+
       this.emitTaskCommentsUpdated(projectId, taskId);
     }
 
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
-
   private static async checkIfAlreadyExists(commentId: string, teamMemberId: string | undefined, reaction_type: string) {
     if (!teamMemberId) return null;
     try {
