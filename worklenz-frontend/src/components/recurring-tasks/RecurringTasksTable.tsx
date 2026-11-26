@@ -115,7 +115,11 @@ export const RecurringTasksTable: React.FC<RecurringTasksTableProps> = ({
   );
 
   const priorityFilterOptions = useMemo(
-    () => priorities.map(p => ({ text: p.name || '', value: p.id || '' })),
+    () =>
+      priorities.map(p => ({
+        text: decodeHtmlEntities(p.name || ''),
+        value: p.id || '',
+      })),
     [priorities]
   );
 
@@ -306,7 +310,7 @@ export const RecurringTasksTable: React.FC<RecurringTasksTableProps> = ({
               members={assignees.map(assignee => ({
                 id: assignee.team_member_id,
                 team_member_id: assignee.team_member_id,
-                name: assignee.name,
+                name: decodeHtmlEntities(assignee.name),
                 avatar_url: assignee.avatar_url,
               }))}
               maxCount={3}
@@ -381,7 +385,7 @@ export const RecurringTasksTable: React.FC<RecurringTasksTableProps> = ({
                 color: '#fff',
               }}
             >
-              {record.priority_name}
+              {decodeHtmlEntities(record.priority_name)}
             </span>
           );
         },
