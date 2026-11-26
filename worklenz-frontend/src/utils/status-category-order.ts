@@ -81,7 +81,6 @@ export const getDoneStatusGroupIds = (
 
 export const getCollapsedGroupIds = (
   groups: TaskGroup[],
-  doneStatusGroupIds: ReadonlySet<string>,
   persistedCollapsedGroups: ReadonlySet<string>,
   groupCollapseOverrides: Readonly<Record<string, { collapsed: boolean }>>
 ): Set<string> =>
@@ -89,7 +88,7 @@ export const getCollapsedGroupIds = (
     groups
       .filter(group => {
         const override = groupCollapseOverrides[group.id]?.collapsed;
-        return override ?? (persistedCollapsedGroups.has(group.id) || doneStatusGroupIds.has(group.id));
+        return override ?? persistedCollapsedGroups.has(group.id);
       })
       .map(group => group.id)
   );
