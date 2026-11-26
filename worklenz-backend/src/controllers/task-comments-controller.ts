@@ -374,7 +374,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     // Bump the parent task's updated_at so the "Updated X ago" timestamp reflects the edit
     await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [updatedComment.task_id]);
 
-// ✅ Atomic upsert — avoids the race condition where two concurrent
+    // ✅ Atomic upsert — avoids the race condition where two concurrent
     // update requests both see "no row exists" and both INSERT, producing
     // duplicate rows for the same comment_id.
     await db.query(
@@ -573,26 +573,69 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     return res.status(200).send(new ServerResponse(true, rows));
   }
 
+
   @HandleExceptions()
-  public static async deleteAttachmentById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async deleteAttachmentById(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const lookupQ = `
       SELECT tca.task_id,
+             tca.comment_id,
              COALESCE(tca.project_id, t.project_id) AS project_id
       FROM task_comment_attachments tca
       LEFT JOIN tasks t ON t.id = tca.task_id
       WHERE tca.id = $1 AND tca.task_id = $2;
     `;
-    const lookupResult = await db.query(lookupQ, [req.params.id, req.params.taskId]);
+
+    const lookupResult = await db.query(lookupQ, [
+      req.params.id,
+      req.params.taskId,
+    ]);
+
     const taskId = lookupResult.rows[0]?.task_id as string | undefined;
+    const commentId = lookupResult.rows[0]?.comment_id as string | undefined;
     const projectId = lookupResult.rows[0]?.project_id as string | undefined;
 
-    const q = `DELETE
-                FROM task_comment_attachments
-                WHERE id = $1 AND task_id = $2;`;
-    const result = await db.query(q, [req.params.id, req.params.taskId]);
-    if (result.rowCount) {
+    const q = `
+      DELETE FROM task_comment_attachments
+      WHERE id = $1 AND task_id = $2;
+    `;
+
+    const result = await db.query(q, [
+      req.params.id,
+      req.params.taskId,
+    ]);
+
+    if (result.rowCount && commentId) {
+      // Mark the comment as deleted if it has no remaining attachments
+      // and contains no text.
+      await db.query(
+        `
+          UPDATE task_comments tc
+          SET is_deleted = TRUE,
+              updated_at = NOW()
+          WHERE tc.id = $1
+            AND tc.task_id = $2
+            AND NOT EXISTS (
+              SELECT 1
+              FROM task_comment_attachments tca
+              WHERE tca.comment_id = tc.id
+            )
+            AND NOT EXISTS (
+              SELECT 1
+              FROM task_comment_contents tcc
+              WHERE tcc.comment_id = tc.id
+                AND NULLIF(BTRIM(tcc.text_content), '') IS NOT NULL
+            );
+        `,
+        [commentId, taskId]
+      );
+
+      void deleteCommentLinks(commentId);
       this.emitTaskCommentsUpdated(projectId, taskId);
     }
+
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
