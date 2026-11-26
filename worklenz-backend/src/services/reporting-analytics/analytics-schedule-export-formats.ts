@@ -150,8 +150,9 @@ export async function csvToExcelBuffer(
     try {
       let rowCursor = 0;
       for (const chartPng of chartPngs) {
+        // Use base64 — exceljs `buffer` typing conflicts with Node Buffer<ArrayBufferLike>.
         const imageId = workbook.addImage({
-          buffer: chartPng,
+          base64: chartPng.toString("base64"),
           extension: "png",
         });
         const height = chartPngs.length > 1 && chartPng === chartPngs[chartPngs.length - 1] ? 260 : 320;
