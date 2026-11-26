@@ -58,13 +58,31 @@ function createGaantTask(body: any) {
   return body;
 }
 
+function isSuccessfulQuickTask(response: unknown): response is { id: string } {
+  return (
+    !!response &&
+    typeof response === "object" &&
+    !!(response as { id?: string }).id &&
+    !(response as { error?: boolean }).error
+  );
+}
+
 export async function on_quick_task(_io: Server, socket: Socket, data?: string, acknowledge?: (response: unknown) => void) {
   let hasResponded = false;
   const respond = (response: unknown) => {
     if (hasResponded) return;
     hasResponded = true;
-    if (typeof acknowledge === "function") acknowledge(response);
-    else socket.emit(SocketEvents.QUICK_TASK.toString(), response);
+    // Ack-based callers (e.g. example task rows) get a correlated response for timeouts/retries.
+    // Successful creates must also emit QUICK_TASK so shared socket handlers can update the UI
+    // immediately. Failures/null stay ack-only when an ack is present.
+    if (typeof acknowledge === "function") {
+      acknowledge(response);
+      if (isSuccessfulQuickTask(response)) {
+        socket.emit(SocketEvents.QUICK_TASK.toString(), response);
+      }
+      return;
+    }
+    socket.emit(SocketEvents.QUICK_TASK.toString(), response);
   };
   try {
     const body = JSON.parse(data as string);
@@ -83,7 +101,7 @@ export async function on_quick_task(_io: Server, socket: Socket, data?: string, 
 
     if (body.name.length > 0) {
       if (!(await verifyNonGuestProjectAccessSocket(socket, body.project_id, PROJECT_ROLE_PERMISSIONS.CREATE_TASKS))) {
-        socket.emit(SocketEvents.QUICK_TASK.toString(), { error: true, message: "You do not have permission to create tasks." });
+        respond({ error: true, message: "You do not have permission to create tasks." });
         return;
       }
       // Check restrict_task_creation before proceeding
