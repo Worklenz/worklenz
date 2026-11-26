@@ -37,6 +37,7 @@ import logger from '@/utils/errorLogger';
 import { calculateTimeDifference } from '@/utils/calculate-time-difference';
 import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
 import { setSession } from '@/utils/session-helper';
+import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 
 // ─── Helper: crop the image on a canvas and return a base64 string ───────────
 const getCroppedImg = (imageSrc: string, pixelCrop: Area): Promise<string> => {
@@ -214,6 +215,7 @@ const ProfileSettings = () => {
   };
 
   // ── Avatar preview button ─────────────────────────────────────────────────
+
   const avatarPreview = (
     <div
       className="avatar-uploader ant-upload-select-picture-card"
@@ -243,27 +245,69 @@ const ProfileSettings = () => {
             borderRadius: '4px',
           }}
         >
-          <Spin indicator={<LoadingOutlined style={{ fontSize: 24, color: 'white' }} spin />} />
+          <Spin
+            indicator={
+              <LoadingOutlined
+                style={{ fontSize: 24, color: 'white' }}
+                spin
+              />
+            }
+          />
         </div>
       )}
+
       {loading ? (
         <LoadingOutlined />
-      ) : hasAvatar ? (
-        <img
-          src={imageUrl || currentSession?.avatar_url}
-          alt="avatar"
-          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }}
-        />
       ) : (
-        <Flex align="center" justify="center" vertical gap={8} style={{ height: '100%' }}>
-          <PlusOutlined />
-          <Typography.Text style={{ color: token.colorTextSecondary }}>
-            {t('upload', { defaultValue: 'Upload' })}
-          </Typography.Text>
+        <Flex align="center" justify="center" style={{ height: '100%' }}>
+          <div
+            style={{
+              width: 88,
+              height: 88,
+              borderRadius: '50%',
+              border: `1px solid ${token.colorBorderSecondary}`,
+              overflow: 'hidden',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <SingleAvatar
+              avatarUrl={imageUrl || currentSession?.avatar_url}
+              name={currentSession?.name}
+              email={currentSession?.email}
+              size={86}
+              marginRight={0}
+            />
+          </div>
+
+          {!hasAvatar && (
+            <span
+              title="Upload profile picture"
+              aria-label="Upload profile picture"
+              style={{
+                position: 'absolute',
+                bottom: 6,
+                right: 6,
+                width: 24,
+                height: 24,
+                borderRadius: '50%',
+                background: token.colorPrimary,
+                color: '#fff',
+                border: `2px solid ${token.colorBgContainer}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <PlusOutlined style={{ fontSize: 12 }} />
+            </span>
+          )}
         </Flex>
       )}
     </div>
   );
+
 
   // ── Name update ───────────────────────────────────────────────────────────
   const handleFormSubmit = async ({ name }: { name: string }) => {

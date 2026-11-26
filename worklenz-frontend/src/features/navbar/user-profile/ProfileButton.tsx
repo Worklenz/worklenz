@@ -1,7 +1,6 @@
 import {
   DashboardOutlined,
   LogoutOutlined,
-  UserOutlined,
   SettingOutlined,
   CreditCardOutlined,
 } from '@/shared/antd-imports';
@@ -74,8 +73,8 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
   // historically omitted is_guest and caused guests to display as Member.
   const profileRole =
     isSessionGuest(authSession) ||
-    isSessionGuest(currentSession) ||
-    Boolean(currentProject?.project?.is_guest)
+      isSessionGuest(currentSession) ||
+      Boolean(currentProject?.project?.is_guest)
       ? t('guestRole', { defaultValue: 'Guest' })
       : roleTranslationKey
         ? t(roleTranslationKey, { defaultValue: roleTranslationKey })
@@ -237,7 +236,7 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
                 color: isDark ? token.colorWhite ?? '#fff' : token.colorTextSecondary,
               }}
             >
-               {isDark ? t('themeToggleOn', { defaultValue: 'ON' }) : t('themeToggleOff', { defaultValue: 'OFF' })}
+              {isDark ? t('themeToggleOn', { defaultValue: 'ON' }) : t('themeToggleOff', { defaultValue: 'OFF' })}
             </span>
           </div>
           <Link
@@ -273,17 +272,13 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
       >
         <Tooltip title={t('profileTooltip', { defaultValue: 'Profile' })} {...tooltipProps}>
           <button className="profile-button">
-            {currentSession?.avatar_url ? (
-              <SingleAvatar
-                avatarUrl={currentSession.avatar_url}
-                name={currentSession.name}
-                email={currentSession.email}
-                size={32}
-                marginRight={0}
-              />
-            ) : (
-              <UserOutlined style={{ fontSize: 20 }} />
-            )}
+            <SingleAvatar
+              avatarUrl={currentSession?.avatar_url}
+              name={currentSession?.name}
+              email={currentSession?.email}
+              size={32}
+              marginRight={0}
+            />
           </button>
         </Tooltip>
       </Dropdown>
