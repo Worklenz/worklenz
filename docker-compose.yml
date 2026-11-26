@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: chamikajaycey/worklenz-frontend:3.4.3
+    image: chamikajaycey/worklenz-frontend:3.4.4
     container_name: worklenz_frontend
     ports:
       - "5000:5000"
@@ -13,7 +13,7 @@ services:
       - worklenz
 
   backend:
-    image: chamikajaycey/worklenz-backend:3.4.3
+    image: ${WORKLENZ_BACKEND_IMAGE:-chamikajaycey/worklenz-backend:3.4.4}
     container_name: worklenz_backend
     ports:
       - "3000:3000"
@@ -23,6 +23,8 @@ services:
       seaweedfs:
         condition: service_healthy
       configure-seaweedfs:
+        condition: service_completed_successfully
+      migrate:
         condition: service_completed_successfully
     restart: unless-stopped
     env_file:
@@ -41,8 +43,24 @@ services:
     networks:
       - worklenz
 
+  migrate:
+    image: ${WORKLENZ_BACKEND_IMAGE:-chamikajaycey/worklenz-backend:3.4.4}
+    command: ["node", "scripts/compose-migrate.js"]
+    env_file:
+      - ./.env
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      WORKLENZ_DEPLOYMENT_MODE: ${WORKLENZ_DEPLOYMENT_MODE:-self_hosted}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - worklenz
+
   client-portal:
-    image: chamikajaycey/worklenz-client-portal:3.4.3
+    image: chamikajaycey/worklenz-client-portal:3.4.4
     container_name: worklenz_client_portal
     ports:
       - "5174:5174"
@@ -124,7 +142,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -d ${DB_NAME:-worklenz_db} -U ${DB_USER:-postgres}",
+          "pg_isready -h 127.0.0.1 -d ${DB_NAME:-worklenz_db} -U ${DB_USER:-postgres}",
         ]
       interval: 10s
       timeout: 5s

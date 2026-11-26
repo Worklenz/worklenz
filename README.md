@@ -142,7 +142,7 @@ Explore Worklenz's [product documentation](https://docs.worklenz.com/en/start/in
 <a id="quick-start-docker"></a>
 ### 🐳 Quick Start (Docker — Recommended)
 
-> **Fresh-install limitation:** The currently pinned backend image does not complete database migrations on a clean install. See [DOCKER_SETUP.md](DOCKER_SETUP.md#known-fresh-install-limitation) before deploying.
+> **Upgrading?** Stop application writers and back up your data before running migrations. See [DOCKER_SETUP.md](DOCKER_SETUP.md#database-migrations-and-upgrades).
 
 The fastest way to get Worklenz running locally with all dependencies included. The supplied Compose file runs PostgreSQL, SeaweedFS, the application services, nginx, and a database backup container.
 

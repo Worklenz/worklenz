@@ -5,17 +5,30 @@ nginx, and a database backup container. It uses version-pinned published images;
 these can differ from the source in your checkout. Review the image tags before
 upgrading, and back up your data first.
 
-## Known fresh-install limitation
+## Database migrations and upgrades
 
-The Compose file currently pins backend image `3.4.3`. A clean-install test
-showed that database initialization loads the base schema but does not run the
-Node.js migrations. Running `npm run migrate:up` in that image failed because
-`database/pg-migrations-support/team-lead-prerequisites` was missing from the
-image. As a result, the backend reports missing database tables even if the
-frontend loads. A corrected backend image and a verified migration sequence are
-needed before this setup can be considered fully working. Do not use it for a
-new production deployment until that is resolved. Existing installations should
-back up and review their migration history before attempting an upgrade.
+Compose runs a one-shot migration service using the same backend image as the
+API. It waits for PostgreSQL initialization and must finish successfully before
+the backend starts. New databases are initialized and migrated automatically.
+Image `3.4.3` does not support this migration service; use the matching images
+specified in this release's Compose file.
+
+An existing or restored database must have recorded Node migration history.
+Otherwise the migration service stops without running migrations: back up the
+database and review [the migration guide](worklenz-backend/database/README-pg-migrations.md)
+before resolving its history. The migration bootstrap script is never run
+automatically. Inspect failures using `docker compose logs migrate`.
+
+Before upgrading, stop the backend and all other writers, back up the database
+and object storage, and verify that the backup can be restored. Compose does not
+stop a previously running backend before starting the migration service. In
+multi-instance deployments, coordinate all writers: the migration lock prevents
+concurrent migrations, but does not stop an older application from writing.
+
+For local verification, a backend image can be built with
+`docker build -f worklenz-backend/Dockerfile -t worklenz-backend:migration-test worklenz-backend`
+and selected by setting `WORKLENZ_BACKEND_IMAGE=worklenz-backend:migration-test`
+in `.env` before starting Compose.
 
 ## Prerequisites
 
