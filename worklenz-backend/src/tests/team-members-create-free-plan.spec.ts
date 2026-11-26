@@ -99,14 +99,34 @@ describe("TeamMembersController.create free-plan seat limit", () => {
   });
 
   it("re-reads the member count inside the team seat lock", async () => {
+    const events: string[] = [];
     mockCheckTeamSubscriptionStatus
-      .mockResolvedValueOnce(freeSubscription(3))
-      .mockResolvedValueOnce(freeSubscription(5));
+      .mockImplementationOnce(async () => {
+        events.push("initial-count");
+        return freeSubscription(3);
+      })
+      .mockImplementationOnce(async () => {
+        events.push("refresh-count");
+        return freeSubscription(5);
+      });
+    mockGetFreePlanSettings.mockImplementation(async () => {
+      events.push("read-limit");
+      return { team_member_limit: "5" };
+    });
+    mockWithTeamSeatLock.mockImplementation(async (_teamId, callback) => {
+      events.push("lock-acquired");
+      try {
+        return await callback();
+      } finally {
+        events.push("lock-released");
+      }
+    });
     const res = createMockResponse();
 
     await TeamMembersController.create(makeRequest(), res);
 
     expect(mockCheckTeamSubscriptionStatus).toHaveBeenCalledTimes(2);
+    expect(events).toEqual(["initial-count", "lock-acquired", "refresh-count", "read-limit", "lock-released"]);
     expect(res.body.done).toBe(false);
     expect(res.body.body).toEqual(expect.objectContaining({ current_members: 5 }));
     expect(mockQuery.mock.calls.some(([sql]) => String(sql).includes("create_team_member"))).toBe(false);
@@ -114,7 +134,14 @@ describe("TeamMembersController.create free-plan seat limit", () => {
 
   it("creates the invitation while holding the team seat lock", async () => {
     const events: string[] = [];
-    mockCheckTeamSubscriptionStatus.mockResolvedValue(freeSubscription(3));
+    mockCheckTeamSubscriptionStatus.mockImplementation(async () => {
+      events.push("read-count");
+      return freeSubscription(3);
+    });
+    mockGetFreePlanSettings.mockImplementation(async () => {
+      events.push("read-limit");
+      return { team_member_limit: "5" };
+    });
     mockWithTeamSeatLock.mockImplementation(async (_teamId, callback) => {
       events.push("lock-acquired");
       try {
@@ -136,6 +163,26 @@ describe("TeamMembersController.create free-plan seat limit", () => {
     await TeamMembersController.create(makeRequest(), res);
 
     expect(res.body.done).toBe(true);
-    expect(events).toEqual(["lock-acquired", "insert-invitation", "lock-released"]);
+    expect(events).toEqual(["read-count", "lock-acquired", "read-count", "read-limit", "insert-invitation", "lock-released"]);
+  });
+
+  it("keeps ordinary paid-plan invitation behavior unchanged", async () => {
+    mockCheckTeamSubscriptionStatus.mockResolvedValue({
+      subscription_type: "PADDLE",
+      subscription_status: "active",
+      current_count: "1",
+      team_member_limit_override: false,
+      is_credit: false,
+      is_custom: false,
+      effective_user_limit: 5,
+      quantity: 5,
+    });
+    const res = createMockResponse();
+
+    await TeamMembersController.create(makeRequest(), res);
+
+    expect(mockWithTeamSeatLock).not.toHaveBeenCalled();
+    expect(res.body.done).toBe(true);
+    expect(mockQuery.mock.calls.some(([sql]) => String(sql).includes("create_team_member"))).toBe(true);
   });
 });

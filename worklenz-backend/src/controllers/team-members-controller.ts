@@ -2251,7 +2251,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
     res: IWorkLenzResponse,
   ) {
     const teamId = req.user?.team_id;
-    // Reactivation checks the free seats and then flips the member; hold the team's lock across
+    // Reactivation checks the free seats and then flips the member; hold the owner's lock across
     // both so it cannot race with an invite taking the last seat.
     if (!teamId || req.query.active !== "true") return this.toggleMemberActive(req, res);
     return withTeamSeatLock(teamId, () => this.toggleMemberActive(req, res));
@@ -2647,7 +2647,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
       const teamId: string = req.body.team_id;
       const user = req.user;
 
-      // The seat check and the insert run under one lock per team, on a fresh member count, so
+      // The seat check and the insert run under one lock per owner, on a fresh member count, so
       // concurrent invites cannot both take the last seat.
       return withTeamSeatLock(teamId, async () => {
         const current = await checkTeamSubscriptionStatus(teamId);
@@ -3092,7 +3092,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
       const teamId = validation.team_id;
 
-      // Seat check and insert run under the team's lock so concurrent joins cannot both take the last seat.
+      // Seat check and insert run under the owner's lock so concurrent joins cannot both take the last seat.
       return await withTeamSeatLock(teamId, async () => {
 
       // Get team owner ID for checking user existence
