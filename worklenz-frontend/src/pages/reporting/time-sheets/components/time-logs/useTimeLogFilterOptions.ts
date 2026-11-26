@@ -5,6 +5,7 @@ import { reportingTimeLogsApiService } from '@/api/reporting/reporting-time-logs
 import { practicesApiService } from '@/api/settings/practices/practices.api.service';
 import { clientsApiService } from '@/api/clients/clients.api.service';
 import { ITimeLogMemberOption } from '@/types/reporting/time-logs.types';
+import { analyticsDisplayText } from '@/lib/reporting/analytics-display-text';
 import logger from '@/utils/errorLogger';
 import {
   IResolvedDateRange,
@@ -55,7 +56,10 @@ export const useStaticFilterOptions = () => {
   const projects = useLoadedOptions(async () => {
     const res = await reportingTimeLogsApiService.getProjects();
     if (!res.done) throw new Error(res.message || 'Failed to load projects');
-    return (res.body ?? []).map(p => ({ value: p.id, label: p.name }));
+    return (res.body ?? []).map(p => ({
+      value: p.id,
+      label: analyticsDisplayText(p.name),
+    }));
   }, 'project');
 
   const practices = useLoadedOptions(async () => {
@@ -66,7 +70,10 @@ export const useStaticFilterOptions = () => {
         value: NO_PRACTICE_FILTER_ID,
         label: t('timeLogsNoPractice', { defaultValue: 'No practice' }),
       },
-      ...(res.body?.data ?? []).map(p => ({ value: p.id as string, label: p.name as string })),
+      ...(res.body?.data ?? []).map(p => ({
+        value: p.id as string,
+        label: analyticsDisplayText(p.name as string),
+      })),
     ];
   }, 'practice');
 
@@ -76,7 +83,10 @@ export const useStaticFilterOptions = () => {
     if (!res.done) throw new Error(res.message || 'Failed to load clients');
     return [
       { value: NO_CLIENT_FILTER_ID, label: t('timeLogsNoClient', { defaultValue: 'No client' }) },
-      ...(res.body ?? []).map(c => ({ value: c.id as string, label: c.name as string })),
+      ...(res.body ?? []).map(c => ({
+        value: c.id as string,
+        label: analyticsDisplayText(c.name as string),
+      })),
     ];
   }, 'client');
 

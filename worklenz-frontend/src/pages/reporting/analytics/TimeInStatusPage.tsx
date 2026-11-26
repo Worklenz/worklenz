@@ -56,6 +56,7 @@ import type {
   TimeInStatusViewMode,
 } from '@/types/reporting/analytics-time-in-status.types';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
+import { analyticsDisplayText } from '@/lib/reporting/analytics-display-text';
 import { getTimeInStatusSortOptions } from '@/lib/reporting/time-in-status-sort-options';
 import type { AnalyticsReportTemplate } from '@/types/reporting/analytics-velocity.types';
 import type { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
@@ -253,7 +254,7 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
           (res.body as Array<{ id: string; name: string }>).forEach(project => {
             if (!seen.has(project.id)) {
               seen.add(project.id);
-              projects.push({ value: project.id, label: project.name });
+              projects.push({ value: project.id, label: analyticsDisplayText(project.name) });
             }
           });
         }

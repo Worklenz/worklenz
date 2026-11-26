@@ -43,6 +43,7 @@ import {
   resolveAnalyticsActorRole,
 } from '@/lib/reporting/analytics-permissions';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
+import { analyticsDisplayText } from '@/lib/reporting/analytics-display-text';
 import type {
   UtilizationFilters,
   UtilizationSeriesResponse,
@@ -223,7 +224,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
           (res.body as Array<{ id: string; name: string }>).forEach(project => {
             if (!seen.has(project.id)) {
               seen.add(project.id);
-              projects.push({ value: project.id, label: project.name });
+              projects.push({ value: project.id, label: analyticsDisplayText(project.name) });
             }
           });
         }

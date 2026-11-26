@@ -16,6 +16,18 @@ describe('mapOverviewProjectsToVelocityOptions', () => {
     ]);
   });
 
+  it('decodes HTML entities in project names for filter labels', () => {
+    const options = mapOverviewProjectsToVelocityOptions([
+      { id: 'p1', name: 'Design &amp; Build', project_type: 'general' },
+      { id: 'p2', name: '&lt;&gt; bank', project_type: 'software' },
+    ]);
+
+    expect(options).toEqual([
+      { value: 'p1', label: 'Design & Build' },
+      { value: 'p2', label: '<> bank' },
+    ]);
+  });
+
   it('dedupes by project id across team responses', () => {
     const options = mapOverviewProjectsToVelocityOptions([
       { id: 'p1', name: 'Alpha', project_type: 'general' },
