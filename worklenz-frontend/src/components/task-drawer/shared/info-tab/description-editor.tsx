@@ -36,6 +36,7 @@ interface QuillEditorInstance {
   getSelection: (focus?: boolean) => { index: number; length: number } | null;
   getBounds: (index: number, length?: number) => QuillBounds | null;
   getFormat: (index: number, length?: number) => Record<string, unknown>;
+  format: (name: string, value: unknown, source?: 'api' | 'user' | 'silent') => void;
   formatText: (
     index: number,
     length: number,
@@ -77,6 +78,18 @@ const registerMentionFormat = (Quill: typeof import('react-quill-new').Quill) =>
     static blotName = 'mention';
     static tagName = 'span';
     static className = 'mentions';
+
+    static create(value: boolean) {
+      const node = super.create(value) as HTMLElement;
+      if (value) {
+        node.classList.add('mentions');
+      }
+      return node;
+    }
+
+    static formats(node: HTMLElement) {
+      return node.classList.contains('mentions') ? true : undefined;
+    }
   }
 
   Quill.register(MentionBlot, true);
@@ -115,7 +128,24 @@ const SANITIZE_CONFIG = {
 
 const applyMentionFormatting = (editor: QuillEditorInstance, members: MentionMember[]) => {
   const text = editor.getText();
-  findMentionRanges(text, members).forEach(({ start, length }) => {
+  const ranges = findMentionRanges(text, members)
+    .slice()
+    .sort((a, b) => a.start - b.start);
+
+  if (editor.root.querySelector('.mentions')) {
+    let cursor = 0;
+    for (const { start, length } of ranges) {
+      if (start > cursor) {
+        editor.formatText(cursor, start - cursor, 'mention', false, 'silent');
+      }
+      cursor = Math.max(cursor, start + length);
+    }
+    if (text.length > cursor) {
+      editor.formatText(cursor, text.length - cursor, 'mention', false, 'silent');
+    }
+  }
+
+  ranges.forEach(({ start, length }) => {
     if (editor.getFormat(start, length).mention !== true) {
       editor.formatText(start, length, 'mention', true, 'silent');
     }
@@ -155,6 +185,7 @@ const DescriptionEditor = ({
   const filteredMentionMembersRef = useRef<MentionMember[]>([]);
   const selectedMentionIndexRef = useRef(selectedMentionIndex);
   const insertMentionRef = useRef<(member: MentionMember) => void>(() => undefined);
+  const pendingCaretRafRef = useRef<number | null>(null);
   mentionQueryRef.current = mentionQuery;
   selectedMentionIndexRef.current = selectedMentionIndex;
 
@@ -587,32 +618,14 @@ const DescriptionEditor = ({
   }, [isEditorOpen, handleDiscardClick]);
 
   const filteredMentionMembers = useMemo(() => {
-    if (!mentionQuery || !quillRef.current) return [];
+    if (!mentionQuery) return [];
 
     const query = normalizeMentionText(mentionQuery.query.trim());
-    const editor = quillRef.current.getEditor();
-    const text = editor.getText();
-
-    // Exclude the mention currently being typed from duplicate detection.
-    const textWithoutCurrentQuery =
-      removeActiveMentionQuery(text, mentionQuery.start, mentionQuery.end);
-
-    const existingMentions = new Set(
-      findMentionRanges(textWithoutCurrentQuery, mentionMembers).map(({ start, length }) =>
-        normalizeMentionText(
-          textWithoutCurrentQuery.slice(start, start + length)
-        )
-      )
-    );
 
     return mentionMembers
       .filter(member => {
         const normalizedName = normalizeMentionText(member.name.trim());
-
-        return (
-          normalizedName.includes(query) &&
-          !existingMentions.has(`@${normalizedName}`)
-        );
+        return normalizedName.includes(query);
       })
       .slice(0, 8);
   }, [mentionMembers, mentionQuery]);
@@ -671,13 +684,47 @@ const DescriptionEditor = ({
       if (!mentionQuery || !quillRef.current) return;
       const editor = quillRef.current.getEditor();
       const mention = `@${member.name}`;
-      const mentionEnd = mentionQuery.start + mention.length;
+      const start = mentionQuery.start;
+      const queryLength = mentionQuery.end - start;
 
       editor.focus();
-      editor.deleteText(mentionQuery.start, mentionQuery.end - mentionQuery.start, 'user');
-      editor.insertText(mentionQuery.start, mention, { mention: true }, 'user');
+
+      // Remove the typed @query
+      editor.deleteText(start, queryLength, 'user');
+
+      // Insert the mention
+      editor.insertText(start, mention, { mention: true }, 'user');
+
+      // Insert a normal space (without mention format)
+      const mentionEnd = start + mention.length;
       editor.insertText(mentionEnd, ' ', {}, 'user');
-      editor.setSelection(mentionEnd + 1, 0, 'silent');
+
+      //  Move caret after the space
+      const caretPos = mentionEnd + 1;
+      editor.setSelection(caretPos, 0, 'user');
+
+      //Force turn OFF the mention format at the caret
+      editor.format('mention', false, 'user');
+
+      if (pendingCaretRafRef.current !== null) {
+        cancelAnimationFrame(pendingCaretRafRef.current);
+      }
+      pendingCaretRafRef.current = requestAnimationFrame(() => {
+        pendingCaretRafRef.current = null;
+        if (typeof document !== 'undefined' && !editor.root.contains(document.activeElement)) {
+          return;
+        }
+        const currentSelection = editor.getSelection();
+        if (
+          currentSelection &&
+          currentSelection.index === caretPos &&
+          currentSelection.length === 0
+        ) {
+          editor.setSelection(caretPos, 0, 'silent');
+          editor.format('mention', false, 'silent');
+        }
+      });
+
       setMentionQuery(null);
     },
     [mentionQuery]
@@ -702,6 +749,10 @@ const DescriptionEditor = ({
   };
 
   const handleEditorChange = (nextHtml: string) => {
+    if (pendingCaretRafRef.current !== null) {
+      cancelAnimationFrame(pendingCaretRafRef.current);
+      pendingCaretRafRef.current = null;
+    }
     const editor = quillRef.current?.getEditor();
     if (editor) applyMentionFormatting(editor, mentionMembers);
     // Prefer live HTML after silent mention formatting so mention spans are
@@ -716,7 +767,16 @@ const DescriptionEditor = ({
 
   const handleEditorSelectionChange = () => {
     const editor = quillRef.current?.getEditor();
-    if (editor) applyMentionFormatting(editor, mentionMembers);
+    if (editor) {
+      applyMentionFormatting(editor, mentionMembers);
+      const selection = editor.getSelection();
+      if (selection && selection.length === 0 && selection.index > 0) {
+        const prevChar = editor.getText().slice(selection.index - 1, selection.index);
+        if (/\s/.test(prevChar) && editor.getFormat(selection.index).mention) {
+          editor.format('mention', false, 'silent');
+        }
+      }
+    }
     updateMentionQuery(editor || null);
   };
 
@@ -754,6 +814,8 @@ const DescriptionEditor = ({
               // typed spaces. defaultValue seeds the editor on mount/reopen.
               defaultValue={content}
               preserveWhitespace
+              spellCheck={false}
+              autoCorrect="off"
               onChange={handleEditorChange}
               onChangeSelection={handleEditorSelectionChange}
               onKeyDown={handleEditorKeyDown}

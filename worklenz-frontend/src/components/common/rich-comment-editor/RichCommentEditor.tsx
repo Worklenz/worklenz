@@ -249,16 +249,10 @@ export const RichCommentEditor = ({
         HTMLAttributes: { class: 'mention' },
         suggestion: {
           char: '@',
-          items: ({ query, editor }: { query: string; editor: Editor }) => {
-            const mentionedIds = new Set(
-              extractMentions(editor, optionsRef.current).map(person => person.id)
-            );
-
+          items: ({ query }: { query: string }) => {
             return optionsRef.current
-              .filter(
-                person =>
-                  !mentionedIds.has(person.id) &&
-                  person.name.toLowerCase().includes(query.toLowerCase())
+              .filter(person =>
+                person.name.toLowerCase().includes(query.toLowerCase())
               )
               .slice(0, MAX_SUGGESTIONS);
           },
