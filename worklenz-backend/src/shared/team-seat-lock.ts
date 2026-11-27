@@ -3,13 +3,19 @@ import db from "../config/db";
 const LOCK_WAIT_MS = 5000;
 const RETRY_DELAY_MS = 50;
 
-/** Serialize a team's seat checks. Contending requests release their pool connection before retrying. */
+/** Serialize seat checks for a team's owner. Contending requests release their pool connection before retrying. */
 export async function withTeamSeatLock<T>(
   teamId: string,
   fn: () => Promise<T>,
 ): Promise<T> {
   const deadline = Date.now() + LOCK_WAIT_MS;
-  const key = `team-seats:${teamId}`;
+  const ownerResult = await db.query(
+    "SELECT user_id FROM teams WHERE id = $1;",
+    [teamId],
+  );
+  const ownerId = ownerResult.rows[0]?.user_id;
+  if (!ownerId) throw new Error("Owner not found.");
+  const key = `team-seats:${ownerId}`;
   while (true) {
     const client = await db.pool.connect();
     let acquired = false;

@@ -2,10 +2,12 @@ import { withTeamSeatLock } from "../shared/team-seat-lock";
 
 const mockQuery = jest.fn();
 const mockRelease = jest.fn();
+const mockDbQuery = jest.fn();
 
 jest.mock("../config/db", () => ({
   __esModule: true,
   default: {
+    query: (...args: unknown[]) => mockDbQuery(...args),
     pool: {
       connect: jest.fn(async () => ({
         query: mockQuery,
@@ -19,6 +21,7 @@ describe("withTeamSeatLock", () => {
   beforeEach(() => {
     mockQuery.mockReset().mockResolvedValue({ rows: [{ acquired: true }] });
     mockRelease.mockReset();
+    mockDbQuery.mockReset().mockResolvedValue({ rows: [{ user_id: "owner-1" }] });
   });
 
   it("locks before running and unlocks after, then releases the connection", async () => {
@@ -29,7 +32,11 @@ describe("withTeamSeatLock", () => {
 
     expect(result).toBe("done");
     expect(mockQuery.mock.calls[0][0]).toContain("pg_try_advisory_lock");
-    expect(mockQuery.mock.calls[0][1]).toEqual(["team-seats:team-1"]);
+    expect(mockDbQuery).toHaveBeenCalledWith(
+      "SELECT user_id FROM teams WHERE id = $1;",
+      ["team-1"],
+    );
+    expect(mockQuery.mock.calls[0][1]).toEqual(["team-seats:owner-1"]);
     expect(mockQuery.mock.calls[1][0]).toContain("pg_advisory_unlock");
     expect(mockRelease).toHaveBeenCalledTimes(1);
   });
@@ -50,6 +57,7 @@ describe("team seat lock contention", () => {
   beforeEach(() => {
     mockQuery.mockReset();
     mockRelease.mockReset();
+    mockDbQuery.mockReset().mockResolvedValue({ rows: [{ user_id: "owner-1" }] });
   });
 
   it("releases a contending connection before retrying so the holder can use the pool", async () => {
