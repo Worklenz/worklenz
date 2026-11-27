@@ -32,6 +32,8 @@ import {
 } from '@/features/task-drawer/task-drawer.slice';
 import { setProjectId } from '@/features/project/project.slice';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
+import { isFreeUser } from '@/utils/subscription-utils';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 
 interface QuickActionItem {
   key: string;
@@ -128,6 +130,10 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
         dispatch(toggleAddClientDrawer());
         break;
       case 'log-time':
+        if (isFreeUser(authService.getCurrentSession())) {
+          dispatch(toggleUpgradeModal());
+          break;
+        }
         setLogTimeOpen(true);
         break;
       case 'mark-time-off':

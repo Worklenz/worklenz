@@ -22,6 +22,9 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAuthService } from '@/hooks/useAuth';
+import { isFreeUser } from '@/utils/subscription-utils';
+import { openUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useGetProjectsByTeamQuery } from '@/api/home-page/home-page.api.service';
 import {
   taskTimeLogsApiService,
@@ -134,6 +137,18 @@ const HomeLogTime: React.FC = () => {
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
   const { isDesktop } = useResponsive();
+  const authService = useAuthService();
+  const isFree = isFreeUser(authService.getCurrentSession());
+
+  // Free-plan users cannot access time logging — show the upgrade modal
+  // and send them back to the home overview.
+  useEffect(() => {
+    if (isFree) {
+      dispatch(openUpgradeModal());
+      navigate('/worklenz/home', { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFree]);
 
   const formatLogDate = (createdAt: string): string => {
     const date = dayjs(createdAt);
