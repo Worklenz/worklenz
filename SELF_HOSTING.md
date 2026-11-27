@@ -35,6 +35,24 @@ Serve the frontend and API from the same site so that the session's `SameSite=La
 
 The backend validates the Google signature, issuer, audience, expiration, verified email and optional hosted domain. Each attempt uses a five-minute, session-bound nonce consumed atomically in PostgreSQL, along with Worklenz CSRF protection, an exact origin check and rate limits. Login regenerates the Passport session. Access tokens and ID tokens should not be logged or included in URLs. Changes to these settings require a backend restart in typical container deployments.
 
+## Third-party services
+
+The self-hosted build ships with the following third-party integrations. They are not all disabled by default: the frontend requests Google Fonts, and backend-rendered pages can load analytics or HubSpot under the conditions below.
+
+| Service | When it loads | How to disable or avoid it |
+| --- | --- | --- |
+| Google Analytics | `worklenz-frontend/public/js/analytics.js` contacts Google only on Worklenz-hosted origins (`app.worklenz.com`, `dev.worklenz.com`, `uat.app.worklenz.com`). Separately, `worklenz-backend/src/views/_scripts.pug` injects `gtag.js` when `isProduction() && !isInternalServer()`. | No action is needed for the frontend script on a self-hosted hostname. For the backend template injection, remove or change the Google block in `_scripts.pug` before building or deploying; there is currently no runtime environment toggle. |
+| Microsoft Clarity | `worklenz-frontend/public/js/clarity.js` runs only on `app.worklenz.com`. Separately, `_scripts.pug` injects Clarity when `isProduction() && !isInternalServer()`. | No action is needed for the frontend script on a self-hosted hostname. For the backend template injection, remove or change the Clarity block in `_scripts.pug` before building or deploying; there is currently no runtime environment toggle. |
+| HubSpot chat | The frontend script runs only on `app.worklenz.com`. Separately, the backend layout includes `worklenz-backend/src/views/_hubspot.pug` on non-internal servers, regardless of `NODE_ENV`. | The frontend script needs no change on a self-hosted hostname. For backend-rendered pages, remove or guard the HubSpot partial in a custom build; there is no separate runtime opt-out for that partial. |
+| Mixpanel | When a real `VITE_MIXPANEL_TOKEN` is supplied at build time. The bundled `mixpanel-token` placeholder is rejected. | Leave `VITE_MIXPANEL_TOKEN` unset, empty, or as the placeholder when building the frontend. |
+| Sentry | When `VITE_APP_ENV=production` and `VITE_SENTRY_DSN` is provided. | Leave `VITE_SENTRY_DSN` unset or empty when building the frontend. |
+| Google Fonts | Requested unconditionally by the frontend font imports and preconnect links. | Remove the Google Fonts imports/preconnect links and self-host the font files, or block `fonts.googleapis.com` and `fonts.gstatic.com` at your network edge. |
+| Google sign-in and One Tap | Only when explicitly enabled with the Google environment variables documented above. Google redirect sign-in uses `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`, and build-time `VITE_ENABLE_GOOGLE_LOGIN=true`; One Tap uses `GOOGLE_ONE_TAP_ENABLED=true` and `GOOGLE_CLIENT_ID`. | Keep these variables unset or set the enable flags to `false`, which is the default. |
+
+`isInternalServer()` is narrow: it is true only when `FRONTEND_URL` exactly equals `localhost:5173`, `localhost:5174`, `localhost:4200`, `localhost:3000`, `127.0.0.1:3000`, or `localhost:5000` (these values have no URL scheme), or when `HOSTNAME` is `dev.worklenz.com` or `uat.app.worklenz.com`. A value such as `https://localhost` is not treated as internal. Consequently, a normal production self-hosted deployment is not internal and does include the `_scripts.pug` analytics tags unless those template blocks are changed. `NODE_ENV=production` can remain set; only the template blocks need to be removed or guarded.
+
+Apart from the integrations above, including the optional Google sign-in flows, projects, tasks, time tracking, notifications, and the API run entirely on your own infrastructure.
+
 ## Network use and AGPLv3 §13
 
 If you modify the AGPLv3-licensed parts of Worklenz and make the result
