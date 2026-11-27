@@ -408,8 +408,8 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
         // This matches backend logic which returns no data when primary filters are empty
         const hasInvalidFilters =
           selectedProjects.length === 0 || // Projects are required
-          selectedTeams.length === 0 || // Teams are required
-          selectedCategories.length === 0 || // Categories required unless "No Category" is checked
+          selectedTeams.length === 0 ||// Teams are required
+          (selectedCategories.length === 0 && !noCategory) ||// Categories required unless "No Category" is checked
           selectedMembers.length === 0; // Members are required (backend line 790: members.length === 0 → show nothing)
 
         if (hasInvalidFilters) {
@@ -425,9 +425,9 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
         // Format dates using date-fns
         const formattedDateRange = dateRange
           ? [
-              format(new Date(dateRange[0]), 'yyyy-MM-dd'),
-              format(new Date(dateRange[1]), 'yyyy-MM-dd'),
-            ]
+            format(new Date(dateRange[0]), 'yyyy-MM-dd'),
+            format(new Date(dateRange[1]), 'yyyy-MM-dd'),
+          ]
           : undefined;
 
         const body = {
@@ -732,74 +732,74 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
         ) : (
           <>
             {totalCount > 0 && (
-          <div
-            style={{
-              flexShrink: 0,
-              marginBottom: 12,
-              fontSize: '14px',
-              color: themeMode === 'dark' ? '#a0a0a0' : '#666',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <span>
-              Displaying {totalCount} member{totalCount !== 1 ? 's' : ''}
-              {shouldVirtualize && (
-                <span style={{ marginLeft: 8, fontSize: '12px', opacity: 0.7 }}>
-                  (showing {visibleStart + 1}–{Math.min(visibleEnd, totalCount)} in view)
+              <div
+                style={{
+                  flexShrink: 0,
+                  marginBottom: 12,
+                  fontSize: '14px',
+                  color: themeMode === 'dark' ? '#a0a0a0' : '#666',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <span>
+                  Displaying {totalCount} member{totalCount !== 1 ? 's' : ''}
+                  {shouldVirtualize && (
+                    <span style={{ marginLeft: 8, fontSize: '12px', opacity: 0.7 }}>
+                      (showing {visibleStart + 1}–{Math.min(visibleEnd, totalCount)} in view)
+                    </span>
+                  )}
                 </span>
-              )}
-            </span>
-          </div>
-        )}
+              </div>
+            )}
 
-        {shouldVirtualize ? (
-          /* Virtualized rendering for large datasets — availableSpaceRef fills
-             the remaining height the surrounding layout gives this component,
-             which is what the ResizeObserver above measures into
-             containerHeight, so the scroll box below matches it exactly. */
-          <div ref={availableSpaceRef} style={{ flex: 1, minHeight: 0 }}>
-            <div
-              ref={scrollContainerRef}
-              onScroll={handleScroll}
-              style={{
-                width: '100%',
-                height: `${viewportHeight}px`,
-                overflowY: 'auto',
-                overflowX: 'hidden',
-                position: 'relative',
-              }}
-            >
-              {/* Spacer div to create the full scrollable height */}
-              <div style={{ height: `${totalVirtualHeight}px`, position: 'relative' }}>
-                {/* Chart positioned at the correct offset within the virtual space */}
+            {shouldVirtualize ? (
+              /* Virtualized rendering for large datasets — availableSpaceRef fills
+                 the remaining height the surrounding layout gives this component,
+                 which is what the ResizeObserver above measures into
+                 containerHeight, so the scroll box below matches it exactly. */
+              <div ref={availableSpaceRef} style={{ flex: 1, minHeight: 0 }}>
                 <div
+                  ref={scrollContainerRef}
+                  onScroll={handleScroll}
                   style={{
-                    position: 'absolute',
-                    top: `${chartOffsetTop}px`,
-                    left: 0,
-                    right: 0,
-                    height: `${chartCanvasHeight}px`,
+                    width: '100%',
+                    height: `${viewportHeight}px`,
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
+                    position: 'relative',
                   }}
                 >
-                  <Bar data={data} options={options} ref={chartRef} />
+                  {/* Spacer div to create the full scrollable height */}
+                  <div style={{ height: `${totalVirtualHeight}px`, position: 'relative' }}>
+                    {/* Chart positioned at the correct offset within the virtual space */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: `${chartOffsetTop}px`,
+                        left: 0,
+                        right: 0,
+                        height: `${chartCanvasHeight}px`,
+                      }}
+                    >
+                      <Bar data={data} options={options} ref={chartRef} />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        ) : (
-          /* Standard rendering for small datasets */
-          <div
-            style={{
-              width: '100%',
-              height: `${chartCanvasHeight}px`,
-              overflowX: 'hidden',
-            }}
-          >
-            <Bar data={data} options={options} ref={chartRef} />
-          </div>
-        )}
+            ) : (
+              /* Standard rendering for small datasets */
+              <div
+                style={{
+                  width: '100%',
+                  height: `${chartCanvasHeight}px`,
+                  overflowX: 'hidden',
+                }}
+              >
+                <Bar data={data} options={options} ref={chartRef} />
+              </div>
+            )}
           </>
         )}
       </div>
