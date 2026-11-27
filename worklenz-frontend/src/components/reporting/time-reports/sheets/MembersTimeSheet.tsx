@@ -421,23 +421,23 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
         const selectedMembers = members.filter(member => member.selected);
         const selectedUtilization = utilization.filter(item => item.selected);
 
-        // Validate primary filters - show empty chart if any required filter is not met
-        // This matches backend logic which returns no data when primary filters are empty
-        const hasInvalidFilters =
-          selectedProjects.length === 0 || // Projects are required
-          selectedTeams.length === 0 || // Teams are required
-          (selectedCategories.length === 0 && !noCategory) || // Categories required unless "No Category" is checked
-          selectedMembers.length === 0; // Members are required (backend line 790: members.length === 0 → show nothing)
+// Validate primary filters - show empty chart if any required filter is not met
+// This matches backend logic which returns no data when primary filters are empty
+const hasInvalidFilters =
+  selectedProjects.length === 0 || // Projects are required
+  selectedTeams.length === 0 || // Teams are required
+  (selectedCategories.length === 0 && !noCategory) || // Categories required unless "No Category" is checked
+  selectedMembers.length === 0; // Members are required (backend line 790: members.length === 0 → show nothing)
 
-        if (hasInvalidFilters) {
-          setJsonData([]);
-          onTotalsUpdate({
-            total_time_logs: '0',
-            total_estimated_hours: '0',
-            total_utilization: '0',
-          });
-          return;
-        }
+if (hasInvalidFilters) {
+  setJsonData([]);
+  onTotalsUpdate({
+    total_time_logs: '0',
+    total_estimated_hours: '0',
+    total_utilization: '0',
+  });
+  return;
+}
 
         // Format dates using date-fns
         const formattedDateRange = dateRange
