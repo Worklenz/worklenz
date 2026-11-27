@@ -59,7 +59,8 @@ for file in "${BASE_SQL_FILES[@]}"; do
     echo "Executing $file..."
     psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$full_path"
   else
-    echo "WARNING: $file not found, skipping."
+    echo "ERROR: required schema file $file not found." >&2
+    exit 1
   fi
 done
 
@@ -75,7 +76,7 @@ if [ -d "$MIGRATIONS_DIR" ] && compgen -G "$MIGRATIONS_DIR/*.sql" > /dev/null; t
     version=$(basename "$f")
     if ! psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT 1 FROM schema_migrations WHERE version = '$version'" | grep -q 1; then
       echo "Applying migration: $version"
-      psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$f"
+      psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$f"
       psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "INSERT INTO schema_migrations (version) VALUES ('$version');"
     else
       echo "Skipping already applied migration: $version"
@@ -84,5 +85,9 @@ if [ -d "$MIGRATIONS_DIR" ] && compgen -G "$MIGRATIONS_DIR/*.sql" > /dev/null; t
 else
   echo "No migration files found or directory is empty, skipping migrations."
 fi
+
+# Only a fresh initialized schema is eligible to run migrations without history.
+psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+  "CREATE TABLE public.worklenz_compose_fresh_install (id boolean PRIMARY KEY DEFAULT true CHECK (id)); INSERT INTO public.worklenz_compose_fresh_install DEFAULT VALUES;"
 
 echo "🎉 Database initialization completed successfully."

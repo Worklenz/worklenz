@@ -1,7 +1,11 @@
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 CREATE ROLE worklenz_client;
 
-GRANT CONNECT ON DATABASE worklenz_db TO worklenz_client;
+DO $$
+BEGIN
+  EXECUTE format('GRANT CONNECT ON DATABASE %I TO worklenz_client', current_database());
+END
+$$;
 GRANT INSERT, SELECT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO worklenz_client;
 
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO worklenz_client;
