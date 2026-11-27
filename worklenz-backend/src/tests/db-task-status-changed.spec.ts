@@ -106,4 +106,15 @@ describe("notifyTaskDoneSubscribers", () => {
       })
     );
   });
+  it("limits the subscriber query to users who still belong to the task project", async () => {
+    mockedQuery.mockResolvedValue({rows: []});
+
+    await notifyTaskDoneSubscribers("task-1");
+
+    const [sql] = mockedQuery.mock.calls[0];
+    expect(sql).toContain("FROM project_members pm");
+    expect(sql).toContain("pm.team_member_id = ts.team_member_id");
+    expect(sql).toContain("pm.project_id = t.project_id");
+  });
+
 });
