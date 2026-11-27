@@ -15,7 +15,7 @@
   "projectColor": "Color",
   "startingFrom": "Starting from",
   "blankSelectedHint": "Empty project. Pick a template on the right to get a head start.",
-  "blankSoftwareSelectedHint": "Blank software project with issue tracking defaults. Templates are not used for Software projects.",
+  "blankSoftwareProjectSelectedHint": "Blank software project with issue tracking defaults.",
   "templateSelectedHint": "Template structure will be copied into your project.",
   "searchTemplates": "Search templates",
   "searchYourLibrary": "Search your library",

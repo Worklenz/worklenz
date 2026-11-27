@@ -59,6 +59,7 @@
       "labels": "Etiquetas",
       "billable": "Faturável",
       "notify": "Notificar",
+      "notify-tooltip": "Os membros selecionados receberão uma notificação in-app e por e-mail quando esta tarefa for marcada como concluída.",
       "when-done-notify": "Ao concluir, notificar",
       "start-date": "Data de início",
       "end-date": "Data de término",
@@ -238,7 +239,8 @@
       "projectNotStartedWarningDesc": "Este projeto está programado para começar em {{date}}. O tempo não pode ser registrado antes da data de início do projeto.",
       "projectStartDateHint": "Data de início do projeto: {{date}}"
     },
-    "rollupLoggedTooltip": "Soma do tempo logado nas subtarefas"
+    "rollupLoggedTooltip": "Soma do tempo logado nas subtarefas",
+    "moveToProject": "Mover para o projeto"
   },
   "taskActivityLogTab": {
     "title": "Registro de atividade",
@@ -290,5 +292,6 @@
     "description": "Você está atribuído a uma subtarefa desta tarefa. Você pode ver a tarefa pai para contexto, mas não pode editá-la."
   },
   "today": "Hoje",
-  "yesterday": "Ontem"
+  "yesterday": "Ontem",
+  "more": "Mais opções"
 }

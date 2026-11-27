@@ -19,6 +19,8 @@ import { colors } from '@/styles/colors';
 import dayjs from 'dayjs';
 import React from 'react';
 import { decodeHtmlEntities } from '@/utils/html-entities';
+import { getContrastColor, toSolidTagColor } from '@/utils/colorUtils';
+import { themeWiseColor } from '@/utils/themeWiseColor';
 import CustomTableTitle from '@/components/CustomTableTitle';
 import AssigneeSelector from '@/components/AssigneeSelector';
 import AvatarGroup from '@/components/AvatarGroup';
@@ -266,14 +268,24 @@ const AllTasksReportsTable = () => {
         filters: filterOptions.status,
         filteredValue: selectedStatuses,
         filterMultiple: true,
-        render: (_, record) => (
-          <Tag
-            style={{ color: colors.darkGray, borderRadius: 48, fontSize: 11, margin: 0 }}
-            color={record.status_color}
-          >
-            {record.status_name || '-'}
-          </Tag>
-        ),
+        render: (_, record) => {
+          const statusColor = toSolidTagColor(
+            themeWiseColor(
+              record.status_color || '',
+              record.status_color_dark || record.status_color || '',
+              isDarkMode ? 'dark' : 'light'
+            )
+          );
+          return (
+            <Tag
+              key={`${record.id}-status-${record.status_id}-${statusColor}`}
+              style={{ color: statusColor ? getContrastColor(statusColor) : undefined, borderRadius: 48, fontSize: 11, margin: 0 }}
+              color={statusColor}
+            >
+              {record.status_name || '-'}
+            </Tag>
+          );
+        },
       },
       {
         key: 'priority',
@@ -284,17 +296,27 @@ const AllTasksReportsTable = () => {
         filters: filterOptions.priority,
         filteredValue: selectedPriorities,
         filterMultiple: true,
-        render: (_, record) =>
-          record.priority_name ? (
+        render: (_, record) => {
+          if (!record.priority_name) {
+            return <Typography.Text type="secondary">-</Typography.Text>;
+          }
+          const priorityColor = toSolidTagColor(
+            themeWiseColor(
+              record.priority_color || '',
+              record.priority_color_dark || record.priority_color || '',
+              isDarkMode ? 'dark' : 'light'
+            )
+          );
+          return (
             <Tag
-              style={{ color: colors.darkGray, borderRadius: 48, fontSize: 11, margin: 0 }}
-              color={record.priority_color}
+              key={`${record.id}-priority-${record.priority_id}-${priorityColor}`}
+              style={{ color: priorityColor ? getContrastColor(priorityColor) : undefined, borderRadius: 48, fontSize: 11, margin: 0 }}
+              color={priorityColor}
             >
               {record.priority_name}
             </Tag>
-          ) : (
-            <Typography.Text type="secondary">-</Typography.Text>
-          ),
+          );
+        },
       },
       {
         key: 'assignees',

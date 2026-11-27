@@ -247,6 +247,7 @@
       "addSelection": "+ Shto një zgjedhje",
       "selectionPlaceholder": "Shkruani një zgjedhje dhe shtypni Enter",
       "selectionNameLabel": "Emri i zgjedhjes",
+      "reorderSelection": "Tërhiq për të rirenditur zgjedhjen",
       "labels": "Etiketat",
       "addLabel": "+ Shto një etiketë",
       "keyLabelPlaceholder": "p.sh.: MK"
@@ -289,6 +290,7 @@
       "optionPlaceholder": "Shkruani një opsion dhe shtypni Enter",
       "optionNameLabel": "Emri i opsionit",
       "optionColorLabel": "Ngjyra e opsionit",
+      "reorderOption": "Tërhiq për të rirenditur opsionin",
       "moveTo": "Zhvendos te…",
       "moveToLabel": "Zhvendos opsionin në një grup tjetër {{parent}}",
       "removeOption": "Hiq opsionin",

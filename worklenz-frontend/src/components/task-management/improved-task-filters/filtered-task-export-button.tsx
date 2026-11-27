@@ -143,8 +143,8 @@ export const FilteredTaskExportButton = ({
         error instanceof Error
           ? error.message
           : t('exportFilteredFailedMessage', {
-              defaultValue: 'Could not export filtered tasks. Please try again.',
-            })
+            defaultValue: 'Could not export filtered tasks. Please try again.',
+          })
       );
     } finally {
       setIsExporting(false);
@@ -171,8 +171,8 @@ export const FilteredTaskExportButton = ({
         }
         className={
           isDarkMode
-            ? 'border-[#303030] bg-[#141414] text-gray-200'
-            : undefined
+            ? '!h-[30px] !min-h-[30px] !px-2.5 !py-1.5 !text-xs !font-semibold !rounded-md !border !border-gray-500 !bg-gray-600 !text-white hover:!bg-gray-500'
+            : '!h-[30px] !min-h-[30px] !px-2.5 !py-1.5 !text-xs !font-semibold !rounded-md !border !border-gray-300 !bg-gray-200 !text-gray-800 hover:!bg-gray-300'
         }
       >
         {t('exportFiltered', { defaultValue: 'Export' })}

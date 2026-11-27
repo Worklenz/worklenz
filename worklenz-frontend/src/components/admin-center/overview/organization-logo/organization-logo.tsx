@@ -26,6 +26,11 @@ import { openUpgradeModal, setOrganizationLogo } from '@/features/admin-center/a
 import { useAuthService } from '@/hooks/useAuth';
 import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
+import { updateTeamLogo } from '@/features/teams/teamSlice';
+import {
+  clearOrganizationLogoCache,
+  writeOrganizationLogoCache,
+} from '@/utils/organization-logo-cache';
 
 interface OrganizationLogoProps {
   themeMode: string;
@@ -162,8 +167,24 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
 
       if (res.done) {
         const newLogoUrl = res.body?.logo_url || null;
+
         setPreviewUrl(newLogoUrl);
         dispatch(setOrganizationLogo(newLogoUrl));
+
+        if (currentSession?.team_id) {
+          dispatch(
+            updateTeamLogo({
+              teamId: currentSession.team_id,
+              logoUrl: newLogoUrl,
+            })
+          );
+          if (newLogoUrl) {
+            writeOrganizationLogoCache(currentSession.team_id, newLogoUrl);
+          } else {
+            clearOrganizationLogoCache(currentSession.team_id);
+          }
+        }
+
         refetch();
       } else {
         logger.error('Error uploading logo', res.message);
@@ -195,6 +216,17 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
       if (res.done) {
         setPreviewUrl(null);
         dispatch(setOrganizationLogo(null));
+
+        if (currentSession?.team_id) {
+          dispatch(
+            updateTeamLogo({
+              teamId: currentSession.team_id,
+              logoUrl: null,
+            })
+          );
+          clearOrganizationLogoCache(currentSession.team_id);
+        }
+
         refetch();
       } else {
         logger.error('Error deleting logo', res.message);

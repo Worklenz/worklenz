@@ -8,6 +8,7 @@ import { Button, message } from '@/shared/antd-imports';
 import logger from '@/utils/errorLogger';
 import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
 import { createMentionEnterBinding } from './description-editor-keyboard';
+import { findMentionRanges, normalizeMentionText, removeActiveMentionQuery } from './mention-matching';
 import 'react-quill-new/dist/quill.snow.css';
 import './description-editor.css';
 
@@ -110,40 +111,7 @@ const SANITIZE_CONFIG = {
   ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'data-list'],
 };
 
-const findMentionRanges = (text: string, members: MentionMember[]) => {
-  const normalizedText = text.toLocaleLowerCase();
-  const ranges: Array<{ start: number; length: number }> = [];
-  const orderedMembers = [...members].sort((a, b) => b.name.length - a.name.length);
 
-  orderedMembers.forEach(member => {
-    const mention = `@${member.name.trim()}`;
-    if (mention.length < 2) return;
-    const normalizedMention = mention.toLocaleLowerCase();
-    let searchFrom = 0;
-    let matchIndex = normalizedText.indexOf(normalizedMention, searchFrom);
-
-    while (matchIndex !== -1) {
-      const previousCharacter = matchIndex > 0 ? text[matchIndex - 1] : '';
-      const nextCharacter = text[matchIndex + mention.length] || '';
-      const hasValidStart = !previousCharacter || /[\s([{,:;.!?]/.test(previousCharacter);
-      const hasValidEnd = !nextCharacter || /[\s.,;:!?)}\]]/.test(nextCharacter);
-      const overlapsExisting = ranges.some(
-        range =>
-          matchIndex < range.start + range.length &&
-          matchIndex + mention.length > range.start
-      );
-
-      if (hasValidStart && hasValidEnd && !overlapsExisting) {
-        ranges.push({ start: matchIndex, length: mention.length });
-      }
-
-      searchFrom = matchIndex + mention.length;
-      matchIndex = normalizedText.indexOf(normalizedMention, searchFrom);
-    }
-  });
-
-  return ranges;
-};
 
 const applyMentionFormatting = (editor: QuillEditorInstance, members: MentionMember[]) => {
   const text = editor.getText();
@@ -379,15 +347,15 @@ const DescriptionEditor = ({
     []
   );
 
- const extractWordCount = useCallback((html: string) => {
-  if (!html) return 0;
+  const extractWordCount = useCallback((html: string) => {
+    if (!html) return 0;
 
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-  const text = doc.body.textContent?.trim() || '';
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const text = doc.body.textContent?.trim() || '';
 
-  return text ? text.split(/\s+/).length : 0;
-}, []);
+    return text ? text.split(/\s+/).length : 0;
+  }, []);
 
   // Classifies a list element as ordered or bulleted. Quill 1 used <ul>/<ol>;
   // Quill 2 emits <ol> for both and marks the items with data-list, so the tag
@@ -619,10 +587,33 @@ const DescriptionEditor = ({
   }, [isEditorOpen, handleDiscardClick]);
 
   const filteredMentionMembers = useMemo(() => {
-    if (!mentionQuery) return [];
-    const query = mentionQuery.query.trim().toLocaleLowerCase();
+    if (!mentionQuery || !quillRef.current) return [];
+
+    const query = normalizeMentionText(mentionQuery.query.trim());
+    const editor = quillRef.current.getEditor();
+    const text = editor.getText();
+
+    // Exclude the mention currently being typed from duplicate detection.
+    const textWithoutCurrentQuery =
+      removeActiveMentionQuery(text, mentionQuery.start, mentionQuery.end);
+
+    const existingMentions = new Set(
+      findMentionRanges(textWithoutCurrentQuery, mentionMembers).map(({ start, length }) =>
+        normalizeMentionText(
+          textWithoutCurrentQuery.slice(start, start + length)
+        )
+      )
+    );
+
     return mentionMembers
-      .filter(member => member.name.toLocaleLowerCase().includes(query))
+      .filter(member => {
+        const normalizedName = normalizeMentionText(member.name.trim());
+
+        return (
+          normalizedName.includes(query) &&
+          !existingMentions.has(`@${normalizedName}`)
+        );
+      })
       .slice(0, 8);
   }, [mentionMembers, mentionQuery]);
   filteredMentionMembersRef.current = filteredMentionMembers;

@@ -5,6 +5,15 @@ jest.mock("../config/db", () => ({
   },
 }));
 
+jest.mock("../redis/client", () => ({
+  redisClient: {
+    isOpen: false,
+    get: jest.fn(),
+    setEx: jest.fn(),
+    del: jest.fn(),
+  },
+}));
+
 jest.mock("../shared/utils", () => ({
   log_error: jest.fn(),
 }));
@@ -209,13 +218,36 @@ describe("verify-project-access middleware", () => {
         .mockResolvedValueOnce(createQueryResult([{ id: 1 }])) // active in team-a
         .mockResolvedValueOnce(createQueryResult([{ team_id: "team-b" }])) // project is in team-b
         .mockResolvedValueOnce(createQueryResult([{ owner: true, admin_role: false }])) // user has owner role in team-b
-        .mockResolvedValueOnce(createQueryResult([{ activate_team: true }])); // activate_team function
+        .mockResolvedValueOnce(createQueryResult([{ id: "u-multi" }])); // conditional active_team update
 
       const middleware = verifyProjectAccess("params", "id");
       await middleware(req, res, next);
 
       expect(next).toHaveBeenCalled();
       expect(req.user.team_id).toBe("team-b"); // auto switched
+    });
+
+    it("does not auto-switch teams while a manual switch suppress window is active", async () => {
+      const req = createMockRequest({
+        user: { id: "u-multi", team_id: "team-a" },
+        params: { id: "p-teamb" },
+      });
+      const res = createMockResponse();
+      const next = jest.fn();
+
+      mockedDb.query
+        .mockResolvedValueOnce(createQueryResult([{ id: 1 }])) // active in team-a
+        .mockResolvedValueOnce(createQueryResult([{ team_id: "team-b" }])) // project is in team-b
+        .mockResolvedValueOnce(createQueryResult([{ owner: true, admin_role: false }])) // role in team-b
+        .mockResolvedValueOnce(createQueryResult([])); // atomic switch suppressed
+
+      const middleware = verifyProjectAccess("params", "id");
+      await middleware(req, res, next);
+
+      expect(res.statusCode).toBe(403);
+      expect(next).not.toHaveBeenCalled();
+      expect(req.user.team_id).toBe("team-a");
+      expect(mockedDb.query.mock.calls.some(call => String(call[0]).includes("manual_team_switch_until"))).toBe(true);
     });
 
     it("returns 500 when database throws an error", async () => {

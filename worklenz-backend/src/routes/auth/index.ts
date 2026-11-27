@@ -2,6 +2,7 @@ import express from "express";
 import passport from "passport";
 
 import AuthController from "../../controllers/auth-controller";
+import googleOneTapRouter from "./google-one-tap";
 
 import signUpValidator from "../../middlewares/validators/sign-up-validator";
 import resetEmailValidator from "../../middlewares/validators/reset-email-validator";
@@ -35,6 +36,7 @@ function logOAuthLoginSuccess(user: any): void {
 }
 
 const authRouter = express.Router();
+authRouter.use("/google/one-tap", googleOneTapRouter);
 
 const isGoogleOAuthConfigured = Boolean(
   process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_ID !== "disabled" &&

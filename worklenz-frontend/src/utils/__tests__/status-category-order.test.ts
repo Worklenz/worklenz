@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  canReorderStatuses,
   getCategoryRank,
   getCollapsedGroupIds,
   getDoneStatusGroupIds,
@@ -28,6 +29,19 @@ const tasks: Task[] = [
 ];
 
 describe('status category order', () => {
+  it('allows roadmap status reordering only within a known category', () => {
+    const reorderStatuses: ITaskStatus[] = [
+      { id: 'doing-1', category_id: 'doing' },
+      { id: 'doing-2', category_id: 'doing' },
+      { id: 'done-1', category_id: 'done' },
+      { id: 'unknown' },
+    ];
+
+    expect(canReorderStatuses(reorderStatuses, 0, 1)).toBe(true);
+    expect(canReorderStatuses(reorderStatuses, 0, 2)).toBe(false);
+    expect(canReorderStatuses(reorderStatuses, 0, 3)).toBe(false);
+    expect(canReorderStatuses(reorderStatuses, 0, 4)).toBe(false);
+  });
   it('ranks known categories and puts unknown categories last', () => {
     expect(getCategoryRank({ category_id: 'doing' }, ['todo', 'doing', 'done'])).toBe(1);
     expect(getCategoryRank({ category_id: 'unknown' }, ['todo', 'doing', 'done'])).toBe(3);
@@ -125,21 +139,22 @@ describe('status category order', () => {
     expect(elapsedMs).toBeLessThan(1000);
   });
 
-  it('collapses Done groups by default but honors explicit expand and collapse overrides', () => {
+  it('keeps groups expanded by default but honors persisted and explicit collapse state', () => {
     const statusGroups: TaskGroup[] = [
       { id: 'todo-1', title: 'To Do', taskIds: [], type: 'status' },
       { id: 'done-1', title: 'Done', taskIds: [], type: 'status' },
     ];
-    const doneGroupIds = new Set(['done-1']);
-
     expect(
-      [...getCollapsedGroupIds(statusGroups, doneGroupIds, new Set(), {})]
-    ).toEqual(['done-1']);
-    expect(
-      [...getCollapsedGroupIds(statusGroups, doneGroupIds, new Set(), { 'done-1': { collapsed: false } })]
+      [...getCollapsedGroupIds(statusGroups, new Set(), {})]
     ).toEqual([]);
     expect(
-      [...getCollapsedGroupIds(statusGroups, new Set(), new Set(), { 'done-1': { collapsed: true } })]
+      [...getCollapsedGroupIds(statusGroups, new Set(), { 'done-1': { collapsed: false } })]
+    ).toEqual([]);
+    expect(
+      [...getCollapsedGroupIds(statusGroups, new Set(), { 'done-1': { collapsed: true } })]
+    ).toEqual(['done-1']);
+    expect(
+      [...getCollapsedGroupIds(statusGroups, new Set(['done-1']), {})]
     ).toEqual(['done-1']);
   });
 

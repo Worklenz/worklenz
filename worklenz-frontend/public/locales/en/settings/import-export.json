@@ -296,5 +296,8 @@
     "failedMessage": "Your import job failed. Please try again.",
     "processingTitle": "Import in progress",
     "processingMessage": "Your import is being processed. We will notify you when it is ready."
-  }
+  },
+  "proRequired": "Pro plan required",
+  "csvProRequired": "CSV import is available on the Pro plan and above.",
+  "upgradePlan": "Upgrade plan"
 }

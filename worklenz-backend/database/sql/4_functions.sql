@@ -6058,9 +6058,11 @@ AS
 $$
 DECLARE
     _user_id UUID;
-
+    _is_archived BOOLEAN;
 BEGIN
-    IF EXISTS(SELECT project_id FROM archived_projects WHERE project_id = _project_id)
+    SELECT COALESCE(archived_for_team, FALSE) INTO _is_archived FROM projects WHERE id = _project_id;
+
+    IF _is_archived IS TRUE
     THEN
         DELETE FROM archived_projects WHERE project_id = _project_id;
         UPDATE projects SET archived_for_team = FALSE WHERE id = _project_id;
@@ -6071,7 +6073,8 @@ BEGIN
                 IF NOT (is_null_or_empty(_user_id))
                 THEN
                     INSERT INTO archived_projects (user_id, project_id)
-                    VALUES (_user_id, _project_id);
+                    VALUES (_user_id, _project_id)
+                    ON CONFLICT (user_id, project_id) DO NOTHING;
                 END IF;
             END LOOP;
         UPDATE projects SET archived_for_team = TRUE WHERE id = _project_id;

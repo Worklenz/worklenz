@@ -107,5 +107,8 @@
   "copyLink": "Link kopieren",
   "removeLink": "Link entfernen",
   "linkCopied": "Link kopiert",
-  "linkCopyFailed": "Kopieren fehlgeschlagen. Wähle die Adresse aus, um sie zu kopieren."
+  "linkCopyFailed": "Kopieren fehlgeschlagen. Wähle die Adresse aus, um sie zu kopieren.",
+  "proRequired": "Pro-Tarif erforderlich",
+  "docsProRequired": "Projektdokumente sind ab dem Pro-Tarif verfügbar.",
+  "upgrade": "Tarif upgraden"
 }

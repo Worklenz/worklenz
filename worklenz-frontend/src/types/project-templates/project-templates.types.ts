@@ -4,6 +4,7 @@ import type {
 } from '@/types/project/projectTemplate.types';
 
 export interface IWorklenzTemplate {
+  project_type?: 'general' | 'software';
   id?: string;
   name?: string;
   image_url?: string;

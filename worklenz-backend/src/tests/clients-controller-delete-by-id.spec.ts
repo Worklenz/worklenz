@@ -58,8 +58,27 @@ describe("ClientsController.deleteById (Settings > Clients)", () => {
     mockedQuery.mockReset();
   });
 
+  it("refuses to delete a client that is still assigned to projects", async () => {
+    mockedQuery.mockResolvedValueOnce(createQueryResult([{ projects_count: 2 }]));
+    const res = createMockResponse();
+
+    await ClientsController.deleteById(request(), res);
+
+    expect(res.statusCode).toBe(409);
+    expect(res.body).toMatchObject({
+      done: false,
+      body: { code: "CLIENT_HAS_PROJECTS", projects_count: 2 },
+    });
+    expect(res.body.message).toMatch(/assigned to one or more projects/);
+    expect(mockedQuery).toHaveBeenCalledTimes(1);
+    expect(String(mockedQuery.mock.calls[0][0])).toMatch(/FROM projects/);
+    expect(String(mockedQuery.mock.calls[0][0])).not.toMatch(/DELETE FROM clients/);
+  });
+
   it("refuses to hard-delete a client that is part of the Client Portal, and deletes nothing", async () => {
-    mockedQuery.mockResolvedValueOnce(createQueryResult([{ in_portal: true }]));
+    mockedQuery
+      .mockResolvedValueOnce(createQueryResult([{ projects_count: 0 }]))
+      .mockResolvedValueOnce(createQueryResult([{ in_portal: true }]));
     const res = createMockResponse();
 
     await ClientsController.deleteById(request(), res);
@@ -67,33 +86,41 @@ describe("ClientsController.deleteById (Settings > Clients)", () => {
     expect(res.statusCode).toBe(409);
     expect(res.body).toMatchObject({ done: false, body: { code: "PORTAL_CLIENT" } });
     expect(res.body.message).toMatch(/Client Portal > Clients/);
-    // Only the footprint check ran: a bare DELETE would cascade away users, approvals and discussions.
-    expect(mockedQuery).toHaveBeenCalledTimes(1);
-    expect(String(mockedQuery.mock.calls[0][0])).not.toMatch(/DELETE FROM clients/);
+    // Projects check + portal footprint only: a bare DELETE would cascade away users, approvals and discussions.
+    expect(mockedQuery).toHaveBeenCalledTimes(2);
+    expect(String(mockedQuery.mock.calls[1][0])).not.toMatch(/DELETE FROM clients/);
   });
 
   it("scopes the footprint check to the caller's own team", async () => {
-    mockedQuery.mockResolvedValueOnce(createQueryResult([{ in_portal: false }])).mockResolvedValueOnce(createQueryResult([], 1));
+    mockedQuery
+      .mockResolvedValueOnce(createQueryResult([{ projects_count: 0 }]))
+      .mockResolvedValueOnce(createQueryResult([{ in_portal: false }]))
+      .mockResolvedValueOnce(createQueryResult([], 1));
 
     await ClientsController.deleteById(request(), createMockResponse());
 
     expect(mockedQuery.mock.calls[0][1]).toEqual(["client-1", "team-1"]);
     expect(mockedQuery.mock.calls[1][1]).toEqual(["client-1", "team-1"]);
+    expect(mockedQuery.mock.calls[2][1]).toEqual(["client-1", "team-1"]);
   });
 
   it("still deletes a plain project client that has no portal footprint", async () => {
-    mockedQuery.mockResolvedValueOnce(createQueryResult([{ in_portal: false }])).mockResolvedValueOnce(createQueryResult([], 1));
+    mockedQuery
+      .mockResolvedValueOnce(createQueryResult([{ projects_count: 0 }]))
+      .mockResolvedValueOnce(createQueryResult([{ in_portal: false }]))
+      .mockResolvedValueOnce(createQueryResult([], 1));
     const res = createMockResponse();
 
     await ClientsController.deleteById(request(), res);
 
     expect(res.statusCode).toBe(200);
     expect(res.body.done).toBe(true);
-    expect(String(mockedQuery.mock.calls[1][0])).toMatch(/DELETE FROM clients WHERE id = \$1 AND team_id = \$2/);
+    expect(String(mockedQuery.mock.calls[2][0])).toMatch(/DELETE FROM clients WHERE id = \$1 AND team_id = \$2/);
   });
 
   it("answers the same 409, not a raw 500, when a foreign key still points at the client", async () => {
     mockedQuery
+      .mockResolvedValueOnce(createQueryResult([{ projects_count: 0 }]))
       .mockResolvedValueOnce(createQueryResult([{ in_portal: false }]))
       .mockRejectedValueOnce(Object.assign(new Error("fk"), { code: "23503" }));
     const res = createMockResponse();

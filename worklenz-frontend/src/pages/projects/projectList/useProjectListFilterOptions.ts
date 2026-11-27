@@ -63,11 +63,11 @@ export const useProjectListFilterOptions = (): ColumnFilterOptions => {
     () => ({
       [ProjectListFieldKey.PROJECT_TYPE]: [
         {
-          text: t('projectTypeSoftware', { defaultValue: 'Software Project' }),
+          text: t('projectTypeSoftware', { defaultValue: 'Software' }),
           value: 'software',
         },
         {
-          text: t('projectTypeGeneral', { defaultValue: 'General Project' }),
+          text: t('projectTypeGeneral', { defaultValue: 'General' }),
           value: 'general',
         },
       ],

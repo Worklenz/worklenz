@@ -46,6 +46,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
     const scrollTimerRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(null);
     const availableSpaceRef = useRef<HTMLDivElement>(null);
     const fetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const latestFetchRequestIdRef = useRef(0);
 
     const {
       teams,
@@ -354,6 +355,22 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
       });
     }, []);
 
+    // Synchronize scroll position when the virtualized viewport is recreated
+    useEffect(() => {
+      if (scrollTimerRef.current) {
+        cancelAnimationFrame(scrollTimerRef.current);
+        scrollTimerRef.current = null;
+      }
+
+      const scrollContainer = scrollContainerRef.current;
+
+      setScrollTop(
+        shouldVirtualize && scrollContainer
+          ? scrollContainer.scrollTop
+          : 0
+      );
+    }, [shouldVirtualize]);
+
     // Cleanup rAF on unmount
     useEffect(() => {
       return () => {
@@ -364,6 +381,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
     }, []);
 
     const fetchChartData = useCallback(async () => {
+      const requestId = ++latestFetchRequestIdRef.current;
       // The filter option lists (teams, projects, categories, members, ...)
       // are still being fetched — "no selection" right now doesn't mean the
       // user has an empty selection, it means we don't know yet. Resolving
@@ -392,7 +410,6 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
         // Validate dateRange before making API call
         if (!dateRange || dateRange.length !== 2 || !dateRange[0] || !dateRange[1]) {
           console.warn('[MembersTimeSheet] Invalid dateRange, skipping fetch:', dateRange);
-          setLoading(false);
           return;
         }
 
@@ -404,23 +421,23 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
         const selectedMembers = members.filter(member => member.selected);
         const selectedUtilization = utilization.filter(item => item.selected);
 
-        // Validate primary filters - show empty chart if any required filter is not met
-        // This matches backend logic which returns no data when primary filters are empty
-        const hasInvalidFilters =
-          selectedProjects.length === 0 || // Projects are required
-          selectedTeams.length === 0 ||// Teams are required
-          (selectedCategories.length === 0 && !noCategory) ||// Categories required unless "No Category" is checked
-          selectedMembers.length === 0; // Members are required (backend line 790: members.length === 0 → show nothing)
+// Validate primary filters - show empty chart if any required filter is not met
+// This matches backend logic which returns no data when primary filters are empty
+const hasInvalidFilters =
+  selectedProjects.length === 0 || // Projects are required
+  selectedTeams.length === 0 || // Teams are required
+  (selectedCategories.length === 0 && !noCategory) || // Categories required unless "No Category" is checked
+  selectedMembers.length === 0; // Members are required (backend line 790: members.length === 0 → show nothing)
 
-        if (hasInvalidFilters) {
-          setJsonData([]);
-          onTotalsUpdate({
-            total_time_logs: '0',
-            total_estimated_hours: '0',
-            total_utilization: '0',
-          });
-          return;
-        }
+if (hasInvalidFilters) {
+  setJsonData([]);
+  onTotalsUpdate({
+    total_time_logs: '0',
+    total_estimated_hours: '0',
+    total_utilization: '0',
+  });
+  return;
+}
 
         // Format dates using date-fns
         const formattedDateRange = dateRange
@@ -446,6 +463,11 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
         };
 
         const res = await reportingTimesheetApiService.getMemberTimeSheets(body, archived);
+
+        // Ignore responses from older requests
+        if (requestId !== latestFetchRequestIdRef.current) {
+          return;
+        }
 
         if (res.done) {
           // Ensure filteredRows is always an array, even if API returns null/undefined
@@ -474,6 +496,10 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
           });
         }
       } catch (error) {
+        if (requestId !== latestFetchRequestIdRef.current) {
+          return;
+        }
+
         console.error('Error fetching chart data:', error);
         logger.error('Error fetching chart data:', error);
         setJsonData([]);
@@ -483,9 +509,12 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
           total_utilization: '0',
         });
       } finally {
-        setLoading(false);
-        onLoadingChange?.(false);
+        if (requestId === latestFetchRequestIdRef.current) {
+          setLoading(false);
+          onLoadingChange?.(false);
+        }
       }
+
     }, [
       onLoadingChange,
       teams,

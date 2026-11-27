@@ -461,7 +461,7 @@ const ProjectViewHeader = memo(() => {
 
     if (selectedProject.start_date || selectedProject.end_date) {
       const tooltipContent = (
-        <Typography.Text style={{ color: colors.white }}>
+        <Typography.Text>
           {t('projectDatesInfo', { defaultValue: 'Project timeline information' })}
           <br />
           {selectedProject.start_date &&
@@ -483,7 +483,7 @@ const ProjectViewHeader = memo(() => {
     }
 
     return (
-      <Flex gap={4} align="center">
+      <Flex gap={8} align="center">
         {elements}
       </Flex>
     );
@@ -731,7 +731,7 @@ const ProjectViewHeader = memo(() => {
 
   const pageHeaderTitle = useMemo(
     () => (
-      <Flex gap={4} align="center" wrap="nowrap" className={styles.titleContainer}>
+      <Flex align="center" wrap="nowrap" className={styles.titleContainer}>
         <Tooltip title={t('navigateBackTooltip', { defaultValue: 'Go back to projects list' })}>
           <ArrowLeftOutlined
             className={styles.backButton}

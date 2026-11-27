@@ -59,6 +59,7 @@
       "labels": "Etiketat",
       "billable": "I faturueshëm",
       "notify": "Njofto",
+      "notify-tooltip": "Anëtarët e përzgjedhur do të marrin një njoftim në aplikacion dhe me email kur kjo detyrë të shënohet si e përfunduar.",
       "when-done-notify": "Kur përfundon, njofto",
       "start-date": "Data e fillimit",
       "end-date": "Data e përfundimit",
@@ -238,7 +239,8 @@
       "projectNotStartedWarningDesc": "Ky projekt është planifikuar të fillojë më {{date}}. Koha nuk mund të regjistrohet para datës së fillimit të projektit.",
       "projectStartDateHint": "Data e fillimit të projektit: {{date}}"
     },
-    "rollupLoggedTooltip": "Shuma e kohës së regjistruar në nën-detyrat"
+    "rollupLoggedTooltip": "Shuma e kohës së regjistruar në nën-detyrat",
+    "moveToProject": "Lëviz në projekt"
   },
   "taskActivityLogTab": {
     "title": "Regjistri i aktivitetit",
@@ -290,5 +292,6 @@
     "description": "Ju jeni caktuar në një nëndetyrë të kësaj detyre. Mund ta shihni prindin për kontekst, por nuk mund ta përpunoni."
   },
   "today": "Sot",
-  "yesterday": "Dje"
+  "yesterday": "Dje",
+  "more": "Më shumë opsione"
 }

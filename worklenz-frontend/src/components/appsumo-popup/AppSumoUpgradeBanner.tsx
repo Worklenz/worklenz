@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   BarChartOutlined,
-  TeamOutlined,
+  BgColorsOutlined,
   DollarOutlined,
   TableOutlined,
   PaperClipOutlined,
@@ -36,7 +36,7 @@ interface FeatureItem {
 
 const FEATURES: FeatureItem[] = [
   { key: 'advancedReporting', icon: <BarChartOutlined />, wide: true },
-  { key: 'clientPortal', icon: <TeamOutlined /> },
+  { key: 'brandedClientPortal', icon: <BgColorsOutlined /> },
   { key: 'finance', icon: <DollarOutlined /> },
   { key: 'customColumns', icon: <TableOutlined /> },
   { key: 'largeFiles', icon: <PaperClipOutlined /> },

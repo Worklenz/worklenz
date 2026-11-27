@@ -295,5 +295,8 @@
     "failedMessage": "Puna juaj e importit dështoi. Ju lutemi provoni përsëri.",
     "processingTitle": "Importi në vazhdim",
     "processingMessage": "Importimi juaj po përpunohet. Ne do t'ju njoftojmë kur të jetë gati."
-  }
+  },
+  "proRequired": "Kërkohet plani Pro",
+  "csvProRequired": "Importimi CSV ofrohet në planin Pro e lart.",
+  "upgradePlan": "Përmirëso planin"
 }

@@ -59,6 +59,7 @@
       "labels": "Etiquetas",
       "billable": "Facturable",
       "notify": "Notificar",
+      "notify-tooltip": "Los miembros seleccionados recibirán una notificación en la aplicación y por correo electrónico cuando esta tarea se marque como completada.",
       "when-done-notify": "Al finalizar, notificar",
       "start-date": "Fecha de inicio",
       "end-date": "Fecha de finalización",
@@ -238,7 +239,8 @@
       "projectNotStartedWarningDesc": "Este proyecto está programado para comenzar el {{date}}. No se puede registrar tiempo antes de la fecha de inicio del proyecto.",
       "projectStartDateHint": "Fecha de inicio del proyecto: {{date}}"
     },
-    "rollupLoggedTooltip": "Suma de tiempo conectado en subtareas"
+    "rollupLoggedTooltip": "Suma de tiempo conectado en subtareas",
+    "moveToProject": "Mover al proyecto"
   },
   "taskActivityLogTab": {
     "title": "Registro de actividad",
@@ -290,5 +292,6 @@
     "description": "Estás asignado a una subtarea de esta tarea. Puedes ver la tarea principal como contexto, pero no editarla."
   },
   "today": "Hoy",
-  "yesterday": "Ayer"
+  "yesterday": "Ayer",
+  "more": "Más opciones"
 }

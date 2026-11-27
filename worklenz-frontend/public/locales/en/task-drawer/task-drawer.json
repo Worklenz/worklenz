@@ -59,6 +59,7 @@
       "labels": "Labels",
       "billable": "Billable",
       "notify": "Notify",
+      "notify-tooltip": "Selected members will receive an in-app and email notification when this task is marked as Done.",
       "when-done-notify": "When done, notify",
       "start-date": "Start Date",
       "end-date": "End Date",
@@ -238,7 +239,8 @@
       "projectNotStartedWarningDesc": "This project is scheduled to start on {{date}}. Time cannot be logged before the project start date.",
       "projectStartDateHint": "Project start date: {{date}}"
     },
-    "rollupLoggedTooltip": "Sum of time logged on subtasks"
+    "rollupLoggedTooltip": "Sum of time logged on subtasks",
+    "moveToProject": "Move to Project"
   },
   "taskActivityLogTab": {
     "title": "Activity Log",
@@ -290,5 +292,6 @@
     "description": "You are assigned to a subtask of this task. You can view the parent for context but cannot edit it."
   },
   "today": "Today",
-  "yesterday": "Yesterday"
+  "yesterday": "Yesterday",
+  "more": "More Options"
 }

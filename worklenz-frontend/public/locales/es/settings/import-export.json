@@ -296,5 +296,8 @@
     "failedMessage": "Su trabajo de importación falló. Por favor inténtalo de nuevo.",
     "processingTitle": "Importación en curso",
     "processingMessage": "Su importación está siendo procesada. Te avisaremos cuando esté listo."
-  }
+  },
+  "proRequired": "Se requiere el plan Pro",
+  "csvProRequired": "La importación CSV está disponible desde el plan Pro.",
+  "upgradePlan": "Mejorar plan"
 }

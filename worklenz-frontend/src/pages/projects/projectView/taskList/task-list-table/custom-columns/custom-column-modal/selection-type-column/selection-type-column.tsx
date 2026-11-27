@@ -1,15 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { nanoid } from 'nanoid';
 import { useTranslation } from 'react-i18next';
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  KeyboardSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { PhaseColorCodes } from '../../../../../../../../shared/constants';
 import { Button, Flex, Input, Typography } from '@/shared/antd-imports';
 import type { InputRef } from '@/shared/antd-imports';
-import { CloseCircleOutlined, HolderOutlined } from '@/shared/antd-imports';
+import { CloseCircleOutlined } from '@/shared/antd-imports';
 
 import { useAppDispatch } from '../../../../../../../../hooks/useAppDispatch';
 import { useAppSelector } from '../../../../../../../../hooks/useAppSelector';
 import { setSelectionsList } from '../../../../../../../../features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 import SelectionColorPicker from '../SelectionColorPicker';
+import { SortableSelectionOptionRow } from '../sortable-selection-option-row';
 
 export type SelectionType = {
   selection_color: string;
@@ -26,6 +37,12 @@ interface SelectionTypeColumnProps {
 const SelectionTypeColumn = ({ canAddSelections = true }: SelectionTypeColumnProps) => {
   const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   // Get the custom column modal type and column ID from the store
   const {
@@ -40,12 +57,12 @@ const SelectionTypeColumn = ({ canAddSelections = true }: SelectionTypeColumnPro
     storeSelectionsList.length > 0
       ? storeSelectionsList.map(selection => ({ ...selection, parent_selection_id: null }))
       : [
-        {
-          selection_id: nanoid(),
-          selection_name: '',
-          selection_color: PhaseColorCodes[0],
-        },
-      ]
+          {
+            selection_id: nanoid(),
+            selection_name: '',
+            selection_color: PhaseColorCodes[0],
+          },
+        ]
   );
 
   // Use the current column data passed from TaskListV2
@@ -66,8 +83,6 @@ const SelectionTypeColumn = ({ canAddSelections = true }: SelectionTypeColumnPro
     }
   }, [customColumnModalType, openedColumn, customColumnId, dispatch, storeSelectionsList.length]);
 
-  // phase color options
-
   const inputRefs = useRef<Record<string, InputRef | null>>({});
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
 
@@ -77,6 +92,11 @@ const SelectionTypeColumn = ({ canAddSelections = true }: SelectionTypeColumnPro
     setPendingFocusId(null);
   }, [pendingFocusId, selections]);
 
+  const commitSelections = (nextSelections: SelectionType[]) => {
+    setSelections(nextSelections);
+    dispatch(setSelectionsList(nextSelections));
+  };
+
   // add a new, empty selection and focus it
   const handleAddSelection = () => {
     const newSelection = {
@@ -84,8 +104,7 @@ const SelectionTypeColumn = ({ canAddSelections = true }: SelectionTypeColumnPro
       selection_name: '',
       selection_color: PhaseColorCodes[selections.length % PhaseColorCodes.length],
     };
-    setSelections(prevSelections => [...prevSelections, newSelection]);
-    dispatch(setSelectionsList([...selections, newSelection])); // update the slice with the new selection
+    commitSelections([...selections, newSelection]);
     setPendingFocusId(newSelection.selection_id);
   };
 
@@ -104,34 +123,45 @@ const SelectionTypeColumn = ({ canAddSelections = true }: SelectionTypeColumnPro
 
   // update selection name
   const handleUpdateSelectionName = (selectionId: string, selectionName: string) => {
-    const updatedSelections = selections.map(selection =>
-      selection.selection_id === selectionId
-        ? { ...selection, selection_name: selectionName }
-        : selection
+    commitSelections(
+      selections.map(selection =>
+        selection.selection_id === selectionId
+          ? { ...selection, selection_name: selectionName }
+          : selection
+      )
     );
-    setSelections(updatedSelections);
-    dispatch(setSelectionsList(updatedSelections)); // update the slice with the new selection name
   };
 
   // update selection color
   const handleUpdateSelectionColor = (selectionId: string, selectionColor: string) => {
-    const updatedSelections = selections.map(selection =>
-      selection.selection_id === selectionId
-        ? { ...selection, selection_color: selectionColor }
-        : selection
+    commitSelections(
+      selections.map(selection =>
+        selection.selection_id === selectionId
+          ? { ...selection, selection_color: selectionColor }
+          : selection
+      )
     );
-    setSelections(updatedSelections);
-    dispatch(setSelectionsList(updatedSelections)); // update the slice with the new selection color
   };
 
   // remove a selection
   const handleRemoveSelection = (selectionId: string) => {
-    const updatedSelections = selections.filter(
-      selection => selection.selection_id !== selectionId
-    );
-    setSelections(updatedSelections);
-    dispatch(setSelectionsList(updatedSelections)); // update the slice after selection removal
+    commitSelections(selections.filter(selection => selection.selection_id !== selectionId));
   };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = selections.findIndex(selection => selection.selection_id === active.id);
+    const newIndex = selections.findIndex(selection => selection.selection_id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    commitSelections(arrayMove(selections, oldIndex, newIndex));
+  };
+
+  const dragHandleLabel = t('customColumns.fieldTypeForms.reorderSelection', {
+    defaultValue: 'Drag to reorder selection',
+  });
 
   return (
     <div style={{ maxWidth: '100%' }}>
@@ -139,46 +169,56 @@ const SelectionTypeColumn = ({ canAddSelections = true }: SelectionTypeColumnPro
         {t('customColumns.fieldTypeForms.selections')}
       </Typography.Text>
       <Flex vertical gap={8}>
-        <Flex vertical gap={8} style={{ maxHeight: 160, overflow: 'auto' }}>
-          {selections.map((selection, index) => (
-            <Flex gap={8} align="center" key={selection.selection_id}>
-              <HolderOutlined style={{ fontSize: 14, color: 'rgba(0,0,0,0.35)' }} />
-              <Input
-                ref={element => {
-                  inputRefs.current[selection.selection_id] = element;
-                }}
-                value={selection.selection_name}
-                onChange={e => handleUpdateSelectionName(selection.selection_id, e.target.value)}
-                onPressEnter={event => handleSelectionEnter(event, index)}
-                placeholder={t('customColumns.fieldTypeForms.selectionPlaceholder', {
-                  defaultValue: 'Type a selection and press Enter',
-                })}
-                aria-label={t('customColumns.fieldTypeForms.selectionNameLabel', {
-                  defaultValue: 'Selection name',
-                })}
-                size="small"
-                style={{ maxWidth: 300 }}
-              />
-              <SelectionColorPicker
-                value={selection.selection_color}
-                onChange={color =>
-                  handleUpdateSelectionColor(selection.selection_id, color)
-                }
-                ariaLabel={`${t('customColumns.fieldTypeForms.selectionNameLabel', {
-                  defaultValue: 'Selection name',
-                })}: ${selection.selection_name || ''} ${t(
-                  'customColumns.dependentSelection.optionColorLabel',
-                  { defaultValue: 'Option color' }
-                )}`}
-              />
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext
+            items={selections.map(selection => selection.selection_id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <Flex vertical gap={8} style={{ maxHeight: 160, overflow: 'auto' }}>
+              {selections.map((selection, index) => (
+                <SortableSelectionOptionRow
+                  key={selection.selection_id}
+                  id={selection.selection_id}
+                  dragHandleLabel={dragHandleLabel}
+                >
+                  <Input
+                    ref={element => {
+                      inputRefs.current[selection.selection_id] = element;
+                    }}
+                    value={selection.selection_name}
+                    onChange={e =>
+                      handleUpdateSelectionName(selection.selection_id, e.target.value)
+                    }
+                    onPressEnter={event => handleSelectionEnter(event, index)}
+                    placeholder={t('customColumns.fieldTypeForms.selectionPlaceholder', {
+                      defaultValue: 'Type a selection and press Enter',
+                    })}
+                    aria-label={t('customColumns.fieldTypeForms.selectionNameLabel', {
+                      defaultValue: 'Selection name',
+                    })}
+                    size="small"
+                    style={{ maxWidth: 300, flex: 1, minWidth: 0 }}
+                  />
+                  <SelectionColorPicker
+                    value={selection.selection_color}
+                    onChange={color => handleUpdateSelectionColor(selection.selection_id, color)}
+                    ariaLabel={`${t('customColumns.fieldTypeForms.selectionNameLabel', {
+                      defaultValue: 'Selection name',
+                    })}: ${selection.selection_name || ''} ${t(
+                      'customColumns.dependentSelection.optionColorLabel',
+                      { defaultValue: 'Option color' }
+                    )}`}
+                  />
 
-              <CloseCircleOutlined
-                onClick={() => handleRemoveSelection(selection.selection_id)}
-                style={{ cursor: 'pointer' }}
-              />
+                  <CloseCircleOutlined
+                    onClick={() => handleRemoveSelection(selection.selection_id)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                </SortableSelectionOptionRow>
+              ))}
             </Flex>
-          ))}
-        </Flex>
+          </SortableContext>
+        </DndContext>
 
         {canAddSelections ? (
           <Button

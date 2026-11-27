@@ -59,6 +59,17 @@ describe("canUseFeature: client portal (enforced even in legacy mode)", () => {
   });
 });
 
+describe("Free plan feature restrictions", () => {
+  it.each(["project_docs", "phase_assignee", "csv_import"] as const)(
+    "%s is available to Pro and Business but not Free in legacy mode",
+    feature => {
+      expect(canUseFeature(free, feature)).toBe(false);
+      expect(canUseFeature(proClassic, feature)).toBe(true);
+      expect(canUseFeature(business, feature)).toBe(true);
+    }
+  );
+});
+
 describe("canUseFeature: client portal in self-hosted deployments", () => {
   afterEach(() => {
     process.env.WORKLENZ_DEPLOYMENT_MODE = "cloud";
@@ -75,6 +86,28 @@ describe("canUseFeature: client portal in self-hosted deployments", () => {
   });
 });
 
+describe("self-hosted plan features", () => {
+  afterEach(() => { process.env.WORKLENZ_DEPLOYMENT_MODE = "cloud"; });
+
+  it.each(["project_docs", "phase_assignee", "csv_import"] as const)(
+    "grants %s even when the stored subscription is Free",
+    feature => {
+      process.env.WORKLENZ_DEPLOYMENT_MODE = "self_hosted";
+      expect(canUseFeature(free, feature)).toBe(true);
+    }
+  );
+
+  it("grants team features without looking up a subscription record", async () => {
+    process.env.WORKLENZ_DEPLOYMENT_MODE = "self_hosted";
+    const status = jest.mocked(paddleUtils.checkTeamSubscriptionStatus);
+    status.mockClear();
+    status.mockResolvedValue(undefined);
+    expect(await teamCanUseFeature("team-id", "phase_assignee")).toBe(true);
+    expect(status).not.toHaveBeenCalled();
+    expect(await teamCanUseFeature(undefined, "phase_assignee")).toBe(false);
+  });
+});
+
 describe("canUseFeature: enforce mode", () => {
   beforeEach(() => {
     process.env.ENTITLEMENTS_ENFORCE = "on";
@@ -88,14 +121,38 @@ describe("canUseFeature: enforce mode", () => {
     expect(canUseFeature(proClassic, "project_phases")).toBe(true);
   });
 
-  it("Planner is Business only for Pro (classic or Billing)", () => {
-    expect(canUseFeature(proClassic, "planner_schedule")).toBe(false);
-    expect(canUseFeature({ ...proClassic, billing_provider: "paddle_billing" }, "planner_schedule")).toBe(false);
+  it("gives Pro read-only Schedule access", () => {
+    expect(canUseFeature(proClassic, "planner_schedule")).toBe(true);
+    expect(canUseFeature({ ...proClassic, billing_provider: "paddle_billing" }, "planner_schedule")).toBe(true);
+    expect(canUseFeature(proClassic, "planner_schedule_edit")).toBe(false);
     expect(canUseFeature(business, "planner_schedule")).toBe(true);
+    expect(canUseFeature(business, "planner_schedule_edit")).toBe(true);
   });
 });
 
 describe("requireFeature", () => {
+  it("allows self-hosted Roadmap editing even with a Free subscription row", () => {
+    process.env.WORKLENZ_DEPLOYMENT_MODE = "self_hosted";
+    try {
+      const next = jest.fn();
+      requireFeature("gantt_edit")({ user: free } as any, makeRes(), next);
+      expect(next).toHaveBeenCalled();
+    } finally {
+      process.env.WORKLENZ_DEPLOYMENT_MODE = "cloud";
+    }
+  });
+  it("allows Roadmap editing for Business but denies Pro and Free", () => {
+    for (const user of [proClassic, free]) {
+      const res = makeRes();
+      const next = jest.fn();
+      requireFeature("gantt_edit")({ user } as any, res, next);
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(next).not.toHaveBeenCalled();
+    }
+    const next = jest.fn();
+    requireFeature("gantt_edit")({ user: business } as any, makeRes(), next);
+    expect(next).toHaveBeenCalled();
+  });
   it("returns 401 without a user", () => {
     const res = makeRes();
     const next = jest.fn();
@@ -208,13 +265,16 @@ describe("requireAnyFeature", () => {
     expect(blocked).not.toHaveBeenCalled();
   });
 
-  it("enforce mode: AppSumo passes via Timeline/Workload, Pro and Free do not", () => {
+  it("enforce mode: AppSumo and Pro pass, Free does not", () => {
     process.env.ENTITLEMENTS_ENFORCE = "on";
     const pass = jest.fn();
     requireAnyFeature(planner)({ user: ltd } as any, makeRes(), pass);
     expect(pass).toHaveBeenCalled();
 
-    for (const user of [proClassic, free]) {
+    const proNext = jest.fn();
+    requireAnyFeature(planner)({ user: proClassic } as any, makeRes(), proNext);
+    expect(proNext).toHaveBeenCalled();
+    for (const user of [free]) {
       const res = makeRes();
       const next = jest.fn();
       requireAnyFeature(planner)({ user } as any, res, next);
@@ -268,5 +328,32 @@ describe("requireFeatureForOrganization in self-hosted deployments", () => {
     } finally {
       process.env.WORKLENZ_DEPLOYMENT_MODE = "cloud";
     }
+  });
+});
+
+describe("Schedule editing entitlement", () => {
+  it("grants self-hosted Schedule viewing and editing even with a Free subscription row", () => {
+    process.env.WORKLENZ_DEPLOYMENT_MODE = "self_hosted";
+    try {
+      expect(canUseFeature(free, "planner_schedule")).toBe(true);
+      expect(canUseFeature(free, "planner_schedule_edit")).toBe(true);
+      const next = jest.fn();
+      requireFeature("planner_schedule_edit")({ user: free } as any, makeRes(), next);
+      expect(next).toHaveBeenCalled();
+    } finally {
+      process.env.WORKLENZ_DEPLOYMENT_MODE = "cloud";
+    }
+  });
+  it("allows Schedule editing for Business but denies Pro and Free", () => {
+    for (const user of [proClassic, free]) {
+      const res = makeRes();
+      const next = jest.fn();
+      requireFeature("planner_schedule_edit")({ user } as any, res, next);
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(next).not.toHaveBeenCalled();
+    }
+    const next = jest.fn();
+    requireFeature("planner_schedule_edit")({ user: business } as any, makeRes(), next);
+    expect(next).toHaveBeenCalled();
   });
 });

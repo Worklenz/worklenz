@@ -107,5 +107,8 @@
   "copyLink": "复制链接",
   "removeLink": "移除链接",
   "linkCopied": "链接已复制",
-  "linkCopyFailed": "无法复制。请选择地址进行复制。"
+  "linkCopyFailed": "无法复制。请选择地址进行复制。",
+  "proRequired": "需要专业版",
+  "docsProRequired": "项目文档适用于专业版及更高级别的套餐。",
+  "upgrade": "升级套餐"
 }

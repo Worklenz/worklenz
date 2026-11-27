@@ -11,6 +11,7 @@ import {getAssignees, runAssignOrRemove} from "./on-quick-assign-or-remove";
 import WorklenzControllerBase from "../../controllers/worklenz-controller-base";
 import { isAssigneeScopeEditRestrictedForTask } from "../../shared/assignee-task-scope";
 import { advanceBacklogIssuesToTodo } from "../../shared/software-sprint-utils";
+import { teamCanUseFeature } from "../../shared/entitlements/gates";
 
 async function autoAssignPhaseAssignee(
   io: Server,
@@ -36,6 +37,7 @@ async function autoAssignPhaseAssignee(
     }
 
     const { project_id, team_id } = projectResult.rows[0];
+    if (!(await teamCanUseFeature(team_id, "phase_assignee"))) return;
 
     // Step 1: If there's a previous phase with a default assignee, remove it
     if (previousPhaseId) {

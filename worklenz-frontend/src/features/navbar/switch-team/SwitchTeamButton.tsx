@@ -25,14 +25,11 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 
 // Redux Actions
 import { fetchTeams, setActiveTeam } from '@/features/teams/teamSlice';
-import { verifyAuthentication } from '@/features/auth/authSlice';
-import { setUser } from '@/features/user/userSlice';
+import { projectsApi } from '@/api/projects/projects.v1.api.service';
 
 // Hooks & Services
 import { useAuthService } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { createAuthService } from '@/services/auth/auth.service';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_common_switch_team } from '@/shared/worklenz-analytics-events';
 import { navigateAfterTeamSwitch } from '@/utils/team-switch-navigation';
@@ -52,17 +49,15 @@ import { useTooltipTheme } from '@/hooks/useTooltipTheme';
 
 const SwitchTeamButton = () => {
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const authService = createAuthService(navigate);
   const { getCurrentSession } = useAuthService();
   const session = getCurrentSession();
   const { t } = useTranslation(['navbar', 'common']);
-  const { setIdentity, trackMixpanelEvent } = useMixpanelTracking();
+  const { trackMixpanelEvent } = useMixpanelTracking();
   const { tooltipProps } = useTooltipTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<InputRef>(null);
+  const isSwitchingRef = useRef(false);
 
   // Selectors
   const teamsList = useAppSelector(state => state.teamReducer.teamsList);
@@ -108,38 +103,32 @@ const SwitchTeamButton = () => {
     }
   };
 
-  const handleVerifyAuth = async () => {
-    const result = await dispatch(verifyAuthentication()).unwrap();
-    if (result.authenticated) {
-      dispatch(setUser(result.user));
-      authService.setCurrentSession(result.user);
-      setIdentity(result.user);
-    }
-  };
-
   const handleTeamSelect = async (id: string) => {
-    if (!id) return;
+    if (!id || isSwitchingRef.current) return;
+    if (session?.team_id === id) {
+      setIsOpen(false);
+      return;
+    }
 
     try {
+      isSwitchingRef.current = true;
+      setIsOpen(false);
       trackMixpanelEvent(evt_common_switch_team);
 
-      // Switch team and wait for backend to complete the activation
+      // Drop cached/in-flight project queries from the current team before
+      // activate. Hover-prefetches on the projects list otherwise complete
+      // after activate and can race with the new session.
+      dispatch(projectsApi.util.resetApiState());
+
+      // Persist the active team on the server, then hard-navigate immediately.
+      // Do NOT verify/setUser first: updating Redux/session while still on a
+      // project-scoped page re-triggers verify-project-access, which can
+      // auto-switch the session back to the previous team's project.
       await dispatch(setActiveTeam(id)).unwrap();
-
-      // Add a small delay to ensure database transaction is committed
-      // and session is properly updated before verifying
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Verify authentication to get the updated user session with new team
-      await handleVerifyAuth();
-
-      // Shared pages reload in place. Project detail / task short-link pages
-      // must leave the old project — reloading them would auto-switch the
-      // session back to that project's team via verify-project-access.
-      navigateAfterTeamSwitch(location.pathname);
+      navigateAfterTeamSwitch(window.location.pathname);
     } catch (error) {
+      isSwitchingRef.current = false;
       console.error('Failed to switch team:', error);
-      // Optionally show error message to user
     }
   };
 
@@ -154,9 +143,8 @@ const SwitchTeamButton = () => {
     return (
       <Card
         className="switch-team-card"
-        onClick={() => team.id && handleTeamSelect(team.id)}
         bordered={false}
-        style={{ width: 230 }}
+        style={{ width: 230, cursor: 'pointer' }}
       >
         <Flex vertical>
           <Flex gap={12} align="center" justify="space-between" style={{ padding: '4px 12px' }}>
@@ -193,6 +181,9 @@ const SwitchTeamButton = () => {
     key: team.id || '',
     label: renderTeamCard(team, index, filteredTeams.length),
     type: 'item' as const,
+    onClick: () => {
+      if (team.id) void handleTeamSelect(team.id);
+    },
   }));
 
   const dropdownContent = (
@@ -240,7 +231,14 @@ const SwitchTeamButton = () => {
       trigger={['click']}
       placement="bottomRight"
     >
-      <Tooltip title={t('switchTeamTooltip')} trigger={'hover'} {...tooltipProps}>
+      {/* Force-hide the tooltip while the menu is open — otherwise it sits on
+          top of the dropdown and steals clicks on the first team rows. */}
+      <Tooltip
+        title={t('switchTeamTooltip')}
+        trigger={['hover']}
+        open={isOpen ? false : undefined}
+        {...tooltipProps}
+      >
         <Flex
           gap={12}
           align="center"

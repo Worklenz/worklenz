@@ -19,6 +19,8 @@ import { ITask } from '@/types/tasks/task.types';
 import { GanttTask, GanttViewMode, GanttPhase } from '../../types/gantt-types';
 import { useGanttContext } from '../../context/gantt-context';
 import { useUpdateTaskDatesMutation } from '../../services/roadmap-api.service';
+import { useAuthService } from '@/hooks/useAuth';
+import { canUseFeature } from '@/utils/subscription-utils';
 import { formatDateLocal } from '../../utils/date-utils';
 import { useTranslation } from 'react-i18next';
 import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
@@ -1643,7 +1645,12 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
   ) => {
     const { t } = useTranslation('gantt');
     const { token } = theme.useToken();
-    const { canCreateTask } = useTaskCreationPermission();
+    const { canCreateTask: hasTaskPermission } = useTaskCreationPermission();
+    const authService = useAuthService();
+    const canEditRoadmap = canUseFeature(authService.getCurrentSession(), 'gantt_edit');
+    const project = useAppSelector(state => state.projectReducer.project);
+    const canEditDependencies = canEditRoadmap && !project?.is_guest && project?.task_role_permissions?.edit_tasks !== false;
+    const canCreateTask = hasTaskPermission && canEditRoadmap;
     // Get timeline calculator, grouping mode, highlighted date range, and shouldScroll from context
     const contextValue = useGanttContext();
     const { timelineCalculator, groupingMode, setHighlightedDateRange, shouldScroll } = contextValue;
@@ -3193,7 +3200,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
                   });
                 })()}
               </svg>
-              {hoveredDependencyControl && (
+              {canEditDependencies && hoveredDependencyControl && (
                 <div
                   className="gantt-dependency-remove-control"
                   style={{

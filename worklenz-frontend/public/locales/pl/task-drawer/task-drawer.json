@@ -59,6 +59,7 @@
       "labels": "Etykiety",
       "billable": "Płatne",
       "notify": "Powiadom",
+      "notify-tooltip": "Wybrani członkowie otrzymają powiadomienie w aplikacji i e-mail, gdy to zadanie zostanie oznaczone jako ukończone.",
       "when-done-notify": "Po zakończeniu powiadom",
       "start-date": "Data rozpoczęcia",
       "end-date": "Data zakończenia",
@@ -238,7 +239,8 @@
       "projectNotStartedWarningDesc": "Ten projekt ma się rozpocząć {{date}}. Nie można rejestrować czasu przed datą rozpoczęcia projektu.",
       "projectStartDateHint": "Data rozpoczęcia projektu: {{date}}"
     },
-    "rollupLoggedTooltip": "Suma czasu zalogowanego w podzadaniach"
+    "rollupLoggedTooltip": "Suma czasu zalogowanego w podzadaniach",
+    "moveToProject": "Przenieś do projektu"
   },
   "taskActivityLogTab": {
     "title": "Dziennik aktywności",
@@ -290,5 +292,6 @@
     "description": "Zostałeś przydzielony do podzadania tego zadania. Możesz wyświetlić rodzica dla kontekstu, ale nie możesz go edytować."
   },
   "today": "Dzisiaj",
-  "yesterday": "Wczoraj"
+  "yesterday": "Wczoraj",
+  "more": "Więcej opcji"
 }

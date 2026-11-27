@@ -101,5 +101,6 @@
     "dragDisabledInChronological": "Cambiar a orden manual para arrastrar y reordenar fases"
   },
   "unscheduledTasksTitle": "Tareas sin programar",
-  "noUnscheduledTasks": "No hay tareas sin programar disponibles."
+  "noUnscheduledTasks": "No hay tareas sin programar disponibles.",
+  "statusReorderSameCategory": "Los estados solo se pueden reordenar dentro de la misma categoría."
 }

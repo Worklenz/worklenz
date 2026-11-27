@@ -31,38 +31,6 @@
   line-height: 1.45;
 }
 
-.all-reports-hub__tabs {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-  padding: 4px;
-  border-radius: 999px;
-  border: 1px solid;
-}
-
-.all-reports-hub__tab {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  border-radius: 999px;
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.all-reports-hub__tab:disabled {
-  cursor: default;
-  opacity: 0.55;
-}
-
-.all-reports-hub__tab.is-active {
-  font-weight: 600;
-}
-
 .all-reports-hub__banner {
   display: flex;
   align-items: center;

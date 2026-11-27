@@ -12,6 +12,7 @@
   "mentionedInProjectComment": "<strong>{{user}}</strong> mentioned you in a comment on <strong>{{project}}</strong>",
   "mentionedInProjectDocument": "<strong>{{user}}</strong> mentioned you in a document on <strong>{{project}}</strong>",
   "phaseTaskAssigned": "A task has been assigned to you in <strong>{{phase}}</strong>: <strong>{{task}}</strong>",
+  "taskMarkedDone": "Task <strong>{{task}}</strong> has been marked as Done",
   "orgSwapped": "Your organization <strong>{{previousOrganization}}</strong> was swapped with <strong>{{organization}}</strong>. You are now its owner.",
   "teamOwnershipChanged": "Your ownership of <strong>{{team}}</strong> has changed."
 }

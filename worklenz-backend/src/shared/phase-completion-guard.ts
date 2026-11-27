@@ -1,4 +1,5 @@
 import db from "../config/db";
+import { teamCanUseFeature } from "./entitlements/gates";
 
 /**
  * Phase Completion Guard
@@ -39,6 +40,7 @@ export async function checkPhaseCompletionGuard(
 
         -- Does the project have phase_assignees_enabled = TRUE?
         COALESCE(p.phase_assignees_enabled, FALSE)     AS phase_assignees_enabled,
+        p.team_id,
 
         -- Team member ID of the phase's default assignee (null if not set)
         phase_pm.team_member_id                        AS phase_assignee_team_member_id,
@@ -91,7 +93,7 @@ export async function checkPhaseCompletionGuard(
     if (!row.is_done_status) return allowed;
 
     // Feature must be enabled for this project
-    if (!row.phase_assignees_enabled) return allowed;
+    if (!row.phase_assignees_enabled || !(await teamCanUseFeature(row.team_id, "phase_assignee"))) return allowed;
 
     // If the task is not in a phase, or the phase has no default assignee → allow
     if (!row.phase_assignee_team_member_id) return allowed;

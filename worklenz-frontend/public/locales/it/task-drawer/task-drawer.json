@@ -59,6 +59,7 @@
       "labels": "Etichette",
       "billable": "Fatturabile",
       "notify": "Avvisare",
+      "notify-tooltip": "I membri selezionati riceveranno una notifica in-app e via email quando questa attività verrà contrassegnata come completata.",
       "when-done-notify": "Al termine, avvisa",
       "start-date": "Data di inizio",
       "end-date": "Data di fine",
@@ -238,7 +239,8 @@
       "projectNotStartedWarningDesc": "L'inizio di questo progetto è programmato per il {{date}}. Non è possibile registrare il tempo prima della data di inizio del progetto.",
       "projectStartDateHint": "Data di inizio progetto: {{date}}"
     },
-    "rollupLoggedTooltip": "Somma del tempo trascorso nelle attività secondarie"
+    "rollupLoggedTooltip": "Somma del tempo trascorso nelle attività secondarie",
+    "moveToProject": "Sposta nel progetto"
   },
   "taskActivityLogTab": {
     "title": "Registro delle attività",
@@ -290,5 +292,6 @@
     "description": "Ti viene assegnata una sottoattività di questa attività. Puoi visualizzare il genitore per il contesto ma non puoi modificarlo."
   },
   "today": "Oggi",
-  "yesterday": "Ieri"
+  "yesterday": "Ieri",
+  "more": "Altre opzioni"
 }

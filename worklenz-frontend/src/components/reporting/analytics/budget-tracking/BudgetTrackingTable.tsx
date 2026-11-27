@@ -3,6 +3,7 @@ import { Flex, Table, Tag, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
+import { analyticsDisplayText } from '@/lib/reporting/analytics-display-text';
 import type {
   BudgetAlert,
   BudgetTrackingRow,
@@ -49,7 +50,10 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
         key: 'project_name',
         width: 200,
         ellipsis: true,
-        sorter: (a, b) => a.project_name.localeCompare(b.project_name),
+        sorter: (a, b) =>
+          analyticsDisplayText(a.project_name).localeCompare(
+            analyticsDisplayText(b.project_name)
+          ),
         render: (name: string, record) => (
           <Flex align="center" gap={8}>
             <span
@@ -61,7 +65,7 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
                 flexShrink: 0,
               }}
             />
-            <Text strong>{name}</Text>
+            <Text strong>{analyticsDisplayText(name)}</Text>
           </Flex>
         ),
       },
@@ -71,16 +75,23 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
         key: 'client_name',
         width: 150,
         ellipsis: true,
-        sorter: (a, b) => (a.client_name || '').localeCompare(b.client_name || ''),
+        sorter: (a, b) =>
+          analyticsDisplayText(a.client_name).localeCompare(
+            analyticsDisplayText(b.client_name)
+          ),
         render: (value: string | null) =>
-          value ? <Text>{value}</Text> : <Text type="secondary">—</Text>,
+          value ? (
+            <Text>{analyticsDisplayText(value)}</Text>
+          ) : (
+            <Text type="secondary">—</Text>
+          ),
       },
       {
         title: t('btColBudget', { defaultValue: 'Budget' }),
         dataIndex: 'budget',
         key: 'budget',
         width: 130,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.budget - b.budget,
         render: (value: number, record) =>
           record.has_budget ? (
@@ -96,7 +107,7 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
         dataIndex: 'spent',
         key: 'spent',
         width: 130,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.spent - b.spent,
         render: (value: number, record) => (
           <Text strong style={{ color: record.burn_pct > 85 ? '#ff4d4f' : undefined }}>
@@ -109,7 +120,7 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
         dataIndex: 'remaining',
         key: 'remaining',
         width: 130,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.remaining - b.remaining,
         render: (value: number, record) =>
           record.has_budget ? (
@@ -124,7 +135,7 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
         title: t('btColBurn', { defaultValue: 'Burn rate' }),
         key: 'burn',
         width: 110,
-        align: 'right',
+        align: 'left',
         sorter: (a, b) => a.burn_pct - b.burn_pct,
         render: (_: unknown, record) =>
           record.has_budget ? (

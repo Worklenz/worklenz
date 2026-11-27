@@ -8,7 +8,9 @@ import { colors } from '@/styles/colors';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { setStatuses, fetchTaskGroups as fetchTaskGroupsList } from '@/features/tasks/tasks.slice';
 import { setBoardStatuses, fetchBoardTaskGroups } from '@/features/board/board-slice';
+import { selectEffectiveStatusCategoryOrder } from '@/features/project/project.slice';
 import { ITaskStatus } from '@/types/tasks/taskStatus.types';
+import { sortStatusesByCategory } from '@/utils/status-category-order';
 
 interface StatusFilterDropdownProps {
   statuses: ITaskStatus[];
@@ -27,6 +29,11 @@ const StatusFilterDropdown = ({ statuses }: StatusFilterDropdownProps) => {
   );
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { projectId } = useAppSelector(state => state.projectReducer);
+  const statusCategoryOrder = useAppSelector(selectEffectiveStatusCategoryOrder);
+  const orderedStatuses = useMemo(
+    () => sortStatusesByCategory(statuses ?? [], statusCategoryOrder),
+    [statuses, statusCategoryOrder]
+  );
 
   // selectedStatuses in taskReducer is ITaskStatusViewModel[] — track by id
   const selectedIds: string[] =
@@ -61,7 +68,7 @@ const StatusFilterDropdown = ({ statuses }: StatusFilterDropdownProps) => {
         const isSelected = current.includes(statusId);
         const updated = isSelected
           ? selectedStatuses.filter((s: any) => s.id !== statusId)
-          : [...selectedStatuses, statuses.find(s => s.id === statusId)!];
+          : [...selectedStatuses, orderedStatuses.find(s => s.id === statusId)!];
         dispatch(setStatuses(updated as any));
         dispatch(fetchTaskGroupsList(projectId));
       } else {
@@ -69,19 +76,19 @@ const StatusFilterDropdown = ({ statuses }: StatusFilterDropdownProps) => {
         const isSelected = current.includes(statusId);
         const updated = isSelected
           ? boardSelectedStatuses.filter((s: any) => s.id !== statusId)
-          : [...boardSelectedStatuses, statuses.find(s => s.id === statusId)!];
+          : [...boardSelectedStatuses, orderedStatuses.find(s => s.id === statusId)!];
         dispatch(setBoardStatuses(updated as any));
         dispatch(fetchBoardTaskGroups(projectId));
       }
     },
-    [dispatch, projectId, projectView, selectedStatuses, boardSelectedStatuses, statuses]
+    [dispatch, projectId, projectView, selectedStatuses, boardSelectedStatuses, orderedStatuses]
   );
 
   const dropdownContent = useMemo(
     () => (
       <Card className="custom-card" style={{ width: 160 }} styles={{ body: { padding: 0 } }}>
         <List style={{ padding: 0, maxHeight: 250, overflow: 'auto' }}>
-          {statuses?.map(status => (
+          {orderedStatuses.map(status => (
             <List.Item
               className={`custom-list-item ${themeMode === 'dark' ? 'dark' : ''}`}
               key={status.id}
@@ -108,7 +115,7 @@ const StatusFilterDropdown = ({ statuses }: StatusFilterDropdownProps) => {
         </List>
       </Card>
     ),
-    [statuses, selectedIds, themeMode, handleSelectedStatus]
+    [orderedStatuses, selectedIds, themeMode, handleSelectedStatus]
   );
 
   return (

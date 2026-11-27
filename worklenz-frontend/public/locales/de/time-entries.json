@@ -97,6 +97,8 @@
   "tableViewToggleLabel": "Tabellenansicht",
   "tableViewFlat": "Einzeln",
   "tableViewByTask": "Nach Aufgabe",
+  "tableViewFlatTooltip": "Jeder Zeiteintrag in einer eigenen Zeile, so wie er erfasst wurde.",
+  "tableViewByTaskTooltip": "Eine Zeile pro Aufgabe, mit der Summe der Zeit aller ihrer Einträge.",
   "colStatus": "Alle Status",
   "colPriority": "Priorität",
   "colBillable": "Abrechenbar",

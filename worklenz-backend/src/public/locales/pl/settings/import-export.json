@@ -295,5 +295,8 @@
     "failedMessage": "Twoje zadanie importu nie powiodło się. Spróbuj ponownie.",
     "processingTitle": "Import w toku",
     "processingMessage": "Twój import jest przetwarzany. Powiadomimy Cię, gdy będzie gotowy."
-  }
+  },
+  "proRequired": "Wymagany plan Pro",
+  "csvProRequired": "Import CSV jest dostępny od planu Pro.",
+  "upgradePlan": "Zmień plan"
 }

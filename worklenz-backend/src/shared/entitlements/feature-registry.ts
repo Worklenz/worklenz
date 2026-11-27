@@ -40,6 +40,9 @@ export const FEATURE_REGISTRY = {
   project_health: pro(),
   project_updates: free(),
   project_files: free(),
+  project_docs: pro({ alwaysEnforce: true }),
+  phase_assignee: pro({ alwaysEnforce: true }),
+  csv_import: pro({ alwaysEnforce: true }),
   task_attachments: free(),
   project_insights: pro(),
   project_roadmap: pro(),
@@ -84,7 +87,8 @@ export const FEATURE_REGISTRY = {
 
   // Planner. Business only (Pro does not get it). Matrix: AppSumo has Gantt (timeline) and
   // Workload but not Schedule.
-  planner_schedule: business(),
+  planner_schedule: pro({ alwaysEnforce: true, denySources: ["appsumo_ltd", "appsumo_expansion"] }),
+  planner_schedule_edit: business(),
   planner_timeline: business(PLANNER_LTD),
   planner_workload: business(PLANNER_LTD),
   gantt_edit: business(),

@@ -59,6 +59,7 @@
       "labels": "标签",
       "billable": "可计费",
       "notify": "通知",
+      "notify-tooltip": "选定的成员会在此任务被标记为已完成时收到应用内和电子邮件通知。",
       "when-done-notify": "完成时通知",
       "start-date": "开始日期",
       "end-date": "结束日期",
@@ -238,7 +239,8 @@
       "projectNotStartedWarningDesc": "此项目计划于 {{date}} 开始。不能在项目开始日期之前记录时间。",
       "projectStartDateHint": "项目开始日期：{{date}}"
     },
-    "rollupLoggedTooltip": "子任务的登录时间总和"
+    "rollupLoggedTooltip": "子任务的登录时间总和",
+    "moveToProject": "移至项目"
   },
   "taskActivityLogTab": {
     "title": "活动日志",
@@ -290,5 +292,6 @@
     "description": "您被分配到此任务的子任务。您可以查看父任务以了解上下文，但不能编辑它。"
   },
   "today": "今天",
-  "yesterday": "昨天"
+  "yesterday": "昨天",
+  "more": "更多选项"
 }

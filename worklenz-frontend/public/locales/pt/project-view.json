@@ -463,5 +463,6 @@
   "deleteSavedView": "Excluir aba",
   "deleteSavedViewTitle": "Excluir \"{{name}}\"?",
   "deleteSavedViewContent": "Esta aba será removida para todos no projeto. As tarefas não são afetadas.",
-  "deleteSavedViewOk": "Excluir"
+  "deleteSavedViewOk": "Excluir",
+  "NewTab": "Nova aba"
 }

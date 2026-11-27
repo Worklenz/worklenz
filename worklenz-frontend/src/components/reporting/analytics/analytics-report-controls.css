@@ -1,0 +1,20 @@
+﻿.analytics-blue-action.ant-btn {
+  height: 30px;
+  padding-inline: 12px;
+  border-radius: 7px;
+  background-color: #176DBE;
+  border-color: #176DBE;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.analytics-blue-action.ant-btn:not(:disabled):hover {
+  background-color: #176DBE;
+  border-color: #176DBE;
+  color: #ffffff;
+}
+
+.analytics-blue-action.ant-btn:disabled {
+  opacity: 0.55;
+}

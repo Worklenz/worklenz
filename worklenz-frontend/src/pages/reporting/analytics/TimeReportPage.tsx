@@ -50,6 +50,7 @@ import {
   projectsForAnalyticsChart,
 } from '@/lib/reporting/analytics-chart-projects';
 import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
+import { analyticsDisplayText } from '@/lib/reporting/analytics-display-text';
 import type {
   TimeReportFilters,
   TimeReportSeriesResponse,
@@ -236,7 +237,7 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
           ).forEach(project => {
             if (!seen.has(project.id)) {
               seen.add(project.id);
-              projects.push({ value: project.id, label: project.name });
+              projects.push({ value: project.id, label: analyticsDisplayText(project.name) });
               projectsWithUpdatedAt.push({
                 id: project.id,
                 updated_at: project.updated_at ?? null,

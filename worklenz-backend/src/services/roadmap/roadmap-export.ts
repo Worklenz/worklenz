@@ -21,6 +21,7 @@ export interface RoadmapExportRow {
   priority: string;
   assignees: string;
   dependencies: string;
+  dependencyLinks?: Array<{ name: string; relation: string }>;
   parent: string;
   color: string | null;
 }
@@ -50,10 +51,42 @@ export interface TimelineBar {
   width: number;
 }
 
+export interface TimelinePeriod {
+  label: string;
+  startMs: number;
+  endMs: number;
+}
+
+export interface RoadmapDependencyLink {
+  from: string;
+  to: string;
+  group: string;
+  kind: RoadmapRowKind;
+  relation: string;
+}
+
 const MAX_ROWS = 500;
 const MAX_TEXT = 500;
+const MAX_TIMELINE_COLUMNS = 52;
+/** Cap dependency expansion so one dense dependencies cell cannot explode export size. */
+const MAX_DEPENDENCY_LINKS_PER_ROW = 25;
+/** Hard ceiling across the whole export (Excel Dependencies sheet + PDF page). */
+const MAX_DEPENDENCY_LINKS = 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DETAIL_HEADERS = [
+  "Group",
+  "Type",
+  "Name",
+  "Start",
+  "End",
+  "Progress",
+  "Status",
+  "Priority",
+  "Assignees",
+  "Dependencies",
+  "Parent",
+] as const;
 
 const GROUP_TYPE_LABEL: Record<RoadmapGroupBy, string> = {
   phase: "Phase",
@@ -187,6 +220,12 @@ export const prepareRoadmapExport = (
       priority: cleanText(raw.priority),
       assignees: cleanText(raw.assignees),
       dependencies: cleanText(raw.dependencies),
+      dependencyLinks: Array.isArray(raw.dependencyLinks)
+        ? raw.dependencyLinks.slice(0, MAX_DEPENDENCY_LINKS_PER_ROW).filter(isRecord).map(link => ({
+            name: cleanText(link.name),
+            relation: cleanText(link.relation, 80) || "depends on",
+          })).filter(link => link.name.length > 0)
+        : undefined,
       parent: cleanText(raw.parent),
       color: cleanColor(raw.color),
     });
@@ -314,19 +353,108 @@ export const todayMarker = (window: TimelineWindow, exportedOn: string): number 
   return (today - window.startMs) / span;
 };
 
-const EXCEL_HEADERS = [
-  "Group",
-  "Type",
-  "Name",
-  "Start",
-  "End",
-  "Progress",
-  "Status",
-  "Priority",
-  "Assignees",
-  "Dependencies",
-  "Parent",
-];
+const addCalendarMonths = (ms: number, months: number): number => {
+  const date = new Date(ms);
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, 1);
+};
+
+/** Period columns that paint the Excel roadmap chart. */
+export const timelinePeriods = (window: TimelineWindow): TimelinePeriod[] => {
+  const spanDays = (window.endMs - window.startMs) / DAY_MS;
+  let mode: "day" | "week" | "month" | "quarter" =
+    spanDays <= 45 ? "day" : spanDays <= 200 ? "week" : spanDays <= 800 ? "month" : "quarter";
+
+  const build = (active: typeof mode): TimelinePeriod[] => {
+    const periods: TimelinePeriod[] = [];
+    if (active === "day") {
+      for (let ms = window.startMs; ms < window.endMs; ms += DAY_MS) {
+        periods.push({ label: formatDayLabel(ms), startMs: ms, endMs: ms + DAY_MS });
+      }
+      return periods;
+    }
+    if (active === "week") {
+      const cursor = new Date(window.startMs);
+      const day = cursor.getUTCDay();
+      const shift = day === 0 ? -6 : 1 - day;
+      let ms = Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth(), cursor.getUTCDate() + shift);
+      while (ms < window.endMs) {
+        const end = ms + 7 * DAY_MS;
+        periods.push({ label: formatDayLabel(ms), startMs: ms, endMs: end });
+        ms = end;
+      }
+      return periods;
+    }
+    const months = active === "quarter" ? 3 : 1;
+    let ms = Date.UTC(new Date(window.startMs).getUTCFullYear(), new Date(window.startMs).getUTCMonth(), 1);
+    while (ms < window.endMs) {
+      const end = addCalendarMonths(ms, months);
+      periods.push({ label: formatMonthLabel(ms), startMs: ms, endMs: end });
+      ms = end;
+    }
+    return periods;
+  };
+
+  let periods = build(mode);
+  while (periods.length > MAX_TIMELINE_COLUMNS) {
+    if (mode === "day") mode = "week";
+    else if (mode === "week") mode = "month";
+    else if (mode === "month") mode = "quarter";
+    else break;
+    periods = build(mode);
+  }
+  if (periods.length <= MAX_TIMELINE_COLUMNS) return periods;
+
+  // Aggregate long timelines instead of dropping dates beyond the column limit.
+  const groupSize = Math.ceil(periods.length / MAX_TIMELINE_COLUMNS);
+  return periods.filter((_, index) => index % groupSize === 0).map((period, index) => {
+    const last = periods[Math.min((index + 1) * groupSize - 1, periods.length - 1)];
+    return { label: period.label, startMs: period.startMs, endMs: last.endMs };
+  });
+};
+
+const splitDependencyParts = (value: string, maxParts = MAX_DEPENDENCY_LINKS_PER_ROW): string[] => {
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+  const raw = trimmed.includes(";") ? trimmed.split(";") : trimmed.split(",");
+  const parts: string[] = [];
+  for (const part of raw) {
+    const cleaned = part.trim();
+    if (!cleaned) continue;
+    parts.push(cleaned);
+    if (parts.length >= maxParts) break;
+  }
+  return parts;
+};
+
+export const parseDependencyLinks = (rows: RoadmapExportRow[]): RoadmapDependencyLink[] => {
+  const links: RoadmapDependencyLink[] = [];
+  for (const row of rows) {
+    if (links.length >= MAX_DEPENDENCY_LINKS) break;
+    if (row.kind === "group") continue;
+    if (row.dependencyLinks) {
+      for (const link of row.dependencyLinks.slice(0, Math.min(MAX_DEPENDENCY_LINKS_PER_ROW, MAX_DEPENDENCY_LINKS - links.length))) {
+        links.push({ from: row.name, to: link.name, group: row.group, kind: row.kind, relation: link.relation });
+      }
+      continue;
+    }
+    if (!row.dependencies.trim()) continue;
+
+    const remaining = MAX_DEPENDENCY_LINKS - links.length;
+    const perRowCap = Math.min(MAX_DEPENDENCY_LINKS_PER_ROW, remaining);
+    for (const part of splitDependencyParts(row.dependencies, perRowCap)) {
+      const typed = /^(.*)\s*\[([^\]]+)\]\s*$/.exec(part);
+      links.push({
+        from: row.name,
+        to: (typed ? typed[1] : part).trim(),
+        group: row.group,
+        kind: row.kind,
+        relation: typed ? typed[2].trim() : "depends on",
+      });
+      if (links.length >= MAX_DEPENDENCY_LINKS) break;
+    }
+  }
+  return links;
+};
 
 const rowTypeLabel = (row: RoadmapExportRow, groupBy: RoadmapGroupBy): string => {
   if (row.kind === "task") return "Task";
@@ -334,53 +462,84 @@ const rowTypeLabel = (row: RoadmapExportRow, groupBy: RoadmapGroupBy): string =>
   return GROUP_TYPE_LABEL[groupBy];
 };
 
-export const buildRoadmapExcel = async (input: {
-  projectName: string;
-  exportedOn: string;
-  groupingLabel: string;
-  groupBy: RoadmapGroupBy;
-  rows: RoadmapExportRow[];
-}): Promise<Buffer> => {
-  const workbook = new Excel.Workbook();
-  workbook.creator = "Worklenz";
-  const sheet = workbook.addWorksheet("Roadmap");
+const indentName = (row: RoadmapExportRow): string => {
+  if (row.kind === "subtask") return `    ${row.name}`;
+  if (row.kind === "task") return `  ${row.name}`;
+  return row.name;
+};
 
-  sheet.mergeCells("A1:K1");
-  sheet.getCell("A1").value = "Roadmap";
-  sheet.getCell("A1").font = { size: 16, bold: true, color: { argb: "FF262626" } };
+const argbFromHex = (hex: string | null, fallback: string): string => {
+  const safe = cleanColor(hex) || fallback;
+  return `FF${safe.slice(1).toUpperCase()}`;
+};
 
-  sheet.mergeCells("A2:K2");
-  sheet.getCell("A2").value = excelSafeText(input.projectName);
-  sheet.getCell("A2").font = { size: 12, bold: true };
+const barFillColor = (row: RoadmapExportRow): string => {
+  if (row.kind === "subtask") return "FF69B1FF";
+  if (row.kind === "task") return "FF1890FF";
+  return argbFromHex(row.color, "#8C8C8C");
+};
 
-  sheet.mergeCells("A3:K3");
-  sheet.getCell("A3").value = `Grouped by ${excelSafeText(input.groupingLabel)}  ·  Exported ${input.exportedOn}`;
-  sheet.getCell("A3").font = { size: 10, color: { argb: "FF595959" } };
+const styleHeaderCell = (cell: Excel.Cell): void => {
+  cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1890FF" } };
+  cell.alignment = { vertical: "middle", wrapText: true, horizontal: "center" };
+};
+
+const writeSheetTitle = (
+  sheet: Excel.Worksheet,
+  input: { projectName: string; exportedOn: string; groupingLabel: string },
+  lastColumn: number
+): void => {
+  sheet.mergeCells(1, 1, 1, lastColumn);
+  sheet.getCell(1, 1).value = "Roadmap";
+  sheet.getCell(1, 1).font = { size: 16, bold: true, color: { argb: "FF262626" } };
+
+  sheet.mergeCells(2, 1, 2, lastColumn);
+  sheet.getCell(2, 1).value = excelSafeText(input.projectName);
+  sheet.getCell(2, 1).font = { size: 12, bold: true };
+
+  sheet.mergeCells(3, 1, 3, lastColumn);
+  sheet.getCell(3, 1).value = `Grouped by ${excelSafeText(input.groupingLabel)}  ·  Exported ${input.exportedOn}`;
+  sheet.getCell(3, 1).font = { size: 10, color: { argb: "FF595959" } };
+};
+
+const detailValues = (row: RoadmapExportRow, groupBy: RoadmapGroupBy): Array<string | number> => [
+  excelSafeText(row.group),
+  rowTypeLabel(row, groupBy),
+  excelSafeText(row.name),
+  row.startDate ?? "",
+  row.endDate ?? "",
+  row.progress ?? "",
+  excelSafeText(row.status),
+  excelSafeText(row.priority),
+  excelSafeText(row.assignees),
+  excelSafeText(row.dependencies),
+  excelSafeText(row.parent),
+];
+
+const writeTasksSheet = (
+  workbook: Excel.Workbook,
+  input: {
+    projectName: string;
+    exportedOn: string;
+    groupingLabel: string;
+    groupBy: RoadmapGroupBy;
+    rows: RoadmapExportRow[];
+  }
+): void => {
+  const sheet = workbook.addWorksheet("Tasks");
+  writeSheetTitle(sheet, input, DETAIL_HEADERS.length);
 
   const header = sheet.getRow(5);
-  EXCEL_HEADERS.forEach((label, index) => {
+  DETAIL_HEADERS.forEach((label, index) => {
     const cell = header.getCell(index + 1);
     cell.value = label;
-    cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1890FF" } };
-    cell.alignment = { vertical: "middle" };
+    styleHeaderCell(cell);
   });
   header.height = 20;
 
   input.rows.forEach((row, index) => {
-    const values: Array<string | number> = [
-      excelSafeText(row.group),
-      rowTypeLabel(row, input.groupBy),
-      excelSafeText(row.name),
-      row.startDate ?? "",
-      row.endDate ?? "",
-      row.progress ?? "",
-      excelSafeText(row.status),
-      excelSafeText(row.priority),
-      excelSafeText(row.assignees),
-      excelSafeText(row.dependencies),
-      excelSafeText(row.parent),
-    ];
+    const values = detailValues(row, input.groupBy);
     const excelRow = sheet.getRow(6 + index);
     values.forEach((value, column) => {
       excelRow.getCell(column + 1).value = value;
@@ -407,11 +566,164 @@ export const buildRoadmapExcel = async (input: {
     { width: 16 },
     { width: 14 },
     { width: 28 },
-    { width: 28 },
+    { width: 36 },
     { width: 28 },
   ];
   sheet.views = [{ state: "frozen", ySplit: 5 }];
-  sheet.autoFilter = { from: { row: 5, column: 1 }, to: { row: 5, column: EXCEL_HEADERS.length } };
+  sheet.autoFilter = {
+    from: { row: 5, column: 1 },
+    to: { row: 5, column: DETAIL_HEADERS.length },
+  };
+};
+
+const writeTimelineSheet = (
+  workbook: Excel.Workbook,
+  input: {
+    projectName: string;
+    exportedOn: string;
+    groupingLabel: string;
+    groupBy: RoadmapGroupBy;
+    rows: RoadmapExportRow[];
+  }
+): void => {
+  const sheet = workbook.addWorksheet("Timeline", { properties: { defaultColWidth: 4 } });
+  const window = timelineWindow(input.rows);
+  const periods = window ? timelinePeriods(window) : [];
+  const metaHeaders = ["Name", "Type", "Start", "End", "Progress", "Status", "Dependencies"] as const;
+  const lastColumn = Math.max(metaHeaders.length, metaHeaders.length + periods.length);
+  writeSheetTitle(sheet, input, lastColumn);
+
+  const header = sheet.getRow(5);
+  metaHeaders.forEach((label, index) => {
+    const cell = header.getCell(index + 1);
+    cell.value = label;
+    styleHeaderCell(cell);
+  });
+
+  const todayMs = parseExportDay(input.exportedOn);
+  periods.forEach((period, index) => {
+    const cell = header.getCell(metaHeaders.length + index + 1);
+    cell.value = period.label;
+    styleHeaderCell(cell);
+    cell.alignment = { textRotation: 90, vertical: "bottom", horizontal: "center", wrapText: true };
+    if (todayMs != null && todayMs >= period.startMs && todayMs < period.endMs) {
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFF4D4F" } };
+    }
+  });
+  header.height = periods.length ? 48 : 20;
+
+  input.rows.forEach((row, index) => {
+    const excelRow = sheet.getRow(6 + index);
+    const values: Array<string | number> = [
+      excelSafeText(indentName(row)),
+      rowTypeLabel(row, input.groupBy),
+      row.startDate ?? "",
+      row.endDate ?? "",
+      row.progress ?? "",
+      excelSafeText(row.status),
+      excelSafeText(row.dependencies),
+    ];
+    values.forEach((value, column) => {
+      excelRow.getCell(column + 1).value = value;
+    });
+    if (row.kind === "group") {
+      excelRow.font = { bold: true };
+      values.forEach((_, column) => {
+        excelRow.getCell(column + 1).fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFF5F5F5" },
+        };
+      });
+    }
+
+    if (!window || !periods.length) return;
+    const start = row.startDate ? parseExportDay(row.startDate) : null;
+    const end = row.endDate ? parseExportDay(row.endDate) : null;
+    const from = start ?? end;
+    const to = end ?? start;
+    if (from == null || to == null) return;
+    const taskEnd = to + DAY_MS;
+    const fill = barFillColor(row);
+    periods.forEach((period, periodIndex) => {
+      if (from < period.endMs && taskEnd > period.startMs) {
+        const cell = excelRow.getCell(metaHeaders.length + periodIndex + 1);
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: fill } };
+        if (row.kind !== "group" && row.progress != null) {
+          cell.note = `${row.progress}% complete`;
+        }
+      }
+    });
+  });
+
+  sheet.getColumn(1).width = 36;
+  sheet.getColumn(2).width = 12;
+  sheet.getColumn(3).width = 12;
+  sheet.getColumn(4).width = 12;
+  sheet.getColumn(5).width = 10;
+  sheet.getColumn(6).width = 14;
+  sheet.getColumn(7).width = 28;
+  periods.forEach((_, index) => {
+    sheet.getColumn(metaHeaders.length + index + 1).width = 3.2;
+  });
+  sheet.views = [{ state: "frozen", xSplit: metaHeaders.length, ySplit: 5 }];
+};
+
+const writeDependenciesSheet = (
+  workbook: Excel.Workbook,
+  input: {
+    projectName: string;
+    exportedOn: string;
+    groupingLabel: string;
+    groupBy: RoadmapGroupBy;
+    rows: RoadmapExportRow[];
+  }
+): void => {
+  const sheet = workbook.addWorksheet("Dependencies");
+  const links = parseDependencyLinks(input.rows);
+  const headers = ["Group", "Task", "Task type", "Depends on", "Relation"] as const;
+  writeSheetTitle(sheet, input, headers.length);
+
+  const header = sheet.getRow(5);
+  headers.forEach((label, index) => {
+    const cell = header.getCell(index + 1);
+    cell.value = label;
+    styleHeaderCell(cell);
+  });
+  header.height = 20;
+
+  if (links.length === 0) {
+    sheet.getCell("A6").value = "No roadmap dependencies in this export.";
+    sheet.getCell("A6").font = { color: { argb: "FF8C8C8C" }, italic: true };
+  } else {
+    links.forEach((link, index) => {
+      const excelRow = sheet.getRow(6 + index);
+      excelRow.getCell(1).value = excelSafeText(link.group);
+      excelRow.getCell(2).value = excelSafeText(link.from);
+      excelRow.getCell(3).value = link.kind === "subtask" ? "Subtask" : "Task";
+      excelRow.getCell(4).value = excelSafeText(link.to);
+      excelRow.getCell(5).value = excelSafeText(link.relation);
+    });
+  }
+
+  sheet.columns = [{ width: 22 }, { width: 36 }, { width: 12 }, { width: 36 }, { width: 18 }];
+  sheet.views = [{ state: "frozen", ySplit: 5 }];
+  sheet.autoFilter = { from: { row: 5, column: 1 }, to: { row: 5, column: headers.length } };
+};
+
+export const buildRoadmapExcel = async (input: {
+  projectName: string;
+  exportedOn: string;
+  groupingLabel: string;
+  groupBy: RoadmapGroupBy;
+  rows: RoadmapExportRow[];
+}): Promise<Buffer> => {
+  const workbook = new Excel.Workbook();
+  workbook.creator = "Worklenz";
+  // Timeline first so the visual roadmap chart is the opening sheet.
+  writeTimelineSheet(workbook, input);
+  writeTasksSheet(workbook, input);
+  writeDependenciesSheet(workbook, input);
 
   const buffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(buffer);
@@ -440,6 +752,7 @@ export const buildRoadmapPdf = async (input: {
       ...row,
       bar: window ? barGeometry(row.startDate, row.endDate, window) : null,
     })),
+    dependencies: parseDependencyLinks(input.rows),
   };
 
   return renderToBuffer(

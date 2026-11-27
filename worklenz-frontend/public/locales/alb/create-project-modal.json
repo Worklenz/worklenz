@@ -15,7 +15,7 @@
   "projectColor": "Ngjyra",
   "startingFrom": "Duke filluar nga",
   "blankSelectedHint": "Projekt bosh. Zgjidhni një shablon në të djathtë për të filluar.",
-  "blankSoftwareSelectedHint": "Projekt softuerik bosh me parazgjedhje të gjurmimit të problemeve. Modelet nuk përdoren për projekte softuerike.",
+  "blankSoftwareProjectSelectedHint": "Projekt softuerik bosh me parazgjedhje të gjurmimit të problemeve.",
   "templateSelectedHint": "Struktura e shabllonit do të kopjohet në projektin tuaj.",
   "searchTemplates": "Kërko shabllonet",
   "searchYourLibrary": "Kërko bibliotekën tuaj",

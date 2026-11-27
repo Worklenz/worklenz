@@ -1,5 +1,9 @@
-const PROJECTS_LIST_PATH = '/worklenz/projects';
+import { clearOrganizationLogoCache } from '@/utils/organization-logo-cache';
+
+/** Concrete projects list route — `/worklenz/projects` is only an index redirect. */
+const PROJECTS_LIST_PATH = '/worklenz/projects/all-projects';
 const TASK_SHORT_LINK_PREFIX = '/worklenz/t/';
+const COMMENT_SHORT_LINK_PREFIX = '/worklenz/c/';
 
 /** Team-scoped deep-link params that must not survive a manual team switch. */
 const TEAM_SCOPED_SEARCH_PARAMS = ['task', 'task_project', 'comment', 'from', 'drawer_tab'] as const;
@@ -11,10 +15,10 @@ const PROJECT_DETAIL_PATH_REGEX =
 /**
  * Returns where to navigate after a manual team switch.
  *
- * Project detail URLs (and task short-links that resolve into them) are not
- * valid across teams — reloading them triggers backend auto team-switch back
- * to the project's team. Shared pages (home, projects list, planner, finance)
- * can safely reload in place.
+ * Project detail URLs (and task/comment short-links that resolve into them) are
+ * not valid across teams — reloading them triggers backend auto team-switch
+ * back to the project's team via verify-project-access. Shared pages (home,
+ * projects list, planner, finance) can safely reload in place.
  */
 export const getPostTeamSwitchLocation = (pathname: string): string => {
   if (PROJECT_DETAIL_PATH_REGEX.test(pathname)) {
@@ -22,6 +26,16 @@ export const getPostTeamSwitchLocation = (pathname: string): string => {
   }
 
   if (pathname.startsWith(TASK_SHORT_LINK_PREFIX)) {
+    return PROJECTS_LIST_PATH;
+  }
+
+  if (pathname.startsWith(COMMENT_SHORT_LINK_PREFIX)) {
+    return PROJECTS_LIST_PATH;
+  }
+
+  // Bare `/worklenz/projects` is an index redirect — land on the real list so
+  // a post-switch reload never depends on NavSurfaceIndexRedirect timing.
+  if (pathname === '/worklenz/projects' || pathname === '/worklenz/projects/') {
     return PROJECTS_LIST_PATH;
   }
 
@@ -57,6 +71,10 @@ export const stripTeamScopedSearchParams = (search: string): string => {
  * Always drops team-scoped task deep-link query params before reload/assign.
  */
 export const navigateAfterTeamSwitch = (pathname: string): void => {
+  // Drop the legacy unscoped logo cache before reload so the previous team's
+  // logo cannot flash (or stick) while the new team's logo resolves.
+  clearOrganizationLogoCache();
+
   const targetPath = getPostTeamSwitchLocation(pathname);
   const cleanedSearch =
     targetPath === pathname ? stripTeamScopedSearchParams(window.location.search) : '';

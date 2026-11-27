@@ -1,4 +1,5 @@
 {
+  "googleOneTapFailed": "Google sign-in could not be completed. Please use another sign-in method.",
   "loggingOut": "Logging out...",
   "authenticating": "Authenticating...",
   "gettingThingsReady": "Getting things ready for you..."

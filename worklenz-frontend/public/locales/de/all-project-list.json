@@ -1,8 +1,8 @@
 {
   "name": "Name",
   "projectType": "Projekttyp",
-  "projectTypeSoftware": "Softwareprojekt",
-  "projectTypeGeneral": "Allgemeines Projekt",
+  "projectTypeSoftware": "Software",
+  "projectTypeGeneral": "Allgemein",
   "projectTypeSoftwareTooltip": "Softwareprojekt — Issues, Backlog und Sprints",
   "projectTypeGeneralTooltip": "Allgemeines Projekt — Aufgaben, Phasen und Boards",
   "client": "Kunde",

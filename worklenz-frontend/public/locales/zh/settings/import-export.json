@@ -296,5 +296,8 @@
     "failedMessage": "您的导入作业失败。请再试一次。",
     "processingTitle": "导入正在进行中",
     "processingMessage": "您的导入正在处理中。准备好后我们会通知您。"
-  }
+  },
+  "proRequired": "需要专业版",
+  "csvProRequired": "CSV 导入适用于专业版及更高级别的套餐。",
+  "upgradePlan": "升级套餐"
 }

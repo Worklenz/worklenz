@@ -101,5 +101,6 @@
     "dragDisabledInChronological": "Mude para a ordem manual para arrastar e reordenar as fases"
   },
   "unscheduledTasksTitle": "Tarefas não agendadas",
-  "noUnscheduledTasks": "Nenhuma tarefa não agendada disponível."
+  "noUnscheduledTasks": "Nenhuma tarefa não agendada disponível.",
+  "statusReorderSameCategory": "Os estados só podem ser reordenados dentro da mesma categoria."
 }

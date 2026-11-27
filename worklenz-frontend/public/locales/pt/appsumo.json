@@ -10,9 +10,9 @@
         "title": "Relatórios avançados: Velocity e Cumulative Flow",
         "description": "Identifique gargalos cedo e planeje sprints com dados reais de entrega"
       },
-      "clientPortal": {
-        "title": "Portal do cliente",
-        "description": "Mantenha os clientes atualizados em um só lugar"
+      "brandedClientPortal": {
+        "title": "Portal do cliente com marca",
+        "description": "Adicione seu logo e cores da marca"
       },
       "finance": {
         "title": "Acesso a Finanças",

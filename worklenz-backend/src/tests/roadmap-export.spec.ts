@@ -8,8 +8,10 @@ import {
   buildRoadmapExcel,
   buildRoadmapPdf,
   excelSafeText,
+  parseDependencyLinks,
   prepareRoadmapExport,
   roadmapExportFileName,
+  timelinePeriods,
   timelineTicks,
   timelineWindow,
   todayMarker,
@@ -48,6 +50,17 @@ describe("roadmap export", () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+  it("preserves structured dependencies containing separators beyond the display limit", () => {
+    const names = [`Build; verify, test`, "a".repeat(300), "b".repeat(300)];
+    const prepared = prepareRoadmapExport({ format: "xlsx", group_by: "phase", rows: [row({
+      dependencies: names.join("; "),
+      dependencyLinks: names.map(name => ({ name, relation: "blocked by" })),
+    })] });
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(parseDependencyLinks(prepared.value.rows).map(link => [link.to, link.relation]))
+      .toEqual(names.map(name => [name, "blocked by"]));
   });
   it("validates and preserves shared timeline bounds", () => {
     const result = prepareRoadmapExport({ format: "pdf", group_by: "phase", rows: [row()], timeline_start: "2026-01-01", timeline_end: "2026-12-31" });
@@ -110,7 +123,76 @@ describe("roadmap export", () => {
     expect(timelineTicks(window).length).toBeGreaterThan(0);
   });
 
-  it("writes an Excel sheet with the phase, task, and subtask rows", async () => {
+  it("covers long timelines without exceeding the column limit", () => {
+    const window = timelineWindow([{ startDate: "2000-01-01", endDate: "2040-12-31" }]);
+    expect(window).not.toBeNull();
+    if (!window) return;
+    const periods = timelinePeriods(window);
+    expect(periods.length).toBeLessThanOrEqual(52);
+    expect(periods[0].startMs).toBeLessThanOrEqual(window.startMs);
+    expect(periods[periods.length - 1].endMs).toBeGreaterThanOrEqual(window.endMs);
+  });
+
+  it("builds timeline periods and dependency links for the chart sheets", () => {
+    const window = timelineWindow([{ startDate: "2026-03-01", endDate: "2026-03-20" }]);
+    expect(window).not.toBeNull();
+    if (!window) return;
+    expect(timelinePeriods(window).length).toBeGreaterThan(0);
+
+    const links = parseDependencyLinks([
+      {
+        kind: "task",
+        name: "Design review",
+        group: "Discovery",
+        startDate: "2026-03-02",
+        endDate: "2026-03-10",
+        progress: 40,
+        status: "Doing",
+        priority: "High",
+        assignees: "Ada",
+        dependencies: "Kickoff [blocked by]; Research",
+        parent: "",
+        color: null,
+      },
+    ]);
+    expect(links).toEqual([
+      {
+        from: "Design review",
+        to: "Kickoff",
+        group: "Discovery",
+        kind: "task",
+        relation: "blocked by",
+      },
+      {
+        from: "Design review",
+        to: "Research",
+        group: "Discovery",
+        kind: "task",
+        relation: "depends on",
+      },
+    ]);
+  });
+
+  it("caps dependency-link expansion per row and across the export", () => {
+    const manyDeps = Array.from({ length: 80 }, (_, index) => `Dep${index}`).join("; ");
+    const perRow = parseDependencyLinks([
+      row({ name: "Crowded task", dependencies: manyDeps }),
+    ]);
+    expect(perRow).toHaveLength(25);
+    expect(perRow[0].to).toBe("Dep0");
+    expect(perRow[24].to).toBe("Dep24");
+
+    const rows = Array.from({ length: 60 }, (_, index) =>
+      row({
+        name: `Task ${index}`,
+        dependencies: Array.from({ length: 30 }, (_, dep) => `D${index}-${dep}`).join(", "),
+      })
+    );
+    const capped = parseDependencyLinks(rows);
+    expect(capped).toHaveLength(1000);
+  });
+
+  it("writes Timeline, Tasks, and Dependencies Excel sheets", async () => {
     const prepared = prepareRoadmapExport({
       format: "xlsx",
       group_by: "phase",
@@ -134,20 +216,33 @@ describe("roadmap export", () => {
 
     const workbook = new Excel.Workbook();
     await workbook.xlsx.load(buffer as unknown as Excel.Buffer);
-    const sheet = workbook.getWorksheet("Roadmap");
-    expect(sheet?.getCell("A1").value).toBe("Roadmap");
-    expect(sheet?.getCell("A2").value).toBe("Client rollout");
-    expect(sheet?.getRow(5).getCell(3).value).toBe("Name");
-    expect(sheet?.getRow(6).getCell(2).value).toBe("Phase");
-    expect(sheet?.getRow(7).getCell(2).value).toBe("Task");
-    expect(sheet?.getRow(7).getCell(3).value).toBe("Design review");
-    expect(sheet?.getRow(7).getCell(9).value).toBe("Ada Lovelace");
-    expect(sheet?.getRow(8).getCell(2).value).toBe("Subtask");
-    expect(sheet?.getRow(8).getCell(11).value).toBe("Design review");
+
+    const timeline = workbook.getWorksheet("Timeline");
+    expect(timeline?.getCell("A1").value).toBe("Roadmap");
+    expect(timeline?.getCell("A2").value).toBe("Client rollout");
+    expect(timeline?.getRow(5).getCell(1).value).toBe("Name");
+    expect(timeline?.getRow(5).getCell(8).value).toBeTruthy();
+    expect(timeline?.getRow(7).getCell(1).value).toBe("  Design review");
+    expect(timeline?.getRow(7).getCell(7).value).toBe("Kickoff");
+
+    const tasks = workbook.getWorksheet("Tasks");
+    expect(tasks?.getRow(5).getCell(3).value).toBe("Name");
+    expect(tasks?.getRow(6).getCell(2).value).toBe("Phase");
+    expect(tasks?.getRow(7).getCell(2).value).toBe("Task");
+    expect(tasks?.getRow(7).getCell(3).value).toBe("Design review");
+    expect(tasks?.getRow(7).getCell(9).value).toBe("Ada Lovelace");
+    expect(tasks?.getRow(7).getCell(10).value).toBe("Kickoff");
+    expect(tasks?.getRow(8).getCell(2).value).toBe("Subtask");
+    expect(tasks?.getRow(8).getCell(11).value).toBe("Design review");
+
+    const dependencies = workbook.getWorksheet("Dependencies");
+    expect(dependencies?.getRow(5).getCell(2).value).toBe("Task");
+    expect(dependencies?.getRow(6).getCell(2).value).toBe("Design review");
+    expect(dependencies?.getRow(6).getCell(4).value).toBe("Kickoff");
     expect(buffer.subarray(0, 2).toString()).toBe("PK");
   });
 
-  it("renders a landscape roadmap PDF", async () => {
+  it("renders a landscape roadmap PDF with details and dependencies", async () => {
     const prepared = prepareRoadmapExport({
       format: "pdf",
       group_by: "phase",

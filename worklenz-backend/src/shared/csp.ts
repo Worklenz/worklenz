@@ -3,6 +3,7 @@ const policies = {
   "default-src": ["'self'"],
   "script-src": [
     "'self'",
+    "https://accounts.google.com/gsi/client",
     "data:",
     "'unsafe-inline'",
     "'unsafe-eval'", // Required for React development tools
@@ -32,6 +33,7 @@ const policies = {
   ],
   "style-src": [
     "'self'",
+    "https://accounts.google.com/gsi/style",
     "'unsafe-inline'",
     "data:",
     "https://cdnjs.cloudflare.com",
@@ -54,6 +56,7 @@ const policies = {
   ],
   "connect-src": [
     "'self'",
+    "https://accounts.google.com/gsi/",
     "data:",
     "ws:", // For WebSocket connections
     "wss:", // For secure WebSocket connections
@@ -113,6 +116,7 @@ const policies = {
   ],
   "script-src-elem": [
     "'self'",
+    "https://accounts.google.com/gsi/client",
     "https://*.googletagmanager.com",
     "https://*.clarity.ms",
     "https://js-na1.hs-scripts.com",
@@ -131,6 +135,7 @@ const policies = {
   ],
   "frame-src": [
     "'self'",
+    "https://accounts.google.com/gsi/",
     "https://app.hubspot.com",
     "https://sandbox-buy.paddle.com",
     "https://buy.paddle.com",
