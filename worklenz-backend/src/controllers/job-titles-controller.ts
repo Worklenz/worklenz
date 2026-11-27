@@ -1,15 +1,15 @@
-import {IWorkLenzRequest} from "../interfaces/worklenz-request";
-import {IWorkLenzResponse} from "../interfaces/worklenz-response";
+import { IWorkLenzRequest } from "../interfaces/worklenz-request";
+import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 
 import db from "../config/db";
-import {ServerResponse} from "../models/server-response";
+import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 
 export default class JobTitlesController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const {name} = req.body;
+    const { name } = req.body;
     const checkQuery = `
       SELECT id, name
       FROM job_titles
@@ -19,7 +19,13 @@ export default class JobTitlesController extends WorklenzControllerBase {
     `;
     const existing = await db.query(checkQuery, [name, req.user?.id || null]);
     if (existing.rows.length > 0) {
-      return res.status(200).send(new ServerResponse(true, existing.rows[0]));
+      return res.status(200).send(
+        new ServerResponse(
+          false,
+          null,
+          "Job title already exists. Please choose a different name."
+        )
+      );
     }
 
     try {
@@ -31,7 +37,13 @@ export default class JobTitlesController extends WorklenzControllerBase {
       if (error?.code === "23505") {
         const fallback = await db.query(checkQuery, [name, req.user?.id || null]);
         if (fallback.rows.length > 0) {
-          return res.status(200).send(new ServerResponse(true, fallback.rows[0]));
+          return res.status(200).send(
+            new ServerResponse(
+              false,
+              null,
+              "Job title already exists. Please choose a different name."
+            )
+          );
         }
       }
       throw error;
@@ -41,7 +53,7 @@ export default class JobTitlesController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     // team_id is $1, size is $2, offset is $3, so search params start at $4
-    const {searchQuery, searchParams, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name", false, 4, ["id", "name"]);
+    const { searchQuery, searchParams, sortField, sortOrder, size, offset } = this.toPaginationOptions(req.query, "name", false, 4, ["id", "name"]);
 
     const q = `
       SELECT ROW_TO_JSON(rec) AS job_titles

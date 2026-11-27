@@ -15,6 +15,10 @@ export const DB_CONSTRAINS: { [x: string]: string | null } = {
   task_priorities_name_uindex: "",
   clients_name_team_id_uindex:
     "Client name already exists. Please choose a different name.",
+  departments_name_team_id_uindex:
+    "Department already exists. Please choose a different name.",
+  practices_name_team_id_uindex:
+    "Practice already exists. Please choose a different name.",
   job_titles_name_team_id_uindex:
     "Job title already exists. Please choose a different name.",
   users_email_uindex:
