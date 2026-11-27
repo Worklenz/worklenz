@@ -1,6 +1,7 @@
 import { IRPTOverviewProject } from '@/types/reporting/reporting.types';
 import { Flex, Select, Typography } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 type ProjectFilterProps = {
   projectList: IRPTOverviewProject[];
@@ -14,7 +15,7 @@ const ProjectFilter = ({ projectList, loading, onSelect }: ProjectFilterProps) =
   const selectOptions = projectList.map(project => ({
     key: project.id,
     value: project.id,
-    label: project.name,
+    label: decodeHtmlEntities(project.name),
   }));
 
   return (

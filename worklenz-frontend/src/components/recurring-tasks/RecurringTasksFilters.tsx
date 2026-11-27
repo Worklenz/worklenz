@@ -6,6 +6,7 @@ import { teamMembersApiService } from '@/api/team-members/teamMembers.api.servic
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 import { IRecurringMode, ITaskRecurring } from '@/types/tasks/task-recurring-schedule';
 import PlannerMultiFilterDropdown from '@/features/schedule/PlannerMultiFilterDropdown';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 export interface RecurringTasksFiltersValue {
   projectIds?: string[];
@@ -48,12 +49,12 @@ export const RecurringTasksFilters: React.FC<RecurringTasksFiltersProps> = ({
 
   const projectOptions = (projectsData?.body?.data || []).map(p => ({
     value: p.id as string,
-    label: (p.name || p.id || '') as string,
+    label: decodeHtmlEntities((p.name || p.id || '') as string),
   }));
 
   const memberOptions = members.map(m => ({
     value: m.id as string,
-    label: (m.name || m.email || m.id || '') as string,
+    label: decodeHtmlEntities((m.name || m.email || m.id || '') as string),
   }));
 
   const recurTypeOptions = [

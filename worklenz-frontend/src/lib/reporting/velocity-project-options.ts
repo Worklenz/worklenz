@@ -1,4 +1,5 @@
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
+import { analyticsDisplayText } from '@/lib/reporting/analytics-display-text';
 
 export interface VelocityOverviewProject {
   id: string;
@@ -19,7 +20,10 @@ export const mapOverviewProjectsToVelocityOptions = (
   for (const project of projects) {
     if (!project.id || seen.has(project.id)) continue;
     seen.add(project.id);
-    options.push({ value: project.id, label: project.name });
+    options.push({
+      value: project.id,
+      label: analyticsDisplayText(project.name),
+    });
   }
   return options;
 };
